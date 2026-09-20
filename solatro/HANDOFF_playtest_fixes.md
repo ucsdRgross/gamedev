@@ -70,7 +70,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   release - "drag release drops"; `armed_slot()` - "delete armed slot"; HUD buttons behind the
   locked description while a card is lifted - "acceptable"; a cancelled pickup leaves the board
   focused - "yes". R6: the glow no longer lights FX - "ok"; an empty cell reads as a hotter frame
-  - "ok"; the two glow values - "both should be same value" (WHICH value is not ruled). R10:
+  - "ok"; the two glow values - "both should be same value", then on which - "ok 1.45". R10:
   "plural form, same as hearts spades clubs diamonds" (so "Fires", and the suit-only title is
   plural too). R8: the 100 px gap - "ok for now"; the low grid row - "not sure what this means,
   as long as no overlap and entrance is distinct". R7: any focus takes an uncommitted Entrance -
@@ -228,7 +228,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   verification_kind: snapshot
   status: pending
   evidence: ''
-  notes: 'Four small fixes, each its own red-then-green; one commit each if they can be gated apart. The shared glow VALUE is not ruled - ask the owner (1.45 keeps paper shading; 1.825 clamps a held card paper to flat white). DRAG PLACE 5.4 (the drop map stays lit after a returned drag) and drag_release_returned.png invert. "until no more placeable option on grid or entrance cards run out" - check that is exactly when committed_grid clears today; if not it is a finding.'
+  notes: 'Four small fixes, each its own red-then-green; one commit each if they can be gated apart. The shared glow value is 1.45 (owner: ok 1.45). DRAG PLACE 5.4 (the drop map stays lit after a returned drag) and drag_release_returned.png invert. "until no more placeable option on grid or entrance cards run out" - check that is exactly when committed_grid clears today; if not it is a finding.'
 - id: P20
   description: A SCRIPT ERROR a player can reach - HudContainer.return_to_lock reads _locked_entry_by_screen[&"game"] while only _lock_by_screen holds the key (hud_container.gd ~357, from the play_area.gd focus_exited lambda): lock a card description by click, then zoom out with an Entrance card focused.
   files_touched: [solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]

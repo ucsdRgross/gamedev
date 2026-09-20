@@ -969,6 +969,6 @@
 - Playtest follow-up rulings on the brightening. The focus glow no longer lighting a focused
   card's FX - owner: "ok". On an empty cell the lift reading as a hotter dashed frame, not paper
   going white - owner: "ok". `legal_cell_glow` 1.45 against `FOCUS_GLOW` 1.825 - owner: "both
-  should be same value".
+  should be same value", and on which value: "ok 1.45".
 - Playtest follow-up ruling on the title's plural ("5 of Fires", and the suit-only title) -
   owner: "plural form, same as hearts spades clubs diamonds".
