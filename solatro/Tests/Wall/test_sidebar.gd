@@ -35,7 +35,7 @@ func _ready() -> void:
 	test_show_hud_shows_only_the_hud_stack()
 	test_show_description_shows_only_the_description_panel()
 	behavior_section("THE GAME SCREEN'S HUD (S2)")
-	await test_game_hud_holds_exactly_the_eight_members()
+	await test_game_hud_holds_exactly_the_nine_members()
 	test_no_retired_furniture_nodes_remain()
 	await test_overlay_buttons_draw_above_the_hud_container()
 	await test_every_hud_member_is_visible_and_reachable()
@@ -545,18 +545,19 @@ func _has_named_descendant(node: Node, target: StringName) -> bool:
 
 # Read back through the real `wall.tscn`'s own `%Overlay/HudContainer`, never a standalone
 # instance, so this fails if the wall stops mounting it.
-func test_game_hud_holds_exactly_the_eight_members() -> void:
+func test_game_hud_holds_exactly_the_nine_members() -> void:
 	var wall := _build_wall()
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
 	var game_hud : Control = container.get_node(^"%GameHud")
 	var names : Array[StringName] = []
 	_collect_unique_names(game_hud, container, names)
 	var expected : Array[StringName] = [
-		&"Goal", &"Total", &"Combo", &"Deck", &"Discard", &"Rules", &"Undo", &"Submit"]
+		&"Goal", &"Total", &"Combo", &"Deck", &"Discard", &"Rules", &"Undo", &"Submit",
+		&"PlanLayer"]
 	names.sort()
 	expected.sort()
 	check(names == expected,
-			"GameHud holds exactly Deck, Discard, Rules, Goal, Total, Combo, Undo, End (C4)",
+			"GameHud holds exactly Deck, Discard, Rules, Goal, Total, Combo, Undo, End, Marks (C4)",
 			str(names))
 	await TestMainHost.unmount(self, wall)
 

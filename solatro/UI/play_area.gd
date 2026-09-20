@@ -18,11 +18,11 @@ signal highlight_cleared
 
 ## The player asked to close the description: a cancel press, or a press on bare board.
 signal description_dismiss_requested
-## Emitted once a rebuild's CardVisuals are all in-tree and _ready. CardVisuals add_child via
-## call_deferred, so right after set_card_zones they're mapped in data_card but not yet ready;
-## a deferred emit queued after those adds (FIFO) fires only once they've entered the tree.
-## Lets callers that must animate a freshly built board (e.g. a resumed show) await instead
-## of poll. Pair with visuals_ready() for the already-ready case (check-then-await).
+#A CardVisual enters the tree through call_deferred, so right after set_card_zones it is mapped
+#in data_card and not yet ready; a deferred emit queued after those adds fires only once they
+#are. visuals_ready() is the check-then-await pair for a board that is already built.
+
+## Emitted once a rebuild's CardVisuals are all in-tree and ready, so a caller can await a board.
 signal board_visuals_ready
 
 #OVERVIEW ONLY: the view should rest on grid `grid_index`. The horizontal aim is dead range in the
@@ -1628,14 +1628,14 @@ func _on_gui_input(event: InputEvent) -> void:
 #live in `_unhandled_input` below.
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
-		# left click
+# left click
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and not mouse_event.pressed:
-			# is_instance_valid guard: a board rebuild (e.g. submit clearing the board)
-			# can free the control this still points at, and `freed in typed_dict` errors.
+# is_instance_valid guard: a board rebuild (e.g. submit clearing the board)
+# can free the control this still points at, and `freed in typed_dict` errors.
 			if (is_instance_valid(focused_control)
 					and focused_control == moused_hovered_control
 					and focused_control in ui_data):
-					#and not focused_control.is_in_group("CardVisualZoneControl")):
+#and not focused_control.is_in_group("CardVisualZoneControl")):
 				if (not _consume_as_focus_click(focused_control)
 						and not _consume_as_stock_press(focused_control)):
 					_next_grab_follows = true
@@ -1658,11 +1658,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			card_tapped.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept"):
-		# IN THE OVERVIEW, ENTER FOCUSES THE SELECTED GRID even when nothing on the board holds
-		# focus — an arrow selection must be committable on its own. With a board control focused
-		# the pass below already does it through `_consume_as_focus_click`, and the two agree
-		# because the cursor tracks the focus; leaving that case alone is what keeps a focused
-		# ENTRANCE card (which belongs to no grid) selectable in the overview.
+#IN THE OVERVIEW, ENTER FOCUSES THE SELECTED GRID even when nothing on the board holds focus:
+#an arrow selection must be committable on its own. A focused board control goes through
+#_consume_as_focus_click below instead, which keeps an ENTRANCE card selectable in the overview.
 		if view_mode == ViewMode.OVERVIEW and not _board_control_has_focus():
 			focus_grid(selected_grid)
 			get_viewport().set_input_as_handled()
@@ -1701,7 +1699,7 @@ func _input(event: InputEvent) -> void:
 	if motion:
 		_take_up_the_dragged_card(motion.position)
 		_on_pointer_moved(motion.position)
-	# Mouse
+# Mouse
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
 #right click / cancel
@@ -1762,7 +1760,8 @@ func _select_data(data: CardData) -> void:
 func grab_cards(datas:Array[CardData]) -> void:
 	var follows_at_once := _next_grab_follows
 	_motion_may_start_following = true
-	flush_rebuild() #reads data_card / data_ui
+#reads data_card / data_ui
+	flush_rebuild()
 	ungrab_cards()
 	selected_cards = datas
 	set_card_zones_visuals()
@@ -1772,10 +1771,9 @@ func grab_cards(datas:Array[CardData]) -> void:
 			var card_visual := data_card[data]
 			card_visual.held = index + 1
 			card_visual.following = follows_at_once
-			# Held cards ride ABOVE all resting cards, still below PropLayer (a later sibling of
-			# CardLayer). move_child to the end of the card's OWN layer (Entrance or grid) — no
-			# z_index (structural order, LAYERING.md). ungrab_cards -> rebuild restores row-major
-			# order.
+#Held cards ride ABOVE all resting cards and still below PropLayer: move_child to the end of the
+#card's OWN layer, never z_index, which is the structural order LAYERING.md states. A rebuild
+#after ungrab_cards restores row-major order.
 			var vis_layer := card_visual.get_parent()
 			if vis_layer == card_layer or vis_layer == entrance_card_layer:
 				(vis_layer as Node2D).move_child(card_visual, -1)
@@ -1804,7 +1802,8 @@ func _cancel_everything() -> void:
 
 func ungrab_cards() -> void:
 	_next_grab_follows = false
-	flush_rebuild() #reads data_card / data_ui
+#reads data_card / data_ui
+	flush_rebuild()
 	for data in selected_cards:
 		if data in data_card:
 			var card_visual := data_card[data]
@@ -1978,9 +1977,12 @@ func _stack_slot_center(origin_x: float, floor_y: float, column: int, h: int) ->
 	var y := floor_y - _depth_pitch_px() * board_zoom * float(h) 			- CardVisual.card_size_play.y * board_zoom * 0.5
 	return Vector2(x, y)
 
-#⚠ NO SEPARATION: a `VBoxContainer` gives even a zero-height child one and the row grew at its FIRST
-#card. In the `marks_layer` a cell's cards collapse instead, so its mark takes the size and focus.
-#⚠ NEVER GRANTS FOCUS WHILE `board_focus_locked`: every visuals refresh runs here, overlay up or not.
+#⚠ NO SEPARATION: a `VBoxContainer` gives even a zero-height child one and the row grew at its
+#FIRST card. In the `marks_layer` a cell's cards collapse instead, so its mark takes size and focus.
+#⚠ NEVER GRANTS FOCUS WHILE `board_focus_locked`: every visuals refresh runs here.
+
+#⚠ A FACE-DOWN STOCK CARD KEEPS ITS OWN FOCUS_CLICK, which is what walks the arrows past it.
+#This runs on every refresh, after `_mark_stock_controls` set it.
 
 ## **THE ONE PLACE A STACK'S CONTROLS ARE SIZED, AND SO WHERE A CELL'S FOCUS LANDS.**
 func _size_stack_slot(slot: Control, marks_layer: bool) -> void:
@@ -1994,8 +1996,9 @@ func _size_stack_slot(slot: Control, marks_layer: bool) -> void:
 		var card_control : Control = slot.get_child(j)
 		card_control.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
 				0.0 if marks_layer else _depth_pitch_px())
-		card_control.focus_mode = (Control.FOCUS_ALL if grants_focus and not marks_layer
-				else Control.FOCUS_NONE)
+		card_control.focus_mode = (Control.FOCUS_NONE if marks_layer or not grants_focus
+				else Control.FOCUS_CLICK if is_stock_control(card_control)
+				else Control.FOCUS_ALL)
 	if occupied:
 		(slot.get_child(0) as Control).custom_minimum_size = CardVisual.card_size_play
 
@@ -2083,10 +2086,9 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	var resting_h := CardVisual.card_size_play.y 			+ float(maxi(deepest - 1, 0)) * _depth_pitch_px()
 	var floor_y := upper_zone_right.global_position.y + resting_h * board_zoom
 	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h + _face_down_depth(coord.x))
-	# ⚠ **THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS.** The reveal
-	# grows one layer's strip, lifting every layer above it by an amount the pitch does not
-	# describe. Still pure math: the offset comes from the same eased numbers that size the
-	# controls, so geometry stays independent of relayout timing.
+#⚠ THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS. A reveal grows one
+#layer's strip and lifts every layer above it by an amount the pitch does not describe. The offset
+#comes from the same eased numbers that size the controls, so geometry outlives relayout timing.
 	at.y -= _row_open_offset(coord) * board_zoom
 	return at
 
@@ -2300,21 +2302,22 @@ func set_separation() -> void:
 		container.add_theme_constant_override("separation", separation)
 
 func set_card_zones() -> void:
-	_rebuild_queued = false #this rebuild satisfies any queued request
+#this rebuild satisfies any queued request
+	_rebuild_queued = false
 	var game := CardEnvironment.get_current_game()
 	if not game: return
 	ui_data.clear()
 	data_ui.clear()
 	_stock_slot_of_control.clear()
 	var game_state := game.state
-	# Handles structural validation, instantiations, and dictionary mapping
+# Handles structural validation, instantiations, and dictionary mapping
 	set_card_zone(upper_zone_right, game_state.upper_zone_type, _entrance_drawn_columns())
 	set_grid_zones(game_state)
 	data_card = new_data_card
 	new_data_card = {}
 	set_card_zones_visuals()
 	_sweep_legal_cells()
-	# Game-over lock outlives rebuilds: re-strip whatever focus the passes above assigned.
+# Game-over lock outlives rebuilds: re-strip whatever focus the passes above assigned.
 	if board_focus_locked:
 		for control : Control in ui_data:
 			control.focus_mode = Control.FOCUS_NONE
@@ -2336,9 +2339,9 @@ func set_card_zones_visuals() -> void:
 	var game := CardEnvironment.get_current_game()
 	if not game: return
 	var game_state := game.state
-	# Sizing, style overrides, and focus logic per zone; then ONE structural ordering pass over
-	# both zones (row-major — see _order_board_cards). Upper zone first, lower second, so
-	# lower-zone cards draw over upper.
+# Sizing, style overrides, and focus logic per zone; then ONE structural ordering pass over
+# both zones (row-major — see _order_board_cards). Upper zone first, lower second, so
+# lower-zone cards draw over upper.
 	var columns := _entrance_drawn_columns()
 	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, columns)
 	_turn_the_entrance_over(game_state)
@@ -2472,29 +2475,25 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 		fresh.bottom_anchored = bottom
 		new_data_card[connected_data] = fresh
 
-## Structural draw order (no z_index anywhere, LAYERING.md), ROW-MAJOR across columns
-## (owner spec): per zone, the type/zone headers first, then row 0 of every column,
-## then row 1, and so on — upper zone before lower. Cards only overlap WITHIN a column, so this
-## renders identically to the old column-major order for the cards themselves, but it makes each
-## row CONTIGUOUS in CardLayer: a split prop (hoop) brackets a whole ROW — back half before the
-## row's first card (behind every card in the row, above every earlier row), front half after
-## its last (in front of the whole row, below the rows beneath). See PropLayer._apply_split.
-##
-## GUARDED and index-safe by construction: targets are assigned 0,1,2,… in ascending order and
-## only to visuals verified IN CardLayer at this moment (each at most once — `seen` dedups in
-## case a data ever appears twice), so `desired` < the number of verified children ≤ the child
-## count and move_child can never go out of bounds (the old cross-checked counter once crashed
-## with "Invalid new child index" during a settings change). Ascending processing also converges
-## in ONE pass, and a still board does zero move_childs. Freshly created CardVisuals add_child
-## via call_deferred, so they aren't in CardLayer yet — skipped; they append in creation order
-## and the next rebuild slots them. Held/selected cards keep their lifted end-of-layer spot
-## (grab_cards); prop half nodes drift toward the end and PropLayer re-fixes them next frame.
-## ⚠ **TWO LAYERS, TWO INDEPENDENT ORDERINGS.** A `move_child` index only
-## means anything inside the layer that holds the child. The Entrance now lives in its OWN
-## `EntranceCardLayer`, pinned outside the board's scroll (`_bind_slot`), so its cards can never
-## share one ordered list / `seen` set / `pending` flag with the grids' `CardLayer` — a visual
-## that is (correctly) parented in the OTHER layer would read as a deferred add that never lands,
-## and the reorder would requeue itself every frame until the stack overflowed. Measured, twice.
+#ROW-MAJOR, so each row is CONTIGUOUS in CardLayer and a split prop can bracket a whole one: its
+#back half before the row's first card, its front half after the last. Cards overlap only WITHIN
+#a column, so the cards themselves render as column-major did. PropLayer._apply_split reads this.
+
+#Index-safe by construction: targets are 0,1,2,... ascending and only ever assigned to visuals
+#verified in CardLayer at this moment, each at most once, so an index can never run past the
+#child count. Ascending also converges in one pass and a still board does zero move_childs.
+
+#A freshly created CardVisual is not in CardLayer yet, so it is skipped and the next rebuild
+#slots it; a held card keeps its lifted end-of-layer spot, and PropLayer re-fixes prop halves.
+
+#⚠ TWO LAYERS, TWO INDEPENDENT ORDERINGS: a move_child index means nothing outside the layer
+#holding the child, and the Entrance has its OWN EntranceCardLayer.
+
+#So it can never share one ordered list, `seen` set or `pending` flag with the grids' CardLayer:
+#a visual correctly parented in the other layer reads as a deferred add that never lands, and the
+#reorder requeues every frame until the stack overflows. Measured twice.
+
+## Structural draw order, row-major across columns, upper zone before lower; no z_index anywhere.
 func _order_board_cards(game_state: GameData, entrance_columns: Array[ArrayCardData]) -> void:
 	var entrance_ordered : Array[CardVisual] = []
 	var entrance_seen : Dictionary[CardVisual, bool] = {}
@@ -3260,10 +3259,9 @@ var locked_data : CardData = null:
 		locked_data = value
 		_refresh_card_marking()
 
-# A card wears the focus marking while it HOLDS the board focus or while the sidebar is LOCKED to
-# it, so what is being read stays marked after the focus moves on, and a rebuild re-applies it to
-# whichever visual now represents that same card. The drop map is re-applied with it, from the
-# last sweep, because a rebuild hands the same cell a different visual.
+#A card wears the focus marking while it HOLDS the board focus or while the sidebar is LOCKED to
+#it, so what is being read stays marked once the focus moves on. A rebuild re-applies it, and the
+#drop map from the last sweep with it, because it hands the same cell a different visual.
 func _refresh_card_marking() -> void:
 	var tint : Color = PlayArea.settings().legal_cell_tint
 	for data : CardData in data_card:
@@ -3358,11 +3356,9 @@ func _apply_row_openings() -> void:
 #Entrance's fanned strips and its score gutter have to be pushed by hand.
 	var hbox : HBoxContainer = upper_zone_right
 	if hbox:
-		# ⚠ **THIS FOLLOWS THE ENTRANCE'S REVERSED ORDER, AND IT IS THE LAST WRITER OF THOSE
-		# HEIGHTS.** Child 0 is the newest card and shows whole, each card under it shows one depth
-		# pitch, and the slot's own zone card is the last child -- `update_card_zone_visuals()` owns
-		# that one. Left on the old top-down build, this pass silently put the old sizes back every
-		# frame and the controls stepped 16 px where the card arithmetic steps 20.
+#⚠ THIS FOLLOWS THE ENTRANCE'S REVERSED ORDER AND IS THE LAST WRITER OF THOSE HEIGHTS. Child 0 is
+#the newest card and shows whole, each card under it shows one depth pitch, and the slot's own
+#zone card is the last child, which update_card_zone_visuals() owns.
 		for i : int in hbox.get_child_count():
 			var col : Node = hbox.get_child(i)
 			var depth := col.get_child_count() - 1

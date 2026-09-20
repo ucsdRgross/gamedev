@@ -75,8 +75,8 @@ on commits an agent makes, never on the owner's GitHub Desktop flow.
 commits are a third of this repo's history at the default threshold, so gating on them would fire
 constantly and the gate would be switched off. Re-derive before changing either threshold.
 
-The standing backlog is small enough to read: run `dup_check.py` bare and expect ~30 solatro pairs,
-most of them test-to-test setup. Only about eight touch production code.
+The standing backlog is small enough to read: run `dup_check.py` bare and expect ~54 solatro pairs,
+most of them test-to-test setup. About ten touch production code.
 
 ## Hard rules (they override defaults)
 
@@ -145,6 +145,9 @@ Everything else is a smaller game-jam or study project.
 - **`/handoff`** — session continuity. `<project>/HANDOFF_*.md` is the live state of any
   multi-session work stream; start there when resuming.
 - **`/fx-verify`** — the verification gate for any visual, shader or prop-art change.
+- **`/merge-branches`** — combine finished branches into one change for `main`: the branches' own
+  overlap notes, a base-showing merge, `py .claude/tools/merge_split.py` to split comment sweeps
+  from real edits, then the semantic breakage git cannot see. Run it for a single branch too.
 - **`/docs`** — audit and consolidate the docs and memory. Run it when a work stream lands, when
   the docs feel scattered, and **before writing any new memory file**. Its mechanical half is
   `py .claude/tools/doc_check.py`, which proves every reference still resolves.

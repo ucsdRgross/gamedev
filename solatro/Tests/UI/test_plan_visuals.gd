@@ -26,7 +26,8 @@ func suite_name() -> String:
 
 func _ready() -> void:
 	await await_siblings_except(["INTERACTION", "UI PROPS", "VISUAL LAYERS", "GRID LAYOUT",
-			"GRID VIEW", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
+			"GRID VIEW", "SIDEBAR", "DRAG PLACE", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
+			"WALL PAUSE"])
 	TestLog.line("============ PLAN VISUALS TEST PASS ============")
 	implementation_section("A MARK COSTS THE TREE NOTHING")
 	await test_a_mark_adds_no_node_to_the_tree()
@@ -959,13 +960,15 @@ func test_a_committed_show_lights_only_the_grid_it_can_place_in() -> void:
 # TP-64 -- the highlight is the ELEMENTS' outlines, never a tint
 # ==============================================================================
 
-# A tint would be `modulate`, which is the focus highlight and reaches every child -- so it would
-# also tint whatever is stacked on the mark. Each agreeing element takes its own rim instead.
+# A tint would be `modulate`, which reaches every child -- so it would also tint whatever is
+# stacked on the mark. Each agreeing element takes its own rim instead.
+
+# The drop map and the focus glow DO write modulate, through CardVisual.tint/focused, and a held
+# card makes this cell legal; the claim is that the MATCH added nothing on top of those two.
 func test_the_highlight_lights_elements_rather_than_tinting_the_cell() -> void:
 	var visual := mark_visual(rank_cell)
 	var control : Control = pa.data_ui[game.state.cell_type_at(rank_cell)]
 	var control_was := control.modulate
-	var visual_was := visual.modulate
 	await input.click(centre_of(held_card))
 	check(pa.selected_cards.has(held_card), "TP-64: precondition: the card is held")
 	var agreed := await MarkMatch.matches_at(game.state, held_card, rank_cell)
@@ -983,8 +986,12 @@ func test_the_highlight_lights_elements_rather_than_tinting_the_cell() -> void:
 			uniform_of(visual.suit, &"u_outline_width")])
 	check(uniform_of(visual.type, &"u_outline_width") == 0,
 			"TP-64: the cell frame under them stays rimless, so the mark still reads as a mark")
-	check(control.modulate == control_was and visual.modulate == visual_was,
-			"TP-64: and nothing was tinted -- modulate is what it was on the control and the visual",
+	var explained : Color = visual.tint * CardVisual.FOCUS_GLOW if visual.focused else visual.tint
+	check(control.modulate == control_was
+			and visual.modulate == explained
+			and visual.tint in [Color.WHITE, PlayArea.settings().legal_cell_tint],
+			"TP-64: the match tinted nothing -- the control is untouched and the visual's modulate is "
+			+ "the drop map and the focus glow, nothing else",
 			"%s / %s" % [str(control.modulate), str(visual.modulate)])
 	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
 
