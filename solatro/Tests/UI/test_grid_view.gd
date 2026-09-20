@@ -42,6 +42,7 @@ func _ready() -> void:
 	await run_the_board_rests_positioned_test()
 	await run_the_focused_grid_is_as_tall_as_its_window_test()
 	await run_focusing_takes_the_other_grids_out_of_view_test()
+	await run_the_overview_draws_the_grids_close_test()
 	await run_a_non_focused_grid_paints_nothing_outside_the_window_test()
 	await run_the_board_edge_bounces_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
@@ -858,6 +859,148 @@ func run_focusing_takes_the_other_grids_out_of_view_test() -> void:
 				str(WallTransition.visible_rect(camera.position, camera.zoom.x, window_size))])
 	await _tear_down_main(main)
 
+#⚠ MEASURED FROM THE CELL BLOCKS' OWN RECTS, never from the container separation the fix writes:
+#asserting that constant would re-prove an assignment and nothing about the board. Divided by the
+#live scale, since the focused view zooms the board and both gap quantities are unscaled.
+
+## The gap a player sees between grid `gi` and the next, in the board's own unzoomed pixels.
+func _drawn_grid_gap(pa: PlayArea, gi: int) -> float:
+	var z := maxf(pa.scroll_container.scale.x, 0.0001)
+	var left := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
+	var right := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi + 1) as Control))
+	return (right.position.x - left.end.x) / z
+
+#⚠ Measured from the outermost PANELS, not from their cell blocks: a grid's score gutters are drawn
+#too, and the set's two sides do not carry the same ones.
+
+## The bare board either side of the whole set of grids, in the picture's own pixels.
+func _set_leftovers(pa: PlayArea) -> Vector2:
+	var win := _window_x(pa)
+	var last_index := pa.grid_container.get_child_count() - 1
+	var first := _screen_rect(pa.grid_container.get_child(0) as Control)
+	var last := _screen_rect(pa.grid_container.get_child(last_index) as Control)
+	return Vector2(first.position.x - win.x, win.y - last.end.x)
+
+#The gap is written from `_physics_process` and the container sorts a frame later, so a reading
+#taken straight after a view switch still shows the gap the other view drew.
+
+## Wait until the gap between the first two grids stops changing.
+func _settle_grid_gap(view: GameView) -> void:
+	var pa := view.play_area
+	var last := INF
+	var waited := 0.0
+	while waited < 2.0:
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		CardEnvironment.CURRENT = view.game
+		var now := _drawn_grid_gap(pa, 0)
+		if is_equal_approx(now, last): return
+		last = now
+
+#The overview draws neighbouring grids one small fixed gap apart with the set centred; focusing puts
+#the isolating buffer back (owner ruling). Every switch is made the way a player makes it, and the
+#multi-grid part mounts in the picture's own SubViewport -- the suite's root window is narrower.
+func run_the_overview_draws_the_grids_close_test() -> void:
+	behavior_section("THE OVERVIEW DRAWS THE GRIDS CLOSE")
+	var st := SettingsManager.settings
+	var gap := PlayArea.overview_grid_gap_px(st)
+	var buffer := PlayArea.isolating_grid_buffer_px(st)
+	var design := PlayArea.game_picture_design_size(st)
+	check(gap < buffer,
+			"precondition: the overview's fixed gap is smaller than the isolating buffer, so the "
+			+ "two views can be told apart at all",
+			"gap %.1f px, buffer %.1f px" % [gap, buffer])
+
+	for count : int in [2, 3]:
+		var picture_vp := SubViewport.new()
+		picture_vp.size = design
+		add_child(picture_vp)
+		var many := await _stand_up_grids(count, picture_vp)
+		var mpa := many.play_area
+		await _settle_layout(many)
+		await _settle_grid_gap(many)
+		check(mpa.view_mode == PlayArea.ViewMode.OVERVIEW,
+				"precondition: a %d-grid show opens in the all-grids view" % count,
+				"mode %d" % mpa.view_mode)
+		for gi : int in count - 1:
+			check(absf(_drawn_grid_gap(mpa, gi) - gap) <= 1.0,
+					"on a %d-grid board the overview draws grid %d and grid %d the small fixed "
+					% [count, gi, gi + 1] + "gap apart, not the isolating buffer",
+					"drawn %.1f px, fixed %.1f px, buffer %.1f px"
+					% [_drawn_grid_gap(mpa, gi), gap, buffer])
+		var leftovers := _set_leftovers(mpa)
+		check(absf(leftovers.x - leftovers.y) <= 2.0,
+				"...and the whole set of %d sits centred in the board's window" % count,
+				"left %.1f px, right %.1f px" % [leftovers.x, leftovers.y])
+		await _tear_down(many)
+		picture_vp.queue_free()
+		await get_tree().process_frame
+
+	var view := await _stand_up_grids(3)
+	var pa := view.play_area
+	await _settle_layout(view)
+	await _settle_grid_gap(view)
+	check(absf(_drawn_grid_gap(pa, 0) - gap) <= 1.0,
+			"precondition: this board opens on the small fixed gap",
+			"drawn %.1f px, fixed %.1f px" % [_drawn_grid_gap(pa, 0), gap])
+
+	_click(pa, _cell_control(pa, 1))
+	await _settle_layout(view)
+	await _settle_grid_gap(view)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"precondition: a CLICK on a grid focused it",
+			"mode %d" % pa.view_mode)
+	check(absf(_drawn_grid_gap(pa, 0) - buffer) <= 1.0,
+			"focusing by pointer puts the isolating buffer back between the grids",
+			"drawn %.1f px, buffer %.1f px" % [_drawn_grid_gap(pa, 0), buffer])
+
+	pa._unhandled_input(_action(&"wall_back"))
+	await _settle_layout(view)
+	await _settle_grid_gap(view)
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"precondition: Back zoomed out again",
+			"mode %d" % pa.view_mode)
+	check(absf(_drawn_grid_gap(pa, 0) - gap) <= 1.0,
+			"...and the drawn gap comes back to the small one -- the switch goes both ways, not "
+			+ "once",
+			"drawn %.1f px, fixed %.1f px" % [_drawn_grid_gap(pa, 0), gap])
+
+	pa._unhandled_input(_action(&"wall_forward"))
+	await _settle_layout(view)
+	await _settle_grid_gap(view)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"precondition: Forward returned to the focused grid",
+			"mode %d" % pa.view_mode)
+	check(absf(_drawn_grid_gap(pa, 0) - buffer) <= 1.0,
+			"focusing by KEY isolates just as the click did",
+			"drawn %.1f px, buffer %.1f px" % [_drawn_grid_gap(pa, 0), buffer])
+	check(PlayArea.game_picture_design_size(st) == design,
+			"the picture the board is drawn into never moved with the view",
+			"design %s vs %s" % [str(PlayArea.game_picture_design_size(st)), str(design)])
+	await _tear_down(view)
+
+	var one := await _stand_up_grids(1)
+	var opa := one.play_area
+	await _settle_layout(one)
+	await _settle_scroll(one)
+	check(opa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"precondition: a one-grid show opens focused",
+			"mode %d" % opa.view_mode)
+	var focused_offset := _centre_offset(opa, 0)
+	opa._unhandled_input(_action(&"wall_back"))
+	await _settle_layout(one)
+	await _settle_scroll(one)
+	check(opa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"precondition: Back zoomed the one-grid board out",
+			"mode %d" % opa.view_mode)
+	var overview_offset := _centre_offset(one.play_area, 0)
+	check(focused_offset <= 1.0 and overview_offset <= 1.0,
+			"with one grid the board sits centred in its window in BOTH views: nothing jumps when "
+			+ "the gap has nothing to space",
+			"focused %.1f px off centre, overview %.1f px" % [focused_offset, overview_offset])
+	await _tear_down(one)
+
 # ==============================================================================
 # TP-141 — A NON-FOCUSED GRID PAINTS NOTHING OUTSIDE THE BOARD WINDOW (owner ruling: while focused,
 # the other grids are OUT OF VIEW).
@@ -1150,6 +1293,11 @@ func run_one_scroll_container_on_the_board_test() -> void:
 #
 # It drives the REAL input path, so deleting the pan wiring out of `_consume_as_view_action` fails
 # it even though every part still exists.
+#
+# ⚠ RE-POINTED TO FOCUSED (owner ruling): the overview now draws the grids a small fixed gap apart,
+# so four of the five fit the board's window at once and panning stops shifting which ones are in
+# frame. The claim moves to the view where the board is still far wider than its window — the same
+# repoint the pan-lands-centred and rests-positioned rows took.
 # ==============================================================================
 
 ## The grids wholly on screen right now, by index, ascending. "In frame" is `_cut_off_px` at zero.
@@ -1197,7 +1345,7 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 			"precondition: that is MORE than the cap, which is the case TP-106 is about",
 			"cap %d" % SettingsManager.settings.grid_max_count)
 
-	pa.pan_to_grid(1)
+	pa.focus_grid(1)
 	await _settle_scroll(view)
 	await _settle_camera(camera)
 	var before := _camera_grids_in_frame(main, pa, camera)
@@ -1787,11 +1935,14 @@ func run_the_overview_view_and_cursor_agree_after_a_removal_test() -> void:
 			"pan_grid %d -> %d" % [before, pa.pan_grid])
 	await _tear_down(view)
 
+#Read through `_screen_rect`, so it stays true of a board the focused view has zoomed: a global
+#origin plus a local size is not a global centre.
+
 ## How far grid `gi`'s cell block sits from the middle of the board's window, in pixels.
 func _centre_offset(pa: PlayArea, gi: int) -> float:
-	var cells := pa._cells_root(pa.grid_container.get_child(gi) as Control)
+	var r := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
 	var win := _window_x(pa)
-	return absf(cells.global_position.x + cells.size.x * 0.5 - (win.x + win.y) * 0.5)
+	return absf(r.position.x + r.size.x * 0.5 - (win.x + win.y) * 0.5)
 
 # ==============================================================================
 # TP-112 — the surviving grids re-centre, ANIMATED, on a removal the view was NOT focused on.

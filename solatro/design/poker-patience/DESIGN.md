@@ -1606,6 +1606,12 @@ picture's edge are ONE number, and it is DERIVED rather than stored:
 `PlayArea.isolating_grid_buffer_px()` solves in closed form for the buffer at which a FOCUSED grid
 isolates its neighbours.
 
+⚠ **THE ONE-NUMBER RULE IS OVERTURNED FOR THE OVERVIEW by the first playtest's ruling** — it still
+sizes the picture, and it is still what a FOCUSED grid's neighbours are pushed out by, but the
+all-grids view draws the grids a small fixed gap apart (`PlayArea.overview_grid_gap_px()`, the knob
+`grid_overview_gap_cards`) with the set centred in the picture. Only what is DRAWN differs; the
+picture's own size is the focused view's in both.
+
 ⚠ **`H24` is the case the current cap hides.** `Q7` caps grids at 3 today, so "more than 3 grids"
 is unreachable in the shipped game — but the design carries it, and `game_picture_max_render_px`
 (§24) is what keeps a wider board from silently exceeding the render target.

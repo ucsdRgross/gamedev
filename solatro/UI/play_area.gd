@@ -321,6 +321,12 @@ static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
 	var root_hi := maxf((-b - sq) / (2.0 * a), (-b + sq) / (2.0 * a))
 	return maxf(root_hi, 0.0) if a > 0.0 else (root_lo if root_lo > 0.0 else 0.0)
 
+#The all-grids view's gap between two grids, measured the way the isolating buffer is -- cell block
+#to cell block, each panel's score gutters inside it. Fixed rather than derived: with every grid in
+#frame at once there is nothing to isolate, and the ruling asks for the grids close.
+static func overview_grid_gap_px(settings_res: PlayerSettings) -> float:
+	return CardVisual.CARD_SIZE.x * settings_res.card_scale * settings_res.grid_overview_gap_cards
+
 #Does buffer `buffer` isolate a FOCUSED grid's neighbours? Reads `grid_position_size_px()` at the
 #candidate buffer for the picture's own width and height, so this can never disagree with the thing
 #it is certifying; the only math left here is the isolation check itself.
@@ -340,7 +346,11 @@ static func _isolates_at_buffer(settings_res: PlayerSettings, buffer: float) -> 
 
 #THE WHOLE PICTURE'S span: `grid_max_count` grids of the DEFAULT shape side by side, spaced by
 #`isolating_grid_buffer_px()`, with that SAME buffer again as margin on each side against the
-#picture's own edge (owner ruling: the edge gap and the inter-grid gap ARE the same quantity).
+#picture's own edge.
+
+#⚠ THE PICTURE IS SIZED FOR THE FOCUSED VIEW ALONE (owner ruling). The edge margin and the gap a
+#player sees between two grids are one quantity only while focused: inside this same picture the
+#overview draws `overview_grid_gap_px()` instead and the set centres in what is left.
 
 #The OVERVIEW camera rests on this whole span — every grid the picture holds fits inside it at
 #once, which is what lets zooming out show them all. FOCUSED reuses the same span: isolation comes
@@ -2738,10 +2748,15 @@ func _grid_gutters() -> Vector2:
 				- (cells.global_position.x / z + cells.size.x))
 	return Vector2(left, right)
 
+#The ONE writer of the gap the player sees between two grids, and it is the only thing the two view
+#modes lay out differently: the overview draws them a small fixed gap apart, the focused view the
+#buffer that carries the neighbours out of frame. The picture's own size never moves with it.
 func _apply_grid_buffer() -> void:
 	if not is_instance_valid(grid_container) or grid_container.get_child_count() == 0: return
 	var gutters := _grid_gutters()
-	var buffer := isolating_grid_buffer_px(PlayArea.settings())
+	var settings_res := PlayArea.settings()
+	var buffer := overview_grid_gap_px(settings_res) if view_mode == ViewMode.OVERVIEW \
+			else isolating_grid_buffer_px(settings_res)
 	var wanted := roundi(maxf(buffer - gutters.x - gutters.y, 0.0))
 	if grid_container.get_theme_constant(&"separation") == wanted: return
 	grid_container.add_theme_constant_override("separation", wanted)
