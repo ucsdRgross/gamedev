@@ -265,7 +265,7 @@ that shipped.
 | `PlayArea.grid_pitch_px()` | method | The ACTUAL applied panel-to-panel pitch: one block plus the rounded container separation and its gutters — what the camera step must match. |
 | `PlayArea.board_separation_px()` | method | The DERIVED buffer less the measured label gutters — one `HBox` separation cannot vary per pair, so the widest pair wins. |
 | `PlayArea.BOARD_SEPARATION` | const | |
-| `PlayArea._apply_grid_buffer()` | method | Applies the separation to the live board, and the one place the two views lay out differently. |
+| `PlayArea._apply_grid_buffer()` | method | Applies the separation between grids AND the bare board beyond the outermost two (the scroll container's `panel` content margins, `isolating_grid_buffer_px()` less the gutter it absorbs, FOCUSED and more than one grid only — without it the scroller's clamp leaves an edge grid off centre with a neighbour in frame). The one place the two views lay out differently. |
 | `Wall._size_game_picture()` | method | The single seam where the game picture's `design_size` is set; called from `load_layout()`, so `_build_pictures()`, `_repack_wall()` and `_on_window_resized()` all pass through it. |
 | `Wall.GAME_PICTURE_ID` | const | |
 | `WallPicture.clamped_render_size(size)` | method | Pure: clamps to `game_picture_max_render_px`. ⚠ **Assert against this and against what `build()`/`focus()` WROTE — never a read-back of `SubViewport.size`, which reports the oversized value while the framebuffer is already destroyed.** |

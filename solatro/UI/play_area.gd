@@ -1266,8 +1266,8 @@ func pan_by_grids(step: int) -> void:
 #Centre the view on grid `gi`.
 
 #⚠ THE CLAMP IS THE SCROLL CONTAINER'S OWN, NOT ARITHMETIC WRITTEN HERE. `scroll_x_to` clamps the
-#request to the content's real range, and that range collapses to nothing on an axis the content
-#already fits, so an edge grid rests against the edge with no bare background beside it.
+#request to the content's real range. An edge grid reaches the middle of the window because
+#`_apply_grid_buffer()` gives the content bare board at each end, never because an aim overshoots.
 func pan_to_grid(gi: int) -> void:
 	if gi < 0 or gi >= grid_container.get_child_count(): return
 	pan_grid = gi
@@ -2813,9 +2813,17 @@ func _grid_gutters() -> Vector2:
 				- (cells.global_position.x / z + cells.size.x))
 	return Vector2(left, right)
 
-#The ONE writer of the gap the player sees between two grids, and it is the only thing the two view
-#modes lay out differently: the overview draws them a small fixed gap apart, the focused view the
-#buffer that carries the neighbours out of frame. The picture's own size never moves with it.
+#The ONE writer of the SEPARATION between two grids AND of the bare board beyond the outermost two
+#-- one quantity, and the only thing the two views lay out differently: the overview draws a small
+#fixed gap, the focused view the buffer that carries the neighbours out of frame.
+
+#⚠ THE END MARGIN IS WHAT LETS AN EDGE GRID REACH THE MIDDLE OF THE WINDOW. The scroller clamps
+#every aim to its content's range, so content ending at the last cell block leaves the first and
+#last grids against the window's edge with a neighbour in frame (measured: 326.8 px off centre).
+
+#Half a window less half a block is exactly the buffer, so the board ends in the space it already
+#holds between two grids. The scroll container's `panel` box carries it: the engine insets the
+#content by that box's margins and takes them off the range, so aim and clamp cannot disagree.
 func _apply_grid_buffer() -> void:
 	if not is_instance_valid(grid_container) or grid_container.get_child_count() == 0: return
 	var gutters := _grid_gutters()
@@ -2823,8 +2831,24 @@ func _apply_grid_buffer() -> void:
 	var buffer := overview_grid_gap_px(settings_res) if view_mode == ViewMode.OVERVIEW \
 			else isolating_grid_buffer_px(settings_res)
 	var wanted := roundi(maxf(buffer - gutters.x - gutters.y, 0.0))
-	if grid_container.get_theme_constant(&"separation") == wanted: return
-	grid_container.add_theme_constant_override("separation", wanted)
+	if grid_container.get_theme_constant(&"separation") != wanted:
+		grid_container.add_theme_constant_override("separation", wanted)
+	var isolating := view_mode == ViewMode.FOCUSED and grid_container.get_child_count() > 1
+	var ends := isolating_grid_buffer_px(settings_res) if isolating else 0.0
+	var box := scroll_container.get_theme_stylebox(&"panel")
+	var left := roundf(maxf(ends - gutters.x, 0.0))
+	var right := roundf(maxf(ends - gutters.y, 0.0))
+	if is_equal_approx(box.content_margin_left, left) \
+			and is_equal_approx(box.content_margin_right, right):
+		return
+	var padded : StyleBox = box.duplicate()
+	padded.content_margin_left = left
+	padded.content_margin_right = right
+	scroll_container.add_theme_stylebox_override(&"panel", padded)
+#⚠ SORT IT AGAIN BY HAND. The content keeps the place the last sort gave it, so a margin taken back
+#off leaves the board parked where the wider one put it -- measured: the overview set 187.8 px right
+#of centre with the margin already reported as zero.
+	scroll_container.queue_sort()
 
 #The screen-independent distance from one grid panel's cell block centre to the next: ONE BLOCK
 #PLUS THE ACTUAL APPLIED BUFFER (the rounded container separation plus the gutters it absorbed),

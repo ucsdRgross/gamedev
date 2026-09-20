@@ -42,6 +42,7 @@ func _ready() -> void:
 	await run_the_board_rests_positioned_test()
 	await run_the_focused_grid_is_as_tall_as_its_window_test()
 	await run_focusing_takes_the_other_grids_out_of_view_test()
+	await run_every_focused_grid_centres_alone_test()
 	await run_the_overview_draws_the_grids_close_test()
 	await run_the_entrance_is_centred_until_a_grid_owns_it_test()
 	await run_a_non_focused_grid_paints_nothing_outside_the_window_test()
@@ -859,6 +860,91 @@ func run_focusing_takes_the_other_grids_out_of_view_test() -> void:
 				% [str(_grid_world_rect(main, pa, gi)),
 				str(WallTransition.visible_rect(camera.position, camera.zoom.x, window_size))])
 	await _tear_down_main(main)
+
+#AN EDGE GRID CENTRES AND ISOLATES LIKE ANY OTHER. The isolation row above focuses the MIDDLE of
+#three, where the board is already centred and the aim asks the scroller for nothing; the FIRST and
+#the LAST are where the scroll container's own clamp can leave a neighbour in frame.
+func run_every_focused_grid_centres_alone_test() -> void:
+	behavior_section("EVERY FOCUSED GRID CENTRES ALONE")
+	for count : int in [2, 3]:
+		var main := await _stand_up_main_grids(count)
+		var view := _main_game_view(main)
+		var pa := view.play_area
+		var camera := _main_camera(main)
+		await _settle_board(view, camera)
+		for gi : int in count:
+			pa.open_zoomed_out()
+			await _settle_board(view, camera)
+			pa.focus_grid(gi)
+			await _settle_board(view, camera)
+			_check_grid_alone(main, pa, camera, count, gi, "a click on it")
+			await _settle_entrance(view)
+			check(absf(_entrance_row_rect(pa).get_center().x - _grid_centre_x(pa, gi)) <= 1.0,
+					"...and the Entrance sits under it (%d grids, grid %d)" % [count, gi],
+					"row %.2f vs grid %.2f"
+					% [_entrance_row_rect(pa).get_center().x, _grid_centre_x(pa, gi)])
+#ARRIVING BY A PAN IS A SECOND ROUTE TO THE SAME FRAMING, and it is the one that reaches an edge
+#grid from inside the board, where the clamp has already spent its range.
+		for gi : int in count:
+			var from := gi + 1 if gi == 0 else gi - 1
+			pa.focus_grid(from)
+			await _settle_board(view, camera)
+			pa.pan_by_grids(gi - from)
+			await _settle_board(view, camera)
+			check(pa.pan_grid == gi,
+					"precondition: the pan landed on grid %d (%d grids)" % [gi, count],
+					"pan_grid %d" % pa.pan_grid)
+			_check_grid_alone(main, pa, camera, count, gi, "a pan from grid %d" % from)
+#THE PICKUP ROUTE, on a board already panned off the grid it is focused on: the pickup re-aims at
+#the grid in view, and that grid is the LAST one.
+		pa.focus_grid(count - 2)
+		await _settle_board(view, camera)
+		pa.pan_by_grids(1)
+		await _settle_board(view, camera)
+		var lift : Control = null
+		for control : Control in pa.ui_data:
+			if pa.upper_zone_right.is_ancestor_of(control) and not pa.is_stock_control(control):
+				lift = control
+				break
+		check(lift != null,
+				"precondition: the deal left a card in the Entrance to pick up (%d grids)" % count,
+				"%d board control(s)" % pa.ui_data.size())
+		if lift:
+			_click(pa, lift)
+			await _settle_board(view, camera)
+			check(pa.focused_grid == count - 1,
+					"precondition: the pickup focused the grid in view (%d grids)" % count,
+					"focused %d" % pa.focused_grid)
+			_check_grid_alone(main, pa, camera, count, count - 1, "a pickup on a panned board")
+		await _tear_down_main(main)
+
+## The board at rest in the `Main`-hosted fixture: the panels sort, the scroller eases, the camera steps.
+func _settle_board(view: GameView, camera: Camera2D) -> void:
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	await _settle_camera(camera)
+
+#The owner ruling in one place: the grid the view is on centred, every other grid clear, all still
+#drawn. ⚠ TWO SPACES, NAMED — centring in the PICTURE's own pixels against the board's window, the
+#space "within a pixel" means something in; isolation in WALL WORLD space, what the camera shows.
+func _check_grid_alone(main: Main, pa: PlayArea, camera: Camera2D, count: int, gi: int,
+		route: String) -> void:
+	var win := _window_x(pa)
+	var centre := (win.x + win.y) * 0.5
+	check(absf(_grid_centre_x(pa, gi) - centre) <= 1.0,
+			"%d grids, grid %d reached by %s: it is centred in the board's window"
+			% [count, gi, route],
+			"block centre %.2f vs window centre %.2f (window %.1f .. %.1f)"
+			% [_grid_centre_x(pa, gi), centre, win.x, win.y])
+	for other : int in count:
+		if other == gi: continue
+		check(not _camera_overlaps(main, pa, camera, other),
+				"...and grid %d puts nothing inside the board's view (%d grids, %s)"
+				% [other, count, route],
+				"cells %s vs view %s"
+				% [str(_grid_world_rect(main, pa, other)), str(_board_view_rect(main, camera))])
+		check((pa.grid_container.get_child(other) as Control).visible,
+				"...while grid %d is still drawn (%d grids, %s)" % [other, count, route])
 
 #⚠ MEASURED FROM THE CELL BLOCKS' OWN RECTS, never from the container separation the fix writes:
 #asserting that constant would re-prove an assignment and nothing about the board. Divided by the

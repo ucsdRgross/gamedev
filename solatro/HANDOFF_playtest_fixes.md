@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1–P5, P7–P9 and the P14 sweep landed, each red-then-green and by eye, committed one
 step per commit. Last gate, on the P9 commit: `ALL 51 SUITES: 5867 CHECKS PASSED`, 22 placeholder
-warnings, 1150 ObjectDB (the fingerprint). P17 (the sweep P9 owed), P6 and P16 landed too; the P18 sweep, P10 and P11; last gate `5998`, 21 placeholder warnings. Next is P21 (R8 on an edge grid), P20 (a reachable SCRIPT ERROR), then the P19 sweep; every
+warnings, 1150 ObjectDB (the fingerprint). P17 (the sweep P9 owed), P6 and P16 landed too; the P18 sweep, P10 and P11; last gate `5998`, 21 placeholder warnings. P21 (R8 on an edge grid) landed, gate `6061`. Next is P22 (the follow-up answers), P20 (a reachable SCRIPT ERROR), then the P19 sweep; every
 later step has its site map in its `notes:`. Gate at the
 stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`, errors log empty.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
@@ -242,9 +242,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_view.gd, solatro/Tests/Visual/grid_zoom_shot.gd]
   verification_command: 'run_tests.py --filter GridView GridLayout WallRender; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
-  notes: 'Seen by the overseer in shots_p11 grid_zoom_3_pickup.png and committed_elsewhere.png (the harness has no wall camera). MEASURE FIRST in the real Main at 2 and 3 grids, focusing each grid: centre offset and whether any neighbour rect intersects the board window. If the real game shows it too it is an R8 defect - the ruling says FOCUSED centres the one grid and the buffer pushes its neighbours off-screen. TP-140 claims isolation; find which grid it focuses. The picture size must not change (the P10 warning).'
+  status: done
+  evidence: 'Measured first in the real Main, fix absent: 2 grids - focused 0 centre 658.21 (-326.79), focused 1 1312.62 (+327.62); 3 grids - 0 at 658.21, 1 at 985.00, 2 at 1311.79; a neighbour inside the window in every edge case, by every route. Red (the multi-grid gate neutralised): GRID VIEW 326 passed, 20 FAILED (20 behavior) of 346 - each edge grid by click, pan and pickup: not centred, neighbour in view; the middle grid stayed green. Green: FILTERED 4 of 51 [GridView GridLayout DragPlace WallRender]: 842 CHECKS PASSED (GRID VIEW 324 -> 346, others unchanged); --logic 3004, 21 placeholder warnings. Overseer gate: ALL 51 SUITES: 6061 CHECKS PASSED, 21 placeholder warnings, the fingerprint exit profile, 0 SCRIPT ERROR. By eye (overseer) shots_p21 grid_zoom_3_committed_elsewhere.png: focused on the last of three, the one grid centred (columns 799..1170, window centre 985), no neighbour, no Entrance; implementer image-measured 984.5 / ~985 on all five focused stills.'
+  notes: 'While FOCUSED with more than one grid, _apply_grid_buffer (still the one writer) also sets the scroll container panel content margins to isolating_grid_buffer_px minus the score gutter (188 px), then queue_sort; SmoothScrollContainer clamps a programmatic scroll to the content range and has no overscroll option (addons/SmoothScroll smooth_scroll_container.gd ~613-630, helpers/scroll_layout.gd). The picture size and grid_pitch_px are unchanged. TP-140 was green because it focuses the middle grid, the one index the clamp never bites. A neighbour edge now lands EXACTLY on the window edge at every edge grid (decided with is_equal_approx). OPEN: one TP-105 failure in 8 GridView runs on an intermediate state read edge 316.000 vs 413.119 - 97 px, not a float ULP, not reproduced; do not file it under the known flake without a look. Seen first by the overseer in shots_p11 grid_zoom_3_pickup.png and committed_elsewhere.png (the harness has no wall camera). MEASURE FIRST in the real Main at 2 and 3 grids, focusing each grid: centre offset and whether any neighbour rect intersects the board window. If the real game shows it too it is an R8 defect - the ruling says FOCUSED centres the one grid and the buffer pushes its neighbours off-screen. TP-140 claims isolation; find which grid it focuses. The picture size must not change (the P10 warning).'
 - id: P19
   description: The comment sweep P10 owes - test_grid_view.gd and grid_zoom_shot.gd leave compliant, code byte-identical; the five dead references in poker-patience DESIGN.md and NAMES.md resolved.
   files_touched: [solatro/Tests/UI/test_grid_view.gd, solatro/Tests/Visual/grid_zoom_shot.gd, solatro/design/poker-patience/DESIGN.md, solatro/design/poker-patience/NAMES.md]
@@ -280,7 +280,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P21, then P22 (the follow-up answers), then P20, then P19 (the sweep P10 and P11 owe; test_grid_layout.gd joins it).
+1. P22 (the follow-up answers), then P20, then P19 (the sweep P10 and P11 owe; test_grid_layout.gd joins it).
 2. P12 before P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 3. After the last step: `/docs` folds this file away; the owner merges the branch.
 

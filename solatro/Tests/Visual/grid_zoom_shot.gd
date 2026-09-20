@@ -123,6 +123,12 @@ func _ready() -> void:
 	if not await _await_still(view, "committed_elsewhere"): return
 	if not await _shoot(pa, vp, "committed_elsewhere"): return
 
+#THE FIRST GRID, the end of the board the shots above never reach: the scroller clamps at both
+#ends, so an edge grid's framing has to be seen from either side before it is believed.
+	pa.focus_grid(0)
+	if not await _await_still(view, "focused_first"): return
+	if not await _shoot(pa, vp, "focused_first"): return
+
 	view.queue_free()
 	await get_tree().process_frame
 	CardEnvironment.CURRENT = null
