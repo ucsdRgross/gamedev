@@ -2,11 +2,11 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1–P5, P7–P9 and the P14 sweep landed, each red-then-green and by eye, committed one
-step per commit. Last gate, on the P9 commit: `ALL 51 SUITES: 5867 CHECKS PASSED`, 22 placeholder
-warnings, 1150 ObjectDB (the fingerprint). P17 (the sweep P9 owed), P6 and P16 landed too; the P18 sweep, P10 and P11; last gate `5998`, 21 placeholder warnings. P21 (R8 on an edge grid) and P22 (the follow-up answers) landed, P20 closed unreproducible with a regression net, last gate `6129`. Next is P19 (a sweep), then P12, P13, P15; P20 (a reachable SCRIPT ERROR), then the P19 sweep; every
-later step has its site map in its `notes:`. Gate at the
-stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`, errors log empty.
+**State:** P1-P11, P14, P16-P18, P20-P22 are done, each red-then-green and by eye where it draws,
+one verified step per commit. Last gate: `ALL 51 SUITES: 6129 CHECKS PASSED`, 21 placeholder
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P19
+(a sweep), P12, P13, P15; each carries its site map in `notes:`. Gate at the stream's start:
+`ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
