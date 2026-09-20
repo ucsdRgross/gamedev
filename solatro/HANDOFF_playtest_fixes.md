@@ -2,9 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1–P4 landed and gated: `ALL 51 SUITES: 5862 CHECKS PASSED`, 22 placeholder warnings,
-1150 ObjectDB (the fingerprint). P5/P7/P8 and P14 landed; the P5-P8 gate is running. Every later step has
-its site map in its notes. Gate at the
+**State:** P1–P5, P7, P8 and the P14 sweep landed, each red-then-green and by eye, committed one
+step per commit. Last gate, on commit c5c554f0: `ALL 51 SUITES: 5875 CHECKS PASSED`, 22 placeholder
+warnings, 1150 ObjectDB (the fingerprint). Tree clean. Next is P9, the pickup model; every later step
+has its site map in its `notes:`. Gate at the
 stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`, errors log empty.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -62,7 +63,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - **R10 card text (B5)** — extends sidebar `Q33`=c: the title is "<Rank> of <Suit>" (a face card by
   its name); below it one block per skill, stamp, status and type — the effect's NAME in the large
   font, its description in the small one. `PipRankNumeral.get_str()`'s "NumeralRank5.0" is retired
-  with it.
+  with it. Follow-up rulings: the SUIT keeps a block of its own (title "5 of Hoop", then Hoop large
+  with its prop effect small); the title uses PLURAL suit names ("King of Knives") through five
+  title-only localisation keys, the singular staying everywhere else.
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -200,6 +203,14 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   status: pending
   evidence: ''
   notes: 'Same announce-ahead-of-the-GUI-pass shape P2 used on the container; the band buttons are MOUSE_FILTER_STOP too.'
+- id: P16
+  description: R10 follow-up - the title pluralises the suit ("King of Knives"): five title-only localisation keys and one accessor; the singular stays everywhere else.
+  files_touched: [solatro/Locale/localization.csv, solatro/UI/control_card.gd, solatro/Cards/Pips/, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar UiViewers'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Small. The title is built in ControlCard.card_title (CARD_TITLE key); suit names come from the suit pip get_str. Red-then-green on the R10 title rows in test_sidebar.gd.'
 ```
 
 ## Verified vs assumed
@@ -210,8 +221,13 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - none beyond the tasks.
 
 ## Next up
-1. Land P1–P4 (in flight), full gate, one commit each.
-2. P5, P7, P8 — small, independent, each by eye.
-3. P9 before P6: both re-point test_sidebar's arm helpers (_arm_without_touching) and P9 deletes them.
-4. P10 before P11: both re-derive geometry in _physics_process; P11 also depends on P9.
-5. P12 before P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set.
+1. P9 (the pickup model), then P6: both re-point test_sidebar's arm helpers (_arm_without_touching) and P9 deletes them. P16 is small and can ride with P6.
+2. P10 before P11: both re-derive geometry in _physics_process; P11 also depends on P9.
+3. P12 before P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+4. After the last step: `/docs` folds this file away; the owner merges the branch.
+
+### Opening prompt for the next session (paste as is)
+
+```
+Resume solatro/HANDOFF_playtest_fixes.md on branch combine-sidebar-boardplan (never main; commit per verified step on this branch). Read CLAUDE.md, then the handoff: its rulings R1-R10 are the owner's verbatim decisions and outrank the design questions they name; each pending task row's notes: carries the site map an implementer follows. Confirm the tree is green first: Get-Process shows no Godot, then the full windowed run with a private APPDATA and GODOT_BIN from .claude/memory/machine-profiles.md - expect ALL 51 SUITES ... CHECKS PASSED, 22 placeholder warnings, the 1150 ObjectDB note. Then dispatch P9 to ONE general-purpose implementer on opus (default effort) with the P9 notes as its brief, the run rules from the handoff (implementers run --logic and --filter only; you run the gate; red-then-green on every row; a file it edits leaves doc_check --changed silent, the sweep as a separate pass proven code-identical), and the fixed report schema (FIX/STATUS/FILES/RED/GREEN/BY EYE/DOC_CHECK/NOTES). At most two subagents, only one runs Godot; the second slot is read-only work. Commit each verified step with its evidence, mark the row done in the handoff, run the gate, then the next row in the Next up order. Ask the owner only when a ruling does not cover a decision; record every answer verbatim under the design it changes (the ASSUMPTIONS.md sections titled Owner rulings from the first playtest) and in the handoff.
+```
