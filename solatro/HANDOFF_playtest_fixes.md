@@ -189,8 +189,8 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/Levels/main.gd, solatro/Tests/Wall/test_wall_input.gd, solatro/Tests/Wall/test_wall_focus.gd, solatro/Tests/Wall/test_wall_pause.gd]
   verification_command: 'py .claude/tools/sweep_check.py <each file>; doc_check --changed silent; run_tests.py --filter WallInput WallFocus WallPause'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'commit 6e669b47. Findings 116/123/90/86 -> 0/0/4/0; sweep_check CODE IDENTICAL x4; dup_check no new pair. The four left are one note kept beside each of five fixture sites in test_wall_focus.gd.'
   notes: 'Its own step, after the fixes, never folded into one (plan-run: a sweep once deleted a load-bearing note). ~400 findings across the four; every later step that touches a legacy file owes the same.'
 - id: P15
   description: B15 remainder - a right-click over the WallOverlay button band (Back/Forward/Wall, outside the container) still cancels; the owner ruled cancel works from anywhere.
