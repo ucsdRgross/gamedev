@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1–P5, P7–P9 and the P14 sweep landed, each red-then-green and by eye, committed one
 step per commit. Last gate, on the P9 commit: `ALL 51 SUITES: 5867 CHECKS PASSED`, 22 placeholder
-warnings, 1150 ObjectDB (the fingerprint). Next is P17 (the sweep P9 owes), then P6 with P16; every
+warnings, 1150 ObjectDB (the fingerprint). P17 (the sweep P9 owed) landed too, gate `5864`. Next is P6 with P16; every
 later step has its site map in its `notes:`. Gate at the
 stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`, errors log empty.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
@@ -216,9 +216,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/Levels/game.gd, solatro/Tests/Interaction/test_interaction.gd, solatro/design/sidebar/DESIGN.md]
   verification_command: 'py .claude/tools/sweep_check.py <each .gd>; doc_check --changed silent; run_tests.py --filter Interaction; overseer full gate'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'doc_check --changed after P9: 21 findings, all in these three files and all outside the P9 hunks. Same rules as P14: no behaviour change, load-bearing notes kept.'
+  status: done
+  evidence: 'Findings 8/10 -> 0/0 (game.gd, test_interaction.gd); sweep_check CODE IDENTICAL x2 (827 and 354 code lines); doc_check --changed silent, exit 0; dup_check 83, no new pair. FILTERED 1 of 51 [Interaction]: 46 CHECKS PASSED; --logic 3022. Overseer gate: ALL 51 SUITES: 5864 CHECKS PASSED, 22 placeholder warnings, the fingerprint exit profile, 0 SCRIPT ERROR.'
+  notes: 'DESIGN.md dead paths now name UI/description_panel.gd, Tests/Wall/test_sidebar.gd, Tests/Visual/sidebar_snapshot.gd; doc_check does not resolve bare inline-code paths inside a markdown table, so they were fixed by hand. OPEN: the same table (sidebar DESIGN.md "Info mode, as it exists", rows ~214, ~217, ~221, ~224) still names wall_info_mode, _on_info_toggled, info_zoom_state, _apply_info_mode, _restore_info_mode_for, none of which exists in any .gd - for /docs at the close. Design ids stay in two check() strings (test_interaction.gd ~480, ~489), which are code.'
 ```
 
 ## Verified vs assumed
@@ -226,10 +226,10 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   file:line cited in their reports; not re-read by the overseer.
 
 ## Open bugs
-- none beyond the tasks.
+- none beyond the tasks. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P17 (the sweep P9 owes), then P6; P16 is small and can ride with P6.
+1. P6; P16 is small and can ride with P6.
 2. P10 before P11: both re-derive geometry in _physics_process; P11 also depends on P9.
 3. P12 before P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 4. After the last step: `/docs` folds this file away; the owner merges the branch.

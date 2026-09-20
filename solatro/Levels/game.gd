@@ -211,20 +211,20 @@ func _ready() -> void:
 		await _start_fresh_show()
 	state.print_board()
 
-# A brand new show: build the deck, run the start hook, seed the undo history + disk save.
-# The map node being played sets the fame requirement (RunManager.goal_for).
+# A brand new show: build the deck, run the start hook, seed the undo history + disk save. The map
+# node being played sets the fame requirement (RunManager.goal_for).
+# ⚠ THE ORDER OF THE NUMBERED STEPS IS LOAD-BEARING; each note says why that one sits where it does.
 func _start_fresh_show() -> void:
 	state.goal = maxi(Main.save_info.pending_goal, 1)
 	_update_submit_label()
 	await add_deck()
-	# ⚠ THE ORDER OF THESE FOUR IS LOAD-BEARING, and each one is here for its own reason.
-	# 1. Sweep first: run_all_mods only reaches a skill whose `spotlit` flag is already set, and
-	#    nothing sets it until a sweep runs -- so on_game_start called first reaches NO rules
-	#    card at all. This sweep is also what has the zone adders build the Entrance.
+#1. Sweep first: run_all_mods only reaches a skill whose `spotlit` flag is already set, and nothing
+#sets it until a sweep runs -- so on_game_start called first reaches NO rules card at all. This
+#sweep is also what has the zone adders build the Entrance.
 	skill_spotlight_check()
 	deal_stocks()
-	# 2. Now the start hook lands. The allotment card sizes the grid count to the deck just
-	#    dealt and adds that many creator cards.
+#2. Now the start hook lands. The allotment card sizes the grid count to the deck just dealt and
+#adds that many creator cards.
 	await run_all_mods(&"on_game_start")
 #3. Sweep again for the cards step 2 added: a creator builds its grid in on_spotlight, and it did
 #not exist when the first sweep walked the rules deck. Idempotent -- a sweep only fires on a
@@ -936,7 +936,7 @@ func discard_data(data: CardData) -> void:
 
 func return_to_map() -> void:
 	await run_all_mods(&"on_game_end")
-	#sweep cards still on the board back into the deck (zone/type cards stay with their skills)
+#sweep cards still on the board back into the deck (zone/type cards stay with their skills)
 	var returned : Array[CardData] = state.all_stock_cards()
 	for zone : Array[ArrayCardData] in [state.upper_zone, state.lower_zone]:
 		for col in zone:

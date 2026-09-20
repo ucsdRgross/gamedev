@@ -241,11 +241,9 @@ func test_mouse_click_selects_card() -> void:
 			"a mouse click over a card emits its selection", str(selections.size()))
 	pa.ungrab_cards()
 
-## The touchscreen half of "every input mode". The Next button used to be this file's only
-## touch vehicle; it is retired, and a tap on the End button cannot replace it because
-## resolving the show would break every test sharing this session. A tap that SELECTS a card
-## exercises the same pipeline -- InputEventScreenTouch through the window to a board control
-## -- and mutates nothing that outlives the tap.
+#The touchscreen half of "every input mode". It must tap a CARD, not the End button: resolving the
+#show would break every test sharing this session, while a tap that selects drives the same
+#InputEventScreenTouch-to-board-control pipeline and mutates nothing that outlives the tap.
 func test_touch_taps_select_card() -> void:
 	var control := a_card_control()
 	check(control != null, "a dealt board offers a focusable card control")
@@ -271,19 +269,16 @@ func test_mouse_right_click_ungrabs() -> void:
 	await mouse_click(center_of(control), MOUSE_BUTTON_RIGHT)
 	check(pa.selected_cards.is_empty(), "right-click cancels the held grab")
 
-#Owner bug report: after every auto-Next one board card became completely uninteractable - no
-#hover, no highlight, no focus, no grab - and undo did not heal it; only reloading the game did.
+#⚠ A grab still LIVE when a Next rebuilds the board underneath it leaves a board card completely
+#uninteractable -- no hover, highlight, focus or grab -- and undo does not heal it. Controls are
+#POOLED per slot, so grab_cards' MOUSE_FILTER_IGNORE rebinds to whatever card lands in that slot.
 
-#The cause is that the grab is still LIVE when a Next rebuilds the board underneath it. Board
-#controls are POOLED per slot, so the MOUSE_FILTER_IGNORE grab_cards put on the held card's control
-#gets rebound to whatever card lands in that slot.
-
-#Only ungrab_cards, which looks the control up by the HELD card's new position, could ever undo it.
+#Only ungrab_cards, which looks the control up by the HELD card's new position, undoes it.
 #Contract asserted here: with nothing held, NO board control is left non-interactive.
 
-#UNPARKED: the grid game has a legal UI placement again, an Entrance card onto an empty cell, so
-#the regression is reachable through the same two selects a player makes. Crafting one out of the
-#retired tableau aborted on an empty array and silently stopped FIVE checks below from running.
+#⚠ The move must be a legal UI placement -- an Entrance card onto an empty cell -- driven through
+#the two selects a player makes. One that is not aborts on an empty array and silently stops the
+#five checks below from running.
 func test_rebuild_leaves_no_dead_controls() -> void:
 	pa.flush_rebuild()
 	var moving : CardData = game.state.upper_zone[0].datas[0]
@@ -291,7 +286,7 @@ func test_rebuild_leaves_no_dead_controls() -> void:
 	var target : CardData = grid.cell_types[grid.cell_index(1, 1)]
 	await frames(1)
 	var history_before : int = game.save_history.size()
-	# the real player path: select the card (grab), then select the target (place)
+#the real player path: select the card (grab), then select the target (place)
 	if moving not in pa.selected_cards: await view._on_data_selected(moving)
 	check(moving in pa.selected_cards, "precondition: the card is held")
 	await view._on_data_selected(target)
@@ -300,8 +295,8 @@ func test_rebuild_leaves_no_dead_controls() -> void:
 	check(game.save_history.size() == history_before + 1,
 			"precondition: the move committed one step")
 	check(moving not in pa.selected_cards, "the grab is released across the move")
-	# The regression needs a board REBUILD, so drive one. What is being defended is the
-	# rebuild's effect on pooled controls, never whatever happened to trigger it.
+#The regression needs a board REBUILD, so drive one. What is defended is the rebuild's effect on
+#pooled controls, never whatever happened to trigger it.
 	await game.next()
 	await frames(2)
 	pa.flush_rebuild()
@@ -431,10 +426,12 @@ func test_game_over_interactivity() -> void:
 	pa.ungrab_cards()
 	var resolved : Array[bool] = [false]
 	game.show_resolved.connect(func(_w: bool, _s: int, _g: int) -> void: resolved[0] = true)
-	# ⚠ THROUGH THE BUTTON, not through game.end_show(). The button carries the End label, and
-	# a label is not a wire: calling end_show() directly here would pass just as happily with
-	# the button still bound to the retired Submit act, which is a show the player cannot end.
-	## End is hidden until the show can no longer progress and a hidden button cannot be clicked, so emptying every stock reaches the reveal condition this test is not about.
+#⚠ End the show THROUGH THE BUTTON, never through game.end_show(). A label is not a wire: a direct
+#call passes just as happily with the button bound to some other act, which is a show the player
+#cannot end.
+
+#End is hidden until the show can no longer progress, and a hidden button cannot be clicked, so
+#emptying every stock reaches the reveal condition this test is not about.
 	for stock : ArrayCardData in game.state.entrance_stocks():
 		stock.datas.clear()
 	game.state.revision += 1
@@ -467,7 +464,7 @@ func test_game_over_interactivity() -> void:
 	selections.clear()
 	await mouse_click(pa_rect.get_center())
 	check(selections.is_empty(), "a click on the covered board selects nothing")
-	# Undo at the outcome screen: overlay drops, the final End rewinds, play resumes.
+#Undo at the outcome screen: overlay drops, the final End rewinds, play resumes.
 	await click_hud_button(view.undo_button)
 	await frames(2)
 	check(not view.win_screen.visible and not view.lose_screen.visible,

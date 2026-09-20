@@ -217,12 +217,12 @@ customers.**
 | The toggle control | `UI/Wall/wall_overlay.gd` — a magnifying-glass `Button` in the overlay's **top right**, built procedurally (`magnifier_icon()`), plus the `wall_info` InputMap action |
 | The camera move | `Levels/main.gd:629` `_on_info_toggled()` → `WallPicture.info_zoom_state()`, animated over `wall_transition_delay * wall_info_zoom_scale` |
 | The transition branch | `Scripts/Wall/wall_transition.gd:190` — a separate "pure travel at constant zoom" model while the flag is on |
-| The notecard | `UI/Wall/info_card.gd` (171 lines) — self-sizing, anchored to the **bottom of the window**, title + body + a real preview visual side by side, already scrolling past `wall_info_card_max_height` |
+| The notecard | `UI/description_panel.gd` — self-sizing, title + body + a real preview visual side by side, scrolling inside its own `%Scroll` once the content outgrows the panel |
 | Per-picture memory | `Levels/main.gd` `_info_by_picture` / `_info_entry_by_picture` / `_info_entry_owner`, restored by `_restore_info_mode_for()` |
 | Board's participation | `UI/play_area.gd:2874` `_info_mode()`; `:2879` `_popups_allowed()`; `:1451` and `:1481` route a click / `ui_accept` to `info_requested` **instead of** the game action |
 | Map's participation | `Levels/map.gd` `_on_node_hovered()` → `info_hovered` → `Main._on_screen_info_hovered()` |
 | The tool | `Tools/wall_editor.gd:706` `_apply_info_mode()`, and the Info panel documented in `PICTURE_WALL.md` |
-| Tests | `Tests/Wall/test_wall_info.gd`, `Tests/Visual/wall_info_snapshot.gd`, plus info cases inside `test_wall_focus`, `test_wall_render`, `test_wall_transition`, `test_wall_pause`, `wall_editor_soak` |
+| Tests | `Tests/Wall/test_sidebar.gd`, `Tests/Visual/sidebar_snapshot.gd`, plus info cases inside `test_wall_focus`, `test_wall_render`, `test_wall_transition`, `test_wall_pause`, `wall_editor_soak` |
 
 **Owner rulings already on record that this design changes or inherits** (from
 `design/picture-wall/answers.json`, quoted, never summarised):
@@ -482,7 +482,7 @@ against the engine's own documentation or its source.
 | `emulate_mouse_from_touch` carries the double-tap through as `double_click` | confirmed | `core/input/input.cpp:1013` — `button_event->set_double_click(st->is_double_tap())` |
 | **`double_tap` is ever set on a WINDOWS touchscreen** | ⚠ **contradicted — it is NOT.** `DisplayServerWindows::_touch_event()` builds every `InputEventScreenTouch` without touching `double_tap`, and Godot consumes `WM_TOUCH` (`return 0`), so Windows never promotes a touch to `WM_LBUTTONDBLCLK` either. Android *does* set it, from the platform gesture detector. | `display_server_windows.cpp:5438-5445` and `:6958-6989`; `platform/android/java_godot_lib_jni.cpp:371-385` |
 | A double-press equivalent for keyboard / controller | ⚠ **does not exist in the engine at all.** No `double_click` on `InputEventKey` or `InputEventJoypadButton`, no `Input` helper. Multi-modal input is a hard project rule, so this must be designed, not discovered. | absence across `core/input/` |
-| A scrolling side panel | ⚠ **already exists — do not build it.** `ScrollContainer`, and `InfoCard` already uses one (`%Scroll`) and already computes its own content height synchronously rather than waiting for the deferred layout pass. | `UI/Wall/info_card.gd:16`, `:99` |
+| A scrolling side panel | ⚠ **already exists — do not build it.** `ScrollContainer`, and `DescriptionPanel` already uses one (`%Scroll`) and already computes its own content height synchronously rather than waiting for the deferred layout pass. | `UI/description_panel.gd`, `%Scroll` and `resize_to()` |
 | A rectangular HUD panel with a background | ⚠ **already exists — do not build it.** `PanelContainer` plus a `StyleBoxFlat`/`StyleBoxTexture`; `NinePatchRect` if the background is art. Nothing here needs a custom `_draw`. | standard `Control` set |
 | An overlay layer that does not ride the wall camera | ⚠ **already exists — do not build it.** `WallOverlay` is a `CanvasLayer` at `%Overlay` inside `wall.tscn`, window-anchored, above every picture. | `UI/Wall/wall_overlay.gd:1-7` |
 | Scrolling a `ScrollContainer` from a controller stick | available, but **needs an InputMap action and explicit wiring** — there is no built-in stick-to-scroll. Already an open, answered-but-unbuilt item. | `todo.md` "Bind the info-card scroll stick" |
