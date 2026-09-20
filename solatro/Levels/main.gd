@@ -579,6 +579,9 @@ func _on_new_run(cards: Array[CardData], rules: Array[CardData]) -> void:
 	# Choosing a save reveals WALL VIEW, longer and slower than an ordinary move. Only this call
 	# and `_on_continue()` pass a scale; every other `_go_to_wall_view()` uses the plain clock.
 	await _go_to_wall_view(SettingsManager.settings.wall_reveal_delay_scale)
+#The reveal is a look at the wall, not a stop on it: the camera carries on into the map the same way
+#a click on that picture would, so the player reaches the run without a press.
+	await _on_picture_enter_requested(&"map")
 
 func _on_continue() -> void:
 	save_info = RunManager.load_run()
@@ -592,6 +595,8 @@ func _on_continue() -> void:
 	await _go_to_wall_view(SettingsManager.settings.wall_reveal_delay_scale)
 	if save_info.pending_node_id >= 0:
 		await enter_game()
+	else:
+		await _on_picture_enter_requested(&"map")
 
 ## Entering a show. If the `game` picture already holds a LIVE screen — a previous mid-act freeze,
 ## where the player left via Back or Wall rather than winning or losing — this RESUMES it: focus

@@ -422,7 +422,7 @@ func _pin_transition_clock() -> void:
 	SettingsManager.settings.base_delay = 1.0
 	SettingsManager.settings.wall_transition_delay = 0.6
 
-## The opening reveal runs LONGER than an ordinary Wall press, by `wall_reveal_delay_scale`.
+## The opening reveal runs LONGER than an ordinary Wall press, by `wall_reveal_delay_scale`, and ends in the map.
 ##
 ## ⚠ Driven through `_on_new_run()`, the REAL call site, not through `_go_to_wall_view()` directly.
 ## Calling the helper would prove the parameter is plumbed and say nothing about whether the launch
@@ -453,8 +453,9 @@ func test_the_opening_reveal_reads_wall_reveal_delay_scale() -> void:
 	check(slow_ms > fast_ms * 3.0,
 			"the opening reveal's LENGTH tracks wall_reveal_delay_scale",
 			"scale 4.0 took %d ms, scale 0.1 took %d ms" % [slow_ms, fast_ms])
-	check(main._current_focus == &"",
-			"...and a reveal ends in wall view", str(main._current_focus))
+	check(main._current_focus == &"map",
+			"...and the reveal carries on into the MAP picture, with no press in between",
+			str(main._current_focus))
 
 	main.queue_free()
 	restore_settings_snapshot(snap)
@@ -465,12 +466,25 @@ func test_the_opening_reveal_reads_wall_reveal_delay_scale() -> void:
 func _time_opening_reveal(main: Main, scale: float) -> int:
 	SettingsManager.settings.wall_reveal_delay_scale = scale
 	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+#THE REVEAL ENDS IN THE MAP, AND THE MAP GENERATES WHILE IT IS FOCUSED: a generation still running
+#when the next reveal starts one, or when `main` is freed, lands a step on a freed object -- an
+#exit-time access violation no check can see. Latched before the call, waited out after it.
+	var mapped : Array[bool] = [false]
+	main.map_scene.controller.map_ready.connect(
+			func() -> void: mapped[0] = true, CONNECT_ONE_SHOT)
 	var started := Time.get_ticks_msec()
 	_drive(func() -> void:
 			await main._on_new_run([] as Array[CardData], [] as Array[CardData]), done)
+#THE CLOCK STOPS AT WALL VIEW, NOT AT THE CALL'S END: the reveal is followed by the move into the
+#map, whose length this knob does not scale, and averaging the two in would shrink the ratio below
+#anything a scale difference could show.
+	var took := 0
 	while not done[0] and Time.get_ticks_msec() - started < 20000:
+		if took == 0 and main._current_focus == &"": took = Time.get_ticks_msec() - started
 		await get_tree().process_frame
-	return Time.get_ticks_msec() - started
+	while not mapped[0] and Time.get_ticks_msec() - started < 20000:
+		await get_tree().process_frame
+	return took
 
 ## H3/Q27/S37 on the KEYBOARD/CONTROLLER path: a picture selected in wall view and then entered
 ## does not stay lifted.
