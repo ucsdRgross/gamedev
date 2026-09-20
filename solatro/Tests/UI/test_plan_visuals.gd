@@ -946,6 +946,15 @@ func test_a_committed_show_lights_only_the_grid_it_can_place_in() -> void:
 			"TP-63: it draws no rim at all, which is what a mark at rest looks like",
 			"rank %d, suit %d" % [uniform_of(refused.rank, &"u_outline_width"),
 			uniform_of(refused.suit, &"u_outline_width")])
+	var mapped_elsewhere : Array[CardData] = []
+	for type_card : CardData in game.state.grids[1].cell_types:
+		if type_card in pa._legal_cells: mapped_elsewhere.append(type_card)
+	check(mapped_elsewhere.is_empty(),
+			"TP-63: the drop map drops the refused grid with it -- no cell of grid 1 is tinted",
+			"%d of %d cells still mapped" % [mapped_elsewhere.size(),
+			game.state.grids[1].cell_types.size()])
+	check(not pa._legal_cells.is_empty(),
+			"TP-63: ...while the committed grid still offers the card somewhere to land")
 
 	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
 	check(pa.selected_cards.is_empty(), "TP-63: precondition: the card went back down again")

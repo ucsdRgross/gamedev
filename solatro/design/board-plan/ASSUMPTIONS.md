@@ -431,3 +431,10 @@ gap under `gaps/`.
   disabled hippo bite), so the invariant holds in play; the debug-only spotlight probe
   (`GameView._on_debug_cue`) leaves a `SpotlightProbe` skill on a board card and would trip it in a
   debug build.
+
+## Owner rulings from the first playtest of the combined branch
+
+- Playtest ruling: the legal-cell drop map obeys `committed_grid` exactly as the match rim does
+  ("a cell the show cannot place into" above) - one committed, only that grid is asked.
+- Playtest ruling: the face-down stock card under an Entrance slot must not raise the cards above
+  it; the lift belongs to a held card alone (`CardVisual.held_lift_px`).

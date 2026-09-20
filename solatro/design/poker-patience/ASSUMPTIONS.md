@@ -102,3 +102,14 @@ See the gap protocol in `PLAN.md` §0 — this is for (1), not (2)/(3).
 - **Swipe direction follows the finger** (`H16`, `Q191`): dragging RIGHT brings the grid on the LEFT into view, i.e. the board moves with the finger. The design fixes that one swipe pans one grid but never which way; direct manipulation is the only reading consistent with the scroll container the pan already rides.
 - `H1`/`Q166` — "plus margins" in the game picture's width is read as `grid_overview_margin` applied on EACH side of the three-grid span (the only margin knob the registry carries), not once across the whole width. The competing reading differs only by one factor of the knob and is a one-expression change.
 - `H2`/`Q168`(c) — the "aspect minimum" is read as the minimum for ONE GRID POSITION, not for the whole picture. Applied to the whole picture it is provably incompatible with `QR3`(a) and `H22` at ANY width: the camera rests by OVERFILLING the window, so a picture at the window's own aspect is framed whole and has no step. `Q166`'s three-grid formula therefore sizes one position and the picture is `grid_max_count` of them. Follows `GAP-019`'s second-round ruling, which chose option (a) and named this as its cost; reversible in one expression.
+
+## Owner rulings from the first playtest of the combined branch
+
+- Playtest ruling, answers the gated `Q34` and keeps `Q40`=a: while no grid is committed the
+  Entrance sits centred at the bottom of the window, aligned to no grid, and stays there as the
+  view pans. Picking up a card focuses the grid nearest the screen centre and the Entrance slides
+  under it. After the first placement it belongs to that grid and leaves the screen when the view
+  looks elsewhere.
+- Playtest ruling on the two view modes: OVERVIEW draws the grids close, a small fixed gap, the
+  set centred; FOCUSED centres the one grid and its isolating buffer pushes the neighbours
+  off-screen. The edge gap and the inter-grid gap are no longer one quantity.

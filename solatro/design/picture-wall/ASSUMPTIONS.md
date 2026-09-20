@@ -699,28 +699,6 @@
   outside what the coordinator asked this pass to fix (light POSITION, not shadow darkness); it is
   the same kind of number GAP-011 targeted and is flagged here rather than silently left, but not
   filed as its own gap without an explicit ask.
-- **S28 (Q128/J2-design override) — `WallPicture.info_zoom_state()` reuses `wall_frame_reveal_
-  margin` rather than adding a new knob for "how far past the bottom frame edge to clear."** Same
-  conceptual role that knob already plays for the transition's own zoom-out stop ("extra share of
-  the picture's size revealed beyond the frame") — a second, near-duplicate number for an
-  equivalent concept would itself be the kind of thing §1.8 exists to prevent, not satisfy.
-  PROVEN correct for every `frame_px`, not assumed: shifting the camera straight down by any
-  `delta > 0` (zoom held at the unchanged at-rest fill value) can never reveal the top edge,
-  because H3 already guarantees `frame.top < visible_top` at rest and a downward shift only grows
-  that gap — see the function's own doc comment for the one-paragraph proof. `test_wall_info.gd`'s
-  J5 asserts both halves (bottom revealed AND top not revealed), not just the one a shallower test
-  might have stopped at.
-- **S28 (Q137/J10-design override) — in Info mode, `WallTransition.sample_at()` holds zoom
-  CONSTANT at the SOURCE picture's own info-zoom scale for the whole transition, never blended
-  toward the destination's.** "The camera never leaves the info zoom" was read as ONE fixed value,
-  not a smooth interpolation between two (which could not even be literally "constant" if the two
-  pictures are different sizes, since each picture's own info-zoom scale depends on its own
-  `rect.size`). `test_wall_info.gd`'s J6 fixture deliberately uses DIFFERENTLY SIZED source/dest
-  rects specifically so a wrongly-reintroduced per-picture zoom would show up as non-constant
-  samples, not be hidden by a symmetric fixture (the exact trap this run's HANDOFF names).
-  J9 (toggling mid-transition retargets immediately) and J11 (focused screen stays live at the
-  info zoom) are DESIGN chart J9/J11 -- NOT owed by any of TEST_PLAN §8's seven rows -- and were
-  not built; flagged here rather than silently left undone.
 - **S27 — `InfoCard._resize_to_content()` sets `.size` explicitly at every level down to the
   labels themselves, never relying on Godot's own deferred container-layout pass.** Measured
   directly: the first version set only `custom_minimum_size` on the `ScrollContainer`, which does
@@ -1179,3 +1157,11 @@ not needed". Three are the second case, and are deleted from `PlayerSettings` an
 
 The remaining two of the five were WIRED, not struck: `WallLayout.view_margin` (see GAP-018) and
 `wall_selection_repeat_delay` (Q116=a's repeat, `Wall._tick_selection_repeat()`).
+
+## Owner rulings from the first playtest of the combined branch
+
+- Playtest ruling, overturns `Q100`=a for the keyboard: `ui_cancel` cancels everything the second
+  button would and then zooms out to wall view. Back keeps its own action, `wall_back`; `Tab`
+  still opens the wall too.
+- Playtest ruling, extends `Q61`/`Q62`: after the slow wall reveal the camera enters the map
+  without a press, on a new run and on Continue when no show is pending.

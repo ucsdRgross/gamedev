@@ -3280,7 +3280,13 @@ func _sweep_legal_cells() -> void:
 	var legal : Dictionary[CardData, bool] = {}
 	if not selected_cards.is_empty():
 		var game := CardEnvironment.get_current_game()
-		for zone_card : CardData in await game.legal_cells_for(selected_cards, game.state.grids):
+#THE CALLER OWNS WHICH GRIDS ARE ASKED, as the match rim's site does: once the Entrance has
+#committed, `place_card_in_grid` refuses every other grid outright, so a cell there is not one the
+#held card may land in and the walk is never asked about it.
+		var grids : Array[GridData] = game.state.grids
+		if game.state.committed_grid != -1:
+			grids = [game.state.grids[game.state.committed_grid]]
+		for zone_card : CardData in await game.legal_cells_for(selected_cards, grids):
 			legal[zone_card] = true
 	_legal_cells = legal
 	_refresh_card_marking()

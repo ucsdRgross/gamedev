@@ -924,3 +924,37 @@
   with a localised tooltip, grown to the same touch target as the exit X and parked at the head of
   the name's row. It scrolls with the entry, as the name does; every entry opens at its own top, so
   it is on screen the moment a picked card is shown.
+
+## Owner rulings from the first playtest of the combined branch
+
+- Playtest ruling, overturns `Q24`=a, `Q27`=d, D8/D10 and the geometry gaps: the sidebar is an
+  OVERLAY and pictures are never inset. Owner: "overlay, never inset. include screen movement to
+  include sidebar sliding in and out of view so picture edges match window edges always. for
+  example when initially focusing on a picture, no sidebar, edges match. once edges have
+  disappeared, have contents shift to the side as sidebar slides in. do exact reverse when leaving
+  the scene. check if this means that we need inset around picture that is half or less of sidebar
+  width. such an inset should cover all 4 edges if needed to accommodate potential sidebar from any
+  edge." The sidebar is hidden where it has nothing to show (the menu) and in wall view.
+- Playtest ruling, overturns `QR6`=a and `Q111`-`Q129`, `Q262`=a, `Q263`=a, `Q254`=d: nothing is
+  armed until the player acts. A click on an Entrance card lifts it, raised and not following; a
+  drag from a card follows the cursor while the button is held, release over a legal cell places
+  and release anywhere else returns it; with a card lifted, a click on a legal cell places it.
+  The second button and Escape cancel, from anywhere on screen - the container included.
+- Playtest ruling, narrows `GAP-005`: the legal cell's zone-card BACK brightens toward white, as
+  the focus glow lifts paper; a mark's rank and suit pips are excluded from that modulate. No
+  colour cast.
+- Playtest ruling, overturns `GAP-004`=b: one preview size on every surface, the deck viewer's.
+- Playtest ruling, extends `Q33`=c: the title is "<Rank> of <Suit>" (a face card by its name);
+  below it one block per skill, stamp, status and type, the effect's name in the large font and
+  its description in the small one.
+- Playtest ruling, new, overturns the viewer's click-takes-the-pack and K4's accept-enters-a-node.
+  Owner: "click selects; a take button confirms. choosing next path on map should always require
+  pressing dedicated button press in sidebar to choose, so that player can click on nodes to
+  preview it first. clicking on node to travel to it is bad since it doesnt allow preview of what
+  is being chosen. second sidebar can cover screen without shifting remaining screen and moving
+  it. map sidebar should also show a deck button to view current deck directly when nothing is
+  focused similar to how game view scene does the same with deck buttons. map sidebar should
+  start with this basic view since no path should be auto selected at first. path choices should
+  still show deck button since its just 1 button. and doesnt require player to cancel current
+  selection just to compare against talent pack." A clicked card is highlighted as selected; the
+  second sidebar locks on click and is exited manually.
