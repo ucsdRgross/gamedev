@@ -961,3 +961,14 @@
   still show deck button since its just 1 button. and doesnt require player to cancel current
   selection just to compare against talent pack." A clicked card is highlighted as selected; the
   second sidebar locks on click and is exited manually.
+- Playtest follow-up rulings on the pickup model, asked after it landed. A drag released off a
+  legal cell - owner: "drag release drops" (the card leaves the hand; it does not stay lifted).
+  `PlayArea.armed_slot()`, left with test callers only - owner: "delete armed slot". End, Undo
+  and Marks sitting behind the locked description while a card is lifted by click - owner:
+  "acceptable". A cancelled pickup leaving the board focused - owner: "yes".
+- Playtest follow-up rulings on the brightening. The focus glow no longer lighting a focused
+  card's FX - owner: "ok". On an empty cell the lift reading as a hotter dashed frame, not paper
+  going white - owner: "ok". `legal_cell_glow` 1.45 against `FOCUS_GLOW` 1.825 - owner: "both
+  should be same value".
+- Playtest follow-up ruling on the title's plural ("5 of Fires", and the suit-only title) -
+  owner: "plural form, same as hearts spades clubs diamonds".

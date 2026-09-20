@@ -113,3 +113,11 @@ See the gap protocol in `PLAN.md` §0 — this is for (1), not (2)/(3).
 - Playtest ruling on the two view modes: OVERVIEW draws the grids close, a small fixed gap, the
   set centred; FOCUSED centres the one grid and its isolating buffer pushes the neighbours
   off-screen. The edge gap and the inter-grid gap are no longer one quantity.
+- Playtest follow-up rulings on the overview. The 100 px overview gap (floor ~88 px, the two
+  score gutters) - owner: "ok for now". The grid row sitting low against the Entrance line -
+  owner: "not sure what this means, as long as no overlap and entrance is distinct".
+- Playtest follow-up rulings on the Entrance. Any focus of a grid, not only a pickup, takes an
+  uncommitted Entrance under it - owner: "yes". Once a grid is committed a pickup re-aims
+  nothing - owner: "yes until no more placeable option on grid or entrance cards run out".
+  Uncommitted and FOCUSED, the Entrance stays under the focused grid when the view pans to a
+  neighbour - owner: "yes".
