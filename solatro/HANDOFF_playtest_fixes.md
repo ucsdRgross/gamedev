@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1–P5, P7–P9 and the P14 sweep landed, each red-then-green and by eye, committed one
 step per commit. Last gate, on the P9 commit: `ALL 51 SUITES: 5867 CHECKS PASSED`, 22 placeholder
-warnings, 1150 ObjectDB (the fingerprint). P17 (the sweep P9 owed), P6 and P16 landed too; the P18 sweep, P10 and P11; last gate `5998`, 21 placeholder warnings. P21 (R8 on an edge grid) and P22 (the follow-up answers) landed, last gate `6109`. Next is P20 (a reachable SCRIPT ERROR), then the P19 sweep; every
+warnings, 1150 ObjectDB (the fingerprint). P17 (the sweep P9 owed), P6 and P16 landed too; the P18 sweep, P10 and P11; last gate `5998`, 21 placeholder warnings. P21 (R8 on an edge grid) and P22 (the follow-up answers) landed, P20 closed unreproducible with a regression net, last gate `6129`. Next is P19 (a sweep), then P12, P13, P15; P20 (a reachable SCRIPT ERROR), then the P19 sweep; every
 later step has its site map in its `notes:`. Gate at the
 stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`, errors log empty.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
@@ -230,13 +230,13 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   evidence: ''
   notes: 'PlayerSettings.highlight_glow = 1.45 is the one glow, applied once per mark (legal AND focused draws at its square, 2.1025; TestGridFixtures.lit_cell_count expects that). The drop is the cancel route (ungrab_cards) from the one _on_card_dropped decision, only for a gesture that carried the held card; a drag from an already click-lifted card drops too. armed_slot() -> TestGridFixtures.leftmost_entrance_slot(). A suit-only card is player-visible (BoosterTemplate.get_possible_preview_cards). committed_grid clears in Game._commit_placement when no Entrance card has a legal cell on it (an empty Entrance included) and in GameData.rebase_commitment when the grid is removed - the owner condition; asked only after a placement. OPEN for the owner: 1.45 still clamps the paper to (255,255,255) - anything above ~1.08 does; the squared glow on a legal focused cell; a dropped card keeps the focus glow and a click-made description lock. sidebar ASSUMPTIONS.md ~455 and PLAN.md ~170 still name armed_slot/arm_leftmost as the plan of record.'
 - id: P20
-  description: A SCRIPT ERROR a player can reach - HudContainer.return_to_lock reads _locked_entry_by_screen[&"game"] while only _lock_by_screen holds the key (hud_container.gd ~357, from the play_area.gd focus_exited lambda): lock a card description by click, then zoom out with an Entrance card focused.
-  files_touched: [solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]
-  verification_command: 'run_tests.py --filter Sidebar WallFocus'
+  description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
+  files_touched: [solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar WallFocus WallInput'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Found by the P11 implementer, who re-ordered its own test around the trigger. Red first: a row that drives the real sequence and fails on the SCRIPT ERROR / the wrong panel state. The two dictionaries are two representations of one fact - find which writer leaves them disagreeing rather than guarding the read (hard rule 7).'
+  status: done
+  evidence: 'No production change. The one sighting (run-output 10:45, inside P11 development, before P11 and P22 were committed; trace: return_to_lock from the card mouse_exited lambda, after click-lock, right-click cancel, open_zoomed_out) was driven step for step through real input on the booted Main, plus one and two cancel steps, the P22 drop, the exit X, ui_cancel, wall_overview, Back, a wall-view round trip with a held card, focus to the HUD, New Run: 0 SCRIPT ERROR in 6 runs, the two lock dictionaries agreeing after all 18 events. FILTERED 3 of 51 [Sidebar WallFocus WallInput]: 1535 CHECKS PASSED (SIDEBAR 1294 -> 1320); --logic 2981. Overseer gate: ALL 51 SUITES: 6129 CHECKS PASSED (SIDEBAR 1320), 21 placeholder warnings, 0 SCRIPT ERROR.'
+  notes: 'Writers table: lock_to, clear_lock, release_screen and dismiss_description (through show_hud -> clear_lock) write both dictionaries together; the ONE asymmetric writer is _exit_tree (clears the entries only), and GameView.tree_exiting -> release_screen always runs first. A drag pickup never locks (lock_to is reached only from a click). FOR /simplify AT THE CLOSE, approved by the overseer but not applied because no check can go red for it: _lock_by_screen VALUE is never read (only .has) - collapse onto _locked_entry_by_screen, is_locked() reads it, lock_to() loses its dead target parameter (callers game_view.gd, Tools/wall_editor.gd, three test sites, sidebar NAMES.md). Where to look if it recurs: a cancel is refused while the panel is hidden (GameView._on_description_dismiss_requested returns unless showing_description), so _swap_to_hud from set_active_screen can leave is_locked() true with the panel down.'
 - id: P21
   description: R8 on an EDGE grid - FOCUSED on the last (or first) of three grids the scroll clamps, the grid sits off-centre (cells 1124..1500 in a window centred at 985) and its neighbour is wholly visible inside the window; P10 measured only the middle grid.
   files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_view.gd, solatro/Tests/Visual/grid_zoom_shot.gd]
@@ -281,7 +281,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P20, then P19 (the sweep P10 and P11 owe; test_grid_layout.gd joins it).
+1. P19 (the sweep P10 and P11 owe; test_grid_layout.gd joins it).
 2. P12 before P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 3. After the last step: `/docs` folds this file away; the owner merges the branch.
 

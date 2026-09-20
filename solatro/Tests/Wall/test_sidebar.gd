@@ -116,6 +116,11 @@ func _ready() -> void:
 	await test_a_new_run_does_not_inherit_the_last_shows_lock()
 	await test_a_new_run_does_not_inherit_the_maps_last_description()
 	await test_leaving_while_locked_keeps_the_whole_lock_alive()
+	await test_zooming_out_with_a_focused_card_keeps_the_lock()
+	await test_every_end_of_a_lock_ends_all_of_it()
+	await test_no_zoom_out_route_leaves_half_a_lock()
+	await test_a_cancelled_lock_survives_the_pointer_leaving_every_card()
+	await test_a_dropped_card_leaves_no_lock_behind()
 	await test_a_finished_show_leaves_the_maps_own_wiring_alive()
 	await test_a_remembered_entry_dropped_by_a_cascade_is_freed()
 	behavior_section("S9: INFO MODE IS GONE")
@@ -3196,6 +3201,213 @@ func test_leaving_while_locked_keeps_the_whole_lock_alive() -> void:
 				"...on whichever visual represents it now")
 		check(_exit_button().focus_mode == Control.FOCUS_ALL,
 				"...and the exit X is navigable again (Q68=b)", str(_exit_button().focus_mode))
+	await _end_main_fixture()
+
+# The container's two representations of one lock, compared: empty while they agree, otherwise the
+# two key sets. A disagreement is what makes `return_to_lock()` read a key nothing holds.
+func _lock_bookkeeping_disagreement() -> String:
+	var locks : Array = _container._lock_by_screen.keys()
+	var entries : Array = _container._locked_entry_by_screen.keys()
+	locks.sort()
+	entries.sort()
+	if locks == entries: return ""
+	return str(locks) + " vs " + str(entries)
+
+## Zooming out to wall view with a board card still focused leaves the lock whole: the way back re-opens the locked card's own description.
+func test_zooming_out_with_a_focused_card_keeps_the_lock() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var title : Label = _panel.get_node(^"%Title")
+		var locked : CardData = _play_area.ui_data[entrance[0]]
+		await _lock_without_holding(entrance[0])
+		entrance[0].grab_focus()
+		await get_tree().process_frame
+		check(_game_viewport.gui_get_focus_owner() == entrance[0],
+				"an Entrance card holds the board's focus while the description is locked",
+				str(_game_viewport.gui_get_focus_owner()))
+		check(_lock_bookkeeping_disagreement() == "", "the click's lock is bookkept once",
+				_lock_bookkeeping_disagreement())
+		await _main._go_to_wall_view()
+		await get_tree().process_frame
+		check(_lock_bookkeeping_disagreement() == "",
+				"the zoom out to wall view leaves the lock bookkept once",
+				_lock_bookkeeping_disagreement())
+		await _main._focus_picture(&"game")
+		await _wait_out_the_move()
+		await get_tree().process_frame
+		check(title.text == _expected_text(locked)[0],
+				"the way back from wall view re-opens the locked card's description", title.text)
+		check(_container.is_locked() and _play_area.locked_data == locked,
+				"...with the lock and the board's marking still on that card",
+				str(_play_area.locked_data))
+		check(_exit_button().focus_mode == Control.FOCUS_ALL,
+				"...and the exit X is navigable again", str(_exit_button().focus_mode))
+	await _end_main_fixture()
+
+## Every event that ends a lock ends ALL of it: the exit X, a cancel and the show's own end each leave nothing locked and nothing half-remembered.
+func test_every_end_of_a_lock_ends_all_of_it() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
+		check(await _click_button(_exit_button(), _booted_viewport),
+				"a real click on the exit X pressed it")
+		await get_tree().process_frame
+		check(not _container.is_locked() and _lock_bookkeeping_disagreement() == "",
+				"the exit X ends the lock and leaves nothing behind",
+				_lock_bookkeeping_disagreement())
+
+		await _lock_without_holding(entrance[0])
+		_booted_viewport.push_input(_cancel_event())
+		await get_tree().process_frame
+		await _wait_out_the_move()
+		check(not _container.is_locked() and _lock_bookkeeping_disagreement() == "",
+				"a cancel ends the lock and leaves nothing behind",
+				_lock_bookkeeping_disagreement())
+		await _main._focus_picture(&"game")
+		await _wait_out_the_move()
+
+		var back := await _entrance_card_controls()
+		check(not back.is_empty(), "the board offers a clickable Entrance card after the cancel",
+				str(back.size()))
+		if not back.is_empty():
+			await _lock_without_holding(back[0])
+			await _main._on_new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+			await _restart_the_show()
+			check(not _container.is_locked() and _lock_bookkeeping_disagreement() == "",
+					"a new run ends the last show's lock and leaves nothing behind",
+					_lock_bookkeeping_disagreement())
+	await _end_main_fixture()
+
+## A right-click cancel then the pointer leaving every card: the lost highlight must find the container in a state it can answer, whether the cancel took one step or both.
+func test_a_cancelled_lock_survives_the_pointer_leaving_every_card() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var at := entrance[0].get_global_rect().get_center()
+		await _click_card(entrance[0])
+		check(_container.is_locked(), "the click-pickup locked the description")
+		await _second_button_press(at)
+		check(_container.showing_description(),
+				"one cancel step let the held card go and left the description up")
+		_play_area.open_zoomed_out()
+		await get_tree().process_frame
+		await _pointer_leaves_every_card(at)
+		check(_container.showing_description() and _lock_bookkeeping_disagreement() == "",
+				"the pointer leaving every card after ONE cancel step returns to the locked card",
+				_lock_bookkeeping_disagreement())
+
+		await _second_button_press(at)
+		check(not _container.showing_description(),
+				"the second cancel step closed the description")
+		check(not _container.is_locked() and _lock_bookkeeping_disagreement() == "",
+				"...and took the whole lock with it",
+				_lock_bookkeeping_disagreement())
+		_play_area.open_zoomed_out()
+		await get_tree().process_frame
+		await _pointer_leaves_every_card(at)
+		check(_hud_is_up() and _lock_bookkeeping_disagreement() == "",
+				"the pointer leaving every card after BOTH cancel steps leaves the HUD up",
+				_lock_bookkeeping_disagreement())
+	await _end_main_fixture()
+
+## A DRAG never locks -- only a click does -- so the release that drops the card, and the exit X after it, leave nothing for a lost highlight to return to.
+func test_a_dropped_card_leaves_no_lock_behind() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a draggable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var at := entrance[0].get_global_rect().get_center()
+		await _drag_past_the_threshold(entrance[0])
+		check(not _container.is_locked(),
+				"a drag's own pickup describes the card without locking it")
+		var bare := _bare_board_point(await _hoverable_card_controls())
+		_hover(bare)
+		await get_tree().process_frame
+		await _release_at(bare)
+		check(_play_area.selected_cards.is_empty(),
+				"the release over bare board dropped the card",
+				str(_play_area.selected_cards.size()))
+		await _pointer_leaves_every_card(at)
+		check(not _container.is_locked() and _lock_bookkeeping_disagreement() == "",
+				"the pointer leaving every card after the drop finds no lock at all",
+				_lock_bookkeeping_disagreement())
+
+		await _lock_without_holding(entrance[0])
+		check(await _click_button(_exit_button(), _booted_viewport),
+				"a real click on the exit X pressed it")
+		await get_tree().process_frame
+		await _pointer_leaves_every_card(at)
+		check(not _container.is_locked() and _lock_bookkeeping_disagreement() == "",
+				"the pointer leaving every card after the exit X finds no lock at all",
+				_lock_bookkeeping_disagreement())
+	await _end_main_fixture()
+
+# The board announces a lost highlight only when the pointer LEFT a card control and landed on no
+# other, so the pointer is put back on the card before it is taken off the board.
+func _pointer_leaves_every_card(on_a_card: Vector2) -> void:
+	_hover(on_a_card)
+	await get_tree().process_frame
+	_hover(_off_the_board_point())
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## The same zoom out by every route a player has, with a card held and with the focus moved on: none of them leaves half a lock behind.
+func test_no_zoom_out_route_leaves_half_a_lock() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		check(_held_card() != null, "the click left the card held",
+				str(_play_area.selected_cards.size()))
+		entrance[0].grab_focus()
+		await get_tree().process_frame
+		await _main._go_to_wall_view()
+		await _wait_out_the_move()
+		check(_lock_bookkeeping_disagreement() == "",
+				"a zoom out with the locked card still HELD leaves the lock bookkept once",
+				_lock_bookkeeping_disagreement())
+		await _main._focus_picture(&"game")
+		await _wait_out_the_move()
+		_play_area.ungrab_cards()
+		await get_tree().process_frame
+		check(_lock_bookkeeping_disagreement() == "",
+				"letting the held card go leaves the lock bookkept once",
+				_lock_bookkeeping_disagreement())
+
+		var controls := await _entrance_card_controls()
+		if not controls.is_empty():
+			await _lock_without_holding(controls[0])
+			_container.submit_button.grab_focus()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			check(_lock_bookkeeping_disagreement() == "",
+					"the focus leaving the board for the HUD leaves the lock bookkept once",
+					_lock_bookkeeping_disagreement())
+			var overview := InputEventAction.new()
+			overview.action = &"wall_overview"
+			overview.pressed = true
+			_booted_viewport.push_input(overview)
+			await get_tree().process_frame
+			await _wait_out_the_move()
+			check(_lock_bookkeeping_disagreement() == "",
+					"the overview action's zoom out leaves the lock bookkept once",
+					_lock_bookkeeping_disagreement())
+			await _main._on_back_pressed()
+			await _wait_out_the_move()
+			check(_lock_bookkeeping_disagreement() == "",
+					"the way Back leaves the lock bookkept once",
+					_lock_bookkeeping_disagreement())
 	await _end_main_fixture()
 
 ## A show tears down ITS OWN wiring and nobody else's: the map it hands back to keeps its Deck button and its inset.
