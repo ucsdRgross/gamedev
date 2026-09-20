@@ -45,22 +45,20 @@ func _ready() -> void:
 	# Runs before UI PROPS / VISUAL LAYERS / E2E (they wait on this) — exclude them to avoid a
 	# deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
 	await await_siblings_except(["UI PROPS", "VISUAL LAYERS", "GRID LAYOUT", "GRID VIEW",
-			"SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
+			"SIDEBAR", "DRAG PLACE", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
+			"WALL PAUSE"])
 	TestLog.line("============ INTERACTION TEST PASS ============")
 	backup_real_save(suite_tag())
 	# the shared park-the-file isolation (TestSuite): every knob write during this suite lands
 	# in a throwaway settings.tres, so even an abort can't strand the player's real knobs
 	backup_real_settings()
 	var settings_snapshot := snapshot_settings()
-	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	prev_run = RunManager.run
 	prev_save_info = Main.save_info
 	await _setup_view()
 	behavior_section("CARD SELECTION, EVERY INPUT MODE")
 	await test_mouse_click_selects_card()
 	await test_mouse_right_click_ungrabs()
-	await test_info_mode_inspects_instead_of_grabbing()
-	await test_wall_screen_popups_gates_the_in_screen_description()
 	await test_keyboard_select_and_cancel()
 	await test_controller_select_and_cancel()
 	await test_controller_focus_navigation()
@@ -171,6 +169,14 @@ func mouse_click(pos: Vector2, button: MouseButton = MOUSE_BUTTON_LEFT) -> void:
 	up.global_position = pos
 	await send(up)
 
+# A click on a card LOCKS a description over the HUD, and the HUD's own buttons are off screen
+# while it shows. Reverting to the HUD is what the player does before pressing one, so pressing one
+# here starts from the same place.
+func click_hud_button(button: Button) -> void:
+	view.hud_container.show_hud()
+	await frames(1)
+	await mouse_click(center_of(button))
+
 func key_tap(keycode: Key) -> void:
 	var down := InputEventKey.new()
 	down.keycode = keycode
@@ -233,8 +239,19 @@ func touch_tap(pos: Vector2) -> void:
 func a_card_control() -> Control:
 	pa.flush_rebuild()
 	for control : Control in pa.ui_data:
+		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE: continue
 		if control.focus_mode == Control.FOCUS_ALL and control.is_visible_in_tree():
 			return control
+	return null
+
+# What an armed card is aimed at: an EMPTY grid cell presents its own zone card as the drop
+# target, so this is the control a click at a free cell lands on.
+func an_empty_cell_control() -> Control:
+	pa.flush_rebuild()
+	for control : Control in pa.ui_data:
+		var coord := game.state.cell_type_coord(pa.ui_data[control])
+		if coord.is_nowhere() or game.state.card_at(coord) != null: continue
+		if control.is_visible_in_tree(): return control
 	return null
 
 func center_of(c: Control) -> Vector2:
@@ -258,76 +275,6 @@ func test_mouse_click_selects_card() -> void:
 	await mouse_click(center_of(control))
 	check(selections.size() >= 1 and selections[0] == pa.ui_data[control],
 			"a mouse click over a card emits its selection", str(selections.size()))
-	pa.ungrab_cards()
-
-## Info mode is for READING the board, so a click describes a card instead of picking it up.
-##
-## ⚠ Three separate things have to hold, and the first two are the ones a green suite would miss:
-## the grab must NOT happen, the info entry MUST be published, and the board's own in-screen
-## inspector must stay hidden — otherwise two panels describe the same card, which is exactly what
-## having one info card replaced.
-func test_info_mode_inspects_instead_of_grabbing() -> void:
-	var control := a_card_control()
-	check(control != null, "a dealt board offers a focusable card control")
-	if not control: return
-	var entries : Array[InfoEntry] = []
-	pa.info_requested.connect(func(e: InfoEntry) -> void: entries.append(e))
-	var was_info : bool = SettingsManager.settings.wall_info_mode
-	SettingsManager.settings.wall_info_mode = true
-	selections.clear()
-	pa.ungrab_cards()
-
-	await mouse_click(center_of(control))
-
-	check(entries.size() == 1, "a click in Info mode publishes exactly one info entry",
-			str(entries.size()))
-	check(selections.is_empty(),
-			"...and does NOT select the card -- no game action while Info mode is on",
-			str(selections.size()))
-	check(pa.selected_cards.is_empty(), "...so nothing is left held", str(pa.selected_cards.size()))
-	if entries.size() == 1:
-		check(not entries[0].title.is_empty(), "the entry carries the card's name", entries[0].title)
-		check(entries[0].visual != null, "...and a preview visual of the card itself")
-		if entries[0].visual: entries[0].visual.free()
-	check(pa._focus_info == null or not pa._focus_info.visible,
-			"the board's own in-screen inspector stays hidden -- the info card is the one system")
-
-	SettingsManager.settings.wall_info_mode = was_info
-	pa.ungrab_cards()
-
-## `wall_screen_popups` decides whether a screen's OWN description panel exists outside Info mode.
-## Info mode is a SEPARATE gate and always wins — this asserts both, because a single flag doing
-## both jobs is the shape that would silently make one of them unreachable.
-func test_wall_screen_popups_gates_the_in_screen_description() -> void:
-	var control := a_card_control()
-	check(control != null, "a dealt board offers a focusable card control")
-	if not control: return
-	var was_info : bool = SettingsManager.settings.wall_info_mode
-	var was_popups : bool = SettingsManager.settings.wall_screen_popups
-	SettingsManager.settings.wall_info_mode = false
-
-	SettingsManager.settings.wall_screen_popups = true
-	pa.on_control_focus_entered(control)
-	await get_tree().process_frame
-	check(pa._focus_info != null and pa._focus_info.visible,
-			"popups ON, Info mode off: the board's own description shows")
-
-	SettingsManager.settings.wall_screen_popups = false
-	pa.on_control_focus_entered(control)
-	await get_tree().process_frame
-	check(pa._focus_info == null or not pa._focus_info.visible,
-			"popups OFF: no description anywhere outside Info mode")
-
-	# Info mode wins over the popup flag in BOTH directions.
-	SettingsManager.settings.wall_screen_popups = true
-	SettingsManager.settings.wall_info_mode = true
-	pa.on_control_focus_entered(control)
-	await get_tree().process_frame
-	check(pa._focus_info == null or not pa._focus_info.visible,
-			"...and Info mode suppresses the popup even with popups ON -- one card, one system")
-
-	SettingsManager.settings.wall_info_mode = was_info
-	SettingsManager.settings.wall_screen_popups = was_popups
 	pa.ungrab_cards()
 
 ## The touchscreen half of "every input mode". The Next button used to be this file's only
@@ -381,23 +328,23 @@ func test_rebuild_leaves_no_dead_controls() -> void:
 	await frames(1)
 	var history_before : int = game.save_history.size()
 	# the real player path: select the card (grab), then select the target (place)
-	await view._on_data_selected(moving)
-	check(not pa.selected_cards.is_empty(), "precondition: the card is held")
+	if moving not in pa.selected_cards: await view._on_data_selected(moving)
+	check(moving in pa.selected_cards, "precondition: the card is held")
 	await view._on_data_selected(target)
 	await frames(2)
 	pa.flush_rebuild()
 	check(game.save_history.size() == history_before + 1,
 			"precondition: the move committed one step")
-	check(pa.selected_cards.is_empty(), "the grab is released across the move")
+	check(moving not in pa.selected_cards, "the grab is released across the move")
 	# The regression needs a board REBUILD, so drive one. What is being defended is the
 	# rebuild's effect on pooled controls, never whatever happened to trigger it.
 	await game.next()
 	await frames(2)
 	pa.flush_rebuild()
-	check(pa.selected_cards.is_empty(), "and stays released across the rebuild")
+	check(moving not in pa.selected_cards, "and stays released across the rebuild")
 	var dead : Array[String] = []
 	for control : Control in pa.ui_data:
-		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE:
+		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE 				and pa.ui_data[control] not in pa.selected_cards:
 			dead.append(str(pa.ui_data[control]))
 	check(dead.is_empty(), "no board card is left uninteractable after a rebuild",
 			"dead controls: %s" % [dead])
@@ -435,7 +382,7 @@ func test_controller_select_and_cancel() -> void:
 	if not control: return
 	selections.clear()
 	control.grab_focus()
-	await frames(1)
+	await await_the_tap_window()
 	await joy_tap(JOY_BUTTON_A)
 	check(selections.size() >= 1, "ui_accept (joypad A) on the focused card emits its selection")
 	pa.grab_cards([pa.ui_data[control]] as Array[CardData])
@@ -481,7 +428,7 @@ func test_undo_button_cancels_live_act() -> void:
 	game.state.upper_zone[0].datas.clear()
 	game.state.revision += 1
 	var history_before : int = game.save_history.size()
-	var deck_before : int = game.state.draw_deck.size()
+	var deck_before : int = game.state.all_stock_cards().size()
 	_act_finished[0] = false
 	_act_in_background()
 	await frames(2)
@@ -494,16 +441,16 @@ func test_undo_button_cancels_live_act() -> void:
 	check(true, "PARKED: no act on a grid board outlives two frames to be interrupted (GAP-003)",
 			"processing=%s" % str(game.processing))
 	check(not view.undo_button.disabled, "the Undo button is enabled around an act")
-	await mouse_click(center_of(view.undo_button))
+	await click_hud_button(view.undo_button)
 	var done := await wait_until(func() -> bool:
 			return _act_finished[0] and not game.processing)
 	check(done, "the cancelled act hands input back (never hangs)")
 	check(game.save_history.size() == history_before,
 			"nothing was committed by the cancelled act")
-	check(game.state.draw_deck.size() == deck_before,
+	check(game.state.all_stock_cards().size() == deck_before,
 			"the cancelled act drew no card -- the pre-act board is back",
-			"%d vs %d" % [game.state.draw_deck.size(), deck_before])
-	SettingsManager.settings.base_delay = TestLog.speed_base_delay
+			"%d vs %d" % [game.state.all_stock_cards().size(), deck_before])
+	apply_test_speed()
 	# abort_all frees the visuals; queue_free lands end-of-frame — wait, don't count blind
 	var cleared := await wait_until(func() -> bool: return prop_visual_count() == 0)
 	check(cleared, "no prop visual is stranded after the cancel", str(prop_visual_count()))
@@ -519,9 +466,15 @@ func test_game_over_interactivity() -> void:
 	# ⚠ THROUGH THE BUTTON, not through game.end_show(). The button carries the End label, and
 	# a label is not a wire: calling end_show() directly here would pass just as happily with
 	# the button still bound to the retired Submit act, which is a show the player cannot end.
+	## End is hidden until the show can no longer progress and a hidden button cannot be clicked, so emptying every stock reaches the reveal condition this test is not about.
+	for stock : ArrayCardData in game.state.entrance_stocks():
+		stock.datas.clear()
+	game.state.revision += 1
+	await frames(1)
+	check(view.submit_button.visible, "precondition: End is revealed once nothing is left to draw")
 	check(view.submit_button.text == TRANSLATION.find('END_SHOW_BUTTON'),
 			"precondition: the button reads End", view.submit_button.text)
-	await mouse_click(center_of(view.submit_button))
+	await click_hud_button(view.submit_button)
 	await frames(2)
 	check(resolved[0], "pressing End resolves the show")
 	await frames(2)
@@ -547,7 +500,7 @@ func test_game_over_interactivity() -> void:
 	await mouse_click(pa_rect.get_center())
 	check(selections.is_empty(), "a click on the covered board selects nothing")
 	# Undo at the outcome screen: overlay drops, the final End rewinds, play resumes.
-	await mouse_click(center_of(view.undo_button))
+	await click_hud_button(view.undo_button)
 	await frames(2)
 	check(not view.win_screen.visible and not view.lose_screen.visible,
 			"Undo dismisses the outcome overlay")
@@ -555,3 +508,19 @@ func test_game_over_interactivity() -> void:
 	check(not game.processing, "play resumes after the outcome undo")
 	check(not view.submit_button.disabled, "End comes back with play")
 	check(a_card_control() != null, "the rebuilt board is focusable again")
+	var entrance_cards : Array[CardData] = []
+	for col : ArrayCardData in game.state.upper_zone:
+		entrance_cards.append_array(col.datas)
+	var armed := pa.selected_cards
+	check(armed.size() == 1 and entrance_cards.has(armed[0]),
+			"the card armed after the outcome undo is a card of the RESTORED Entrance (Q117=a)",
+			"armed %d, entrance %d" % [armed.size(), entrance_cards.size()])
+	var cards_before := game.state.all_card_datas().size()
+	var cell := an_empty_cell_control()
+	check(cell != null, "the restored board offers an empty cell to place into")
+	if cell:
+		await mouse_click(center_of(cell))
+		await frames(2)
+		check(game.state.all_card_datas().size() == cards_before,
+				"placing after the outcome undo duplicates no card (Q109=a)",
+				"%d vs %d" % [game.state.all_card_datas().size(), cards_before])

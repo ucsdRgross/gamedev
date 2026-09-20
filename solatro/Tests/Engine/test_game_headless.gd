@@ -14,6 +14,12 @@ extends TestSuite
 # undo, end) through the real Game API and assert the outcomes a player sees.
 # The single representation-level check (gutter BigNumber accumulation) is check_impl.
 
+## Higher than any fixture here can score, so a test about something else never trips the goal's own automatic end.
+const GOAL_OUT_OF_REACH : int = 1000000
+
+## The goal the auto-end tests aim at -- low enough that one scored line clears it.
+const GOAL_WITHIN_ONE_LINE : int = 10
+
 func suite_name() -> String:
 	return "GAME HEADLESS"
 
@@ -28,9 +34,14 @@ func _ready() -> void:
 	test_debug_history_is_uncapped_and_redoable()
 	await test_undo_rewinds_per_show_state()
 	await test_undo_at_game_over_rewinds_the_end()
-	test_add_deck_relinks_suit_backrefs()
+	await test_add_deck_relinks_suit_backrefs()
 	await test_score_line_headless_mutates_data()
-	await test_end_show_is_the_only_resolver()
+	await test_short_of_the_goal_only_end_resolves()
+	await test_goal_reached_ends_the_show()
+	await test_goal_is_asked_after_the_whole_placement()
+	await test_undo_rewinds_an_automatic_end()
+	await test_undo_during_the_hold_cannot_turn_the_win_into_a_loss()
+	await test_full_board_does_not_end_the_show()
 	behavior_section("COMPARATOR RULES CARDS, THROUGH A REAL GAME")
 	await test_comparator_rules_change_a_real_act()
 	await test_authored_card_doubles()
@@ -310,13 +321,14 @@ func test_add_deck_relinks_suit_backrefs() -> void:
 	var g := make_game()
 	var prev_save_info : RunState = Main.save_info
 	Main.save_info = RunState.new()   # blank save -> add_deck falls back to the full starter Deck
-	g.add_deck()
-	var all_linked := not g.state.draw_deck.is_empty()
-	for card : CardData in g.state.draw_deck:
+	await g.add_deck()
+	var dealt := g.state.all_stock_cards()
+	var all_linked := not dealt.is_empty()
+	for card : CardData in dealt:
 		if card.suit and card.suit.data != card:
 			all_linked = false
 	check_impl(all_linked, "add_deck's deep-duplicated deck keeps suit.data == its card",
-			"deck size %d" % g.state.draw_deck.size())
+			"deck size %d" % dealt.size())
 	Main.save_info = prev_save_info
 	CardEnvironment.CURRENT = null
 	free_game(g)
@@ -760,19 +772,14 @@ func test_authored_card_doubles() -> void:
 	free_game(g)
 
 
-# ==============================================================================
-# TP-80j -- END IS THE ONLY THING THAT RESOLVES A SHOW.
-#
-# The act is retired: there is no Submit, no banking moment and no Next button. That leaves
-# exactly one way for a show to finish, and this pins it from the other side -- every OTHER
-# path the player can drive must leave the show LIVE. A scored line is the interesting one:
-# it pays points, and paying points must not be mistaken for finishing.
-#
-# Driven on a GRID board, because that is the only board the game still has.
-func test_end_show_is_the_only_resolver() -> void:
+# While the goal is out of reach, every path a player drives short of End leaves the show live: a
+# scored line pays points, and paying points must not be mistaken for finishing.
+func test_short_of_the_goal_only_end_resolves() -> void:
 	var g := Game.new()
 	CardEnvironment.CURRENT = g
 	g.state = TestGridFixtures.build_fix_grid_1()
+	## Out of reach: reaching the goal now ends a show by itself, which would end this one for the RIGHT reason and make every "still live" assertion below pass without proving anything.
+	g.state.goal = GOAL_OUT_OF_REACH
 	# The detector is what scores a completed line, and the evaluator is what values it. Without
 	# both, the "a scored line does not resolve the show" leg below would assert over a line that
 	# never scored -- which is why the precondition after the placements is there.
@@ -797,6 +804,9 @@ func test_end_show_is_the_only_resolver() -> void:
 	check(g.state.live_total() > 0,
 			"precondition: the completed row actually scored -- otherwise this proves nothing",
 			str(g.state.live_total()))
+	check(not g.state.has_met_goal(),
+			"precondition: the goal is still out of reach, so the automatic end cannot fire here",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
 	check(not g.state.show_ended and resolved.is_empty(),
 			"a scored line does not resolve the show -- banking points is not finishing",
 			"show_ended=%s resolved=%s" % [str(g.state.show_ended), str(resolved)])
@@ -821,6 +831,161 @@ func test_end_show_is_the_only_resolver() -> void:
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
+
+# Reaching the goal resolves the show with no button press, on a SETTLED board and before any
+# refill; a full board still does not; and undo rewinds an automatic end as it rewinds a manual
+# one.
+
+# Every auto-end test needs the same thing: a live grid show whose lines actually score, with a
+# goal it can reach. Built here so the four below differ only in the board they run on.
+func _goal_game(state: GameData, goal: int) -> Game:
+	var g := Game.new()
+	CardEnvironment.CURRENT = g
+	g.state = state
+	g.state.goal = goal
+	g.state.rules_deck = [
+		rules_card(SkillLineDetector.new()),
+		rules_card(SkillEvalPokerBest.new()),
+	] as Array[CardData]
+	g.save_state()
+	return g
+
+# Places one built card into a grid cell, the way the fixtures that carry no stock do.
+func _place_built(g: Game, x: int, y: int, rank: int) -> void:
+	var card := TestFactories.m_card(rank, TestFactories.uc())
+	card.stage = CardData.Stage.PLAY
+	await g.place_card_in_grid(card, BoardCoord.new(0, x, y, 0))
+
+func test_goal_reached_ends_the_show() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_grid_1(), GOAL_WITHIN_ONE_LINE)
+	var resolved : Array[bool] = []
+	g.show_resolved.connect(func(won: bool, _s: int, _g: int) -> void: resolved.append(won))
+	check(not g.state.show_ended and resolved.is_empty(),
+			"precondition: a fresh grid show is live")
+	for x : int in 5:
+		await _place_built(g, x, 0, x + 2)
+	check(g.state.live_total() >= g.state.goal,
+			"precondition: the completed row cleared the goal",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
+	check(g.state.show_ended,
+			"reaching the goal ended the show with no button press")
+	check(resolved.size() == 1 and resolved[0],
+			"show_resolved fired exactly once, as a win",
+			str(resolved))
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+# The goal sits beyond anything the lines alone score, so only the placement's own `on_card_placed`
+# score reaches it: a goal asked before that hook has run sees a total short of it.
+func test_goal_is_asked_after_the_whole_placement() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_triple(), GOAL_OUT_OF_REACH)
+	var spy := RefillSpy.new()
+	var bonus := PlacementBonus.new()
+	g.state.rules_deck.append(rules_card(spy))
+	g.state.rules_deck.append(rules_card(bonus))
+	var score_at_resolve : Array[int] = []
+	g.show_resolved.connect(func(_w: bool, score: int, _g: int) -> void:
+		score_at_resolve.append(score))
+	await _place_built(g, 2, 2, 1)
+	check(bonus.fired, "precondition: the placement ran its on_card_placed score")
+	check(score_at_resolve.size() == 1,
+			"one placement completing several lines ended the show exactly once (7.2)",
+			str(score_at_resolve))
+	check(g.state.scores_row.size() > 0 and g.state.scores_col.size() > 0,
+			"precondition: the placement completed lines in more than one direction",
+			"rows=%d cols=%d" % [g.state.scores_row.size(), g.state.scores_col.size()])
+	check(not score_at_resolve.is_empty() and score_at_resolve[0] == g.state.live_total()
+			and score_at_resolve[0] >= g.state.goal,
+			"the show resolved on the total that includes the placement's on_card_placed score (7.2)",
+			"at resolve %s, settled %d, goal %d" % [str(score_at_resolve), g.state.live_total(),
+					g.state.goal])
+	check(not spy.fired,
+			"the end fired BEFORE the refill -- an ended show never deals another hand (7.2)",
+			str(spy.fired))
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+func test_undo_rewinds_an_automatic_end() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_grid_1(), GOAL_WITHIN_ONE_LINE)
+	for x : int in 5:
+		await _place_built(g, x, 0, x + 2)
+	check(g.state.show_ended, "precondition: the goal ended the show")
+	g.undo()
+	check(not g.state.show_ended,
+			"undo rewinds an automatic end exactly as it rewinds a manual one")
+	check(not g.processing,
+			"and the player is back on a live board, not locked behind an outcome")
+	check(g.state.card_at(BoardCoord.new(0, 4, 0, 0)) != null,
+			"the WINNING PLACEMENT survives the undo -- only the end was rewound (7.3)")
+	check(g.state.live_total() >= g.state.goal,
+			"and the row it completed is still scored on that board",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+# The hold between the winning placement and the outcome is a board LOCK, not an open window: an
+# undo taken inside it would pop the pre-placement board and leave the pending end to resolve that
+# rewound board as a LOSS. Headless has no wait, so the lock's ORDER is what is observable.
+func test_undo_during_the_hold_cannot_turn_the_win_into_a_loss() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_grid_1(), GOAL_WITHIN_ONE_LINE)
+	var locked_while_the_win_was_pending : Array[bool] = [false]
+	var seq : Array[String] = []
+	g.processing_changed.connect(func(busy: bool) -> void:
+		seq.append("b=%s met=%s end=%s" % [busy, g.state.has_met_goal(), g.state.show_ended])
+		if busy and g.state.has_met_goal() and not g.state.show_ended:
+			locked_while_the_win_was_pending[0] = true)
+	var resolved : Array[bool] = []
+	g.show_resolved.connect(func(won: bool, _s: int, _g: int) -> void: resolved.append(won))
+	for x : int in 5:
+		await _place_built(g, x, 0, x + 2)
+	check(locked_while_the_win_was_pending[0],
+			"the board was locked from the moment the goal was met, before the show ended",
+			" | ".join(seq))
+	check(g.processing,
+			"and the lock is still held at the outcome, so undo cannot rewind the placement")
+	check(resolved.size() == 1 and resolved[0] and g.state.show_ended,
+			"the pending end resolved the WINNING board", str(resolved))
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+func test_full_board_does_not_end_the_show() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_grid_1(), GOAL_WITHIN_ONE_LINE)
+	## No detector: 25 placements complete 12 lines and would clear any goal worth naming, ending the show for the RIGHT reason and saying nothing about a full board.
+	g.state.rules_deck.clear()
+	for y : int in 5:
+		for x : int in 5:
+			await _place_built(g, x, y, 1)
+	check(g.state.grids_are_full(),
+			"precondition: every cell of the grid is filled")
+	check(not g.state.has_met_goal(),
+			"precondition: the goal was not reached",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
+	check(not g.state.show_ended,
+			"a full board does not end the show -- only the goal does")
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+# The Entrance refill is the one thing an ended show must not do, and nothing else in these
+# fixtures observes it: no shipped rules card implements the hook.
+class RefillSpy extends CardModifierSkill:
+	var fired : bool = false
+	func get_str() -> String: return "RefillSpy"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_refill() -> void:
+		fired = true
+
+# A placement hook that pays: the score it banks is the last thing a placement adds, which is what
+# puts the goal check after the whole placement to the test.
+class PlacementBonus extends CardModifierSkill:
+	var fired : bool = false
+	func get_str() -> String: return "PlacementBonus"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_card_placed(coord: BoardCoord) -> void:
+		fired = true
+		CardEnvironment.get_current_game().state.bank_cell_score(coord.grid, Vector2i(coord.x, coord.y),
+				GOAL_OUT_OF_REACH)
 
 # ==============================================================================
 # TP-80i -- THE RETIRED ACT HAS NO READERS.
@@ -848,7 +1013,7 @@ func test_retired_act_has_no_readers() -> void:
 	var scanned := 0
 	var offenders : Array[String] = []
 	for dir : String in PRODUCT_DIRS:
-		for path : String in _gd_scripts_under(dir):
+		for path : String in gd_scripts_under(dir):
 			var f := FileAccess.open(path, FileAccess.READ)
 			if not f: continue
 			scanned += 1
@@ -894,7 +1059,7 @@ func test_nowhere_is_never_compared_by_identity() -> void:
 	var scanned := 0
 	var offenders : Array[String] = []
 	for dir : String in PRODUCT_DIRS + ["res://Tests"]:
-		for path : String in _gd_scripts_under(dir):
+		for path : String in gd_scripts_under(dir):
 			# The type itself defines the sentinel and compares its components.
 			if path.ends_with("board_coord.gd"): continue
 			var f := FileAccess.open(path, FileAccess.READ)
@@ -972,7 +1137,7 @@ const GRID_MARKERS : Array[String] = [
 func test_zone_only_tests_do_not_multiply() -> void:
 	var scanned := 0
 	var zone_only : Array[String] = []
-	for path : String in _gd_scripts_under("res://Tests"):
+	for path : String in gd_scripts_under("res://Tests"):
 		var f := FileAccess.open(path, FileAccess.READ)
 		if not f: continue
 		var text := f.get_as_text()
@@ -1003,20 +1168,3 @@ func test_zone_only_tests_do_not_multiply() -> void:
 			"now covers a grid, strike it from ZONE_ONLY_TESTS:
 " + "
 ".join(ported))
-
-## Every .gd under `dir`, recursively. Skips addons/, which is vendored and not ours.
-func _gd_scripts_under(dir: String) -> Array[String]:
-	var out : Array[String] = []
-	var d := DirAccess.open(dir)
-	if not d: return out
-	d.list_dir_begin()
-	var name := d.get_next()
-	while name != "":
-		var full := dir.path_join(name)
-		if d.current_is_dir():
-			if name != "addons": out.append_array(_gd_scripts_under(full))
-		elif name.ends_with(".gd"):
-			out.append(full)
-		name = d.get_next()
-	d.list_dir_end()
-	return out

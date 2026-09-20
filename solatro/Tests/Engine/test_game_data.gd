@@ -187,7 +187,7 @@ func test_validate_reports_injected_violations() -> void:
 	# I1: the same card instance living in two collections
 	var s2 := make_state()
 	var dupe := board_card(s2)
-	s2.draw_deck.append(dupe)
+	s2.entrance_stocks()[0].datas.append(dupe)
 	check(s2.validate().any(func(x: String) -> bool: return x.begins_with("I1")),
 			"validate() reports an I1 duplicate-card violation")
 

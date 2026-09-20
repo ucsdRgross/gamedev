@@ -29,7 +29,8 @@ func suite_name() -> String:
 func _ready() -> void:
 	# This suite hosts a real GameView and writes the shared `CardEnvironment.CURRENT`, so it waits
 	# for every sibling that hosts one too. See TestSuite's DEADLOCK RULE and its ordering chain.
-	await await_siblings_except(["SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
+	await await_siblings_except(["SIDEBAR", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
+			"DRAG PLACE", "WALL PAUSE"])
 	TestLog.line("============ GRID VIEW TEST PASS ============")
 	check_all_tests_registered()
 	await run_the_show_opens_zoomed_out_test()
@@ -70,9 +71,9 @@ func _ready() -> void:
 func _stand_up() -> GameView:
 	return await _stand_up_grids(3)
 
-## The same stand-up at any grid count: FIX-GRID-3 at 3, FIX-GRID-1 at 1.
-## `host` is where the view is mounted; the suite itself by default. TP-141 passes a SubViewport of
-## the picture's own size, because a rendered pixel is only the product's pixel inside one.
+# A live GameView is always a picture's FOCUSED screen root, which keeps running under the wall's
+# session-long pause; a bare one runs the same way. `host` is where it mounts (the suite by default),
+# and a pixel check passes a SubViewport of the picture's own size.
 func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
@@ -83,6 +84,7 @@ func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	run.pending_node_id = 2
 	seed(20260829)
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
+	view.process_mode = Node.PROCESS_MODE_ALWAYS
 	var mount : Node = host if host else self
 	mount.add_child(view)
 	await get_tree().process_frame
@@ -93,13 +95,14 @@ func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	while view.game.state.grids.size() > n:
 		Board.remove_grid(view.game.state, view.game.state.grids.size() - 1)
 	view.play_area.flush_rebuild()
-	# ⚠ THIS FIXTURE GROWS THE BOARD AFTER THE SHOW HAS ALREADY OPENED, which production never
-	# does — the rules deck builds every grid in one deal, so `PlayArea` settles its opening view
-	# once and latches. Re-opening it here puts the fixture back in the state the same grid count
-	# would have reached on its own, and it is the product's own entry point deciding, not the test.
-	view.play_area.open_show_view()
+	_reopen_the_show_view(view)
 	await get_tree().process_frame
 	return view
+
+# THIS FIXTURE GROWS THE BOARD AFTER THE SHOW HAS OPENED, which the one-deal product never does, so
+# `PlayArea`'s latched opening view is re-run by the product's own entry point for the new count.
+func _reopen_the_show_view(view: GameView) -> void:
+	view.play_area.open_show_view()
 
 func _tear_down(view: GameView) -> void:
 	view.queue_free()
@@ -125,9 +128,7 @@ func _stand_up_main_grids(n: int) -> Main:
 	run.pending_goal = 1_000_000_000
 	run.pending_node_id = 2
 	seed(20260829)
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	get_tree().paused = false   # Wall._ready() sets this globally; undone same as the probe.
+	var main := TestMainHost.mount(self, self, MAIN_SCENE) as Main
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await main.enter_game()
@@ -139,7 +140,7 @@ func _stand_up_main_grids(n: int) -> Main:
 	while view.game.state.grids.size() > n:
 		Board.remove_grid(view.game.state, view.game.state.grids.size() - 1)
 	view.play_area.flush_rebuild()
-	view.play_area.open_show_view()   # same reason as `_stand_up_grids` above
+	_reopen_the_show_view(view)
 	await get_tree().process_frame
 	return main
 
@@ -162,8 +163,7 @@ func _tear_down_main(main: Main) -> void:
 	restore_real_save(suite_tag())
 	RunManager.run = _prev_run
 	Main.save_info = _prev_save_info
-	main.queue_free()
-	await get_tree().process_frame
+	await TestMainHost.unmount(self, main)
 
 ## Fires the `pressed` half of a real `InputEventKey` through the engine's own pipeline — the same
 ## route a physical key press takes, never a direct call to the handler it drives.
@@ -203,11 +203,15 @@ func _camera_cut_off_px(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> 
 	var r := _grid_world_rect(main, pa, gi)
 	return maxf(maxf(visible.position.x - r.position.x, 0.0), maxf(r.end.x - visible.end.x, 0.0))
 
-## Does grid `gi`'s cell block put any pixel inside the CAMERA's OWN `visible_rect()`?
+# Does grid `gi`'s cell block put any pixel inside the board view? ⚠ A TOUCHING EDGE IS NOT A PIXEL
+# INSIDE: `isolating_grid_buffer_px` lands the neighbour's edge EXACTLY on the view's edge, and a
+# strict compare there flips on the last float ULP (measured: -393.9999 red vs -394.0000 green).
 func _camera_overlaps(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> bool:
 	var visible := _board_view_rect(main, camera)
 	var r := _grid_world_rect(main, pa, gi)
-	return r.end.x > visible.position.x and r.position.x < visible.end.x
+	var past_left := r.end.x > visible.position.x and not is_equal_approx(r.end.x, visible.position.x)
+	var short_of_right := r.position.x < visible.end.x and not is_equal_approx(r.position.x, visible.end.x)
+	return past_left and short_of_right
 
 ## What the camera shows OF THE BOARD'S OWN AREA -- its visible rect with the HUD's share taken off
 ## the left.
@@ -221,7 +225,7 @@ func _board_view_rect(main: Main, camera: Camera2D) -> Rect2:
 	var window_size := main.get_viewport().get_visible_rect().size
 	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
 	var wp : WallPicture = main._pictures[&"game"]
-	var left := wp.rect.centre.x - wp.rect.size.x * 0.5 			+ wp.rect.size.x * SettingsManager.settings.hud_width_fraction
+	var left := wp.rect.centre.x - wp.rect.size.x * 0.5 			+ wp.rect.size.x * SettingsManager.settings.container_size_fraction
 	return visible.intersection(Rect2(Vector2(left, visible.position.y),
 			Vector2(maxf(visible.end.x - left, 1.0), visible.size.y)))
 
@@ -259,16 +263,15 @@ func _cell_control(pa: PlayArea, gi: int) -> Control:
 	var slot : Control = row.get_child(0) as Control
 	return slot.get_child(0) as Control
 
-## A left press delivered to the board's OWN gui handler, with the hover and focus state a real
-## click carries. ⚠ Not a call to the focus method — a click that stops reaching the board must
-## fail this.
+# A left RELEASE delivered to the board's OWN gui handler, with the hover and focus state a real
+# click carries: a gesture that did not travel is a click, decided at the release. ⚠ Not a call to
+# the focus method -- a click that stops reaching the board must fail this.
 func _click(pa: PlayArea, control: Control) -> void:
 	pa.focused_control = control
 	pa.moused_hovered_control = control
-	var press := InputEventMouseButton.new()
-	press.button_index = MOUSE_BUTTON_LEFT
-	press.pressed = true
-	pa._on_gui_input(press)
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	pa._on_gui_input(release)
 
 # ==============================================================================
 # TP-97 — FIX-GRID-3: the show opens zoomed out.
@@ -855,13 +858,6 @@ func run_focusing_takes_the_other_grids_out_of_view_test() -> void:
 				str(WallTransition.visible_rect(camera.position, camera.zoom.x, window_size))])
 	await _tear_down_main(main)
 
-## Does grid `gi`'s cell block put any pixel inside the board's window? The instrument for "out of
-## view" — an off-screen DISTANCE cannot tell "just outside" from "half in".
-func _overlaps_window(pa: PlayArea, gi: int) -> bool:
-	var r := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
-	var win := _window_x(pa)
-	return r.end.x > win.x and r.position.x < win.y
-
 # ==============================================================================
 # TP-141 — A NON-FOCUSED GRID PAINTS NOTHING OUTSIDE THE BOARD WINDOW (owner ruling: while focused,
 # the other grids are OUT OF VIEW).
@@ -890,6 +886,12 @@ func _check_renderer() -> bool:
 			"DisplayServer is '%s' — re-run all_tests.tscn WITHOUT --headless" % display)
 	return live
 
+# A standalone fixture has no `Main`, so `GameView` builds its OWN opaque `HudContainer` as a
+# child of this same picture viewport -- an artifact of the fixture, since the real one lives
+# outside every picture, and left visible it sits over the reserved band the paint probes sample.
+func _hide_fixtures_own_hud_container(view: GameView) -> void:
+	view.hud_container.visible = false
+
 func run_a_non_focused_grid_paints_nothing_outside_the_window_test() -> void:
 	behavior_section("A NON-FOCUSED GRID PAINTS NOTHING OUTSIDE THE WINDOW")
 	if not _check_renderer(): return
@@ -899,6 +901,7 @@ func run_a_non_focused_grid_paints_nothing_outside_the_window_test() -> void:
 	add_child(vp)
 	var view := await _stand_up_grids(3, vp)
 	var pa := view.play_area
+	_hide_fixtures_own_hud_container(view)
 	await _settle_layout(view)
 
 	# THE INSTRUMENT CHECK, taken where a grid is SUPPOSED to paint: in the overview, hiding a grid
@@ -961,9 +964,9 @@ func _paint_delta(view: GameView, vp: SubViewport, gi: int, area: Rect2i) -> int
 ## One rendered frame of `vp`, read back. Two waits: the first carries the layout change into a
 ## drawn frame, the second is the frame that is read.
 func _shot(view: GameView, vp: SubViewport) -> Image:
-	await RenderingServer.frame_post_draw
+	await await_drawn_frames(1)
 	CardEnvironment.CURRENT = view.game
-	await RenderingServer.frame_post_draw
+	await await_drawn_frames(1)
 	CardEnvironment.CURRENT = view.game
 	return vp.get_texture().get_image()
 
@@ -1533,25 +1536,23 @@ func run_a_swipe_fires_once_test() -> void:
 			"%f px" % threshold)
 	# ⚠ A LIVE KNOB, NOT A CONSTANT: a threshold that ignores the setting entirely would still be
 	# "a real distance in px". Doubled and halved about the default, the px must follow.
-	var knob := SettingsManager.settings.grid_swipe_threshold_mm
-	SettingsManager.settings.grid_swipe_threshold_mm = knob * 2.0
+	var knob := SettingsManager.settings.card_drag_threshold
+	SettingsManager.settings.card_drag_threshold = knob * 2.0
 	var wider := pa._swipe_threshold_px()
-	SettingsManager.settings.grid_swipe_threshold_mm = knob
+	SettingsManager.settings.card_drag_threshold = knob
 	check(wider > threshold,
-			"the millimetre knob really drives the threshold — it is not a hard-coded px (TP-109)",
-			"%f mm -> %f px, %f mm -> %f px" % [knob, threshold, knob * 2.0, wider])
-	# ⚠ **THE DEFAULT MUST SIT INSIDE ITS OWN RANGE** (`GAP-018`=(b)). It was clamped to the
-	# TOUCH-TARGET bounds, whose floor is ~8.5 mm at 96 DPI -- above the knob's own 8 mm default --
-	# so turning the knob DOWN changed nothing at all and the shipped threshold was a clamp bound
-	# wearing a millimetre reading. A distance to travel is not a thing to hit: the platforms size
-	# a paging swipe at about a third of a touch target.
-	SettingsManager.settings.grid_swipe_threshold_mm = knob * 0.5
+			"the drag-threshold knob really drives the swipe — it is not a hard-coded px (TP-109)",
+			"%f -> %f px, %f -> %f px" % [knob, threshold, knob * 2.0, wider])
+	SettingsManager.settings.card_drag_threshold = knob * 0.5
 	var narrower := pa._swipe_threshold_px()
-	SettingsManager.settings.grid_swipe_threshold_mm = knob
-	check(narrower < threshold,
-			"...and turning it DOWN narrows it too, so the default is a converted millimetre "
-			+ "reading rather than a clamp bound (TP-109, GAP-018=(b))",
-			"%f mm -> %f px, %f mm -> %f px" % [knob, threshold, knob * 0.5, narrower])
+	SettingsManager.settings.card_drag_threshold = knob
+	check(is_equal_approx(narrower, threshold * 0.5),
+			"...and turning it DOWN halves it exactly, so no bound is hiding inside the threshold "
+			+ "(TP-109, GAP-018=(b))",
+			"%f -> %f px, %f -> %f px" % [knob, threshold, knob * 0.5, narrower])
+	check(is_equal_approx(threshold, pa.board_card_picture_px().x * knob),
+			"the threshold is the board card's own width times the knob (M3, M4, TP-109)",
+			"%f px vs card %f px at zoom %f" % [threshold, pa.board_card_picture_px().x, pa.board_zoom])
 	var from := _bare_point(pa)
 	check(pa._card_control_at(from) == null,
 			"instrument check: the swipe starts on BARE BOARD, over no card",
@@ -1921,9 +1922,8 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 	# The height rule: the natural board height or the aspect minimum of ONE GRID POSITION,
 	# whichever is LARGER. Measured on the position, never the whole picture: a picture at the
 	# window's own aspect is framed whole at rest and leaves the camera nothing to step across.
-	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
-	var ref_h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
-	var aspect_minimum := position_size.x * ref_h / ref_w
+	var window_size := PlayArea.reference_window_size()
+	var aspect_minimum := position_size.x * window_size.y / window_size.x
 	check(float(design.y) >= block.y - 1.0,
 			"the picture is at least the board's own natural height (TP-113)",
 			"design %d px, natural %.1f px" % [design.y, block.y])
@@ -1937,7 +1937,6 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 			"design %d px, larger of %.1f / %.1f" % [design.y, block.y, aspect_minimum])
 	# The camera's step, in the picture's own units: what `resting_state` frames against what
 	# exists. This is the property `H22` names and the reason the picture was widened at all.
-	var window_size := Vector2(ref_w, ref_h)
 	var rest_zoom := WallPicture.focused_scale(Vector2(design), window_size,
 			st.wall_overfill_margin)
 	var visible_w := window_size.x / maxf(rest_zoom, 0.0001)

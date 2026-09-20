@@ -65,9 +65,7 @@ func create_one_choice() -> CardData:
 func _lucky() -> bool:
 	return randf() < RunManager.luck()
 
-## Every component this pack could roll, as one preview card each — feeds the map node
-## hover panel and view_choices. Pools gather (and broadcast) in the same order
-## create_one_choice rolls them; the preview list keeps its type/stamp/skill/suit/rank order.
+## Every component this pack could roll, as one preview card each, in create_one_choice's own type/stamp/skill/suit/rank order — the map node hover panel lists these.
 func get_possible_preview_cards() -> Array[CardData]:
 	var possible_ranks : Array = await _gather(get_possible_ranks, &"on_get_possible_ranks")
 	var possible_suits : Array = await _gather(get_possible_suits, &"on_get_possible_suits")
@@ -87,5 +85,3 @@ func get_possible_preview_cards() -> Array[CardData]:
 		card_datas.append(CardData.new().with_rank(rank))
 	return card_datas
 
-func view_choices() -> void:
-	DeckViewer.show_deck(CardEnvironment.CURRENT, await get_possible_preview_cards())

@@ -59,10 +59,6 @@ var _source_pause_time : float = 0.0
 ## The precomputed elapsed instant at which input comes back. A TIME rather than a per-frame
 ## geometric re-check, for the same reason `_source_pause_time` is one.
 var _input_unlock_time : float = 0.0
-## The info card's height when this move was requested, or -1 for the authored cap. Frozen like
-## `_settings` so the info pose cannot change shape mid-move.
-var _card_height_px : float = -1.0
-
 ## Fired once, when the tween completes and lands on the requested picture.
 signal landed(picture_id: StringName)
 ## Fired once, the instant input comes back. Callers listen rather than polling `is_active`.
@@ -157,8 +153,7 @@ static func _find_input_unlock_time(total: float, source_rect: PictureRect, dest
 ## The arrival is therefore NOT in this function. The cross-fade itself is driven by `_apply()`
 ## from the same `elapsed`/`total` pair — `sample_at()` stays pure and engine-free.
 static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
-		dest_rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
-		card_height_px: float = -1.0) -> Sample:
+		dest_rect: PictureRect, window_size: Vector2, settings: PlayerSettings) -> Sample:
 	var s := Sample.new()
 
 	if settings.wall_reduced_motion:
@@ -174,35 +169,6 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 		s.source_frame_in_view = true
 		s.dest_visible = true
 		s.dest_frame_in_view = true
-		return s
-
-	# With Info mode on a transition is a pure TRAVEL between the two info poses — it never leaves
-	# info framing, which is what "the camera never leaves the info zoom" asks for.
-	#
-	# ⚠ **BOTH ENDS MUST MATCH THE RESTING POSE, OR THE MOVE SNAPS AT EACH END.** Two ways that
-	# broke:
-	#  * holding the SOURCE's zoom for the whole move means a differently-sized destination is
-	#    reached at the wrong zoom, and the settle after landing cuts to the right one;
-	#  * computing the pose without `card_height_px` reserves the authored CAP while the resting
-	#    pose reserves the card's LIVE height, so the camera jumped the moment the move began.
-	# Interpolating BOTH position and zoom between the two real poses starts and ends exactly where
-	# the camera already is, so there is nothing left to cut.
-	if settings.wall_info_mode:
-		var source_info := WallPicture.info_zoom_state(source_rect, window_size, settings,
-				card_height_px)
-		var dest_info := WallPicture.info_zoom_state(dest_rect, window_size, settings,
-				card_height_px)
-		var info_t := 0.0 if total <= 0.0 else clampf(elapsed / total, 0.0, 1.0)
-		var eased : float = Tween.interpolate_value(0.0, 1.0, info_t, 1.0,
-				settings.wall_travel_trans, settings.wall_travel_ease)
-		s.camera_position = (source_info["position"] as Vector2).lerp(
-				dest_info["position"] as Vector2, eased)
-		s.camera_zoom = lerpf(source_info["zoom"] as float, dest_info["zoom"] as float, eased)
-		var info_visible := visible_rect(s.camera_position, s.camera_zoom, window_size)
-		s.source_frame_in_view = info_visible.encloses(WallPacker.frame_outer_rect(source_rect))
-		s.dest_visible = info_visible.intersects(
-				Rect2(dest_rect.centre - dest_rect.size * 0.5, dest_rect.size))
-		s.dest_frame_in_view = info_visible.encloses(WallPacker.frame_outer_rect(dest_rect))
 		return s
 
 	var bounds := phase_bounds(settings)
@@ -255,8 +221,7 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 ## Starts a transition from `source` to `dest`, animating `camera`. A no-op — no tween at all — if
 ## `dest` is already the current picture, or if a transition is already active.
 func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, dest: WallPicture,
-		dest_rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
-		card_height_px: float = -1.0) -> void:
+		dest_rect: PictureRect, window_size: Vector2, settings: PlayerSettings) -> void:
 	if dest_rect.id == source_rect.id: return
 	if is_active: return
 	is_active = true
@@ -267,17 +232,7 @@ func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, de
 	_source_rect = source_rect
 	_dest_rect = dest_rect
 	_window_size = window_size
-	# ⚠ A FROZEN COPY, not the live resource. `sample_at()` branches on `wall_reduced_motion` and
-	# `wall_info_mode` and the tween callback re-enters it every frame, so with the live object
-	# here, toggling either knob MID-MOVE switches the camera's whole model inside the running
-	# tween and it jumps for the rest of the move. A move's CHARACTER is fixed when it is
-	# requested, the same way its destination and its clock are.
-	# Safe to `duplicate()`: `PlayerSettings` setters only emit `settings_changed`, and signal
-	# connections are not copied, so the copy cannot reach `SettingsManager`'s save-to-disk.
 	_settings = settings.duplicate()
-	# Frozen with the settings, and for the same reason: the info pose must not change shape
-	# mid-move just because the card behind it resized.
-	_card_height_px = card_height_px
 	_total = total_duration(settings)
 	_source_pause_time = _find_source_pause_time(_total, _source_rect, _dest_rect, _window_size,
 			_settings)
@@ -287,7 +242,7 @@ func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, de
 	tween.tween_method(
 			func(elapsed: float) -> void:
 				_apply(camera, source, dest, sample_at(elapsed, _total, _source_rect, _dest_rect,
-						_window_size, _settings, _card_height_px), elapsed),
+						_window_size, _settings), elapsed),
 			0.0, _total, _total).set_trans(Tween.TRANS_LINEAR)
 	tween.finished.connect(
 			func() -> void:

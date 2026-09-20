@@ -6,9 +6,9 @@ class_name Board
 ## validate()) hangs off ONE rule:
 ##
 ##   RULE: never write state's card arrays (upper/lower_zone, *_zone_type,
-##   draw_deck, discard_deck, rules_deck) directly. Mutate only through:
+##   the entrance stocks, discard_deck, rules_deck) directly. Mutate only through:
 ##     Board.move_stack / place_card / add_column / remove_column
-##     Game.draw_card / discard_data / add_deck / shuffle_deck / return_to_map
+##     Game.draw_card / discard_data / add_deck / deal_stocks / return_to_map
 ##   These all bump state.revision, whose setter emits board_changed -> the UI
 ##   rebuilds and the compare-mod cache invalidates. No bump = silent desync
 ##   (stale visuals AND possibly stale comparator results).
@@ -246,9 +246,16 @@ static func remove_column(state: GameData, zone_cols: Array[ArrayCardData], zone
 	zone_types.remove_at(index)
 	#pop BEFORE the bump: board_changed listeners run synchronously inside the bump and
 	#must see types/columns already back in lockstep (the old order bumped mid-mutation)
-	var orphans : Array[CardData] = zone_cols.pop_at(index).datas
+	_park_removed_stock(state, zone_cols, index)
+	var removed : ArrayCardData = zone_cols.pop_at(index)
 	state.revision += 1
-	return orphans
+	return removed.datas
+
+## A removed Entrance slot's stock moves to the END of the stocks, where it has no slot of its own and Game.rebalance_stocks pours it back into the survivors -- its cards are dealt out, not discarded.
+static func _park_removed_stock(state: GameData, zone_cols: Array[ArrayCardData], index: int) -> void:
+	var stocks := state.entrance_stocks()
+	if not is_same(zone_cols, state.upper_zone) or index >= stocks.size(): return
+	stocks.append(stocks.pop_at(index))
 
 
 # ==============================================================================

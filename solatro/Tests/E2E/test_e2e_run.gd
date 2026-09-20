@@ -26,6 +26,9 @@ extends TestSuite
 
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 
+## Higher than either scenario can score, so the goal's own automatic end never fires inside a scenario that is about something else.
+const GOAL_OUT_OF_REACH : int = 100000000
+
 func suite_name() -> String:
 	return "E2E RUN"
 
@@ -100,7 +103,8 @@ func run_win_and_resume_scenario() -> void:
 	var run := RunManager.new_run(cards, rules)
 	Main.save_info = run
 	check(RunManager.has_save(), "starting a run immediately writes a resumable save")
-	run.pending_goal = 1     # the map node's fame requirement for this show
+	## The map node's fame requirement for this show.
+	run.pending_goal = GOAL_OUT_OF_REACH
 	run.pending_node_id = 2  # a show is in progress on this node
 
 	# --- fresh show bootstrap (Game._ready -> _start_fresh_show) ---
@@ -108,7 +112,8 @@ func run_win_and_resume_scenario() -> void:
 	var g := Game.new()
 	add_child(g)
 	await get_tree().process_frame
-	check(g.state.goal == 1, "the show takes its goal from the map node", str(g.state.goal))
+	check(g.state.goal == GOAL_OUT_OF_REACH, "the show takes its goal from the map node",
+			str(g.state.goal))
 	check(g.state.upper_zone.size() > 0 \
 			and g.state.upper_zone.size() == g.state.upper_zone_type.size(),
 			"the upper zone-adder rules cards build the Entrance on game start",
@@ -121,9 +126,9 @@ func run_win_and_resume_scenario() -> void:
 	# the slots -- asked before it, the refill finds nothing to fill and deals silently nothing.
 	var opening := entrance_cards(g)
 	check(opening > 0, "the opening deal fills the Entrance", "%d cards" % opening)
-	check(g.state.draw_deck.size() == deck_size - opening,
-			"the rest of the starter deck is in the draw pile",
-			"%d vs %d - %d" % [g.state.draw_deck.size(), deck_size, opening])
+	check(g.state.all_stock_cards().size() == deck_size - opening,
+			"the rest of the starter deck is in the slot stocks",
+			"%d vs %d - %d" % [g.state.all_stock_cards().size(), deck_size, opening])
 	check(g.save_history.size() == 1 and run.game_history.size() == 1,
 			"the opening board is committed to history and the save")
 	validate_ok(g, "fresh show")
@@ -164,7 +169,7 @@ func run_win_and_resume_scenario() -> void:
 	# only holds if every bucket round-tripped through the save and back.
 	check(g2.state.live_total() == exp_total, "resume restores the board's score",
 			"%d vs %d" % [g2.state.live_total(), exp_total])
-	check(g2.state.goal == 1, "resume restores the show's goal")
+	check(g2.state.goal == GOAL_OUT_OF_REACH, "resume restores the show's goal")
 	check(g2.save_history.size() == exp_history, "resume restores the undo history")
 	check(not g2.processing, "a plain mid-show resume hands the board back to the player")
 	validate_ok(g2, "resumed show")
@@ -175,8 +180,10 @@ func run_win_and_resume_scenario() -> void:
 			resolved.append([won, score, goal]))
 	var more := await TestGridFixtures.place_row_from_deck(g2, 0, 1, 5)
 	check(more.size() == 5 and resolved.is_empty(),
-			"a show never resolves on its own -- only End resolves one",
+			"a placement short of the goal never resolves the show -- only the goal or End resolves one",
 			"%d placed, %d resolutions" % [more.size(), resolved.size()])
+	## Brought within reach only HERE: reachable during the placements above, the goal would end the show by itself and this scenario would never reach the resume or the button.
+	g2.state.goal = 1
 	g2.end_show()
 	check((resolved.size() == 1 and resolved[0][0] == true) as bool,
 			"ending the show resolves it as a win (goal met)", str(resolved))
@@ -197,9 +204,9 @@ func run_win_and_resume_scenario() -> void:
 			"fame %d, score %d" % [loaded.fame, exp_fame])
 	check(total_zone_cards(g2) == 0 and g2.state.discard_deck.is_empty(),
 			"the board and discard pile are swept clean")
-	check(g2.state.draw_deck.size() == deck_size,
+	check(g2.state.all_stock_cards().size() == deck_size,
 			"every card returns to the run deck — none created or lost",
-			"%d vs %d" % [g2.state.draw_deck.size(), deck_size])
+			"%d vs %d" % [g2.state.all_stock_cards().size(), deck_size])
 	check(Main.save_info.game_history.is_empty(),
 			"the finished show's history is dropped (Continue won't re-enter it)")
 	remove_child(g2)
@@ -279,7 +286,7 @@ func run_headless_and_viewed_parity_scenario() -> void:
 func play_whole_show(with_view: bool) -> Dictionary:
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	run.pending_goal = 1
+	run.pending_goal = GOAL_OUT_OF_REACH
 	run.pending_node_id = 2
 	# The SAME seed for both runs: add_deck shuffles, so an unseeded second run would deal a
 	# different order and the comparison would be meaningless rather than false.

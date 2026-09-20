@@ -45,19 +45,9 @@ static func route(event: InputEvent, picture: WallPicture) -> bool:
 	picture.viewport.push_input(local_event, true)
 	return true
 
-## The clamped touch-target size in px, used by `WallOverlay._apply_touch_targets()` to grow every
-## overlay control. `dpi` is a parameter rather than an internal
-## `DisplayServer.screen_get_dpi()` call so a caller can supply a synthetic value.
-## ⚠ THE CLAMP IS MANDATORY: DPI is unreliable on multi-monitor Windows, which reports the primary
-## screen's DPI for all of them, and on Android.
-static func touch_target_px(dpi: float, settings: PlayerSettings) -> float:
-	return clampf(mm_to_px(settings.wall_touch_target_mm, dpi), settings.wall_touch_target_min_px,
-			settings.wall_touch_target_max_px)
-
-## Millimetres -> pixels at a given DPI (25.4 mm/inch). Split out from touch_target_px() so a test
-## can check the unclamped conversion in isolation if it ever needs to.
-static func mm_to_px(mm: float, dpi: float) -> float:
-	return mm / 25.4 * dpi
+## The touch-target size in px every overlay control is grown to, straight from the units model.
+static func touch_target_px(window: Vector2, settings: PlayerSettings) -> float:
+	return GestureMetrics.touch_target_px(window, settings)
 
 ## Derives pinch BY HAND from two tracked `InputEventScreenTouch` ids' distance delta.
 ## `InputEventMagnifyGesture` is never listened for — it does not fire on Windows. One instance

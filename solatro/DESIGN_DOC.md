@@ -126,7 +126,7 @@ only the board; the HUD stays live. Consequence: **fame banks at Continue** (`ex
 `RunManager.record_win`), not at the outcome screen — the win stays undoable until committed,
 and resuming at the win screen can't double-bank.
 
-**Implementation state:** `Game`/`GameData` with draw deck, discard, the Entrance (still backed
+**Implementation state:** `Game`/`GameData` with per-slot Entrance stocks, discard, the Entrance (still backed
 by the old `upper_zone` array) and `grids`; `SkillGridAllotment` sizes the grid count to the
 deck and adds the `SkillGridCreator` cards that build them; `SkillLineDetector` answers every
 board mutation and scores what completed. ✅
@@ -288,7 +288,7 @@ alternative goal-manipulation effects. 💭
 - A card has: **suit, rank** (the pips), a **stamp slot**, a **skill slot**, and a
   **card type**.
 - Cards can have 1 parent and 1 child card — a stack.
-- There exists a board of one or more **grids**, an Entrance, a draw deck, a discard deck,
+- There exists a board of one or more **grids**, an Entrance, per-slot Entrance stocks, a discard deck,
   and a rule-set deck.
 - On game creation the rule-set deck is parsed to decide board layout — that is literally how
   the grids come to exist (`SkillGridAllotment` sizes the count, `SkillGridCreator` builds
@@ -962,7 +962,7 @@ The notes end with an auto-generated summary the author disclaims. Assessment:
 | 15s as default scoring | Early | See cribbage row |
 | Mana bar | Late | Mana *cards* / any-card-as-resource instead |
 | **Whole-board Submit** | Mid | Superseded by the grid: a placement scores what it completes, immediately |
-| **Three acts per show (`MAX_SUBMITS`)** | Mid | Went with Submit; a show now ends when the player presses End |
+| **Three acts per show (`MAX_SUBMITS`)** | Mid | Went with Submit; a show ends when a placement meets the goal or the player presses End |
 | **Act payout `row × col × combo`** | Mid | Superseded by the per-grid bucket product, applied live |
 | **The upper/lower two-zone tableau** | Mid | Superseded by grids of stacked cells; the Entrance is a row of one grid |
 | **`score_additive` and `duplicate_class_scale`** | Late | Levers on an economy that no longer exists |

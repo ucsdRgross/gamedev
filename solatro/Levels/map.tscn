@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://oc6yiar3wsih"]
+[gd_scene load_steps=5 format=3 uid="uid://oc6yiar3wsih"]
 
 [ext_resource type="Script" path="res://Levels/map.gd" id="1_mapgd"]
 [ext_resource type="Script" path="res://Scripts/Map/world_map_controller.gd" id="2_wmctrl"]
 [ext_resource type="Script" path="res://Scripts/Map/map_player_token.gd" id="3_token"]
+[ext_resource type="PackedScene" path="res://UI/map_name_popup.tscn" id="4_namepop"]
 
 [node name="Map" type="Node"]
 script = ExtResource("1_mapgd")
@@ -21,41 +22,5 @@ script = ExtResource("3_token")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
-[node name="FameLabel" type="Label" parent="UI"]
+[node name="NamePopup" parent="UI" instance=ExtResource("4_namepop")]
 unique_name_in_owner = true
-offset_left = 12.0
-offset_top = 8.0
-offset_right = 260.0
-offset_bottom = 44.0
-theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 24
-text = "Fame: 0"
-
-[node name="LapLabel" type="Label" parent="UI"]
-unique_name_in_owner = true
-offset_left = 12.0
-offset_top = 44.0
-offset_right = 260.0
-offset_bottom = 80.0
-theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 24
-text = "Lap: 1"
-
-[node name="LuckLabel" type="Label" parent="UI"]
-unique_name_in_owner = true
-offset_left = 12.0
-offset_top = 80.0
-offset_right = 260.0
-offset_bottom = 116.0
-theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 24
-text = "Luck: 0%"
-
-[node name="DeckButton" type="Button" parent="UI"]
-offset_left = 12.0
-offset_top = 596.0
-offset_right = 112.0
-offset_bottom = 636.0
-text = "Deck"
-
-[connection signal="pressed" from="UI/DeckButton" to="." method="_on_deck_clicked"]

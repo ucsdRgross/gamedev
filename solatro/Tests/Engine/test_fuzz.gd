@@ -96,8 +96,12 @@ func make_state() -> GameData:
 	for i in 6:
 		var d := TestFactories.m_card(i + 1, TestFactories.uc())
 		d.stage = CardData.Stage.DRAW
-		s.draw_deck.append(d)
+		s.entrance_stocks()[0].datas.append(d)
 	return s
+
+## The one stock this fuzz board deals into -- the spread across slots is the deal's business.
+func stock0(s: GameData) -> Array[CardData]:
+	return s.entrance_stocks()[0].datas
 
 ## Every card sitting in a grid cell (NOT the cell type cards, which are never moved).
 func grid_cards(s: GameData) -> Array[CardData]:
@@ -134,7 +138,7 @@ func board_cards(s: GameData) -> Array[CardData]:
 ## Cheap identity hash of the whole state for board-unchanged assertions.
 func board_hash(s: GameData) -> String:
 	var parts := []
-	for arr : Array[CardData] in [s.draw_deck, s.discard_deck, s.rules_deck,
+	for arr : Array[CardData] in [s.all_stock_cards(), s.discard_deck, s.rules_deck,
 			s.upper_zone_type, s.lower_zone_type]:
 		var ids := []
 		for card in arr: ids.append(card.get_instance_id())
@@ -192,7 +196,7 @@ func verify_positions(s: GameData) -> String:
 ## Picks a moving card: usually on-board, sometimes deliberately illegal.
 func random_moving(s: GameData) -> CardData:
 	match _rng.randi_range(0, 9):
-		0: return s.draw_deck[0] if s.draw_deck.size() > 0 else random_board_card(s)
+		0: return stock0(s)[0] if stock0(s).size() > 0 else random_board_card(s)
 		1: return s.upper_zone_type[_rng.randi_range(0, s.upper_zone_type.size() - 1)]
 		2: return _stranger_moving #off-board entirely
 		_: return random_board_card(s)
@@ -232,8 +236,8 @@ func run_random_walk() -> void:
 		#compare-mod cache both key on it
 		match action:
 			0: #draw: deck -> random column end
-				if s.draw_deck.size() > 0:
-					var card : CardData = s.draw_deck.pop_back()
+				if stock0(s).size() > 0:
+					var card : CardData = stock0(s).pop_back()
 					card.stage = CardData.Stage.PLAY
 					var x := _rng.randi_range(0, 1)
 					zone(s, x)[_rng.randi_range(0, zone(s, x).size() - 1)].datas.append(card)
@@ -285,19 +289,19 @@ func run_random_walk() -> void:
 				var coord := random_cell(s)
 				if not coord.is_nowhere():
 					var card : CardData = null
-					if s.draw_deck.size() > 0 and _rng.randf() < 0.5:
-						card = s.draw_deck.pop_back()
+					if stock0(s).size() > 0 and _rng.randf() < 0.5:
+						card = stock0(s).pop_back()
 					else:
 						card = random_board_card(s)
 					# ⚠ `place_in_cell` lifts a card out of a ZONE COLUMN but not out of a DECK —
 					# appending a deck card without erasing it leaves it in two collections, which
 					# is exactly the I1 duplicate the next validate() would report.
-					if card and s.draw_deck.has(card): s.draw_deck.erase(card)
+					if card and stock0(s).has(card): stock0(s).erase(card)
 					if card and Board.place_in_cell(s, card, coord):
 						note("%d: place %s -> %s" % [i, card, coord.pack()])
 					elif card:
 						# refused (already on a grid): put a deck card back rather than losing it
-						if card.stage == CardData.Stage.DRAW: s.draw_deck.append(card)
+						if card.stage == CardData.Stage.DRAW: stock0(s).append(card)
 			5: #move a grid card to another cell, or take it off the board entirely
 				var card := random_grid_card(s)
 				if card:

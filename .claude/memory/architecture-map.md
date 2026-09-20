@@ -47,6 +47,11 @@ The places where two things must agree, and nothing checks it for you:
   `CardModifier.data` is a WeakRef. Both need manual handling after any copy.
 - **Draw order is structural** (node order, not `z_index`), so reparenting changes rendering.
 - **Pooled per-slot controls** are reused across cards — derive state on bind, never cache it.
+- **Two coordinate spaces on one screen** — the HUD container is in the root viewport, the board
+  inside a picture's SubViewport; every position crossing between them converts through the
+  picture (`PICTURE_WALL.md`).
+- **State owned by a screen but stored on a longer-lived node** (`HudContainer`) must end when the
+  screen does.
 
 Contracts and the current spec for all of these: `solatro/ARCHITECTURE_REVIEW.md`
 (scoring §3, props §4, undo §5, memory §6, testing §7, owner rulings §8) and `LAYERING.md`.
@@ -59,6 +64,6 @@ The authoritative copy of the mutation rules is the "MUTATION GUIDELINES" block 
 - Every UI must work with mouse, keyboard AND controller.
 - Tuning knobs live in `player_settings.gd`; durations derive from `get_delay()`, never
   wall-clock.
-- Warnings-as-errors: type every array element and every loop variable.
+- Warnings-as-errors — [[gdscript-type-all-arrays]].
 
 See [[machine-profiles]] for anything path- or hardware-shaped.

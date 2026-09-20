@@ -6,6 +6,9 @@ extends CanvasLayer
 
 signal deck_picked(cards: Array[CardData], rules: Array[CardData])
 
+## An Inspect opened a viewer over this picker, handed to the screen hosting it so that screen insets it beside the sidebar and relays what it publishes, exactly as it does for its own viewers.
+signal viewer_opened(viewer: DeckViewer)
+
 const DECK_PICKER := preload("res://UI/deck_picker.tscn")
 
 @onready var rows: VBoxContainer = %Rows
@@ -33,7 +36,7 @@ func _ready() -> void:
 		row.add_child(label)
 		var inspect := Button.new()
 		inspect.text = "Inspect"
-		inspect.pressed.connect(func() -> void: DeckViewer.show_deck(self, cards))
+		inspect.pressed.connect(func() -> void: _inspect(cards, inspect))
 		row.add_child(inspect)
 		var pick := Button.new()
 		pick.text = "Pick"
@@ -44,6 +47,13 @@ func _ready() -> void:
 	var first_row := rows.get_child(0) as HBoxContainer
 	if first_row:
 		(first_row.get_child(2) as Button).grab_focus()
+
+# ⚠ ABOVE THIS PICKER'S OWN DIM, WHICH TAKES EVERY HOVER AND CLICK OVER WHAT IT COVERS: a viewer
+# left below it lists cards only the keyboard can reach, and its click-to-close never fires.
+func _inspect(cards: Array[CardData], inspect: Button) -> void:
+	var viewer := DeckViewer.show_deck(self, cards, inspect)
+	viewer.layer = layer + 1
+	viewer_opened.emit(viewer)
 
 ## Keyboard/controller close.
 func _unhandled_input(event: InputEvent) -> void:

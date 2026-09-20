@@ -49,11 +49,17 @@ This block, unchanged, goes into every document derived from this one.
 ```
 container_is_top   := (window.x - container_px) / window.y  <  1.0
                       # "would the play area LEFT OVER be taller than it is wide"
-container_px       := min(settings.container_size_fraction * reference,
-                          settings.container_size_max_px)
+container_px       := settings.container_size_fraction * reference,
+                      capped at settings.container_size_max_px ONLY where the band's own axis
+                      outruns the project's reference window shape (1152x648, read from
+                      ProjectSettings through PlayArea.reference_window_size())
   where reference  := window.x   when the container is on the SIDE
                       window.y   when the container is on the TOP
 ```
+
+⚠ **The cap is a rule about SHAPE, not about pixel count** (`GAP-001`=b): a window of the reference
+shape keeps the authored 394 px inset at any size, 4K included, and only an ultrawide — or an
+ultratall under the top band — clamps.
 
 When clamped, the container is flush against the **inner** edge of its band: on the side its right
 edge sits at `container_px` measured inward from the band's outer limit, leaving the empty space
@@ -61,8 +67,10 @@ outboard of it. (D1, D2, D4, D6, D7, `Q177`=a)
 
 ```
 picture_scale      := max(window.x / 1576.0, window.y / 887.0)   # a focused picture COVERS
-PlayArea.board_inset_left := container_px / picture_scale        # side case
-PlayArea.board_inset_top  := container_px / picture_scale        # top case
+crop               := (design - window / picture_scale) / 2.0    # ...so it is CROPPED off-window
+PlayArea.board_inset_left   := crop.x + container_px / picture_scale   # side case
+PlayArea.board_inset_top    := crop.y + container_px / picture_scale   # top case
+PlayArea.board_visible_crop := crop                # the matching right and bottom edges
 ```
 
 ⚠ **`board_inset_*` is in PICTURE pixels and `container_px` is in WINDOW pixels.** The conversion
@@ -70,7 +78,14 @@ is the focused picture's live scale and must be recomputed on resize. At the pic
 the window cancels: the inset is `0.25 * 1576 = 394 px`, which is exactly today's measured value.
 (D8, D9, D10)
 
-The MAP uses `container_px` directly with no conversion — it has no picture. (D11, `Q247`=a)
+⚠ **The board's region is measured in the VISIBLE picture** (`GAP-002`=a): every inset gains the
+crop on its axis, so the board fits and centres in what the player can see beside the container on
+every window narrower than the picture's own aspect. `WallPicture.visible_rect_beside()` is the one
+place that arithmetic lives; `local_rect_beside()` is it for a picture instance.
+
+The MAP converts exactly as the board does — window px through the map picture's live cover scale,
+and through the map camera's own zoom — so its focus sits at the centre of the remaining space at
+every window and zoom. (D11, `Q247`=a as corrected by `GAP-003`=a)
 
 ### 1.2 The container's contents — authorised by `Q170`, `Q255`, `Q257`
 
@@ -90,7 +105,7 @@ Transitions, and nothing else may cause one:
 | pointer leaves everything, nothing locked | **stays** on the last entry | B4 |
 | click on a card | `lock_to(...)`, and the click still performs its game action | B5, `Q56`=a |
 | a locked card, pointer over another card | description follows the hover; returns to the locked card when the pointer leaves everything | B7, `Q60`=c |
-| exit X, cancel, click on bare board, or the held card leaves its cell **while following** | `show_hud()` | B9, B10, B11 |
+| exit X, cancel, click on bare board, or the held card leaves its cell **while following** — but **never the card the same click locked and grabbed**, whose placement closes it instead | `show_hud()` | B9, B10, B11, `GAP-008`=a |
 | `Game.processing` goes true | `show_hud()`, **lock cleared and not restored** | B17, B18, C8 |
 | hover during processing | **ignored entirely** | B19 |
 | processing ends | HUD holds until **any** focus event, including onto the same card | B20, C9, `Q257`=b |
@@ -137,13 +152,15 @@ and not `following`, the card rests at its slot centre raised by the lift height
 height it has while following, so the only visible change when following starts is that it begins
 to move. (G4, G5, G8, `Q261`=a, `Q265`=a)
 
-`following` is set by either of two events, with **no threshold**:
-
-- focus landing on any card by key or pad;
-- any mouse motion at all.
+`following` is set by **any mouse motion at all**, with **no threshold** — including the motion
+Godot emulates from a touch. A focus landing on a card by key or pad does **not** set it: the armed
+card stays lifted in its slot, and the pad player places by accept on a cell.
 
 It is a **one-way latch**: once true it stays true until the card is placed or cancelled.
-(G6, G7, G8, `Q262`=a, `Q263`=a)
+(G6, G7, G8, `GAP-006`=b, `Q263`=a)
+
+One exception: a gesture that ended **without placing** — a refused drop, a refused grab — stops the
+follow, and motion does not restart it. Only a **new press**, or a fresh pickup, does. (`GAP-007`=a)
 
 A card the player CLICKS is `following` immediately — the mouse has moved by definition. (G11)
 
@@ -238,7 +255,8 @@ before S1.
 `game_view.tscn` and calls `game_wp.attach_screen(new_view)` — so `GameView`, its `SceneRoot`, and
 every furniture control **live inside the game WallPicture's `SubViewport`**. That is *why* the HUD
 scales with the picture and why `hud_scale()` exists at all. The map's Fame/Lap/Luck sit in
-`map.tscn`'s own `$UI` `CanvasLayer`, inside the map picture's viewport.
+`map.tscn`'s own `$UI` `CanvasLayer`, inside the map picture's viewport — the map DOES live in a
+picture, which is why its own container offset converts through that picture's scale (§1.1).
 
 **Where they go:** `QR3`=(a) says *"every button and label moves into it"*, and `QR1`=(a) says the
 surface is ONE instance on the wall overlay, window-anchored. Both cannot be satisfied by leaving
@@ -493,10 +511,10 @@ sizes `[5,5,5,4,4]`, and that two runs from the same shuffled order produce iden
 **Done-when (hard gate):** a test removes a slot and asserts every remaining slot's TOP card is
 unchanged.
 
-⚠ `Q245` fixes the face-down cap, verbatim: *"knob defaulting to 5"* — so `entrance_stock_face_down_cap` starts at 5.
+⚠ The owner's S21 ruling supersedes `Q245`: there is no cap knob; a non-empty stock shows one face-down card.
 
 **S21 — The flip** *(implements I1–I12, Q203, Q213, Q214, Q215b, Q216, Q217, Q218, Q219, Q220, Q221, Q223, Q244, Q245)*
-Face-down stocks with the capped depth; flip in place, staggered left to right; no fly-in; hovering
+One face-down card per non-empty stock; flip in place, staggered left to right; no fly-in; hovering
 a stock describes the slot; deck viewer shows the sorted union.
 
 ### Phase 7 — automatic end

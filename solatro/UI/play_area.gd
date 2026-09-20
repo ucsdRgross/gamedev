@@ -2,9 +2,22 @@ extends Control
 class_name PlayArea
 
 signal data_selected(data : CardData)
-## A card was CLICKED while Info mode is on. Carries the card's own `InfoEntry` for the wall's one
-## info card; `data_selected` is deliberately NOT emitted for the same press.
+## A gesture travelled far enough to be a drag; this is the card it started on, and whatever was held lets go.
+signal card_dragged(data: CardData)
+## The drag's release landed on this card: the same placement a click asks for.
+signal card_dropped(data: CardData)
+## A second press paired with the first one into a tap on this card.
+signal card_tapped(data: CardData)
+## A card is highlighted: its `InfoEntry` for the wall's one container.
 signal info_requested(entry: InfoEntry)
+
+# NO CARD IS HIGHLIGHTED ANY MORE: the pointer left every card, or the board focus moved off them.
+# Card to card is SILENT -- the card being entered publishes its own description, and a clear
+# between the two would flick a locked card's description back in for a frame.
+signal highlight_cleared
+
+## The player asked to close the description: a cancel press, or a press on bare board.
+signal description_dismiss_requested
 ## Emitted once a rebuild's CardVisuals are all in-tree and _ready. CardVisuals add_child via
 ## call_deferred, so right after set_card_zones they're mapped in data_card but not yet ready;
 ## a deferred emit queued after those adds (FIFO) fires only once they've entered the tree.
@@ -29,31 +42,52 @@ enum ViewMode { OVERVIEW, FOCUSED }
 ## No grid is focused. ⚠ Never 0 — grid 0 is a real grid.
 const NO_GRID := -1
 
-## The width the HUD's rectangle takes on the LEFT, published by `GameView`. The board lays out in
-## what is left of the screen and CENTRES THERE, not on the screen (owner ruling). Zero for any host
-## that mounts a bare `PlayArea` with no HUD around it.
-##
-## ⚠ **THE BOARD'S WINDOW IS WHAT MOVES, NOT THE CONTENT.** Insetting the scroller's own left edge
-## makes every centring the board already does -- the focused aim, the resting position, the
-## removal re-centre -- land in the post-HUD space for free. Offsetting the content instead would
-## leave each of those to re-discover the inset separately.
+# ⚠ THE BOARD'S WINDOW IS WHAT MOVES, NOT THE CONTENT. Insetting the scroller's own edges makes
+# every centring the board already does -- the focused aim, the resting position, the removal
+# re-centre -- land in the post-HUD space for free, instead of re-discovering the reserve in each.
+
+## Picture px reserved on the LEFT, published by `GameView`: the container's width plus whatever a covering window crops off that edge. Zero for a bare `PlayArea` with no HUD around it.
 var board_inset_left : float = 0.0:
 	set(value):
 		if is_equal_approx(board_inset_left, value): return
 		board_inset_left = maxf(value, 0.0)
 		if not is_instance_valid(scroll_container): return
-		# ⚠ **THE RESERVE ARRIVES AFTER THE SHOW HAS ALREADY OPENED.** `GameView` reads the HUD's
-		# authored offsets at the END of its own `_ready()`, by which time the deal has built the
-		# board and `open_show_view()` has already fitted a focused grid against an inset of zero.
-		# Re-fitting here is what makes the arriving reserve reach the zoom; without it the board
-		# keeps the width it chose when it thought it had the whole screen.
-		# ⚠ **THE RECT FIRST, UNCONDITIONALLY.** `_zoom_board_to()` early-returns when the zoom is
-		# unchanged, and a reserve that arrives without moving the zoom is exactly that case — the
-		# scroller would keep the offsets it took when it thought it had the whole screen, and the
-		# board would centre on the SCREEN rather than on what the HUD leaves.
-		_apply_entrance_strip_height()
-		if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
-			focus_grid(focused_grid)
+		_re_fit_after_inset_change()
+
+## The same reserve off the TOP: the container's height in the TOP-band case, plus that edge's crop.
+var board_inset_top : float = 0.0:
+	set(value):
+		if is_equal_approx(board_inset_top, value): return
+		board_inset_top = maxf(value, 0.0)
+		if not is_instance_valid(scroll_container): return
+		_re_fit_after_inset_change()
+
+## The picture px a covering window crops off the RIGHT and BOTTOM, so the board fits and centres in what the player can SEE rather than in the whole picture. Zero at the picture's own aspect.
+var board_visible_crop : Vector2 = Vector2.ZERO:
+	set(value):
+		if board_visible_crop.is_equal_approx(value): return
+		board_visible_crop = value
+		if not is_instance_valid(scroll_container): return
+		_re_fit_after_inset_change()
+
+## How many WINDOW pixels one of this picture's own pixels is drawn at, published by `GameView` -- the same boundary `board_inset_*` crosses the other way.
+var picture_to_window_scale : float = 1.0
+
+## The size a board card occupies in THIS picture's own pixels: its card size at the live zoom.
+func board_card_picture_px() -> Vector2:
+	return CardVisual.card_size_play * board_zoom
+
+## The size a board card is DRAWN at on the player's screen: this board's card size, at its live zoom, in window pixels.
+func board_card_window_px() -> Vector2:
+	return board_card_picture_px() * picture_to_window_scale
+
+# ⚠ **THE RESERVE ARRIVES AFTER THE SHOW HAS ALREADY OPENED**, against a focused grid already
+# fitted to an inset of zero, so re-fitting here (unconditionally, before any zoom check) is what
+# makes the arriving reserve reach the zoom instead of leaving the board centred on the screen.
+func _re_fit_after_inset_change() -> void:
+	_apply_entrance_strip_height()
+	if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
+		focus_grid(focused_grid)
 
 ## The view mode changed. Carries the mode and the grid it focuses (`NO_GRID` in the overview).
 signal view_mode_changed(mode: ViewMode, grid: int)
@@ -85,7 +119,7 @@ var separation : int = BOARD_SEPARATION:
 ## POINT.** `Tools/wall_editor.tscn` hosts a real `GameView` on its game picture, and the one
 ## override it sets is `WallPicture.editor_settings` -- so a board that went straight to
 ## `SettingsManager` ignored every knob the tool's own panel edits, and `board_edge_pad_rows` or
-## `hud_width_fraction` tuned there changed nothing on the board being previewed.
+## `container_size_fraction` tuned there changed nothing on the board being previewed.
 ## In the shipped game nothing sets that override and this resolves to `SettingsManager.settings`.
 static func settings() -> PlayerSettings:
 	return WallPicture.settings()
@@ -237,7 +271,7 @@ static func focused_content_height_px(settings_res: PlayerSettings) -> float:
 ##
 ## ⚠ **THE BOARD'S OWN AREA IS THE VIEW ISOLATION IS MEASURED IN, NOT THE CAMERA'S WHOLE RECT**
 ## (owner: *"the center should be on halfway through the 0.75 section... pretend 0.75 area is the
-## entire camera view, so its truly centered"*). The HUD takes `hud_width_fraction` off the left, so
+## entire camera view, so its truly centered"*). The HUD takes `container_size_fraction` off the left, so
 ## the board's own view is the remaining share and a neighbour is out of view once it clears THAT.
 ##
 ## ⚠ **THIS IS WHY THE CONDITION IS SYMMETRIC AGAIN.** The board centres in its own area, so both
@@ -254,7 +288,7 @@ static func focused_content_height_px(settings_res: PlayerSettings) -> float:
 ## nothing off the width, so the horizontal divisor is 1 and the share comes off the HEIGHT instead
 ## -- and then neither side is nearer the screen's edge. Whoever moves the HUD moves this with it.
 static func board_view_divisor(settings_res: PlayerSettings) -> float:
-	return 1.0 / maxf(1.0 - settings_res.hud_width_fraction, 0.0001)
+	return 1.0 / maxf(1.0 - settings_res.container_size_fraction, 0.0001)
 
 ## The buffer between two grid panels, DERIVED so a FOCUSED grid isolates its neighbours: at the
 ## isolation check's own scale, the neighbour panel's near edge must clear the OVERVIEW picture's
@@ -334,11 +368,15 @@ static func grid_position_size_px(settings_res: PlayerSettings, buffer_override:
 	var buffer := buffer_override if buffer_override >= 0.0 else isolating_grid_buffer_px(settings_res)
 	var span := count * block.x + (count - 1.0) * buffer
 	var width := span + 2.0 * buffer
-	# The reference aspect is the project's own window shape, read from it rather than restated.
-	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
-	var ref_h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
-	var aspect_minimum := width * ref_h / ref_w if ref_w > 0.0 and ref_h > 0.0 else 0.0
-	return Vector2(width, maxf(block.y, aspect_minimum))
+	var reference := reference_window_size()
+	return Vector2(width, maxf(block.y, width * reference.y / reference.x))
+
+## The project's own authored window shape -- the reference aspect the picture's height is built to and the container's cap is measured against, read from the project rather than restated.
+static func reference_window_size() -> Vector2:
+	var width : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
+	var height : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
+	assert(width > 0.0 and height > 0.0, "the project's viewport size is authored")
+	return Vector2(width, height)
 
 ## The size the game picture is laid out at: `grid_max_count` grids side by side, exactly the span
 ## `grid_position_size_px()` already computes -- three cell blocks, two isolating buffers between
@@ -497,13 +535,7 @@ func _ready() -> void:
 	# no grids built yet it is the all-grids view, which the first rebuild that has one revisits.
 	open_show_view()
 	_show_view_opened = grid_container.get_child_count() > 0
-	set_process(false)  # _process only pins the focus inspector — enabled while it is visible
-	# X-SLAVING RUNS EVERY PHYSICS FRAME, UNCONDITIONALLY (never toggled off like `_process`
-	# above): a board scroll can happen at any time regardless of whether the focus inspector or
-	# a reveal is live, and a ScrollContainer's `scroll_horizontal` can be written directly
-	# (tests, and any future scroll-to code) without reliably firing its scrollbar's
-	# `value_changed` — the same "recompute live, never trust a signal alone" rule every other
-	# per-frame board anchor in this file already follows (`slot_center_global`'s callers).
+	set_process(false)
 	set_physics_process(true)
 
 func setup_gui() -> void:
@@ -556,6 +588,9 @@ func setup_gui() -> void:
 		resized.connect(_apply_entrance_strip_height)
 	_sync_entrance_x()
 
+# RUNS EVERY PHYSICS FRAME, UNCONDITIONALLY (never toggled off the way `_process` is): a board
+# scroll can happen at any time, and a ScrollContainer's `scroll_horizontal` can be written
+# directly without reliably firing `value_changed` -- recompute live, never trust a signal alone.
 func _physics_process(_delta: float) -> void:
 	_apply_grid_buffer()
 	_follow_board_growth()
@@ -686,16 +721,6 @@ func _apply_entrance_zoom_rect() -> void:
 func _entrance_strip_full_height() -> float:
 	return maxf(entrance_strip_height_px(PlayArea.settings(), board_zoom), _entrance_row_height())
 
-## The picture x the board's current pan puts under the LEFT edge of the grid the view is
-## centred on -- the same value the Entrance aligns to (`_sync_entrance_x`'s `columns_x`).
-## Exposed so anything OUTSIDE the scroll (the rest of the HUD) can ride the identical pan
-## rather than a second, independent measure of where the view currently rests. The board's
-## scroll window spans the whole picture, so this is a LIVE layout position -- the grid
-## positions sit side by side in the wide picture rather than one scrolling past a narrow window.
-func pan_window_left_x() -> float:
-	var cells := _view_grid_cells()
-	return cells.global_position.x if cells else grid_container.global_position.x
-
 ## The cell block of the grid the view is centred on, or null when the board has no grids.
 func _view_grid_cells() -> Control:
 	if not is_instance_valid(grid_container): return null
@@ -734,11 +759,11 @@ func _apply_board_zoom_rect(strip_h: float) -> void:
 	var local := _board_window_local()
 	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
 	scroll_container.scale = Vector2.ONE * board_zoom
-	scroll_container.offset_top = pad
+	scroll_container.offset_top = pad + board_inset_top
 	var inset := hud_reserve_px()
 	scroll_container.offset_left = inset
 	scroll_container.offset_right = inset + local.x - size.x
-	scroll_container.offset_bottom = pad + local.y - size.y
+	scroll_container.offset_bottom = pad + board_inset_top + local.y - size.y
 
 ## The strip the board's window is currently giving up to the Entrance, kept so the window can be
 ## recomputed without waiting for a layout pass.
@@ -752,8 +777,16 @@ var _board_strip_h := 0.0
 ## left where the unzoomed board had it.
 func _board_window_local() -> Vector2:
 	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
-	return Vector2(maxf(size.x - hud_reserve_px(), 0.0),
-			maxf(size.y - _board_strip_h - 2.0 * pad, 0.0)) / maxf(board_zoom, 0.0001)
+	return Vector2(maxf(_board_width_left(), 0.0),
+			maxf(_board_height_left() - _board_strip_h - 2.0 * pad, 0.0)) / maxf(board_zoom, 0.0001)
+
+## The width the board has: this control's own, less the container's capped reserve and the crop off the right edge.
+func _board_width_left() -> float:
+	return size.x - hud_reserve_px() - board_visible_crop.x
+
+## The height the board has: this control's own, less the top reserve and the crop off the bottom edge.
+func _board_height_left() -> float:
+	return size.y - board_inset_top - board_visible_crop.y
 
 ## `board_inset_left`, capped so the board is never starved of the room for a grid.
 ##
@@ -1030,10 +1063,10 @@ func focused_board_zoom(gi: int) -> float:
 	var base_strip := entrance_strip_height_px(PlayArea.settings(), 1.0)
 	var pad := board_edge_pad_px(PlayArea.settings())
 	if block_h <= 0.0 or size.y <= 0.0 or size.x <= 0.0: return OVERVIEW_BOARD_ZOOM
-	var tall := size.y / (block_h + _panel_gutter_h(gi) + base_strip + 2.0 * pad
-			+ _scroller_frame_h())
+	var tall := maxf(_board_height_left(), 0.0) / (block_h + _panel_gutter_h(gi) + base_strip
+			+ 2.0 * pad + _scroller_frame_h())
 	var wide := _panel_width(gi)
-	return tall if wide <= 0.0 else minf(tall, maxf(size.x - hud_reserve_px(), 1.0) / wide)
+	return tall if wide <= 0.0 else minf(tall, maxf(_board_width_left(), 1.0) / wide)
 
 ## The band the scroller keeps for its HORIZONTAL bar, which it reserves whether or not that bar is
 ## on screen -- `SCROLL_MODE_SHOW_NEVER` hides the bar and keeps the band.
@@ -1241,12 +1274,20 @@ func _grid_index_of(c: Control) -> int:
 	return NO_GRID
 
 ## In the overview, a click on a grid focuses that grid INSTEAD of acting on the card. True when
-## it consumed the press. Info mode is not placement, so it is asked first and passes through.
+## it consumed the press.
 func _consume_as_focus_click(c: Control) -> bool:
 	if view_mode != ViewMode.OVERVIEW: return false
 	var gi := _grid_index_of(c)
 	if gi == NO_GRID: return false
 	focus_grid(gi)
+	return true
+
+# A press on a face-down card describes its SLOT instead of selecting it: the hidden card is not
+# something the player can be handed, so the sidebar must never lock to it. True when it consumed
+# the press.
+func _consume_as_stock_press(c: Control) -> bool:
+	if not is_stock_control(c): return false
+	_publish_stock_info(_stock_slot_of_control[c])
 	return true
 
 # ==============================================================================
@@ -1377,22 +1418,10 @@ var _swipe_armed := false
 ## finger lifts.
 var _swipe_fired := false
 
-## How far a finger must travel before the drag is a pan, in px: the millimetre knob converted at
-## the screen's DPI, clamped to the SWIPE's own millimetre bounds converted the same way.
-##
-## ⚠ **THE CLAMP GUARDS THE DPI READING, NOT THE GESTURE'S SIZE.** A DPI reading is unreliable on
-## multi-monitor Windows (which reports the primary screen's for all of them) and on Android, so an
-## unclamped conversion can produce any number at all -- that much stands. But the bounds used to be
-## the TOUCH-TARGET ones, and a distance to travel is not a thing to hit: their floor of 32 px is
-## ~8.5 mm at 96 DPI, which is roughly three times the paging slop Android uses for this very
-## gesture, and it sat ABOVE the knob's own default so turning the knob down did nothing.
-## Both bounds are millimetres now, so the whole clamp survives a DPI change together.
+# A swipe arms only on BARE BOARD, so nothing is under the finger: the reference is the board's
+# own card at the live zoom, in the picture space `travel` is measured in.
 func _swipe_threshold_px() -> float:
-	var s := PlayArea.settings()
-	var dpi := DisplayServer.screen_get_dpi()
-	return clampf(WallInput.mm_to_px(s.grid_swipe_threshold_mm, dpi),
-			WallInput.mm_to_px(s.grid_swipe_threshold_min_mm, dpi),
-			WallInput.mm_to_px(s.grid_swipe_threshold_max_mm, dpi))
+	return GestureMetrics.drag_threshold_px(board_card_picture_px(), PlayArea.settings())
 
 ## The bound board control under a point, or null for bare board. The zone card an EMPTY cell
 ## presents counts as a card: it is the cell's drop target, so a drag begun on it is a placement.
@@ -1432,6 +1461,149 @@ func _consume_as_swipe(event: InputEvent) -> bool:
 	pan_by_grids(-1 if travel > 0.0 else 1)
 	return true
 
+## Where the live gesture's press landed, in this board's own pixels.
+var _press_origin := Vector2.ZERO
+## The card the press landed on, or null on bare board -- the DATA, never the control, which slot pooling can free.
+var _press_data : CardData = null
+## The pressed card's drawn size, which is this gesture's own threshold reference.
+var _press_card_px := Vector2.ZERO
+## ONE PICKUP PER DRAG -- the swipe's own latch, in the card's half of the gesture.
+var _drag_began := false
+## The board's committed depth when the press a second one could pair with landed.
+var _depth_when_pressed : int = 0
+## Set by a closed PAIR, tapped or refused, and read by the release closing its gesture: that release is not a click, so it can neither re-grab what a tap let go nor place again after a refusal.
+var _tapped_this_gesture := false
+## Where the last finger press landed, for the next one to pair with.
+var _touch_press_at := Vector2.ZERO
+## When the last finger press landed, in milliseconds.
+var _touch_press_msec : int = 0
+## The board's committed depth when the finger press a second one could pair with landed.
+var _touch_press_depth : int = 0
+## When the last accept press on a board card landed, in milliseconds.
+var _accept_press_msec : int = 0
+
+# A press only ARMS the gesture -- which card, where, and at what size -- so the release can tell a
+# click from a drag. A FINGER ARMS IT TOO: `emulate_mouse_from_touch` gives every touch its mouse
+# form, which is why one gesture model needs no reader of its own for the touch forms.
+func _arm_card_gesture(at: Vector2) -> void:
+	flush_rebuild()
+	_motion_may_start_following = true
+	_press_origin = at
+	_drag_began = false
+	_depth_when_pressed = _committed_depth()
+	var control := _card_control_at(at)
+	_press_data = ui_data.get(control)
+	_press_card_px = control.get_global_rect().size if control else board_card_picture_px()
+
+# How far this gesture must travel before its release places instead of its click grabbing.
+func _gesture_threshold_px() -> float:
+	return GestureMetrics.drag_threshold_px(_press_card_px, PlayArea.settings())
+
+# How many steps the board has committed. A placement moves it, which is how a tap tells one
+# apart from the grab it is allowed to undo.
+func _committed_depth() -> int:
+	var game := CardEnvironment.get_current_game()
+	return game.save_history.size() if game else 0
+
+# The card a pointer tap found, flushed first because a pending rebuild moves the controls it reads.
+func _tapped_card_at(at: Vector2) -> CardData:
+	flush_rebuild()
+	var data : CardData = ui_data.get(_card_control_at(at))
+	return data
+
+# A TAP UNDOES THE PRESS THAT OPENED ITS PAIR, and only a GRAB can be undone: once that press has
+# committed a step it placed a card, and a placement is never rewound by a tap.
+func _pair_taps(data: CardData, depth_at_the_opening_press: int) -> bool:
+	if not data or _committed_depth() != depth_at_the_opening_press: return false
+	card_tapped.emit(data)
+	return true
+
+# THE ENGINE PAIRS THE MOUSE'S OWN PRESSES: `double_click` arrives on the second one, at the OS
+# interval. A finger's mouse form (device -1) is left to the touch reader below, so one pair of
+# finger presses can never tap twice.
+func _press_closes_a_pair(button: InputEventMouseButton) -> bool:
+	if not button.double_click or button.device == -1: return false
+	_close_a_pair(_tapped_card_at(button.position), _depth_when_pressed)
+	return true
+
+# ⚠ THE ONE PLACE A PAIR CLOSES, whichever input closed it: the release that ends it is never a
+# click, so a REFUSAL is marked exactly as a tap is, or it places again through the GUI pass.
+func _close_a_pair(data: CardData, depth_at_the_opening_press: int) -> bool:
+	var tapped := _pair_taps(data, depth_at_the_opening_press)
+	_tapped_this_gesture = true
+	return tapped
+
+# GODOT NEVER MARKS A DOUBLE TAP ON A WINDOWS TOUCHSCREEN, so the board pairs two finger presses
+# itself: inside the tap window, no further apart than this gesture's own drag threshold, and
+# against a depth of its OWN -- the mouse form Godot emulates arrives first and re-arms the gesture.
+func _consume_as_touch_tap(event: InputEvent) -> bool:
+	var touch := event as InputEventScreenTouch
+	if not touch or not touch.pressed or touch.device == -1: return false
+	var now := Time.get_ticks_msec()
+	var paired := (now - _touch_press_msec <= PlayArea.settings().card_tap_window_ms
+			and _touch_press_at.distance_to(touch.position) <= _gesture_threshold_px())
+	_touch_press_msec = now
+	_touch_press_at = touch.position
+	if not paired:
+		_touch_press_depth = _committed_depth()
+		return false
+	return _close_a_pair(_tapped_card_at(touch.position), _touch_press_depth)
+
+# Two accept presses inside the tap window are a tap, which is how a keyboard or pad reaches one
+# without the bound action. The OPENING press is the one whose committed depth a refusal reads.
+func _accept_press_pairs() -> bool:
+	var now := Time.get_ticks_msec()
+	var paired := now - _accept_press_msec <= PlayArea.settings().card_tap_window_ms
+	_accept_press_msec = now
+	if not paired: _depth_when_pressed = _committed_depth()
+	return paired
+
+# THE DRAG DECIDES WHICH CARD IS MOVING, so one that starts on a card the player is not already
+# holding takes that card up, and lets go of whatever was armed.
+func _take_up_the_dragged_card(at: Vector2) -> void:
+	if _drag_began or not _press_data: return
+	if _press_origin.distance_to(at) <= _gesture_threshold_px(): return
+	_drag_began = true
+	if _press_data in selected_cards: return
+	_next_grab_follows = true
+	card_dragged.emit(_press_data)
+
+# ⚠ THE ONE PLACE A GESTURE ENDS -- a release, or a cancel that let the card go. Motion once no
+# press is live is not a drag, a remembered press turned the next hover into one, and a cancelled
+# drag whose press outlived it placed a hand nobody was holding.
+func _end_the_gesture() -> void:
+	_press_data = null
+
+# A gesture that TRAVELLED is never a click, and the GUI pass below never sees it. It places only
+# when the dragged card IS the held one: a card no rule picked up carries nothing, so the armed card
+# must not land in its place. The press is forgotten here whichever branch the release takes.
+func _consume_as_card_release(button: InputEventMouseButton) -> bool:
+	if button.button_index != MOUSE_BUTTON_LEFT or button.pressed: return false
+	var dragged := _press_data
+	_end_the_gesture()
+	if _tapped_this_gesture:
+		_tapped_this_gesture = false
+		return true
+	if _press_origin.distance_to(button.position) <= _gesture_threshold_px(): return false
+	if dragged in selected_cards: _release_places(button.position)
+	return true
+
+# The release places onto whatever the board offers under it, and the board answers whether that
+# is legal. Over bare board, over the container or off the window nothing is under it at all.
+func _release_places(at: Vector2) -> void:
+	var target := _card_control_at(at)
+	if target: card_dropped.emit(ui_data[target])
+	else: stop_following()
+
+## Nothing tracks the cursor until the next PRESS: a held card stays held and lifted, and a click still waiting on its grab no longer promises one.
+func stop_following() -> void:
+	_next_grab_follows = false
+	_motion_may_start_following = false
+	for data : CardData in selected_cards:
+		if data in data_card: data_card[data].following = false
+
+# A CLICK IS DECIDED AT THE RELEASE: a press that travelled places instead, and `_input` consumes
+# that one before the GUI pass ever reaches here.
 func _on_gui_input(event: InputEvent) -> void:
 	flush_rebuild() #reads ui_data
 	# Mouse ONLY: key/joypad events never reach this root handler — Godot 4 delivers them to
@@ -1441,17 +1613,19 @@ func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
 		# left click
-		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and not mouse_event.pressed:
 			# is_instance_valid guard: a board rebuild (e.g. submit clearing the board)
 			# can free the control this still points at, and `freed in typed_dict` errors.
 			if (is_instance_valid(focused_control)
 					and focused_control == moused_hovered_control
 					and focused_control in ui_data):
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
-				if _info_mode():
-					info_requested.emit(card_info(ui_data[focused_control]))
-				elif not _consume_as_focus_click(focused_control):
+				if (not _consume_as_focus_click(focused_control)
+						and not _consume_as_stock_press(focused_control)):
+					_next_grab_follows = true
 					data_selected.emit(ui_data[focused_control])
+			elif _card_control_at(get_global_mouse_position()) == null:
+				description_dismiss_requested.emit()
 
 ## Keyboard/controller accept + cancel. Key events go ONLY to the focused control (a plain
 ## card control consumes nothing), then fall through the focus-navigation pass to unhandled
@@ -1463,7 +1637,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _consume_as_view_action(event):
 		get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed("ui_accept"):
+	if event.is_action_pressed("card_tap"):
+		flush_rebuild()
+		if _board_control_has_focus():
+			card_tapped.emit(ui_data[focused_control])
+			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_accept"):
 		# IN THE OVERVIEW, ENTER FOCUSES THE SELECTED GRID even when nothing on the board holds
 		# focus — an arrow selection must be committable on its own. With a board control focused
 		# the pass below already does it through `_consume_as_focus_click`, and the two agree
@@ -1478,17 +1657,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		# our last-known card control; it can go stale when focus moves to other UI, and it
 		# must stay inert while the game-over overlay has the board focus-locked).
 		if _board_control_has_focus():
-			if _info_mode():
-				info_requested.emit(card_info(ui_data[focused_control]))
-			elif not _consume_as_focus_click(focused_control):
+			if _accept_press_pairs():
+				_pair_taps(ui_data[focused_control], _depth_when_pressed)
+			elif (not _consume_as_focus_click(focused_control)
+					and not _consume_as_stock_press(focused_control)):
 				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		if selected_cards:
-			ungrab_cards()
-			get_viewport().set_input_as_handled()
-		else:
-			hide_focus_info() # nothing held: just dismiss the inspector, leave the event be
+		_cancel_everything()
 
 # since clicks outside of play area can happen
 ##
@@ -1502,14 +1678,66 @@ func _input(event: InputEvent) -> void:
 	if _consume_as_swipe(event):
 		get_viewport().set_input_as_handled()
 		return
+	if _consume_as_touch_tap(event):
+		get_viewport().set_input_as_handled()
+		return
+	var motion := event as InputEventMouseMotion
+	if motion:
+		_take_up_the_dragged_card(motion.position)
+		_on_pointer_moved(motion.position)
 	# Mouse
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
-		# right click / cancel
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-			ungrab_cards()
-			
+			_cancel_one_step()
+			get_viewport().set_input_as_handled()
+			return
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+			if not _press_closes_a_pair(mouse_event): _arm_card_gesture(mouse_event.position)
+			return
+		if _consume_as_card_release(mouse_event):
+			get_viewport().set_input_as_handled()
+
+# ANY mouse motion starts a held card following -- the one Godot emulates from a finger included, a
+# key or pad focus never -- once a press has allowed it. Crossing OUT of the held card's own cell
+# closes the description, read before that latch, and NEVER for the card that same click locked.
+func _on_pointer_moved(at: Vector2) -> void:
+	if selected_cards.is_empty(): return
+	var carried : CardVisual = data_card.get(selected_cards[0])
+	if not carried: return
+	var inside := _origin_cell_rect(carried).has_point(at)
+	var crossed_out_of_its_cell := carried.following and _pointer_was_in_the_origin_cell and not inside
+	if crossed_out_of_its_cell and locked_data != selected_cards[0]:
+		description_dismiss_requested.emit()
+	_pointer_was_in_the_origin_cell = inside
+	if _motion_may_start_following: follow_cards()
+
+## Where the pointer was last seen relative to the held card's own cell: a dismissal needs a real crossing OUT of it, and a card armed with the cursor elsewhere was never inside it to cross.
+var _pointer_was_in_the_origin_cell : bool = false
+
+## False once a gesture has ended without placing: a failed drag costs the player nothing, so the returned card waits in its slot for a NEW press rather than resuming the chase on the next twitch.
+var _motion_may_start_following : bool = true
+
+# The cell a held card came from: its own control stays put — only the visual rides the cursor —
+# and a card control's parent IS its cell slot.
+func _origin_cell_rect(carried: CardVisual) -> Rect2:
+	return (carried.control_anchor.get_parent() as Control).get_global_rect()
+
+## Every held card now tracks the cursor — one way, until the card is placed or cancelled.
+func follow_cards() -> void:
+	for data : CardData in selected_cards:
+		if data in data_card: data_card[data].following = true
+
+# A card the player CLICKED follows at once — the mouse has moved by definition — but the pickup
+# lands behind `try_grab`'s own await, after the click has already returned. The click leaves this
+# for the grab it asked for; any other way the selection resolves drops it.
+var _next_grab_follows : bool = false
+
+# A CARD JUST TAKEN UP WAS NEVER CARRIED BY THE GESTURE THAT FAILED, so motion starts it following
+# even when the last release returned one -- an auto-arm reaches here with no press of its own.
 func grab_cards(datas:Array[CardData]) -> void:
+	var follows_at_once := _next_grab_follows
+	_motion_may_start_following = true
 	flush_rebuild() #reads data_card / data_ui
 	ungrab_cards()
 	selected_cards = datas
@@ -1519,6 +1747,7 @@ func grab_cards(datas:Array[CardData]) -> void:
 		if data in data_card:
 			var card_visual := data_card[data]
 			card_visual.held = index + 1
+			card_visual.following = follows_at_once
 			# Held cards ride ABOVE all resting cards, still below PropLayer (a later sibling of
 			# CardLayer). move_child to the end of the card's OWN layer (Entrance or grid) — no
 			# z_index (structural order, LAYERING.md). ungrab_cards -> rebuild restores row-major
@@ -1528,18 +1757,99 @@ func grab_cards(datas:Array[CardData]) -> void:
 				(vis_layer as Node2D).move_child(card_visual, -1)
 			var card_control := data_ui[data]
 			card_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var carried : CardVisual = data_card.get(selected_cards[0]) if selected_cards else null
+	_pointer_was_in_the_origin_cell = (carried != null
+			and _origin_cell_rect(carried).has_point(get_global_mouse_position()))
+	_sweep_legal_cells()
+
+# THE SECOND BUTTON CANCELS ONE THING PER PRESS: the held card is let go first, so the description
+# it was read against survives that press, and only the next press closes the description.
+func _cancel_one_step() -> void:
+	_end_the_gesture()
+	if selected_cards:
+		ungrab_cards()
+		return
+	description_dismiss_requested.emit()
+
+# Escape does everything the second button would, in the one press, and is never consumed: the wall
+# hears it afterwards and takes its own step back out of the game screen.
+func _cancel_everything() -> void:
+	_end_the_gesture()
+	ungrab_cards()
+	description_dismiss_requested.emit()
 
 func ungrab_cards() -> void:
+	_next_grab_follows = false
 	flush_rebuild() #reads data_card / data_ui
-	hide_focus_info() #ui_cancel/right-click also dismisses the focus inspector
 	for data in selected_cards:
-		if data in data_card: 
+		if data in data_card:
 			var card_visual := data_card[data]
 			card_visual.held = 0
+			card_visual.following = false
 			var card_control := data_ui[data]
 			card_control.mouse_filter = Control.MOUSE_FILTER_PASS
 	selected_cards = []
 	set_card_zones_visuals()
+	_sweep_legal_cells()
+
+# The leftmost Entrance slot holding a card, or -1. Re-derived on every read and never stored, so
+# an undo that restores the board carries the arm with it.
+func armed_slot() -> int:
+	var game := CardEnvironment.get_current_game()
+	if not game: return -1
+	for slot : int in game.state.upper_zone.size():
+		if not game.state.upper_zone[slot].datas.is_empty(): return slot
+	return -1
+
+# ARMING IS A PICKUP: the same two calls, in the same order, that a player's click makes, so the
+# product keeps ONE grab path. A card already held -- the arm itself, or one the player picked up
+# -- is left alone, and a board still resolving an act is not armed until it stops.
+func arm_leftmost() -> void:
+	var game := CardEnvironment.get_current_game()
+	if not game or game.processing or selected_cards: return
+	var slot := armed_slot()
+	if slot == -1: return
+	var top : CardData = game.state.upper_zone[slot].datas.back()
+	grab_cards(await game.try_grab(top))
+
+# The show opens with the board focus resting on the armed card, once: a key/pad player has to
+# start somewhere. It is NOT a highlight -- it publishes no description.
+# False when a board rebuilt behind the arm has no control for it, so the next arm rests instead.
+func rest_focus_on_armed() -> bool:
+	assert(not selected_cards.is_empty())
+	flush_rebuild()
+	var control : Control = data_ui.get(selected_cards[0])
+	if not control: return false
+	_rest_focus_on(control)
+	return true
+
+# THE EXIT X TAKES THE FOCUS OUT OF THE BOARD'S VIEWPORT, and hiding it leaves nothing focused, so a
+# key/pad player is put back on the card they were reading, or on the armed card once that control
+# is gone. A rest, not a highlight: it must not re-open the description that was just dismissed.
+func return_focus_to_board() -> void:
+	flush_rebuild()
+	if is_instance_valid(focused_control) and focused_control in ui_data:
+		_rest_focus_on(focused_control)
+	else:
+		rest_focus_on_armed()
+
+# AN UNDONE END CAN PUT BACK A BOARD WITH NOTHING TO ARM -- the last dealt card placed after the
+# stocks ran dry -- and a pad player still needs a control to move from: the selected grid's origin
+# cell, the cell the overview's arrow selection lands on.
+func rest_focus_on_board() -> void:
+	if not selected_cards.is_empty():
+		rest_focus_on_armed()
+		return
+	flush_rebuild()
+	_rest_focus_on(_cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0)))
+
+func _rest_focus_on(control: Control) -> void:
+	_focus_is_resting = true
+	control.grab_focus()
+	_focus_is_resting = false
+
+## True only across a rest focus, which marks a card without announcing it.
+var _focus_is_resting : bool = false
 
 ## Game over: the outcome overlay covers the board and blocks the mouse, but keyboard/
 ## controller focus could still walk onto the covered cards — drop it, and KEEP it dropped
@@ -1607,7 +1917,8 @@ func control_for_coord(v: Vector3i) -> Control:
 	var hbox : HBoxContainer = upper_zone_right
 	if v.y < 0 or v.y >= hbox.get_child_count(): return null
 	var vbox := hbox.get_child(v.y)
-	var idx := v.z + 1   # child 0 = the zone/type header (z == -1)
+	var cards := vbox.get_child_count() - 1
+	var idx := cards if v.z < 0 else cards - 1 - (v.z + _face_down_depth(v.y))
 	if idx < 0 or idx >= vbox.get_child_count(): return null
 	return vbox.get_child(idx) as Control
 
@@ -1711,11 +2022,12 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	var deepest := 0
 	var game := CardEnvironment.get_current_game()
 	if game:
-		for col : ArrayCardData in game.state.upper_zone:
-			deepest = maxi(deepest, col.datas.size())
+		for i : int in game.state.upper_zone.size():
+			deepest = maxi(deepest,
+					game.state.upper_zone[i].datas.size() + _face_down_depth(i))
 	var resting_h := CardVisual.card_size_play.y 			+ float(maxi(deepest - 1, 0)) * _depth_pitch_px()
 	var floor_y := upper_zone_right.global_position.y + resting_h * board_zoom
-	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h)
+	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h + _face_down_depth(coord.x))
 	# ⚠ **THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS.** The reveal
 	# grows one layer's strip, lifting every layer above it by an amount the pitch does not
 	# describe. Still pure math: the offset comes from the same eased numbers that size the
@@ -1784,15 +2096,6 @@ func _row_heights_for(g: int) -> void:
 	_row_height_cache.clear()
 	_row_height_revision = rev
 	_row_height_aligned = aligned
-
-## A panel's whole height, from the DATA: every row, plus the gap the panel puts between them.
-func _grid_panel_height(g: int) -> float:
-	var rows := _grid_rows(g)
-	if rows <= 0: return 0.0
-	var total := float(separation) * float(rows - 1)
-	for r : int in rows:
-		total += _grid_row_height(g, r)
-	return total
 
 ## How many rows grid `g` has, from the DATA. Zero for a grid index nothing answers to.
 func _grid_rows(g: int) -> int:
@@ -1950,18 +2253,19 @@ func set_separation() -> void:
 
 func set_card_zones() -> void:
 	_rebuild_queued = false #this rebuild satisfies any queued request
-	hide_focus_info() #the control it anchored to may be about to move or free
 	var game := CardEnvironment.get_current_game()
 	if not game: return
 	ui_data.clear()
 	data_ui.clear()
+	_stock_slot_of_control.clear()
 	var game_state := game.state
 	# Handles structural validation, instantiations, and dictionary mapping
-	set_card_zone(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
+	set_card_zone(upper_zone_right, game_state.upper_zone_type, _entrance_drawn_columns())
 	set_grid_zones(game_state)
 	data_card = new_data_card
 	new_data_card = {}
 	set_card_zones_visuals()
+	_sweep_legal_cells()
 	# Game-over lock outlives rebuilds: re-strip whatever focus the passes above assigned.
 	if board_focus_locked:
 		for control : Control in ui_data:
@@ -1987,18 +2291,21 @@ func set_card_zones_visuals() -> void:
 	# Sizing, style overrides, and focus logic per zone; then ONE structural ordering pass over
 	# both zones (row-major — see _order_board_cards). Upper zone first, lower second, so
 	# lower-zone cards draw over upper.
-	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
+	var columns := _entrance_drawn_columns()
+	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, columns)
+	_turn_the_entrance_over(game_state)
 	update_grid_zone_visuals(game_state)
 	_seed_new_layers(game_state)
 	# The Entrance is row -1: its depth is part of the board's geometry, so a rebuild that changed
 	# it has to re-measure the floor. This moves the BOARD, never the strip.
 	_apply_entrance_strip_height()
-	_order_board_cards(game_state)
+	_order_board_cards(game_state, columns)
 
 	# Re-sync now too (not just every physics frame): a caller that reads Entrance geometry
 	# (`slot_center_global`) synchronously right after a rebuild, in the SAME frame, must not see
 	# a stale track width from before this rebuild's grid changed size.
 	_sync_entrance_x()
+	_refresh_card_marking()
 
 func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
 	# ⚠ **AN ENTRANCE COLUMN *IS* A CELL SLOT** -- same constructor, so it cannot drift from one.
@@ -2008,6 +2315,72 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 	# them. A grid cell goes through the same call.
 	for i in type.size():
 		_bind_stack(hbox.get_child(i) as Control, datas[i].datas, type[i])
+		_mark_stock_controls(hbox.get_child(i) as Control, i)
+
+## A slot's deepest control is its face-down card: it publishes the STOCK's description, never the hidden card's, and the arrows walk past it because nothing there can be played yet.
+func _mark_stock_controls(slot: Control, slot_index: int) -> void:
+	var stock_depth := _face_down_depth(slot_index)
+	var cards := slot.get_child_count() - 1
+	for j : int in stock_depth:
+		var control := slot.get_child(cards - 1 - j) as Control
+		_stock_slot_of_control[control] = slot_index
+		control.focus_mode = Control.FOCUS_CLICK
+
+## The board HEIGHT a slot's j-th control draws: the face-down card lies under height 0, so a stocked slot's heights start one control up from the bottom and the face-down card's own is below them all.
+func _control_height(slot_index: int, depth: int, j: int) -> int:
+	return depth - 1 - j - _face_down_depth(slot_index)
+
+## Which Entrance slot's stock a control draws, for the controls that draw one.
+var _stock_slot_of_control : Dictionary[Control, int] = {}
+
+## True while this control draws one of a slot's face-down stock rather than a card the slot holds.
+func is_stock_control(control: Control) -> bool:
+	return _stock_slot_of_control.has(control)
+
+## ONE face-down card under a slot that still has a stock, none for an exhausted one: the card about to be flipped is the only stock card that is ever an entity, and it implies the rest.
+func _face_down_depth(slot_index: int) -> int:
+	var game := CardEnvironment.get_current_game()
+	if not game: return 0
+	var stocks := game.state.entrance_stocks()
+	if slot_index < 0 or slot_index >= stocks.size(): return 0
+	return 1 if stocks[slot_index].datas.size() > 0 else 0
+
+## What each Entrance slot DRAWS, bottom to top: the one face-down card, then the cards it holds.
+func _entrance_drawn_columns() -> Array[ArrayCardData]:
+	var game := CardEnvironment.get_current_game()
+	var columns : Array[ArrayCardData] = []
+	if not game: return columns
+	var stocks := game.state.entrance_stocks()
+	for i : int in game.state.upper_zone.size():
+		var column := ArrayCardData.new()
+		var stock : Array[CardData] = stocks[i].datas
+		column.datas.assign(stock.slice(stock.size() - _face_down_depth(i)))
+		column.datas.append_array(game.state.upper_zone[i].datas)
+		columns.append(column)
+	return columns
+
+# A SLOT'S STOCK IS FACE DOWN AND WHAT THE SLOT HOLDS IS NOT. A card just drawn is the very visual
+# that lay face down on top of that stock, already in its slot, so all it has left to do is turn
+# over -- and the slots turn over left to right, in the order they drew.
+func _turn_the_entrance_over(game_state: GameData) -> void:
+	for data : CardData in data_card:
+		var visual : CardVisual = data_card[data]
+		if data.stage == CardData.Stage.DRAW:
+			visual.face_down = true
+		elif visual.face_down:
+			visual.flip_up_after(entrance_flip_delay(_entrance_slot_of(game_state, data)))
+
+## Which Entrance slot holds this card, or the leftmost when it is not in the Entrance at all.
+func _entrance_slot_of(game_state: GameData, data: CardData) -> int:
+	for i : int in game_state.upper_zone.size():
+		if game_state.upper_zone[i].datas.has(data): return i
+	return 0
+
+## The wait before slot `slot` turns its drawn card over: one stagger per slot from the left, as a fraction of the game's own delay, so the flip rides the pacing like every other animation.
+func entrance_flip_delay(slot: int) -> float:
+	var game := CardEnvironment.get_current_game()
+	if not game: return 0.0
+	return float(slot) * settings().entrance_flip_stagger * game.get_delay()
 
 ## Which `CardVisual` layer a slot control's card belongs in — the Entrance's own pinned layer
 ## if `c` lives under `upper_zone_right`, the board's otherwise. Walking `c`'s own ancestry (not
@@ -2031,6 +2404,7 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 	# uninteractable and survives undo (owner bug report).
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE if connected_data in selected_cards \
 			else Control.MOUSE_FILTER_PASS
+	c.focus_mode = Control.FOCUS_ALL
 	var target_layer := _target_card_layer(c)
 	# ⚠ **EVERY card on this board hangs from its control's BOTTOM edge**, the Entrance included:
 	# the pips are on a card's bottom, so a stack that grew downward buried the very row the player
@@ -2078,12 +2452,12 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 ## share one ordered list / `seen` set / `pending` flag with the grids' `CardLayer` — a visual
 ## that is (correctly) parented in the OTHER layer would read as a deferred add that never lands,
 ## and the reorder would requeue itself every frame until the stack overflowed. Measured, twice.
-func _order_board_cards(game_state: GameData) -> void:
+func _order_board_cards(game_state: GameData, entrance_columns: Array[ArrayCardData]) -> void:
 	var entrance_ordered : Array[CardVisual] = []
 	var entrance_seen : Dictionary[CardVisual, bool] = {}
 	var entrance_pending : Array[bool] = [false]
 	_append_zone_row_major(entrance_ordered, entrance_seen, entrance_pending, entrance_card_layer,
-			game_state.upper_zone_type, game_state.upper_zone)
+			game_state.upper_zone_type, entrance_columns)
 	_apply_layer_order(entrance_card_layer, entrance_ordered)
 
 	var grid_ordered : Array[CardVisual] = []
@@ -2113,7 +2487,7 @@ var _reorder_queued := false
 func _deferred_reorder() -> void:
 	_reorder_queued = false
 	var game := CardEnvironment.get_current_game()
-	if game: _order_board_cards(game.state)
+	if game: _order_board_cards(game.state, _entrance_drawn_columns())
 
 ## Append one zone's CardVisuals in row-major order, scoped to `layer`: headers (row -1), then
 ## each row across all columns (ragged columns simply skip the rows they don't have). `pending[0]`
@@ -2172,18 +2546,27 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 	# would slam an open row shut. Re-push the live openings over the top of it.
 	_apply_row_openings()
 
-	# 3. Focus neighborhood linking
-	for i in type.size() - 1:
-		var left: Control = hbox.get_child(i).get_child(0)
-		var right: Control = hbox.get_child(i+1).get_child(0)
-		left.focus_neighbor_right = right.get_path()
-		right.focus_neighbor_left = left.get_path()
+	_link_arrow_stops(hbox, type.size())
 
 	# ⚠ **THE BESPOKE HELD/SELECTED WIDENING IS GONE, BY OWNER RULING.** It reached into this
 	# container by fixed child index (`get_child(0)` / `get_child(1)` / `get_child(-1)`), which the
 	# reversal above inverts, and it was a second highlight mechanism beside the one every other
 	# card on the board already uses. `on_control_focus_entered()`'s widening is now the only one.
 	# ⚠ The look when picking a card up from the Entrance CHANGES; that is the ruling, not a bug.
+
+# Chains each slot's topmost control to its neighbours for the arrows, skipping a slot that shows
+# only its face-down card: the engine honours an explicit neighbour at every focus mode but
+# FOCUS_NONE, so a skipped slot must be left OUT of the chain, not relied on to refuse the focus.
+func _link_arrow_stops(hbox: HBoxContainer, slots: int) -> void:
+	var stops : Array[Control] = []
+	for i : int in slots:
+		var top := hbox.get_child(i).get_child(0) as Control
+		top.focus_neighbor_left = ^""
+		top.focus_neighbor_right = ^""
+		if not is_stock_control(top): stops.append(top)
+	for i : int in stops.size() - 1:
+		stops[i].focus_neighbor_right = stops[i + 1].get_path()
+		stops[i + 1].focus_neighbor_left = stops[i].get_path()
 
 # ==============================================================================
 # S20b — THE GRID BOARD
@@ -2774,6 +3157,9 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 			var slot : VBoxContainer = _cell_slot(panel, grid, ci)
 			if slot: _size_stack_slot(slot)
 
+# The pointer leaving a card announces the lost highlight only when it landed on NO other card:
+# whether it did is the engine's own answer, read back through `_card_control_at`, so this never
+# disagrees with what the board thinks is under the cursor.
 func create_card_control() -> Control:
 	var new_control := Control.new()
 	new_control.add_to_group("CardVisualControl")
@@ -2789,32 +3175,78 @@ func create_card_control() -> Control:
 	new_control.mouse_exited.connect(func()->void:
 			if moused_hovered_control == new_control:
 				moused_hovered_control = null
-				# hover-driven inspector hides with the hover (keyboard re-focus re-shows it)
-				if focused_control == new_control: hide_focus_info())
+				if _card_control_at(get_global_mouse_position()) == null: highlight_cleared.emit())
+	new_control.focus_exited.connect(_publish_focus_left_cards, CONNECT_DEFERRED)
 	return new_control
 
+# DEFERRED, and it has to be: at `focus_exited` the viewport has dropped the old focus and not yet
+# taken the new one, so the owner reads null however the focus is moving; one idle call later it
+# is settled. A board torn down while a card holds the focus is called after it left the tree.
+func _publish_focus_left_cards() -> void:
+	if not is_inside_tree(): return
+	if not ui_data.has(get_viewport().gui_get_focus_owner()): highlight_cleared.emit()
+
+# THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike.
+func _publish_info(data: CardData) -> void:
+	card_info(data, board_card_window_px()).relay_to(info_requested)
+
+# A FACE-DOWN CARD DESCRIBES THE SLOT, NEVER ITSELF -- what is hidden stays hidden, and what the
+# player is asking is how much this slot has left to draw.
+func _publish_stock_info(slot: int) -> void:
+	var game := CardEnvironment.get_current_game()
+	var entry := InfoEntry.new()
+	entry.title = game.state.upper_zone_type[slot].type.get_str()
+	entry.body = TRANSLATION.find('SIDEBAR_STOCK_REMAINING') % game.state.entrance_stocks()[slot].datas.size()
+	info_requested.emit(entry)
+
 var focused_visual : CardVisual
+
+## The card the sidebar is locked to, pushed in by `GameView` -- `null` while nothing is locked.
+var locked_data : CardData = null:
+	set(value):
+		locked_data = value
+		_refresh_card_marking()
+
+# A card wears the focus marking while it HOLDS the board focus or while the sidebar is LOCKED to
+# it, so what is being read stays marked after the focus moves on, and a rebuild re-applies it to
+# whichever visual now represents that same card. The drop map is re-applied with it, from the
+# last sweep, because a rebuild hands the same cell a different visual.
+func _refresh_card_marking() -> void:
+	var tint : Color = PlayArea.settings().legal_cell_tint
+	for data : CardData in data_card:
+		var visual : CardVisual = data_card[data]
+		visual.focused = visual == focused_visual or data == locked_data
+		visual.tint = tint if data in _legal_cells else Color.WHITE
+
+## The zone card of every cell the held card may land in — the drop map the tint draws.
+var _legal_cells : Dictionary[CardData, bool] = {}
+
+# THE DROP MAP, read from the Game's one legality walk so no placement rule is restated here.
+# ⚠ NEVER PER FRAME, AND NEVER FOR AN EMPTY HAND: the walk asks every card on the board for every
+# cell, so it runs only once per rebuild or hand change, and an empty hand lands nowhere unasked.
+func _sweep_legal_cells() -> void:
+	var legal : Dictionary[CardData, bool] = {}
+	if not selected_cards.is_empty():
+		var game := CardEnvironment.get_current_game()
+		for zone_card : CardData in await game.legal_cells_for(selected_cards, game.state.grids):
+			legal[zone_card] = true
+	_legal_cells = legal
+	_refresh_card_marking()
+
 func on_control_focus_entered(control:Control) -> void:
 	flush_rebuild() #reads ui_data / data_card
 	# ONE CURSOR FOR BOTH INPUT MODES: whatever moved the board focus onto a grid — mouse hover,
 	# arrows, a click — is also what the overview's Enter will focus.
 	var focus_grid_index := _grid_index_of(control)
 	if focus_grid_index != NO_GRID: selected_grid = focus_grid_index
-	if focused_visual: focused_visual.focused = false
+	focused_visual = null
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
-		focused_visual.focused = true
-	# Card inspector for EVERY input mode (mouse hover grabs focus too, so focus is the one
-	# unified hover signal). NOT Control.tooltip_text: the native tooltip is a popup Window
-	# that sat under the cursor and blocked clicks — this panel is pure display (IGNORE).
-	# ⚠ Two gates, and they are different questions. In Info mode this panel ALWAYS yields: the
-	# wall's card is the one description system, and two panels describing the same card is what
-	# having a single info card replaced. Outside Info mode `wall_screen_popups` decides whether a
-	# description is available at all.
-	if ui_data.has(control) and _popups_allowed():
-		_show_focus_info(control, ui_data[control])
-	else:
-		hide_focus_info()
+	if ui_data.has(control) and not _focus_is_resting:
+		if is_stock_control(control):
+			_publish_stock_info(_stock_slot_of_control[control])
+		else:
+			_publish_info(ui_data[control])
 
 	# ⚠ **HOVER DOES NOT RESIZE THE STACK, AND ESPECIALLY NOT ITS ZONE CARD.** This used to hand-size
 	# controls by fixed child index on every focus -- written when child 0 was the zone header and
@@ -2827,104 +3259,21 @@ func on_control_focus_entered(control:Control) -> void:
 	focused_control = control
 	set_card_zones_visuals()
 
-# ==============================================================================
-# FOCUS CARD INSPECTOR — THE card-text surface for every input mode
-# ([[solatro-multimodal-input]]): mouse hover grabs focus, so focus covers mouse, keyboard,
-# and controller alike. Deliberately NOT Control.tooltip_text — the native tooltip is a
-# popup Window that sat under the cursor and blocked board clicks; this panel is pure
-# display (MOUSE_FILTER_IGNORE everywhere, focus NONE) and can never touch input. Text =
-# localized ControlCard.describe_card. A PERMANENT child of the OverlayLayer (a Node2D in the
-# scroll content, so scroll carries it), re-pinned beside its anchor control every frame
-# (_position_focus_info) so container relayouts can't strand it — it was briefly reparented
-# under the focused control for that, which is unnecessary now that the whole board (cards
-# included) rides one scroll transform. Mouse-exit / ui_cancel / ungrab / rebuild dismisses it.
-# ==============================================================================
-const FOCUS_INFO_WIDTH := 260.0
-const FOCUS_INFO_GAP := 4.0
-
-var _focus_info : PanelContainer = null
-var _focus_info_label : Label = null
-var _focus_info_anchor : Control = null   ## the board control the panel is pinned beside
-
-func _ensure_focus_info() -> void:
-	if _focus_info and is_instance_valid(_focus_info): return
-	_focus_info = PanelContainer.new()
-	_focus_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_focus_info.focus_mode = Control.FOCUS_NONE
-	# No z_index: OverlayLayer is the last sibling of TopLevelVBox, so its children draw above
-	# every card and prop by tree order (the structural layering scheme — see LAYERING.md).
-	_focus_info_label = Label.new()
-	_focus_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_focus_info_label.custom_minimum_size = Vector2(FOCUS_INFO_WIDTH, 0)
-	_focus_info.add_child(_focus_info_label)
-	# CRITICAL: SmoothScrollContainer force-rewrites every Control added under it to
-	# MOUSE_FILTER_PASS (smooth_scroll_container.gd _on_node_added) — which turned this panel
-	# into a mouse hit-target hovering over cards and BLOCKED board clicks. It skips nodes
-	# already carrying its meta marker, so claim the marker BEFORE entering the tree.
-	_focus_info.set_meta("_smooth_scroll_default_mouse_filter_set", true)
-	_focus_info_label.set_meta("_smooth_scroll_default_mouse_filter_set", true)
-	overlay_layer.add_child(_focus_info)
-	_focus_info.hide()
-
-## Show `data`'s description beside the focused control (right of it; flips left at the
-## edge). Placement is re-pinned every frame while visible (_process) so focus-driven
-## container relayouts — which move the anchor a frame later — never strand the panel.
-## Whether the wall's Info mode is on. Read through `WallPicture.settings()` — the one accessor
-## that answers "which PlayerSettings" — so a tool previewing the board sees its own knobs.
-func _info_mode() -> bool:
-	return WallPicture.settings().wall_info_mode
-
-## Whether this screen's OWN description popup may show right now — never in Info mode, and outside
-## it only when `wall_screen_popups` is on.
-func _popups_allowed() -> bool:
-	var settings := WallPicture.settings()
-	return not settings.wall_info_mode and settings.wall_screen_popups
-
-## A card's `InfoEntry` for the wall's info card. The TEXT is `ControlCard.describe_card()`, the
-## same string the in-screen inspector shows, so the two can never drift; its first line is the
-## card's name and the rest is the description. The VISUAL is a real preview card built through
-## `CardsViewer`, the same listing `MapHoverPanel` uses for booster previews.
-##
-## ⚠ The caller takes ownership of `entry.visual` — `InfoCard.show_entry()` frees it on the next
-## entry — so a fresh one is built per call rather than cached.
-static func card_info(data: CardData) -> InfoEntry:
+# ⚠ THE CALLER OWNS `entry.visual`, a LIVE preview card built per call, and re-applies
+# `size_preview_to()` when the window moves the size a board card is drawn at. A BOX, never a
+# `FlowContainer`: a flow reports the minimum its LAST SORT measured, so a re-size reads stale.
+static func card_info(data: CardData, card_px: Vector2) -> InfoEntry:
 	var entry := InfoEntry.new()
 	var text := ControlCard.describe_card(data)
 	var split := text.split("\n", false, 1)
 	entry.title = split[0] if split.size() > 0 else ""
 	entry.body = split[1] if split.size() > 1 else ""
-	var flow := FlowContainer.new()
-	entry.visual = flow
-	CardsViewer.new(flow).populate([data] as Array[CardData])
+	var row := HBoxContainer.new()
+	entry.visual = row
+	var card := CardsViewer.new(row, CardVisual.DisplayContext.PREVIEW).populate(
+			[data] as Array[CardData])
+	card.size_preview_to(card_px)
 	return entry
-
-func _show_focus_info(control: Control, data: CardData) -> void:
-	_ensure_focus_info()
-	_focus_info_anchor = control
-	_focus_info_label.text = ControlCard.describe_card(data)
-	_focus_info.show()
-	_focus_info.reset_size()
-	_position_focus_info()
-	set_process(true)  # keep the panel pinned to its anchor while visible
-
-## Pin the panel beside its anchor control; flip left / lift up when it would leave the area.
-## Global placement is safe every frame: the panel and the anchor both live in the scroll
-## content, so their globals move in lockstep under scrolling.
-func _position_focus_info() -> void:
-	if not _focus_info or not is_instance_valid(_focus_info) or not _focus_info.visible:
-		return
-	if not is_instance_valid(_focus_info_anchor) or not _focus_info_anchor.is_inside_tree():
-		hide_focus_info()   # the control it anchored to was freed by a rebuild
-		return
-	var area := get_global_rect()
-	var at := _focus_info_anchor.global_position \
-			+ Vector2(_focus_info_anchor.size.x + FOCUS_INFO_GAP, 0.0)
-	if at.x + _focus_info.size.x > area.end.x:
-		at.x = _focus_info_anchor.global_position.x - _focus_info.size.x - FOCUS_INFO_GAP
-	var overflow_y := at.y + _focus_info.size.y - area.end.y
-	if overflow_y > 0.0:
-		at.y -= overflow_y
-	_focus_info.global_position = at
 
 ## **S16 — OPEN THE ROWS THESE CARDS SIT IN.** Called with the section being scored, or empty to close
 ## everything again. The set REPLACES: a row that has left the set eases shut rather than being
@@ -2963,7 +3312,8 @@ func _apply_row_openings() -> void:
 		# pitch, and the slot's own zone card is the last child -- `update_card_zone_visuals()` owns
 		# that one. Left on the old top-down build, this pass silently put the old sizes back every
 		# frame and the controls stepped 16 px where the card arithmetic steps 20.
-		for col : Node in hbox.get_children():
+		for i : int in hbox.get_child_count():
+			var col : Node = hbox.get_child(i)
 			var depth := col.get_child_count() - 1
 			for j : int in depth:
 				var c := col.get_child(j) as Control
@@ -2971,7 +3321,7 @@ func _apply_row_openings() -> void:
 				var base : float = CardVisual.card_size_play.y if j == 0 else _depth_pitch_px()
 				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
 						base + row_open_extra(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW,
-						depth - 1 - j)))
+						_control_height(i, depth, j))))
 	var gutter : VBoxContainer = upper_zone_left
 	if not gutter: return
 	for i : int in gutter.get_child_count():
@@ -3034,29 +3384,11 @@ func _ease_layer_arrivals(delta: float) -> bool:
 	for key : Vector2i in done: _layer_grown.erase(key)
 	return not _layer_grown.is_empty()
 
-## The board itself has no per-frame work (rebuilds are signal-driven, see queue_rebuild);
-## this hook keeps the visible focus inspector pinned to its live anchor, and drives S16's reveal.
+# The board itself has no per-frame work -- rebuilds are signal-driven, see `queue_rebuild`.
+# ⚠ ONLY THE EASING STOPS PROCESSING, and only once it reports both the row openings and the
+# depth-layer growth idle: stopping early froze a row at 54 against a container already at 74.
 func _process(delta: float) -> void:
-	_position_focus_info()
-	var revealing := _ease_row_openings(delta)
-	# ⚠ Both consumers have to be idle before processing stops, or whichever finishes first switches
-	# the other one off mid-animation.
-	if not revealing and _focus_info_anchor == null: set_process(false)
-
-func hide_focus_info() -> void:
-	_focus_info_anchor = null
-	# ⚠ ONLY IF THE REVEAL IS ALSO IDLE. This used to be an unconditional `set_process(false)`, which
-	# with S16 would freeze a row mid-open the moment the focus panel closed.
-	# ⚠ **AND ONLY IF NO DEPTH LAYER IS STILL ARRIVING.** `_process` drives both easings; checking
-	# the reveal alone froze a growing row at whatever fraction it had reached, leaving the row
-	# arithmetic permanently short of the height its container had already taken. Measured: a row
-	# stuck at 54 against a container at 74, with a growth entry that never cleared.
-	if _row_open.is_empty() and _layer_grown.is_empty():
-		set_process(false)  # nothing to pin while hidden
-	if not _focus_info or not is_instance_valid(_focus_info):
-		_focus_info = null
-		return
-	_focus_info.hide()
+	if not _ease_row_openings(delta): set_process(false)
 
 func update_score_controls() -> void:
 	var game := CardEnvironment.get_current_game()
@@ -3102,23 +3434,7 @@ func update_score(zone:Array[BigNumber], index:int, score:BigNumber) -> void:
 		label = upper_zone_left.get_child(index)
 	# scores_row_lower / scores_col_legacy: storage only, no rendering surface anymore.
 	if label: label.update_score_anim(score)
-		
-#func get_control_from_data(data : CardData) -> Control:
-	#if data in data_ui:
-		#return data_ui[data]
-	#return null
-#
-func get_data_from_control(control : Control) -> CardData:
-	flush_rebuild() #reads ui_data
-	if control in ui_data:
-		return ui_data[control]
-	return null
 
-#func get_card_from_data(data : CardData) -> CardVisual:
-	#if data in data_card:
-		#return data_card[data]
-	#return null
-	
 ## **THE SPRING.** Jump `data`, and lift every card stacked ABOVE it in its own cell by the same
 ## rise, rigidly (`Q310`=a). Returns how long the raise takes, like `anim_jump` does.
 ##

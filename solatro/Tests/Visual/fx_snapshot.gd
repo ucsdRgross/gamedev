@@ -377,7 +377,7 @@ func _ball_rotation() -> Array[Case]:
 ## modulate; they must be visibly brighter, not identical.
 func _focus_highlight() -> Array[Case]:
 	var out : Array[Case] = []
-	var highlight := Color(1.825, 1.825, 1.825)
+	var highlight := CardVisual.FOCUS_GLOW
 	for lit : bool in [false, true]:
 		var fire := _card_case("fire, %s" % ("FOCUSED" if lit else "plain"),
 				[FxFire.request(&"fire", 6, StatusBurning.CARD_FIRE_STYLE)] as Array[FxRequest])

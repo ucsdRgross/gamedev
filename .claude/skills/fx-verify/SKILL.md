@@ -53,17 +53,21 @@ a blank frame at exit 0 is this class of tool's characteristic failure.
 1. **Render.** Run the relevant snapshot scene WINDOWED (each self-`quit()`s in a few seconds):
    - `<binary> --path solatro res://Tests/Visual/fx_snapshot.tscn` — shader FX
    - `<binary> --path solatro res://Tests/Visual/prop_art_snapshot.tscn` — prop / pip sprite art
-   - **The picture wall has its own eight**, and they are the gate for anything under `UI/Wall/`:
+   - **The picture wall has its own seven**, and they are the gate for anything under `UI/Wall/`:
      `wall_verify_snapshot` (wall view, mid-transition, focused-at-rest, 32:9),
      `wall_frame_shadow_snapshot` (frame nine-slice + shadow direction),
      `wall_picture_construction_snapshot`, `wall_overfill_snapshot`, `wall_filter_swap_snapshot`,
-     `wall_info_snapshot`, `wall_skeleton_snapshot`, `wall_editor_snapshot`.
+     `wall_skeleton_snapshot`, `wall_editor_snapshot`.
+   - **`sidebar_snapshot`** is the sidebar HUD's instrument (container, description, stocks, map
+     popup, goal met); it writes every shot under `user://sidebar_snapshot/`.
      ⚠ **They do NOT write to the `{fx,prop_art}_snapshots` folders.** Each takes an env var and
-     falls back to `user://<scene_name>/` — `OUT_DIR` for the multi-shot scenes, `OUT_PATH` for the
-     single-shot ones (`main_boot`, `wall_filter_swap`, `wall_overfill`,
-     `wall_picture_construction`, `wall_skeleton`). Set it to a directory you can read back:
-     `$env:OUT_DIR=<dir>` before `Start-Process`, since a scene's own header is otherwise the only
-     place that convention is written down.
+     falls back to `user://<scene_name>/` — `OUT_DIR` for the multi-shot wall scenes, `OUT_PATH`
+     for the single-shot ones (`main_boot`, `wall_filter_swap`, `wall_overfill`,
+     `wall_picture_construction`, `wall_skeleton`). ⚠ `sidebar_snapshot` honours `OUT_PATH` for
+     its FIRST shot only and hard-codes the other 26 under `user://sidebar_snapshot/` — read that
+     folder, and park the previous run's PNGs first so a stale shot cannot read as fresh. Set
+     the env var before `Start-Process`; a scene's own header is otherwise the only place that
+     convention is written down.
    Launch so you WAIT for exit (`Start-Process ... -PassThru` then `WaitForExit`), and run one
    Godot at a time — concurrent runs starve each other on the Intel UHD.
 
@@ -73,8 +77,7 @@ a blank frame at exit 0 is this class of tool's characteristic failure.
    Prefer making the harness measure its own capture over eyeballing pixel positions.
 
 3. **Run the PIXELS suite** (it asserts on real pixels and FAILS rather than skips if run under
-   a dummy renderer): `<binary> --path solatro res://Tests/all_tests.tscn`, windowed, ~60 s,
-   self-quits with the failure count. Read only failures: an empty `test_output_errors.log` plus
+   a dummy renderer): the full windowed run, `py solatro/Tools/run_tests.py`. Read only failures: an empty `test_output_errors.log` plus
    the final banner means green. LEAK CANARY's stderr push_error lines are deliberate.
    ⚠ **Never verify visual work through the logic tier** (`run_tests.py --logic`): it is headless,
    and PIXELS is deliberately not in it — a green tier run is silent about every pixel.

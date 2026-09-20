@@ -6,7 +6,7 @@ extends Node2D
 
 signal arrived
 
-## World-space pixels per second along edge curves.
+## World-space pixels per ONE `base_delay` step along edge curves (never per wall-clock second).
 const TRAVEL_SPEED := 120.0
 const SIZE := 9.0
 const COLOR := Color("#ffd94a")
@@ -24,8 +24,9 @@ func _draw() -> void:
 func travel_along(points: PackedVector2Array) -> void:
 	if points.size() >= 2:
 		var tween := create_tween()
-		for i in range(1, points.size()):
-			var seg_time := points[i - 1].distance_to(points[i]) / TRAVEL_SPEED
+		var pace : float = SettingsManager.settings.base_delay
+		for i : int in range(1, points.size()):
+			var seg_time := points[i - 1].distance_to(points[i]) / TRAVEL_SPEED * pace
 			tween.tween_property(self, "position", points[i], seg_time)
 		await tween.finished
 	arrived.emit()

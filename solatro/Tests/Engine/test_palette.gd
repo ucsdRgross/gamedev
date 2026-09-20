@@ -231,7 +231,7 @@ const ALLOW_FILES : Array[String] = [
 ## set_pixel packs data into an image, and a bare WHITE is the IDENTITY of a tint (no recolour at
 ## all), not a colour picked off any palette. None of these can be a palette entry.
 const ALLOW_LINES : Array[String] = [
-	"modulate = Color(1.825", "modulate = Color(1.0, 1.0, 1.0)", "modulate = Color(2, 2, 2, 1)",
+	"FOCUS_GLOW := Color(1.825", "var tint : Color = Color.WHITE", "modulate = Color(2, 2, 2, 1)",
 	"quad.modulate = Color(1.0, 1.0, 1.0, 0.0)", "img.set_pixel(",
 	"\"modulate\", Color.WHITE",                       # tween back to no tint
 	"else Color.WHITE", "return Color.WHITE",          # untinted fallbacks (no ramp = no tint)

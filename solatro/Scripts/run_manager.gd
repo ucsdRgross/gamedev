@@ -84,10 +84,20 @@ func new_run(cards: Array[CardData], rules: Array[CardData]) -> RunState:
 ## runtime when it pulls one for resume/undo).
 func load_run() -> RunState:
 	run = ResourceLoader.load(RUN_PATH, "", ResourceLoader.CACHE_MODE_IGNORE)
+	_drop_unrebuildable_show()
 	_relink_cards(run.card_datas)
 	_relink_cards(run.rule_datas)
 	mark_deck_dirty()
 	return run
+
+## A show saved before a slot owned its own cards has no stocks for `Game._resume_show` to rebuild from, so it is dropped -- the run survives and Continue starts that node again.
+func _drop_unrebuildable_show() -> void:
+	if run.stock_format >= RunState.STOCK_FORMAT: return
+	run.game_history = [] as Array[GameData]
+	run.game_history_trimmed = 0
+	run.pending_action = &""
+	run.pending_placement_slot = -1
+	run.stock_format = RunState.STOCK_FORMAT
 
 ## The run deck changed — the cached serialization-ready copies must be rebuilt next save.
 func mark_deck_dirty() -> void:
@@ -132,6 +142,7 @@ func _build_payload() -> RunState:
 	p.rule_datas = _saveable_rules
 	p.game_history = run.game_history.duplicate()  # entries already saveable + immutable
 	p.game_history_trimmed = run.game_history_trimmed
+	p.stock_format = RunState.STOCK_FORMAT
 	return p
 
 # Deep-copy a card array and null the modifier backrefs → serialization-ready and

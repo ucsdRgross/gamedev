@@ -5,7 +5,7 @@ extends Node2D
 ## Camera2D (pan/zoom/follow) and the player token, derives per-lap reachability over the
 ## DAG (forward on even laps, reversed on odd laps), restyles the overlay's own Line2Ds
 ## for the four edge states (traveled / next / usable / hidden), and turns mouse input
-## into node hover + travel.
+## into node hover + travel (a finger's first tap names a node, its second travels there).
 
 signal map_ready
 signal node_entered(node: WorldGraphNode)
@@ -38,6 +38,20 @@ var _pressed : bool = false
 var _dragging : bool = false
 # Keyboard/controller selection: index into _sorted_next(), -1 = nothing selected.
 var _kb_index : int = -1
+# The node the last finger tap named: the next tap on it is the one that travels.
+var _tapped_node : WorldGraphNode = null
+
+var _container_shift : Vector2 = Vector2.ZERO
+
+# `Map._publish_map_inset()`'s shift, in the map picture's own local space: screen centre to the
+# space left over beside the container. `Camera2D.offset` is a world offset Godot multiplies by
+# `zoom` before it reaches the screen, so it is re-derived on every zoom change too.
+func apply_container_shift(shift: Vector2) -> void:
+	_container_shift = shift
+	_apply_camera_offset()
+
+func _apply_camera_offset() -> void:
+	camera.offset = _container_shift / camera.zoom
 
 ## Build (or rebind) the WorldMap2D for this run: reload the bake when one exists, else
 ## generate from the pinned seed and bake exactly once (graph_export is only valid right
@@ -238,6 +252,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			node_unhovered.emit()
 			get_viewport().set_input_as_handled()
 		return
+	if _consumed_as_touch(event):
+		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
@@ -251,7 +267,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_press_pos = mb.position
 			else:
 				if _pressed and not _dragging:
-					_try_click()
+					_travel_to(_node_at_mouse())
 				_pressed = false
 				_dragging = false
 	elif event is InputEventMouseMotion:
@@ -289,20 +305,54 @@ func _kb_cycle(dir: int) -> void:
 func _zoom_at(factor: float) -> void:
 	var z := clampf(camera.zoom.x * factor, ZOOM_MIN, ZOOM_MAX)
 	camera.zoom = Vector2(z, z)
+	_apply_camera_offset()
 
-# World-space radius test against all markers (camera zoom is baked into the global
-# mouse position, so no per-zoom math is needed).
-func _node_at_mouse() -> WorldGraphNode:
+# World-space radius test against all markers (camera zoom is baked into the overlay's own
+# local space, so no per-zoom math is needed).
+func _node_at(overlay_pos: Vector2) -> WorldGraphNode:
 	var overlay := map.overlay()
-	var mouse := overlay.get_local_mouse_position()
 	var best: WorldGraphNode = null
 	var best_d := maxf(overlay.node_radius * 2.0, 12.0)
 	for n: WorldGraphNode in overlay.nodes():
-		var d := n.position.distance_to(mouse)
+		var d := n.position.distance_to(overlay_pos)
 		if d < best_d:
 			best_d = d
 			best = n
 	return best
+
+func _node_at_mouse() -> WorldGraphNode:
+	return _node_at(map.overlay().get_local_mouse_position())
+
+# Where `node`'s marker draws in the map viewport's own coordinates -- the space the map's `$UI`
+# overlays live in, so a caller can place something against the dot the player is pointing at.
+# Static because the name popup re-asks it every frame and holds no controller.
+static func node_screen_rect(node: WorldGraphNode) -> Rect2:
+	var xform := node.get_global_transform_with_canvas()
+	var radius := node.marker_radius * xform.get_scale()
+	return Rect2(xform.origin - radius, radius * 2.0)
+
+# A MAP NODE IS A BARE DOT, so a finger has to be able to ask what one is without travelling to
+# it: the first tap names and describes the node, only a second tap on that same node enters it.
+# ⚠ ONLY A TAP IS TAKEN -- a finger that travelled is a pan, and pans by the mouse path below.
+func _consumed_as_touch(event: InputEvent) -> bool:
+	var lift := event as InputEventMouseButton
+	if lift == null or lift.device != -1 or lift.pressed \
+			or lift.button_index != MOUSE_BUTTON_LEFT:
+		return false
+	if not _pressed or _dragging:
+		return false
+	_pressed = false
+	var local := map.overlay().make_input_local(lift) as InputEventMouseButton
+	var node := _node_at(local.position)
+	if node == null:
+		return true
+	if node == _tapped_node:
+		_travel_to(node)
+	else:
+		_tapped_node = node
+		_hovered = node
+		node_hovered.emit(node)
+	return true
 
 func _update_hover() -> void:
 	var n := _node_at_mouse()
@@ -314,16 +364,17 @@ func _update_hover() -> void:
 	else:
 		node_unhovered.emit()
 
-func _try_click() -> void:
-	if _moving:
+# Empty space is the ordinary outcome of a click on a map, so nothing there is not a refusal.
+func _travel_to(node: WorldGraphNode) -> void:
+	if node == null or _moving:
 		return
-	var n := _node_at_mouse()
-	if n != null and n in next_nodes_of(_current):
-		move_to(n)
+	if node in next_nodes_of(_current):
+		_tapped_node = null
+		move_to(node)
 
-## Travel to a directly reachable node: walk the routed edge curve (reversed point order
-## on odd laps), record the history entry in forward-edge orientation, then re-derive
-## visuals and announce the arrival so Map can resolve the node's role.
+# Travel to a directly reachable node: walk the routed edge curve (reversed point order
+# on odd laps), record the history entry in forward-edge orientation, then re-derive
+# visuals and announce the arrival so Map can resolve the node's role.
 func move_to(next: WorldGraphNode) -> void:
 	_moving = true
 	var pts: PackedVector2Array

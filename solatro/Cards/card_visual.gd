@@ -67,6 +67,11 @@ const CARD_JUMP_RISE := CARD_SIZE.y / 5.0
 ## 0.48/1.21 at t=0.15, 1.50/2.45 at t=0.30**. All-zero everywhere means the rig stopped moving.
 const RIG_ANIM : StringName = &"new_animation_2"
 
+## The frame of `card_types.png` a card shows when it is hiding its face -- the game's card back.
+const CARD_BACK_FRAME : int = 3
+## The frame of `card_types.png` a card with no type shows -- an unprinted card, not a back.
+const BLANK_CARD_FRAME : int = 1
+
 @export_tool_button("Update Visual") var editor_update_visual : Callable = update_visual
 
 enum DisplayContext {PLAY_AREA, MAP, DECK_VIEWER, PREVIEW}
@@ -111,11 +116,24 @@ static var card_jump_rise_play : float:
 	get():
 		return CARD_JUMP_RISE * settings().card_scale
 
+## The focus glow's brightness, as a multiplier on whatever colour the card already wears.
+const FOCUS_GLOW := Color(1.825, 1.825, 1.825)
+
 var focused : bool = false:
 	set(value):
 		focused = value
-		if focused: modulate = Color(1.825, 1.825, 1.825)
-		else: modulate = Color(1.0, 1.0, 1.0)
+		_apply_marks()
+## A board mark multiplied into this card's colour — WHITE is unmarked.
+var tint : Color = Color.WHITE:
+	set(value):
+		tint = value
+		_apply_marks()
+
+# ⚠ THE ONE PLACE `modulate` IS WRITTEN. The glow and the tint are two marks on one colour, so it
+# is derived from both; assigning it from either setter alone makes whichever ran last the winner.
+func _apply_marks() -> void:
+	modulate = tint * FOCUS_GLOW if focused else tint
+
 @export var data : CardData:
 	set(value):
 		if data == value: return
@@ -143,9 +161,33 @@ var floating : bool = true:
 		if not floating:
 			if not is_node_ready():
 				await ready
-			basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if data and data.flipped else 1)))
+			basis3d = resting_basis()
 			if Engine.is_editor_hint():
 				visual.position.y = 0
+
+# THE FACE A CARD RESTS ON: its back while the board hides it, its front otherwise. A card arrives
+# on it, and a hidden card that is revealed turns over to it in place, which is the only flip there
+# is now that a drawn card is born in the slot it was drawn into.
+func resting_basis() -> Basis:
+	return Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if showing_back() else 1)))
+
+## Hidden by the BOARD -- a card still waiting in its slot's stock -- which is not the data's own face.
+var face_down : bool = false
+
+## The card must draw its back: the board hides it, or the card itself is turned over.
+func showing_back() -> bool:
+	return face_down or (data != null and data.flipped)
+
+# THE FLIP ITSELF IS THE FLOATING SLERP; this only decides WHEN it starts, which is what lets a
+# row of slots turn over one after another. Idempotent: a rebuild mid-wait must not restart it.
+func flip_up_after(delay: float) -> void:
+	if not face_down: return
+	if flip_tween and flip_tween.is_running(): return
+	flip_tween = create_tween()
+	flip_tween.tween_interval(delay)
+	flip_tween.tween_callback(func() -> void: face_down = false)
+
+var flip_tween : Tween
 
 var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 	set(value):
@@ -219,12 +261,11 @@ func update_visual() -> void:
 		suit.hide()
 		art.hide()
 
-		#placeholder
 		CardOutline.frame_polygon(
 			type,CardModifierType.TYPE_TEXTURE,
 			CardModifierType.H_FRAMES,
 			CardModifierType.V_FRAMES,
-			1)
+			CARD_BACK_FRAME if showing_back() else BLANK_CARD_FRAME)
 		CardOutline.fill_texture(type)
 		type.show()
 	_push_outline_ink()
@@ -326,6 +367,8 @@ var move_tween : Tween
 var tilt_tween : Tween
 var spin_tween : Tween
 var held : int = 0
+## Does this visual track the cursor — a held card is lifted either way, and only this makes it move.
+var following : bool = false
 var hover : bool = false
 
 @onready var offset: Node2D = $Offset
@@ -582,7 +625,7 @@ func _ready() -> void:
 		SettingsManager.settings_changed.connect(recalculate_size)
 	recalculate_size()
 	match data.previous_stage:
-		data.Stage.PLAY, data.Stage.ZONE:
+		data.Stage.PLAY, data.Stage.ZONE, data.Stage.DRAW:
 			# The anchor may not exist yet (a visual built the same frame as its control), and a
 			# viewer/preview visual never gets one at all -- the SAME guard `on_stage_changed()`
 			# already puts on this exact call. Without it, a preview card whose previous_stage is
@@ -590,28 +633,25 @@ func _ready() -> void:
 			# CardEnvironment was on screen, which a live `Map` (one itself) makes most of the time.
 			if CardEnvironment.CURRENT and is_instance_valid(control_anchor):
 				global_position = get_card_control_center(control_anchor)
-		data.Stage.DRAW:
-			if _game_view():
-				global_position = get_control_center(_game_view().deck_ui)
 		data.Stage.DISCARD:
 			if _game_view():
-				global_position = get_control_center(_game_view().discard_ui)
+				global_position = _game_view().pile_center(_game_view().discard_ui)
 		data.Stage.RULES:
 			if _game_view():
-				global_position = get_control_center(_game_view().rules_ui)
-	# Only a card drawn from the deck ONTO THE BOARD flips into view: it keeps the default
-	# face-down basis3d and the floating anim slerps it to front. Everything else — non-draw
-	# board cards AND every viewer card (deck/pack/preview), even ones whose previous_stage is
-	# DRAW — spawns already showing its resting face (respecting data.flipped). Without this the
-	# slerp would flip every card from back to front on init.
-	if not (current_context == DisplayContext.PLAY_AREA and data.previous_stage == data.Stage.DRAW):
-		basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if data.flipped else 1)))
+				global_position = _game_view().pile_center(_game_view().rules_ui)
+	basis3d = resting_basis()
 	on_stage_changed()
 
+## The size a PREVIEW card is DRAWN at; ZERO leaves it at the context's own -- only a description's publisher knows the board's live drawn size.
+var preview_size : Vector2 = Vector2.ZERO
+
+# ⚠ RE-RUN ON `_ready()` AND ON EVERY SETTINGS CHANGE, so a caller cannot size a card once and walk
+# away. `preview_size` is applied HERE, after the context's own size, which is what makes it survive
+# both -- writing `card_size` and `scale` from outside does not.
 func recalculate_size() -> void:
 	match current_context:
 		DisplayContext.DECK_VIEWER:
-			card_size = CARD_SIZE * 2#settings().card_scale
+			card_size = CARD_SIZE * 2
 			card_separation = CARD_SEPARATION * settings().card_scale
 			card_separation_custom = card_separation * settings().card_separation_scale
 			scale = Vector2.ONE * 2
@@ -625,6 +665,9 @@ func recalculate_size() -> void:
 			card_separation = CARD_SEPARATION * settings().card_scale
 			card_separation_custom = card_separation * settings().card_separation_scale
 			scale = Vector2.ONE * settings().card_scale
+	if current_context == DisplayContext.PREVIEW and preview_size != Vector2.ZERO:
+		card_size = preview_size
+		scale = preview_size / CARD_SIZE
 
 func on_stage_changed() -> void:
 	if current_context != DisplayContext.PLAY_AREA: return
@@ -637,17 +680,13 @@ func on_stage_changed() -> void:
 			var target_pos := get_card_control_center(control_anchor)
 			create_move_tween(target_pos)
 			await move_tween.finished
-		data.Stage.DRAW:
-			if _game_view():
-				var target_pos := get_control_center(_game_view().deck_ui)
-				create_move_tween(target_pos).tween_callback(queue_free)
 		data.Stage.DISCARD:
 			if _game_view():
-				var target_pos := get_control_center(_game_view().discard_ui)
+				var target_pos := _game_view().pile_center(_game_view().discard_ui)
 				create_move_tween(target_pos).tween_callback(queue_free)
 		data.Stage.RULES:
 			if _game_view():
-				var target_pos := get_control_center(_game_view().rules_ui)
+				var target_pos := _game_view().pile_center(_game_view().rules_ui)
 				create_move_tween(target_pos).tween_callback(queue_free)
 
 ## The active game's view (the UI layer that owns the deck/discard/rules anchors + PlayArea).
@@ -672,9 +711,6 @@ func get_card_control_center(control:Control) -> Vector2:
 	var y := (control.size.y - card_size.y / 2) if bottom_anchored else (card_size.y / 2)
 	return control.global_position + Vector2(control.size.x / 2, y) * _control_scale(control)
 
-func get_control_center(control:Control) -> Vector2:
-	return control.global_position + control.size / 2.0 * _control_scale(control)
-
 func _process(delta: float) -> void:
 	delta_self_moving_logic(delta)
 	if floating: delta_floating_anim(delta)
@@ -682,6 +718,18 @@ func _process(delta: float) -> void:
 	# Gated on an alert being live, so a resting board — which is nearly every card, nearly always —
 	# pays one null check rather than five `set_shader_parameter` calls per frame.
 	if _alert: _advance_alert(delta)
+
+# How far a HELD card is raised above whatever it aims at — the cursor once it is following, its
+# own slot until then. The SAME rise a jump uses, in both states, so the only visible change when
+# following starts is that the card begins to move.
+func held_lift_px() -> float:
+	return card_jump_rise_play * _control_scale(control_anchor).y
+
+# Where a FOLLOWING card hangs under the cursor: the pointer carries the stack by the top card, so
+# each card below it hangs one separation lower.
+func cursor_ride_offset() -> Vector2:
+	return Vector2(0.0, card_size.y / 2.0 - card_separation / 2.0
+			+ (held - 1) * card_separation_custom)
 
 var rot_delta : float
 var y_delta : float
@@ -698,10 +746,8 @@ func delta_self_moving_logic(delta:float) -> void:
 	if (not (move_tween and move_tween.is_running())) and control_anchor:
 		var target : Vector2 = get_card_control_center(control_anchor)
 		if held:
-			#where card orients itself relative to mouse
-			var offset : int =  card_size.y/2 - card_separation/2
-			offset += (held - 1) * card_separation_custom
-			target = get_global_mouse_position() + Vector2(0, offset)
+			if following: target = get_global_mouse_position() + cursor_ride_offset()
+			target.y -= held_lift_px()
 		target.y -= y_delta
 		var move : Vector2 = target - global_position
 		# Only PLAY_AREA cards ease toward their slot — that smooths slot-to-slot moves and the
@@ -744,7 +790,7 @@ func delta_floating_anim(delta:float) -> void:
 		x = 0
 		y = 0
 		bobbing = 0
-	var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if data and data.flipped else 1))
+	var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if showing_back() else 1))
 	basis3d = basis3d.slerp(Basis.looking_at(drift), 6.5 * delta)
 	visual.position.y = lerpf(visual.position.y, bobbing, 10 * delta)
 

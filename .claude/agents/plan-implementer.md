@@ -16,7 +16,7 @@ permissionMode: auto
      ⚠ Hooks still fire regardless of permission mode — `.claude/hooks/block-process-kill.ps1`
      continues to block killing a process by image name or wildcard.
      maxTurns: 150 — measured, 50 ended two Solatro steps mid-edit with no report, and a turn-cap
-     stop does not fire SubagentStop, so it also left the one-subagent lock held.
+     stop does not fire SubagentStop, so it also left the subagent lock held.
 
      Fields deliberately NOT set, so nobody "fixes" them later:
      memory:        the docs recommend `project` as a default, and it is wrong HERE. Persistent
@@ -75,6 +75,10 @@ skipped check as a pass.
 ## Repo rules that bind you
 
 - **NO `git add`, NO commits, NO staging.** The owner commits by hand. Just edit files.
+- **Never `git checkout`/`restore`/`reset`/`stash` a tracked file** — the overseer and other agents
+  share the tree. Park a file with `Copy-Item` and copy it back.
+- **Append evidence to a scratch file as you go** (commands, banners, red/green counts). A turn-cap
+  stop fires no final reply, and that file is then the only record of the step.
 - **Warnings are errors** — type every array element and every for-loop variable.
 - **User-facing strings** go through `TRANSLATION.find` + the localisation CSV, never a literal.
 - **Tuning knobs** live in `Scripts/player_settings.gd` via `SettingsManager.settings`.
@@ -98,8 +102,17 @@ skipped check as a pass.
   `STEP:` report, which is where it is read. Test assertion messages are the one exemption.
 - **Comments carry rules, not history** — keep the ⚠ and the measured number, drop the plot.
 - Verify both with `py .claude/tools/doc_check.py --changed` before reporting.
+- **A diagnosis in your brief is a claim.** When the brief says "the cause is X", print the
+  quantity first and let the number confirm it; if it does not, report what you measured instead of
+  building the prescribed fix. Two of one close's diagnoses were wrong, and the print said so.
 - **Never kill a process by image name or wildcard** — an explicit verified `-Id <pid>` is fine.
 - **PowerShell mangles UTF-8** — never `Get-Content | Set-Content` a source file; use Edit.
+- **Python `write_text` on Windows writes CRLF.** Write bytes, then verify LF with `git ls-files
+  --eol` or a Python bytes count — Git Bash `grep -c $'\r'` counted CR on every line of an LF file.
+- ⚠ **A fixture that hosts Main keeps the game's pause state: never write `paused = false`.** The
+  host restores the prior state at teardown. See [[tests-that-prove-nothing]] item 9.
+- **Every suite a step creates or grows calls `check_all_tests_registered()`** — a test defined but
+  never registered in `_ready` never runs, and the banner stays green.
 - **The Godot suite runs WINDOWED** and needs an explicit killing timeout: a parse error in the test
   base class hangs forever instead of failing.
 - **`addons/` is vendored** — never edit anything under it.

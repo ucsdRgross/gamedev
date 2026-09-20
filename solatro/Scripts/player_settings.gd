@@ -439,15 +439,6 @@ enum SeparationMode {
 	set(value):
 		wall_reduced_motion = value
 		settings_changed.emit()
-## Whether info mode is on FOR THE PICTURE CURRENTLY FOCUSED. Info mode is per screen — the map
-## can be left in info mode while the board is not — so the owner of the wall keeps a flag per
-## picture and writes the focused one here on every focus change. Everything downstream reads this
-## single value, so nothing else has to know the mode is per screen.
-##
-## Session state: NOT `@export`, so it is never saved or loaded, and
-## toggling it must not emit `settings_changed` (nothing recomputes off it, and a save per toggle
-## would rewrite the whole settings file).
-var wall_info_mode : bool = false
 ## Floor on a wall-view texture's short axis, in whole px. Feeds `SubViewport.size` directly.
 @export var wall_view_min_texture_px : int = 64:
 	set(value):
@@ -486,21 +477,6 @@ var wall_info_mode : bool = false
 	set(value):
 		wall_debug_readout = value
 		settings_changed.emit()
-## Touch target size in millimetres, converted through live DPI.
-@export var wall_touch_target_mm : float = 9.0:
-	set(value):
-		wall_touch_target_mm = value
-		settings_changed.emit()
-## Smallest touch target in px, whatever the DPI reading says.
-@export var wall_touch_target_min_px : float = 32.0:
-	set(value):
-		wall_touch_target_min_px = value
-		settings_changed.emit()
-## Largest touch target in px.
-@export var wall_touch_target_max_px : float = 96.0:
-	set(value):
-		wall_touch_target_max_px = value
-		settings_changed.emit()
 ## How far two fingers must change distance, in px, before the drag counts as a pinch.
 @export var wall_pinch_threshold_px : float = 24.0:
 	set(value):
@@ -518,50 +494,10 @@ var wall_info_mode : bool = false
 	set(value):
 		wall_light_offset = value
 		settings_changed.emit()
-## The info card's fixed width in screen px; the card is anchored to the window, not the wall.
-@export var wall_info_card_width : float = 480.0:
-	set(value):
-		wall_info_card_width = value
-		settings_changed.emit()
-## Height in screen px past which the info card stops growing and scrolls its text instead.
-@export var wall_info_card_max_height : float = 320.0:
-	set(value):
-		wall_info_card_max_height = value
-		settings_changed.emit()
 ## Alpha of every picture's drop shadow.
 @export var wall_shadow_opacity : float = 0.35:
 	set(value):
 		wall_shadow_opacity = value
-		settings_changed.emit()
-## Whether a screen's own description popup shows while Info mode is OFF.
-##
-## true  — the popup behaves as it always has when Info mode is off, and MIGRATES to the info card
-##         when Info mode is on. One description, two places to read it depending on the mode.
-## false — there is no popup at all; a description is only ever visible in Info mode.
-##
-## Either way the popup NEVER shows while Info mode is on: one card describes one thing, and two
-## panels describing the same card is what having a single info card replaced.
-@export var wall_screen_popups : bool = true:
-	set(value):
-		wall_screen_popups = value
-		settings_changed.emit()
-## How much of the info card is allowed to OVERLAP the bottom of the screen, in screen px. Info
-## mode zooms out until the whole screen fits in the window ABOVE the card; this is the one part
-## the card may cover, so it reads as sitting in FRONT of the picture rather than floating in a
-## band of its own. 0 leaves the screen entirely clear of the card.
-##
-## ⚠ The reserve is measured against `wall_info_card_max_height`, NOT the card's live height. The
-## card sizes itself to its content, and a camera that tracked that would re-zoom on every hover.
-@export var wall_info_card_overlap : float = 24.0:
-	set(value):
-		wall_info_card_overlap = value
-		settings_changed.emit()
-## Multiplier on the transition clock for the info-mode zoom, in and out. 1.0 makes entering info
-## mode take exactly as long as an ordinary wall move; below 1.0 it snaps in faster, which suits a
-## reveal that only shifts the camera a little way down.
-@export var wall_info_zoom_scale : float = 1.0:
-	set(value):
-		wall_info_zoom_scale = value
 		settings_changed.emit()
 ## Multiplier on the transition clock for the one-off opening reveal, so it runs slower and
 ## longer than an ordinary wall move.
@@ -610,33 +546,6 @@ var wall_info_mode : bool = false
 	set(value):
 		grid_bounce_velocity_px = maxf(value, 0.0)
 		settings_changed.emit()
-## How far a finger must travel before a one-finger drag counts as a pan, in MILLIMETRES.
-## ⚠ Millimetres, not pixels: the same physical swipe must mean the same thing on every screen.
-##
-## ⚠ **A DISTANCE TO TRAVEL IS NOT A THING TO HIT, AND THE PLATFORMS KEEP THEM APART.** This was
-## clamped to the touch-target bounds, whose floor of 32 px is ~8.5 mm at 96 DPI -- so the old 8 mm
-## default was BELOW its own floor and turning the knob down did nothing at all. Android carries
-## three separate quantities: a touch target (Material: 48 dp, about 9 mm), plain touch slop (the
-## distance a touch may wander before it is a scroll, 8 dp, about 1.5 mm) and a PAGING touch slop
-## for a swipe between pages -- which is this gesture -- defined in `ViewConfiguration` as exactly
-## twice the plain slop, about 3 mm. A swipe threshold sized like a fingertip is roughly three
-## times what the platform asks for.
-@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_mm : float = 3.0:
-	set(value):
-		grid_swipe_threshold_mm = maxf(value, 0.0)
-		settings_changed.emit()
-## The swipe threshold's OWN bounds, in millimetres — the guard against a wild DPI reading, which
-## is what the clamp was for. Defaults bracket the gesture rather than the fingertip: the floor is
-## plain touch slop (below which a tap's own wander would page the board) and the ceiling is a
-## touch target (above which a swipe costs more travel than a button costs width).
-@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_min_mm : float = 1.5:
-	set(value):
-		grid_swipe_threshold_min_mm = maxf(value, 0.0)
-		settings_changed.emit()
-@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_max_mm : float = 9.0:
-	set(value):
-		grid_swipe_threshold_max_mm = maxf(value, 0.0)
-		settings_changed.emit()
 ## **Cross-grid row alignment** (§1.14, `Q245`=b). OFF by default: each grid sizes its own rows, so
 ## a deep stack in one grid does not stretch the same row in every other. ON, row `r` takes a
 ## SHARED maximum across every grid, and the boards read as one ruled sheet.
@@ -653,18 +562,52 @@ var wall_info_mode : bool = false
 		entrance_visible_rows = maxf(value, 0.5)
 		settings_changed.emit()
 
-## The clear band above the board and below the Entrance, in CARD ROWS, so the focused view does
-## not hug the screen edge. **0 turns it off**, which is what a phone-sized screen wants: on a
-## short screen the band costs more of the board than the breathing room is worth.
-## The share of the board's width the HUD column occupies. The furniture is SCALED to fit it, so
-## this is what the HUD costs the board however wide the picture gets.
-##
-## The split is exactly what it reads as: the HUD gets this share of the width and the board gets
-## the rest. Nothing sizes anything else -- the picture's own width is derived from the board alone
-## (`isolating_grid_buffer_px`), and the HUD is then scaled to its share of whatever that came to.
-@export var hud_width_fraction : float = 0.25:
+## Delay between one Entrance slot's refill flip and the next one's, as a fraction of get_delay().
+@export var entrance_flip_stagger : float = 0.15:
 	set(value):
-		hud_width_fraction = clampf(value, 0.0, 0.9)
+		entrance_flip_stagger = maxf(value, 0.0)
+		settings_changed.emit()
+
+## Multiplied into the zone card of every cell the held card may land in; WHITE marks nothing.
+@export var legal_cell_tint : Color = Color(0.72, 1.35, 0.86):
+	set(value):
+		legal_cell_tint = value
+		settings_changed.emit()
+
+## Share of the window's near axis (width on the side, height on top) the HUD container claims.
+@export var container_size_fraction : float = 0.25:
+	set(value):
+		container_size_fraction = clampf(value, 0.0, 0.9)
+		settings_changed.emit()
+
+## How far the scroll stick moves a description at full deflection, in pages of it a second (one is eight of the mouse wheel's own notches).
+@export var sidebar_scroll_pages_per_second : float = 1.0:
+	set(value):
+		sidebar_scroll_pages_per_second = maxf(value, 0.0)
+		settings_changed.emit()
+
+## Pixel cap on the HUD container's size once the fraction above would grow past it.
+@export var container_size_max_px : float = 640.0:
+	set(value):
+		container_size_max_px = maxf(value, 0.0)
+		settings_changed.emit()
+
+## The smallest any overlay control may be, as a fraction of the window's smaller dimension.
+@export var touch_target_fraction : float = 0.06:
+	set(value):
+		touch_target_fraction = maxf(value, 0.0)
+		settings_changed.emit()
+
+## How far a press travels before it is a drag, as a fraction of the card's own on-screen width.
+@export var card_drag_threshold : float = 0.25:
+	set(value):
+		card_drag_threshold = maxf(value, 0.0)
+		settings_changed.emit()
+
+## How long after a press a second one still pairs with it into a tap, in milliseconds.
+@export var card_tap_window_ms : float = 300.0:
+	set(value):
+		card_tap_window_ms = maxf(value, 0.0)
 		settings_changed.emit()
 
 @export var board_edge_pad_rows : float = 1.0:

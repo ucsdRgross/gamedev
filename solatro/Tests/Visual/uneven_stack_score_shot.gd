@@ -89,7 +89,7 @@ func _ready() -> void:
 ## Draws and places `depth` cards into grid `gi` row `ry` column 0, stacked height 0..depth-1.
 func _stack_row(g: Game, gi: int, ry: int, depth: int) -> void:
 	for h : int in depth:
-		var card := g.draw_card()
+		var card := TestGridFixtures.draw_any(g)
 		if not card: break
 		await g.place_card_in_grid(card, BoardCoord.new(gi, 0, ry, h))
 

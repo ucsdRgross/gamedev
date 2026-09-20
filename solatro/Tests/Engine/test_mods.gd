@@ -227,25 +227,23 @@ func run_type_input_refill_tests() -> void:
 	var d2 := TestFactories.m_card(8, TestFactories.uc())
 	for d : CardData in [d1, d2]:
 		d.stage = CardData.Stage.DRAW
-	g.state.draw_deck.append_array([d1, d2] as Array[CardData])
+	g.state.entrance_stocks()[0].datas.append_array([d1, d2] as Array[CardData])
+	g.deal_stocks()
 
 	await g.next()
-	# draw_card() pops the BACK of the deck, and the headers fill in dispatch order, so the
-	# LEFTMOST slot takes the first card drawn. Asserting the exact card per slot, not merely
-	# that both are full: a right-to-left refill would pass a "both slots full" check.
-	check(g.state.upper_zone[0].datas == ([d2] as Array[CardData]),
-			"the leftmost Entrance slot takes the first card drawn",
+	check(g.state.upper_zone[0].datas == ([d1] as Array[CardData]),
+			"the leftmost Entrance slot takes the top of its own stock",
 			str(g.state.upper_zone[0].datas))
-	check(g.state.upper_zone[1].datas == ([d1] as Array[CardData]),
-			"the next slot right takes the second", str(g.state.upper_zone[1].datas))
-	check(g.state.draw_deck.is_empty() and d1.stage == CardData.Stage.PLAY 			and d2.stage == CardData.Stage.PLAY,
-			"both drawn cards left the deck and entered play")
+	check(g.state.upper_zone[1].datas == ([d2] as Array[CardData]),
+			"the next slot right takes the top of its own", str(g.state.upper_zone[1].datas))
+	check(g.state.stocks_are_empty() and d1.stage == CardData.Stage.PLAY 			and d2.stage == CardData.Stage.PLAY,
+			"both drawn cards left the stocks and entered play")
 	check(g.state.validate().is_empty(), "board validates after the refill")
 
 	# An empty deck: the refill is still asked for and simply finds nothing to draw.
 	g.state.upper_zone[0].datas.clear()
 	await g.next()
-	check(g.state.upper_zone[0].datas.is_empty() 			and g.state.upper_zone[1].datas == ([d1] as Array[CardData]),
+	check(g.state.upper_zone[0].datas.is_empty() 			and g.state.upper_zone[1].datas == ([d2] as Array[CardData]),
 			"a refill with an empty deck leaves the slot empty; no crash, nothing invented",
 			str(g.state.upper_zone[0].datas))
 	check(g.state.validate().is_empty(), "board validates after the empty-deck refill")
@@ -413,33 +411,34 @@ func run_shuffle_tests() -> void:
 	for i in 10:
 		var c := TestFactories.m_card(i + 1, TestFactories.uc())
 		c.stage = CardData.Stage.DRAW
-		g.state.draw_deck.append(c)
-	var original := g.state.draw_deck.duplicate()
+		g.state.entrance_stocks()[0].datas.append(c)
+	var deck := g.stock_for_slot(0)
+	var original := deck.duplicate()
 
 	#same seed -> same order (a seeded shuffle is reproducible for debugging/replays)
 	seed(777)
-	await g.shuffle_deck(g.state.draw_deck)
-	var first_order := g.state.draw_deck.duplicate()
-	g.state.draw_deck.assign(original)
+	await g.shuffle_deck(deck)
+	var first_order := deck.duplicate()
+	deck.assign(original)
 	seed(777)
-	await g.shuffle_deck(g.state.draw_deck)
-	check(g.state.draw_deck == first_order, "same seed shuffles to the same order")
-	check(g.state.draw_deck.size() == 10, "shuffle preserves deck size")
+	await g.shuffle_deck(deck)
+	check(deck == first_order, "same seed shuffles to the same order")
+	check(deck.size() == 10, "shuffle preserves deck size")
 
 	#an on_append mod may reorder the deck as it rebuilds: the spy pins its card on top
 	var spy := SpyAppendFront.new()
-	g.state.draw_deck[5].with_type(spy)
-	var modded := g.state.draw_deck[5]
+	deck[5].with_type(spy)
+	var modded := deck[5]
 	g.state.revision += 1
-	await g.shuffle_deck(g.state.draw_deck)
-	check(g.state.draw_deck[0] == modded, "on_append mod controls its card's final spot")
+	await g.shuffle_deck(deck)
+	check(deck[0] == modded, "on_append mod controls its card's final spot")
 	check(spy.append_calls == 10, "on_append fires once per appended card",
 			"calls %d" % spy.append_calls)
 	var seen := {}
 	var dup := false
-	for c in g.state.draw_deck:
+	for c in deck:
 		if seen.has(c): dup = true
 		seen[c] = true
-	check(g.state.draw_deck.size() == 10 and not dup,
+	check(deck.size() == 10 and not dup,
 			"reordering mod keeps the deck duplicate-free and complete")
 	done(g)

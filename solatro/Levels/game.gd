@@ -253,12 +253,13 @@ func _start_fresh_show() -> void:
 	# The map node being played sets the fame requirement (RunManager.goal_for).
 	state.goal = maxi(Main.save_info.pending_goal, 1)
 	_update_submit_label()
-	add_deck()
+	await add_deck()
 	# ⚠ THE ORDER OF THESE FOUR IS LOAD-BEARING, and each one is here for its own reason.
 	# 1. Sweep first: run_all_mods only reaches a skill whose `spotlit` flag is already set, and
 	#    nothing sets it until a sweep runs -- so on_game_start called first reaches NO rules
 	#    card at all. This sweep is also what has the zone adders build the Entrance.
 	skill_spotlight_check()
+	deal_stocks()
 	# 2. Now the start hook lands. The allotment card sizes the grid count to the deck just
 	#    dealt and adds that many creator cards.
 	await run_all_mods(&"on_game_start")
@@ -323,27 +324,30 @@ func _resume_after_visuals() -> void:
 		_resolve_game()  # fully submitted before the quit — re-show win/lose (input stays locked)
 	elif Main.save_info.pending_action != &"":
 		await _replay_pending_action(Main.save_info.pending_action)
+		await _end_show_if_goal_met()
 	else:
-		processing = false  # nothing pending — the restored board is live again
+		await _end_show_if_goal_met()
+		if not state.show_ended:
+			processing = false
 
-## Re-run a board action a quit interrupted mid-resolution (persisted marker). The restored
-## board is the exact pre-action board, and these actions are deterministic — scoring has no
-## RNG, draws come from the already-ordered draw_deck — so the replay reproduces the original
-## outcome. Board visuals are already loaded (see _resume_after_visuals); input stays locked
-## throughout (each _perform_* holds processing).
+# A quit inside the winning hold saved the board but not its outcome, so nothing on disk says the
+# show ended. Resume re-fires the check, so the goal never ends up met on a board that is still live.
+func _end_show_if_goal_met() -> void:
+	if state.has_met_goal() and not state.show_ended:
+		await _end_show_on_goal()
+
+# Re-run a board action a quit interrupted mid-resolution, from the exact pre-action board the
+# marker rode to disk; the actions carry no RNG, so the replay reproduces the original outcome.
+# Each replayed action owns the board lock exactly as it does live, and hands the board back.
 func _replay_pending_action(action: StringName) -> void:
 	print("[resume] replaying interrupted action: %s" % action)
 	match action:
 		&"on_next": await _perform_next()
 		&"on_placement": await _replay_pending_placement()
 
-## Re-run the placement a quit interrupted. The restored board is the pre-placement one, so
-## the card named by the saved slot is back in the Entrance and the deck is back in its
-## pre-refill order -- there is no RNG anywhere in the path, so replaying reproduces the same
-## board, scoring and refill included. A slot that no longer holds anything means the marker
-## outlived the board it described; the board is already correct, so there is nothing to do.
-## Takes the slot's TOPMOST card, which is the one a player can pick up (`is_data_topmost`);
-## it matters only once the Entrance holds stacks rather than one card per slot.
+# The lock is handed to the placement, whose whole tail -- commit, goal check, refill -- is gated
+# on an unlocked board. Nothing in the path has RNG, so the pre-placement board reproduces the same
+# board; an empty slot means the marker outlived it, and the topmost card is the grabbable one.
 func _replay_pending_placement() -> void:
 	var slot : int = RunManager.run.pending_placement_slot
 	if slot < 0 or slot >= state.upper_zone.size(): return
@@ -351,6 +355,7 @@ func _replay_pending_placement() -> void:
 	if held.is_empty(): return
 	var c : Vector4i = RunManager.run.pending_placement_coord
 	var card : CardData = held.back()
+	processing = false
 	await place_card_in_grid(card, BoardCoord.new(c.x, c.y, c.z, c.w))
 
 # Rebuild a live runtime GameData from a saveable history snapshot (independent copy with
@@ -412,12 +417,64 @@ func add_deck() -> void:
 	for data in state.rules_deck:
 		GameData.relink_card_backrefs(data)
 		data.stage = CardData.Stage.RULES
-	state.draw_deck = saved_deck.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
-	for data in state.draw_deck:
+	var dealt : Array[CardData] = saved_deck.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
+	for data in dealt:
 		GameData.relink_card_backrefs(data)
 		data.stage = CardData.Stage.DRAW
-	shuffle_deck(state.draw_deck)
+	await shuffle_deck(dealt)
+	state.entrance_stocks()[0].datas.assign(dealt)
+	deal_stocks()
+
+## Deals the gathered stocks round-robin left to right, earlier slots taking the extras, with NO RNG -- add_deck's is the only shuffle, so a resumed board replays identically.
+func deal_stocks() -> void:
+	var cards := state.all_stock_cards()
+	var stocks := state.entrance_stocks()
+	for stock : ArrayCardData in stocks:
+		stock.datas.clear()
+	for i in cards.size():
+		stocks[i % stocks.size()].datas.append(cards[i])
 	state.revision += 1
+
+## Re-spreads the stocks after the SET of slots changes: only BOTTOM cards move, so what each slot is about to draw is stable and a peek stays honest. No RNG, so it replays identically.
+func rebalance_stocks() -> void:
+	var stocks := state.entrance_stocks()
+	var slots := maxi(state.upper_zone.size(), 1)
+	_pour_out_slotless_stocks(stocks, slots)
+	_pull_bottoms_to_even_shares(stocks, slots)
+	state.revision += 1
+
+## A removed slot's parked stock empties from ITS bottom into the surviving slots' bottoms, left to right.
+func _pour_out_slotless_stocks(stocks: Array[ArrayCardData], slots: int) -> void:
+	while stocks.size() > slots:
+		var parked : ArrayCardData = stocks.pop_back()
+		var taker := 0
+		while not parked.datas.is_empty():
+			stocks[taker % slots].datas.push_front(parked.datas.pop_front())
+			taker += 1
+
+## Every slot short of the share deal_stocks would give it takes the bottom card of each fuller slot in turn.
+func _pull_bottoms_to_even_shares(stocks: Array[ArrayCardData], slots: int) -> void:
+	var total := state.all_stock_cards().size()
+	var targets : Array[int] = []
+	for i : int in slots:
+		targets.append(total / slots + (1 if i < total % slots else 0))
+	var donor := 0
+	var needy := _first_stock_below_target(stocks, targets)
+	while needy != -1:
+		while stocks[donor].datas.size() <= targets[donor]:
+			donor = (donor + 1) % slots
+		stocks[needy].datas.push_front(stocks[donor].datas.pop_front())
+		donor = (donor + 1) % slots
+		needy = _first_stock_below_target(stocks, targets)
+
+func _first_stock_below_target(stocks: Array[ArrayCardData], targets: Array[int]) -> int:
+	for i : int in targets.size():
+		if stocks[i].datas.size() < targets[i]: return i
+	return -1
+
+## The cards Entrance slot `slot` still has to draw, its top one last.
+func stock_for_slot(slot: int) -> Array[CardData]:
+	return state.entrance_stocks()[slot].datas
 
 func shuffle_deck(datas:Array[CardData]) -> void:
 	var new_deck : Array[CardData] = []
@@ -522,6 +579,8 @@ func entrance_slot_of(card: CardData) -> int:
 ## Command (view-called): rewind one committed board. The held-cards guard is the VIEW's job
 ## (selection state lives there); Game owns the history rewind. Three states:
 ##   - win/lose screen up (_resolved): dismiss the outcome, then rewind the final Submit.
+## ⚠ `processing` is released LAST, after the pop: the view re-arms the Entrance on that false edge,
+## so an earlier release arms a card of the state this rewind is throwing away.
 ##   - an act is resolving (_act_cancellable): request a cancel — the act fast-forwards and
 ##     restores the pre-act board itself (_perform_next).
 ##   - otherwise locked (resume load / replay tail): ignored.
@@ -531,8 +590,6 @@ func undo() -> void:
 		_resolved = false
 		_won = false
 		show_unresolved.emit()
-		processing = false
-		# fall through: pop the final Submit's committed board below
 	elif processing:
 		# the restore needs a committed board to return to (always true in a real show —
 		# _start_fresh_show seeds history — but bare test fixtures may not have one)
@@ -554,6 +611,7 @@ func undo() -> void:
 			RunManager.request_save()
 		if view: view.rebuild()  # headless: state reverted; no board to force-rebuild
 		debug_validate("undo")
+	processing = false
 
 # ==============================================================================
 # DEBUG HISTORY — the owner's playtest-debugging loop.
@@ -707,22 +765,29 @@ func _entrance_is_empty() -> bool:
 		if column.datas.size() > 0: return false
 	return true
 
-## Every held Entrance card has been asked, through the same legality dispatch a real
-## placement uses, and none of them can go anywhere on any grid.
+# THE ONE LEGALITY WALK. An occupied cell presents the card on top of it as the target, an empty
+# one its own zone card, and the answer comes from the same dispatch `try_place` asks -- so no
+# placement rule is restated by the refill, the commit or the drop map that read this.
+func legal_cells_for(held: Array[CardData], grids: Array[GridData]) -> Array[CardData]:
+	var legal : Array[CardData] = []
+	for grid : GridData in grids:
+		for i : int in grid.cells.size():
+			var target : CardData = grid.cells[i].datas.back() \
+					if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
+			var accepted : Array[CardData] = await return_first_data_array_result(
+					&"on_can_place_stack", held, target)
+			if not accepted.is_empty(): legal.append(grid.cell_types[i])
+	return legal
+
+## Every held Entrance card has been asked, and none of them can go anywhere on any grid.
 func _no_held_card_has_a_legal_placement() -> bool:
-	for column : ArrayCardData in state.upper_zone:
-		if column.datas.is_empty(): continue
-		var held : Array[CardData] = [column.datas.back()]
-		for grid : GridData in state.grids:
-			for i : int in grid.cells.size():
-				var target : CardData = grid.cells[i].datas.back() 						if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
-				if not (await return_first_data_array_result(&"on_can_place_stack", held, target)).is_empty():
-					return false
+	for grid_index : int in state.grids.size():
+		if not await _no_legal_placement_remains_in_grid(grid_index): return false
 	return true
 
-## The Entrance's commit: the first placement locks `state.committed_grid` to that grid, and
-## a placement aimed at any other grid while committed is refused outright (no state change).
-## The commitment lifts again once no legal placement remains anywhere in the committed grid.
+# The Entrance's commit: the first placement locks `state.committed_grid`, and one aimed at any other
+# grid is refused outright. A PLAYER's winning placement commits BEFORE the hold and deals no refill;
+# one made under the board lock (a cascade's own) is not an ending.
 func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	if state.committed_grid != -1 and coord.grid != state.committed_grid:
 		return
@@ -768,34 +833,32 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 		await view.await_card_settled(card)
 	await _broadcast_board_mutation(landed, false)
 	await run_all_mods(&"on_card_placed", landed)
+	if not processing and state.has_met_goal():
+		await _commit_placement()
+		await _end_show_on_goal()
+		return
 	await refill_entrance_if_due()
+	await _commit_placement()
+	if not processing and view:
+		await view.arm_after_placement()
+
+# A placement's commit: the grid commitment lifts once that grid has no legal placement left, and
+# a PLAYER's placement is the undo step. The snapshot is taken LAST so it carries the scores the
+# placement caused; under the board lock the placement belongs to the act that caused it instead.
+func _commit_placement() -> void:
 	if state.committed_grid != -1 and await _no_legal_placement_remains_in_grid(state.committed_grid):
 		state.committed_grid = -1
-	# THE PLACEMENT IS THE UNDO STEP -- one snapshot each, never a batch of five, exactly as
-	# try_place commits a player's drop. Taken LAST on purpose: the scores a placement caused
-	# live on `state`, so a snapshot taken any earlier would rewind the board without rewinding
-	# what it scored. A placement that moved nothing never got here (the guards above return),
-	# and save_state() skips an unmoved `revision` anyway, so putting a held card back still
-	# costs nothing. ⚠ Same `processing` guard as the act reset above: a placement made by an
-	# effect mid-cascade is part of the act that caused it, not an undo step of its own.
 	if not processing:
 		save_state()
 
-## Same legality question TypeInput._no_legal_move_remains asks (every held Entrance card
-## against every grid, via the same on_can_place_stack dispatch try_place uses), narrowed to
-## the cells of ONE grid -- whether the committed grid still has anywhere for a held card to go.
+## The refill's question narrowed to ONE grid -- whether the committed grid still has anywhere for a held card to go.
 func _no_legal_placement_remains_in_grid(grid_index: int) -> bool:
-	if grid_index < 0 or grid_index >= state.grids.size(): return true
-	var grid : GridData = state.grids[grid_index]
-	if not grid: return true
+	assert(grid_index >= 0 and grid_index < state.grids.size())
+	var grids : Array[GridData] = [state.grids[grid_index]]
 	for column : ArrayCardData in state.upper_zone:
 		if column.datas.is_empty(): continue
 		var held : Array[CardData] = [column.datas.back()]
-		for i : int in grid.cells.size():
-			var target : CardData = grid.cells[i].datas.back() \
-					if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
-			if not (await return_first_data_array_result(&"on_can_place_stack", held, target)).is_empty():
-				return false
+		if not (await legal_cells_for(held, grids)).is_empty(): return false
 	return true
 
 ## Moves a card already on the grid board to `coord`, then runs the mutation pass.
@@ -863,10 +926,11 @@ func is_data_topmost(data:CardData) -> bool:
 		return zone_col.datas.is_empty()
 	return vec3.z == zone_col.datas.size() - 1 and data == zone_col.datas[-1]
 
-#spawns new CARD where deck is
-func draw_card() -> CardData:
-	if state.draw_deck.size() > 0:
-		var data : CardData = state.draw_deck.pop_back()
+#spawns new CARD from the slot's own stock, top first
+func draw_card(slot: int) -> CardData:
+	var stock := stock_for_slot(slot)
+	if stock.size() > 0:
+		var data : CardData = stock.pop_back()
 		data.stage = CardData.Stage.PLAY
 		state.revision += 1
 		return data
@@ -875,9 +939,16 @@ func draw_card() -> CardData:
 func _update_submit_label() -> void:
 	submit_label_changed.emit(TRANSLATION.find('END_SHOW_BUTTON'))
 
-## The player ends the performance. A show runs until this is called; there is no act count
-## and nothing resolves one on its own. Marks the state resolved BEFORE saving, so a quit at
-## the outcome screen resumes into the outcome rather than back into a live board.
+# Holds the settled board for the same read beat the cascade holds a revealed section for, so the
+# winning total is visible before the outcome screen covers it. THE BOARD IS LOCKED ACROSS THE
+# HOLD: an undo or a second placement inside it would rewind the very win about to be resolved.
+func _end_show_on_goal() -> void:
+	var hold : float = get_delay() * SettingsManager.settings.spotlight_hold_fraction
+	processing = true
+	if view: await Pacing.wait(self, hold).timeout
+	end_show()
+
+## The performance ends here, by the End button or by the goal; the state is marked resolved BEFORE saving, so a quit at the outcome screen resumes into the outcome and not a live board.
 func end_show() -> void:
 	if state.show_ended: return
 	state.show_ended = true
@@ -921,28 +992,37 @@ func discard_data(data: CardData) -> void:
 func return_to_map() -> void:
 	await run_all_mods(&"on_game_end")
 	#sweep cards still on the board back into the deck (zone/type cards stay with their skills)
+	var returned : Array[CardData] = state.all_stock_cards()
 	for zone : Array[ArrayCardData] in [state.upper_zone, state.lower_zone]:
 		for col in zone:
-			state.draw_deck.append_array(col.datas)
+			returned.append_array(col.datas)
 			col.datas.clear()
 	# The grids hold the played cards, so the sweep has to reach them too or a show returns
 	# fewer cards to the run deck than it took -- the cell ZONE cards stay, they belong to the
 	# grid's own lifetime the way a column header belongs to its column.
 	for grid : GridData in state.grids:
 		for cell : ArrayCardData in grid.cells:
-			state.draw_deck.append_array(cell.datas)
+			returned.append_array(cell.datas)
 			cell.datas.clear()
-	state.draw_deck.append_array(state.discard_deck)
+	returned.append_array(state.discard_deck)
 	state.discard_deck.clear()
-	for data in state.draw_deck:
+	for data in returned:
 		data.stage = CardData.Stage.DRAW
+	_park_returned_deck(returned)
 	state.revision += 1
-	Main.save_info.card_datas = state.draw_deck
+	Main.save_info.card_datas = returned
 	RunManager.mark_deck_dirty()  # the run deck changed (board swept back in)
 	# The show is over — drop the undo history so Continue won't re-enter this game.
 	Main.save_info.game_history = [] as Array[GameData]
 	Main.save_info.game_history_trimmed = 0
 	game_ended.emit()
+
+## The swept-up deck is stage DRAW, so it sits in one stock or the board disagrees with itself.
+func _park_returned_deck(returned: Array[CardData]) -> void:
+	var stocks := state.entrance_stocks()
+	for stock : ArrayCardData in stocks:
+		stock.datas.clear()
+	stocks[0].datas.assign(returned)
 
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 	state.resize_grid_bucket(score_zone, size)

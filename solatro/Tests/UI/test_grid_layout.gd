@@ -34,8 +34,8 @@ func _ready() -> void:
 	# row that never grew. Measured: TP-85 failed 10 runs in 11 that way, reporting
 	# "CURRENT is mine false, CURRENT depth -1" while its own board sat two cards deep.
 	# See TestSuite.await_siblings_except and its DEADLOCK RULE.
-	await await_siblings_except(["GRID VIEW", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
-			"WALL PAUSE"])
+	await await_siblings_except(["GRID VIEW", "SIDEBAR", "SETTINGS RANGE", "E2E RUN",
+			"DRAG PLACE", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ GRID LAYOUT TEST PASS ============")
 	backup_real_settings()
 	use_own_settings()   # geometry checks must not depend on the player's tuning
@@ -113,6 +113,10 @@ func _tear_down(view: GameView) -> void:
 	RunManager.run = _prev_run
 	Main.save_info = _prev_save_info
 
+# ⚠ A REPEATED READING IS NOT A STOPPED BOARD WHILE A PAN IS EASING: the slot arithmetic is
+# republished once per PHYSICS tick and this polls per process frame, so two reads inside one tick
+# repeat. Measured: it returned mid-pan, and the label then sat 12.9 px off its own slot.
+
 ## ⚠ **WAIT FOR THE GEOMETRY TO STOP MOVING, NOT FOR A FIXED NUMBER OF FRAMES.** A container sorts
 ## its children on a later frame than the rebuild that changed them, and the panel origin the
 ## arithmetic reads is published by that sort — so a single `process_frame` measures a board that
@@ -130,9 +134,14 @@ func _settle_layout(view: GameView) -> void:
 	var last := INF
 	var waited := 0.0
 	while waited < 2.0:
+		await get_tree().physics_frame
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 		CardEnvironment.CURRENT = view.game
+		var smooth := pa.scroll_container as SmoothScrollContainer
+		if pa._recentre_waiting or (smooth and smooth.is_scrolling):
+			last = INF
+			continue
 		var now := pa.slot_center_global(BoardCoord.new(0, 0, 0, 0)).y
 		if is_equal_approx(now, last): return
 		last = now
@@ -196,8 +205,7 @@ func run_a_panel_per_grid_and_a_slot_per_cell_test() -> void:
 	behavior_section("A PANEL PER GRID AND A SLOT PER CELL")
 	var view := await _stand_up()
 	var pa := view.play_area
-	pa.flush_rebuild()
-	await get_tree().process_frame
+	await _settle_layout(view)
 	var grids : Array[GridData] = view.game.state.grids
 
 	check(grids.size() > 0, "precondition: the show built at least one grid",
@@ -1183,7 +1191,7 @@ func run_a_rows_zone_cards_share_one_line_at_a_non_one_zoom_test() -> void:
 	var depths : Array[int] = [2, 1, 0, 3]
 	for x : int in depths.size():
 		for _h : int in depths[x]:
-			var card := g.draw_card()
+			var card := g.draw_card(0)
 			if not card: break
 			await g.place_card_in_grid(card, BoardCoord.new(0, x, 0, _h))
 	pa.focus_grid(0)
@@ -1305,7 +1313,7 @@ func run_the_first_card_in_a_cell_does_not_widen_its_row_test() -> void:
 			"precondition: every empty row is the same height, so a change can only come from a "
 			+ "card", "row 0 %.2f, row 1 %.2f" % [empty_h, other_empty_h])
 
-	var first := g.draw_card()
+	var first := g.draw_card(0)
 	check(first != null, "precondition: the deck gave a card to place")
 	if first: await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
 	pa.queue_rebuild()
@@ -1319,7 +1327,7 @@ func run_the_first_card_in_a_cell_does_not_widen_its_row_test() -> void:
 			"...and the untouched row beside it did not move either",
 			"%.2f vs %.2f" % [_row_control_height(pa, 0, 1), other_empty_h])
 
-	var second := g.draw_card()
+	var second := g.draw_card(0)
 	if second: await g.place_card_in_grid(second, BoardCoord.new(0, 0, 0, 1))
 	pa.queue_rebuild()
 	await _settle_layout(view)
@@ -1450,7 +1458,7 @@ func run_the_card_is_put_down_before_anything_scores_test() -> void:
 	var g := view.game
 	await _settle_layout(view)
 
-	var card := g.draw_card()
+	var card := g.draw_card(0)
 	check(card != null, "precondition: the deck gave a card to place")
 	if card == null:
 		await _tear_down(view)
@@ -1485,7 +1493,7 @@ func run_the_card_is_put_down_before_anything_scores_test() -> void:
 			"the grab is released DURING the placement, before the mutation pass it ends with -- "
 			+ "not by the caller after the whole scoring cascade has already played",
 			"held for all %d frames of the placement" % samples)
-	check(pa.selected_cards.is_empty(),
+	check(card not in pa.selected_cards,
 			"...and it stays released", "%d held" % pa.selected_cards.size())
 	await _tear_down(view)
 
@@ -1516,7 +1524,7 @@ func run_a_deepening_stack_grows_the_board_upward_test() -> void:
 	# Focusing zooms the board, which is what the product's own default one-grid show does.
 	pa.focus_grid(0)
 	await _settle_layout(view)
-	var first := g.draw_card()
+	var first := g.draw_card(0)
 	if first: await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
 	pa.queue_rebuild()
 	await _settle_layout(view)
@@ -1526,7 +1534,7 @@ func run_a_deepening_stack_grows_the_board_upward_test() -> void:
 	var range_before : float = bar.max_value
 	var before := _cell_block_rect(pa, 0)
 	for h : int in range(1, 7):
-		var card := g.draw_card()
+		var card := g.draw_card(0)
 		if not card: break
 		await g.place_card_in_grid(card, BoardCoord.new(0, 0, 0, h))
 	pa.queue_rebuild()
@@ -1601,7 +1609,7 @@ func run_hovering_the_board_does_not_move_it_test() -> void:
 	pa.focus_grid(0)
 	await _settle_layout(view)
 	for h : int in 2:
-		var card := g.draw_card()
+		var card := g.draw_card(0)
 		if card: await g.place_card_in_grid(card, BoardCoord.new(0, 1, 2, h))
 	pa.queue_rebuild()
 	await _settle_layout(view)
@@ -1747,7 +1755,7 @@ func run_a_row_score_sits_on_its_pip_row_test() -> void:
 	pa.focus_grid(0)
 	await _settle_layout(view)
 	for h : int in 3:
-		var c := g.draw_card()
+		var c := g.draw_card(0)
 		if c: await g.place_card_in_grid(c, BoardCoord.new(0, 0, 2, h))
 	for h : int in 3:
 		g.state.bank_line_score(g.state.scores_row, 0, 2, h, 1234)
@@ -1807,7 +1815,7 @@ func run_the_entrance_stacks_upward_test() -> void:
 
 	var col : ArrayCardData = g.state.upper_zone[1]
 	while col.datas.size() < 3:
-		var c := g.draw_card()
+		var c := g.draw_card(0)
 		if not c: break
 		col.datas.append(c)
 	g.state.revision += 1
@@ -1849,9 +1857,11 @@ func run_the_entrance_stacks_upward_test() -> void:
 	# the player actually clicks. This is what sharing `_size_stack_slot()` buys.
 	var vbox : Control = pa.upper_zone_right.get_child(1)
 	var zone_control : Control = vbox.get_child(-1)
-	check(vbox.get_child_count() == col.datas.size() + 1
+	var face_down : int = 1 if g.state.entrance_stocks()[1].datas.size() > 0 else 0
+	check(vbox.get_child_count() == col.datas.size() + face_down + 1
 			and is_equal_approx(zone_control.custom_minimum_size.y, 0.0),
-			"the column has one control per card plus its own ZONE card LAST, collapsed the way a "
+			"the column has one control per card it draws -- its revealed cards and the ONE face-down "
+			+ "card under them -- plus its own ZONE card LAST, collapsed the way a "
 			+ "covered cell frame is", "%d controls, zone min %s"
 			% [vbox.get_child_count(), zone_control.custom_minimum_size])
 	var pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)

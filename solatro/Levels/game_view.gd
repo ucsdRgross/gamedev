@@ -1,28 +1,18 @@
 extends Control
 class_name GameView
-## The detachable UI/input layer for a show. Owns every visual: PlayArea, HUD labels, buttons,
-## win/lose screens. Holds a headless [Game] logic node (created as a child, injected with
-## `game.view = self`) and is the single place that does ALL input, ALL HUD, ALL animation.
-##
-## Communication (the seam Plan 1 builds on):
-##   Game -> view reactive : game.state.state_changed / board_changed, game.processing_changed /
-##                           submit_label_changed / show_resolved  (signals, no await)
-##   Game -> view paced    : game calls `if view: await view.<m>()` for animation/visual sync
-##   View -> Game commands : game.end_show() / next() / undo() / try_grab() / try_place()
-## Remove this view and the Game still runs a full show headless (every paced call is `if view:`).
+## The detachable UI/input layer for a show: owns every visual and holds a headless [Game] node; remove this view and the Game still runs headless, since every paced call is `if view: await view.<m>()`.
 
-## Forwarded from the held Game so Main can bind the view directly (symmetric with the old
-## Game-as-scene-root wiring). The view frees with its Game child, so Main frees just the view.
+## Forwarded from the held Game so Main can bind the view directly; frees with its Game child.
 signal game_ended
 signal run_lost
-## Relayed from `PlayArea` so `Main` can put a clicked card on the wall's info card. The board has
-## no business knowing whether Info mode wants it shown — see `Main._on_screen_info_hovered()`.
+
+## Relayed from `PlayArea` so `Main` can put a clicked card on the wall's info card.
 signal info_requested(entry: InfoEntry)
-## Relayed from `PlayArea` so `Main` can step its wall camera -- the board lives inside this view's
-## own `SubViewport` and has no reach to the camera outside it.
+
+## Relayed from `PlayArea` so `Main` can step its wall camera -- the board has no reach to it.
 signal overview_pan_requested(grid_index: int)
-## Relayed from `PlayArea` so `Main` can bounce its wall camera off the board's OVERVIEW edge --
-## same reach problem as `overview_pan_requested` above.
+
+## Relayed from `PlayArea` so `Main` can bounce its wall camera off the board's OVERVIEW edge.
 signal overview_bounce_requested(step: int)
 
 # Continue button sizing (win/lose screen) — named, no magic numbers in logic.
@@ -33,61 +23,38 @@ var game : Game = null
 
 @onready var play_container: Control = %PlayContainer
 @onready var play_area: PlayArea = %PlayArea
-@onready var submit_button: Button = %Submit
-@onready var undo_button: Button = %Undo
-@onready var deck_ui: Control = %Deck
-@onready var discard_ui: Control = %Discard
-@onready var rules_ui: Control = %Rules
 @onready var win_screen: Label = %WinScreen
 @onready var lose_screen: Label = %LoseScreen
-@onready var goal_label: Label = %Goal/Label
-@onready var total_label: Label = %Total/Label
-## ⚠ The `MultScore` label and its `Col` / `x` / `Row` children are the RETIRED act payout's
-## display (`mult_score`, `col_total`, `row_total`). Nothing in the grid economy writes any of
-## them, so they are emptied at startup and never written again -- the show's score is exactly
-## two numbers, `total_label` and `combo_label`. `Combo` is a CHILD of `MultScore`, which is why
-## the parent is emptied rather than hidden.
-@onready var mult_label: Label = %MultScore
-@onready var col_label: Label = %MultScore/Col
-@onready var row_label: Label = %MultScore/Row
-@onready var mult_x_label: Label = %MultScore/x
-@onready var combo_label: Label = %MultScore/Combo
-## The spotlight's light layer, and the node that feeds it. ⚠ The DIRECTOR is created here rather
-## than placed in the scene because it must bind AFTER `game` exists — it connects to
-## `CardEnvironment.spotlight_cued`, and the environment is `game` itself.
+
+## The spotlight's light layer; the DIRECTOR binds in `_ready()` since it needs `game` to exist.
 @onready var light_layer: LightLayer = %LightLayer
 var spotlight_director : SpotlightDirector = null
 
-## The furniture: the Deck, the Goal/Total/MultScore score column, the skill text and the
-## End/Discard/Rules buttons -- everything the owner ruling has follow the board's pan rather
-## than sit at a fixed spot on the wide picture. The furniture is authored against grid 0's
-## resting position; `PlayArea.pan_grid` is the ONE writer of which grid the view rests on.
-@onready var _furniture : Array[Control] = [deck_ui, discard_ui, rules_ui, submit_button,
-		undo_button, %Goal, %Total, %MultScore, %Preview]
-## Each control's authored x -- fixed forever, read once off the scene.
-var _furniture_authored_x : Array[float] = []
-## `Main`'s ONE wall camera and a live getter for the game picture's rect centre-x -- `Main` is the
-## only writer of both; this view only ever reads them, never computes where the camera should be.
-## Null/invalid until `bind_wall_camera()` runs, which `Main.enter_game()` does right after
-## instantiating this view.
+## Set by `Main.enter_game()` before this view enters the tree; left null, a standalone fixture builds a private instance instead.
+var hud_container : HudContainer = null
+
+## Set by `Main` alongside `hud_container`, the same hand-over `Map` and `Menu` get -- lets a viewer opened over this screen convert the container's window px into this picture's own space.
+var wall_picture : WallPicture = null
+
+## The HUD controls, reached off `hud_container` in `_bind_hud_container()`, under the same names the scene used to own directly.
+var submit_button : Button = null
+var undo_button : Button = null
+var deck_ui : Control = null
+var discard_ui : Control = null
+var rules_ui : Control = null
+var goal_label : Label = null
+var total_label : Label = null
+var combo_label : Label = null
+
+## `Main`'s ONE wall camera and a rect-centre-x getter, set once by `bind_wall_camera()`.
 var _wall_camera : Camera2D = null
 var _wall_rect_centre_x : Callable = Callable()
 
+# `game` is handed this view BEFORE it enters the tree, so its own `_ready()` runs fully bound, and
+# its default state bypasses `state_bound`, so it is bound by hand. The board's reveal listens to the
+# lights' own section signal, so the two can never disagree which section is up.
 func _ready() -> void:
-	# The retired act payout's four labels, emptied once. They are authored with placeholder text
-	# in the scene, and with nothing writing them the player would otherwise read a frozen
-	# "0 0 x 0" beside the live total for the whole show.
-	# ⚠ **%MultScore IS A FURNITURE CONTROL, AND `_hud_authored_width()` READS ITS LIVE MINIMUM
-	# SIZE** -- which for a Label depends on its TEXT. Emptying it therefore feeds the board's
-	# centring. It is safe only because it was never the widest: Rules is authored at x 302 and
-	# %MultScore at 202 plus one digit, so the max is unchanged. Re-check that before emptying or
-	# re-texting any other furniture label.
-	mult_label.text = ""
-	col_label.text = ""
-	row_label.text = ""
-	mult_x_label.text = ""
-	# Create the logic node and inject ourselves BEFORE adding it to the tree, so its _enter_tree
-	# (CardEnvironment.CURRENT) and _ready (resume/fresh deal) run with the view fully bound.
+	_bind_hud_container()
 	game = Game.new()
 	game.view = self
 	game.processing_changed.connect(_on_processing_changed)
@@ -97,56 +64,76 @@ func _ready() -> void:
 	game.combo_changed.connect(_on_combo_changed)
 	game.game_ended.connect(func() -> void: game_ended.emit())
 	game.run_lost.connect(func() -> void: run_lost.emit())
-	# THE SPOTLIGHT WIRE. Bound after `game` is built (it IS the CardEnvironment the cue comes
-	# from) and before the deal, so the first placement of the run is already lit.
 	spotlight_director = SpotlightDirector.new()
 	spotlight_director.name = "SpotlightDirector"
 	add_child(spotlight_director)
 	spotlight_director.bind(light_layer, play_area, game)
-	# **S16 — THE REVEAL, which is the BOARD's half of the same beat.** Deliberately a second listener
-	# on the same signals rather than something the director calls: the director owns LIGHTS and the
-	# play area owns LAYOUT, and routing the opening through the director would make it the one place
-	# that has to know about both. Both derive from one signal, so they cannot disagree about which
-	# section is up.
 	game.spotlight_section_changed.connect(play_area.set_reveal_cards)
-	# ⚠ The rows close on the ACT's release (an empty section), not on `spotlight_reveal_ended` — that
-	# fires per section to fade the show, and closing there would slam every row shut between sections
-	# and re-open it, which is the flicker chart E forbids for the lights and looks far worse on the
-	# board. An empty `cards` array already routes through `set_reveal_cards` and closes everything.
 	_build_debug_bar()
 
-	# Rebind HUD/board signals whenever Game swaps its state (undo/resume replace it) — N9.
 	game.state_bound.connect(_on_state_bound)
-	_bind_state(null, game.state)  # the initial default state bypasses the setter -> bind by hand
+	_bind_state(null, game.state)
 
-	# Input wiring (all lives in the view now).
-	# ⚠ THIS BUTTON ENDS THE SHOW; it carries the End label. A show is one continuous
-	# performance now -- there is no act to submit and nothing resolves one on its own, so
-	# end_show() is the only thing that can finish it. Bound to the retired submit act, the
-	# button reads End and does nothing a player can see, and the show cannot be ended at all.
-	submit_button.pressed.connect(func() -> void: game.end_show())
-	undo_button.pressed.connect(_on_undo_pressed)
+	hud_container.connect_for_screen(self, submit_button.pressed, func() -> void: game.end_show())
+	hud_container.connect_for_screen(self, undo_button.pressed, _on_undo_pressed)
+	var deck_button := deck_ui.get_node(^"Button") as Button
+	hud_container.connect_for_screen(self, deck_button.pressed,
+			func() -> void: _open_deck_viewer(sorted_stock_union(game.state), deck_button))
+	var discard_button := discard_ui.get_node(^"Button") as Button
+	hud_container.connect_for_screen(self, discard_button.pressed,
+			func() -> void: _open_deck_viewer(game.state.discard_deck, discard_button))
+	var rules_button := rules_ui.get_node(^"Button") as Button
+	hud_container.connect_for_screen(self, rules_button.pressed,
+			func() -> void: _open_deck_viewer(game.state.rules_deck, rules_button))
 	play_area.data_selected.connect(_on_data_selected)
-	play_area.info_requested.connect(func(entry: InfoEntry) -> void: info_requested.emit(entry))
+	play_area.card_dragged.connect(_pick_up)
+	play_area.card_dropped.connect(_on_card_dropped)
+	play_area.card_tapped.connect(_on_card_tapped)
+	play_area.info_requested.connect(_relay_info_requested)
+	play_area.highlight_cleared.connect(hud_container.return_to_lock)
+	play_area.description_dismiss_requested.connect(_on_description_dismiss_requested)
 	play_area.overview_pan_requested.connect(
 			func(grid_index: int) -> void: overview_pan_requested.emit(grid_index))
 	play_area.overview_bounce_requested.connect(
 			func(step: int) -> void: overview_bounce_requested.emit(step))
-	(deck_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.draw_deck))
-	(discard_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.discard_deck))
-	(rules_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))
 
 	add_child(game)
 	_add_prop_debug_controls()
-	# _refresh_hud early-returns while _ready runs (node not ready yet); refresh once we are, so
-	# a fresh goal / resumed score shows immediately.
 	_refresh_hud.call_deferred()
-	_capture_furniture_authored_x()
+	_publish_board_inset()
 
-## Debug prop stepping (owner tool): a toggle that holds every finished prop tick
-## open (PropLayer.manual_step — the whole run_props loop pauses at its SYNC await), and a
-## step button that releases exactly one tick, so a prop run can be watched tick by tick.
-## Mouse-only (FOCUS_NONE) so keyboard/controller navigation never lands on them.
+# ⚠ THE SHOW'S CONTAINER STATE DIES WITH THE SHOW: `Main` reuses one screen id for every show, so
+# the view leaving the tree hands back its memory, its lock and its cascade flag.
+func _bind_hud_container() -> void:
+	hud_container = HudContainer.ensure(hud_container, self)
+	tree_exiting.connect(hud_container.release_screen.bind(HudContainer.GAME_SCREEN))
+	submit_button = hud_container.submit_button
+	undo_button = hud_container.undo_button
+	deck_ui = hud_container.deck_ui
+	discard_ui = hud_container.discard_ui
+	rules_ui = hud_container.rules_ui
+	goal_label = hud_container.goal_label
+	total_label = hud_container.total_label
+	combo_label = hud_container.combo_label
+	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _publish_board_inset)
+	hud_container.connect_for_screen(self, hud_container.description_dismissed,
+			_on_description_dismissed)
+	hud_container.connect_for_screen(self, hud_container.exit_accepted,
+			play_area.return_focus_to_board)
+
+# The board wears the locked card's marking, so the view relays the lock ENDING the same way it
+# relays the click that starts it. The container owns the lock itself; nothing else may clear it.
+func _on_description_dismissed() -> void:
+	play_area.locked_data = null
+
+# The board publishes the ASK and the container owns whether there is anything to dismiss; the view
+# is what sees both. The dismissal never spends the event -- the board consumes its own second
+# button, and Escape is left for the wall's own Back so one press both cancels and steps out.
+func _on_description_dismiss_requested() -> void:
+	if not hud_container.showing_description(): return
+	hud_container.dismiss_description()
+
+## Debug prop stepping (owner tool): a toggle holds every finished tick open, and a step button releases exactly one, so a prop run can be watched tick by tick.
 func _add_prop_debug_controls() -> void:
 	var box := HBoxContainer.new()
 	box.name = "PropDebug"
@@ -165,16 +152,18 @@ func _add_prop_debug_controls() -> void:
 	box.add_child(toggle)
 	box.add_child(step)
 	add_child(box)
-	# Bottom-right corner, growing up/left so the content never leaves the screen.
 	box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	box.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	box.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 8)
 
 # ==============================================================================
-# STATE BINDING (N9: disconnect old, connect new on every state swap)
+# STATE BINDING (disconnect old, connect new on every state swap)
 # ==============================================================================
+
+# A swapped-in state is a new board, and a swap bumps no revision of its own.
 func _on_state_bound(new_state: GameData) -> void:
 	_bind_state(_bound_state, new_state)
+	_on_board_changed()
 
 var _bound_state : GameData = null
 
@@ -192,25 +181,38 @@ func _bind_state(old_state: GameData, new_state: GameData) -> void:
 # ==============================================================================
 # GAME -> VIEW REACTIVE (signal-driven; no awaiting)
 # ==============================================================================
+
+# Owner ruling: the combo label hides at x1.0 rather than reading a no-op multiplier.
 func _refresh_hud() -> void:
 	if not is_node_ready() or not game: return
 	var state := game.state
 	goal_label.text = str(state.goal)
-	# The show's score is DERIVED (every grid's total, times the combo) and always current --
-	# there is no act payout and no banking moment, so there is no stored total to show.
 	total_label.text = str(state.live_total())
 	var combo := state.combo_mult()
 	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
-	combo_label.visible = combo > 1.0   # owner ruling 2026-07-17: hidden at x1.0
+	combo_label.visible = combo > 1.0
+	_mark_goal_met(state.has_met_goal())
 
-## A NEW combo class registered this act (§15a): refresh + pulse the combo label.
-## combo_classes.append() doesn't emit state_changed — this signal is the live path;
-## sync_scores()/state_changed re-run _refresh_hud after apply_act_score clears the set.
+# The Goal reads as reached the instant the running total passes it, which is one beat before the
+# show resolves. A palette role, never a literal, so a palette swap carries it.
+func _mark_goal_met(met: bool) -> void:
+	if met:
+		goal_label.add_theme_color_override(&"font_color",
+				PaletteDB.color(PaletteDB.ROLES.goal_met))
+	else:
+		goal_label.remove_theme_color_override(&"font_color")
+
+# End is the way to finish a show that can no longer be won, so it stays hidden until the show
+# CAN stop progressing: nothing left to draw anywhere, or no empty tile left to place into.
+func _refresh_end_reveal() -> void:
+	var state := game.state
+	submit_button.visible = state.stocks_are_empty() or state.grids_are_full()
+
 var _combo_tween : Tween = null
 
+# A new combo class registered this act: the label pulses in the same shape as `BigNumberLabel.anim_pop`.
 func _on_combo_changed(_count: int) -> void:
 	_refresh_hud()
-	# pulse: same shape as BigNumberLabel.anim_pop (`BigNumberLabel.anim_pop`)
 	var delay := game.get_delay()
 	if _combo_tween and _combo_tween.is_running():
 		_combo_tween.custom_step(INF)
@@ -222,151 +224,122 @@ func _on_combo_changed(_count: int) -> void:
 # Board mutated (revision bump) -> coalesced rebuild at end of frame.
 func _on_board_changed() -> void:
 	play_area.queue_rebuild()
+	_refresh_end_reveal()
 
-## Reads each furniture control's authored x straight off the scene. Runs once; the scene's own
-## offsets never change afterwards.
-func _capture_furniture_authored_x() -> void:
-	_furniture_authored_x.clear()
-	_furniture_authored_y.clear()
-	for control : Control in _furniture:
-		_furniture_authored_x.append(control.position.x)
-		_furniture_authored_y.append(control.position.y)
-	_publish_hud_reserve()
+# ⚠ TWO SCALES OUT OF ONE WINDOW, AND BOTH ARE RIGHT. `board_inset_*` reserves BOARD SPACE, so it
+# divides by the unmargined ratio; `picture_to_window_scale` is DRAWN PIXELS, the camera's resting
+# zoom, which the preview must match -- re-drawn last, once the inset has settled the board's zoom.
+func _publish_board_inset() -> void:
+	var window := hud_container.get_viewport().get_visible_rect().size
+	var rect := hud_container.container_rect()
+	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
+	play_area.picture_to_window_scale = WallPicture.focused_scale(design, window,
+			PlayArea.settings().wall_overfill_margin)
+	var region := WallPicture.visible_rect_beside(design, window, rect,
+			HudContainer.container_is_top(window, PlayArea.settings()))
+	play_area.board_inset_left = region.position.x
+	play_area.board_inset_top = region.position.y
+	play_area.board_visible_crop = design - region.end
+	hud_container.resize_preview(play_area.board_card_window_px())
 
-## Each control's authored y, captured with its x. ⚠ Needed because the HUD now SCALES: `_process`
-## rewrites x every frame, but y is written once per picture size and would otherwise compound.
-var _furniture_authored_y : Array[float] = []
+# Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this
+# picture. `Tests/Engine/test_leak_canary.gd` discards through a view with no `Main`, hence no picture.
+func pile_center(pile: Control) -> Vector2:
+	var window := hud_container.get_viewport().get_visible_rect().size
+	var centre := pile.get_global_rect().get_center()
+	if not wall_picture: return centre
+	var picture_window := wall_picture.local_rect_beside(window, Rect2(), false)
+	return picture_window.position + centre / window * picture_window.size
 
-## How much the HUD is drawn larger than it was authored: the picture's width over the reference
-## viewport's. `SceneRoot` fills the picture, so without this the furniture keeps its authored size
-## on a canvas a third wider again and reads as a small cluster in one corner.
-##
-## ⚠ **ONLY THE HUD SCALES** (owner ruling). The board is NOT scaled with it: the board lays out in
-## PICTURE pixels and `game_picture_design_size()` IS its own span, so scaling it too would render a
-## 1495-wide board inside a 1495-wide picture at 1940 px.
-## ⚠ **THE WINDOW'S SHAPE NEVER REACHES THIS.** The picture is a fixed aspect, so the HUD's canvas is
-## the same shape whatever the screen is (owner: *"hud does not matter for picture, it is not
-## technically part of it... window proportions shouldnt affect hud layout for portrait vs landscape
-## view"*). There is no portrait case for the HUD to answer.
-func hud_scale() -> float:
-	var authored := _hud_authored_width()
-	if authored <= 0.0: return 1.0
-	var design := float(PlayArea.game_picture_design_size(SettingsManager.settings).x)
-	return SettingsManager.settings.hud_width_fraction * design / authored
-
-## Hands the board the width the HUD's rectangle takes on the left, so the grid centres in what is
-## LEFT of the screen rather than on the screen (owner: *"center of screen for stuff like grid
-## should be center of remaining space not taken by the hud"*).
-##
-## ⚠ **THE AUTHORED x, NEVER THE LIVE ONE.** `_process()` slides every furniture control by the
-## board's pan, so a reserve read off `position` would breathe in and out with every pan and drag
-## the board with it. The authored offsets are the HUD's real footprint and they never move.
-func _publish_hud_reserve() -> void:
-	if not is_instance_valid(play_area): return
-	var k := hud_scale()
-	for i : int in _furniture.size():
-		var control : Control = _furniture[i]
-		if not is_instance_valid(control): continue
-		control.scale = Vector2.ONE * k
-		control.position.y = _furniture_authored_y[i] * k
-	play_area.board_inset_left = _hud_authored_width() * k
-
-## The furniture's own width at its AUTHORED offsets, before any scaling.
-## ⚠ **AUTHORED, NEVER LIVE:** `_process()` slides every control by the board's pan, so a width read
-## off `position` would breathe in and out with each pan and drag the board with it.
-func _hud_authored_width() -> float:
-	var right := 0.0
-	for i : int in _furniture.size():
-		var control : Control = _furniture[i]
-		if not is_instance_valid(control): continue
-		right = maxf(right, _furniture_authored_x[i] + control.get_combined_minimum_size().x)
-	return right
-
-## Wires `Main`'s ONE wall camera and a getter for the game picture's rect centre-x, so OVERVIEW
-## furniture can track the camera's CURRENT position every frame instead of the `pan_grid` index
-## it was set from -- the camera's own tween runs on a separate clock, so following the index
-## desyncs for the length of every pan. Called once, right after `Main` instantiates this view.
+## Wires `Main`'s ONE wall camera and a rect-centre-x getter. Called once, right after `Main` instantiates this view.
 func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:
 	_wall_camera = camera
 	_wall_rect_centre_x = rect_centre_x
 
-## Slides every furniture control from its authored (grid-0) x. FOCUSED: `pan_grid` grid positions
-## -- the scroller pans there, the camera never moves, and `pan_grid` updates synchronously with
-## it, so there is nothing to desync. OVERVIEW: the wall camera's LIVE position, read fresh every
-## frame and never latched -- `pan_grid` there only names the camera's TARGET grid, while
-## `Main._on_overview_pan_requested()`/`_on_overview_bounce_requested()` tween the camera there on
-## their own clock, so a pan or a bounce must be read off the camera itself to stay in sync.
-## ⚠ Physics interpolation forces `Camera2D` onto the physics tick, so its rendered position on an
-## idle frame differs from the raw `.position` this reads -- the furniture holds the board through a
-## pan but still shivers against it. ⚠ `get_global_transform_interpolated()` DOES NOT EXIST in Godot
-## 4.7.2 (checked against `ClassDB.class_get_method_list`); calling it stops this script compiling,
-## which cascades into `card_data.gd`/`pip_suit.gd` and makes the map unable to enter a game.
-func _process(_delta: float) -> void:
-	if not is_instance_valid(play_area) or _furniture_authored_x.size() != _furniture.size():
-		return
-	var pitch := PlayArea.grid_position_size_px(SettingsManager.settings).x
-	var shift : float = play_area.pan_grid * pitch
-	if play_area.view_mode == PlayArea.ViewMode.OVERVIEW and is_instance_valid(_wall_camera) \
-			and _wall_rect_centre_x.is_valid():
-		shift = pitch * play_area.resting_grid() \
-				+ (_wall_camera.position.x \
-						- (_wall_rect_centre_x.call() as float))
-	for i : int in _furniture.size():
-		var control : Control = _furniture[i]
-		# ⚠ The authored x is scaled; the PAN is not. The pan is already a picture-pixel quantity
-		# (`grid_position_size_px`), while the authored offsets are in the reference viewport's.
-		if is_instance_valid(control):
-			control.position.x = _furniture_authored_x[i] * hud_scale() + shift
+func _relay_info_requested(entry: InfoEntry) -> void:
+	entry.relay_to(info_requested)
 
+## Every stock as ONE pile in a fixed suit-then-rank order, so neither which slot holds a card nor how soon it will be drawn leaks out of the Deck button.
+static func sorted_stock_union(state: GameData) -> Array[CardData]:
+	var cards := state.all_stock_cards()
+	cards.sort_custom(func(a: CardData, b: CardData) -> bool:
+		if a.suit.get_suit_index() != b.suit.get_suit_index():
+			return a.suit.get_suit_index() < b.suit.get_suit_index()
+		return a.rank.value < b.rank.value)
+	return cards
+
+# The deck, discard and rules viewers are publishers exactly like the board: they hand their
+# highlights to this view, which relays them the same way, and closing one hands the sidebar back
+# to whatever was locked behind it.
+func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
+	hud_container.host_viewer(DeckViewer.show_deck(self, cards, opener), wall_picture, info_requested)
+
+# Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores
+# the press where it cannot act.
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy
-	# Undo stays ENABLED while busy: pressing it mid-act cancels the act (Game.undo requests
-	# the cancel; the act restores the pre-act board), and at the win/lose screen it rewinds
-	# the final Submit. Game ignores the press in the states where undo can't act.
+	hud_container.set_processing(busy)
+	if not busy: await _arm_the_entrance()
 
 func _on_submit_label_changed(text: String) -> void:
 	submit_button.text = text
 
-## The win/lose overlay covers ONLY the play area (it lives inside PlayContainer): the board
-## underneath is blocked (mouse by the overlay's STOP filter, keyboard/controller by dropping
-## the card controls' focus), while the rest of the HUD stays clickable — Undo rewinds the
-## outcome, the deck/discard/rules viewers still open; Submit/Next stay disabled (processing
-## holds true, no more card logic).
+## The win/lose overlay covers ONLY the play area: the board is blocked while the rest of the HUD stays clickable -- Undo rewinds the outcome, the deck/discard/rules viewers open.
 var _continue_button : Button = null
 
+## The row those two buttons sit in, kept so the outcome's own controls are freed as one.
+var _outcome_buttons : HBoxContainer = null
+
+# REACHING THE GOAL ENDS THE SHOW, FULL STOP: the arm is let go so the held card stops following
+# the cursor. Undo sits BESIDE Continue because focus navigation never leaves the picture's
+# SubViewport. ⚠ The row is centred on its OWN MINIMUM SIZE: anchoring alone leaves it top-left.
 func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	var screen : Label = win_screen if won else lose_screen
 	screen.text = TRANSLATION.find('GAME_WIN_FAME') % score if won \
 			else TRANSLATION.find('GAME_LOSE')
 	screen.show()
-	play_area.hide_focus_info()
+	play_area.ungrab_cards()
 	play_area.disable_board_focus()
-	_continue_button = Button.new()
-	_continue_button.text = TRANSLATION.find('GAME_CONTINUE')
-	_continue_button.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
-	screen.add_child(_continue_button)
-	_continue_button.set_anchors_preset(Control.PRESET_CENTER)
-	_continue_button.position.y += CONTINUE_OFFSET_Y  # sit below the big win/lose text
-	_continue_button.pressed.connect(game.exit_show)
+	_outcome_buttons = HBoxContainer.new()
+	screen.add_child(_outcome_buttons)
+	_continue_button = _add_outcome_button(_outcome_buttons, &'GAME_CONTINUE', game.exit_show)
+	_add_outcome_button(_outcome_buttons, &'GAME_UNDO', _on_outcome_undo_pressed)
+	_outcome_buttons.set_anchors_and_offsets_preset(Control.PRESET_CENTER,
+			Control.PRESET_MODE_MINSIZE)
+	_outcome_buttons.position.y += CONTINUE_OFFSET_Y
 	_continue_button.grab_focus()
 
-## Undo at the win/lose screen: drop the overlay. The Game follows up with the normal undo
-## rebuild (fresh board controls restore card focus), so nothing else needs restoring here.
+func _add_outcome_button(row: HBoxContainer, key: StringName, handler: Callable) -> Button:
+	var button := Button.new()
+	button.text = TRANSLATION.find(key)
+	button.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
+	button.pressed.connect(handler)
+	row.add_child(button)
+	return button
+
+# The outcome's Undo is pressed INSIDE the picture's SubViewport, and freeing its row leaves that
+# viewport with no focus owner: the HUD's Undo the rewind hands the focus to lives in the root,
+# where a pad's navigation cannot reach it, so the pad player is rested back on the board.
+func _on_outcome_undo_pressed() -> void:
+	await _on_undo_pressed()
+	play_area.rest_focus_on_board()
+
+## Undo at the win/lose screen: drop the overlay, and hand the freed buttons' focus to the HUD's Undo.
 func _on_show_unresolved() -> void:
 	win_screen.hide()
 	lose_screen.hide()
-	play_area.enable_board_focus()  # the undo's rebuild follows and re-derives header focus
-	if _continue_button and is_instance_valid(_continue_button):
-		_continue_button.queue_free()
+	play_area.enable_board_focus()
+	assert(_outcome_buttons)
+	_outcome_buttons.queue_free()
+	_outcome_buttons = null
 	_continue_button = null
-	undo_button.grab_focus()  # keyboard/controller: focus was on the freed Continue
+	undo_button.grab_focus()
 
 # ==============================================================================
 # GAME -> VIEW PACED (injected view; Game calls `if view: await view.<m>()`)
 # ==============================================================================
-## Drop any live grab before the Game mutates the board underneath it. The player's selection
-## can't survive a round change, and a rebuild mid-grab is exactly what stranded held-card visual
-## state before (see PlayArea._bind_slot).
+
+## Drop any live grab before the Game mutates the board underneath it.
 func release_grab() -> void:
 	play_area.ungrab_cards()
 
@@ -377,34 +350,40 @@ func await_card_settled(card: CardData) -> void:
 ## Force a synchronous board rebuild (undo: the state reverted, no revision bump to ride).
 func rebuild() -> void:
 	play_area.setup_gui()
+	await _arm_the_entrance()
+
+# A placement arms once, AFTER its refill, whether a click or a resume's replay drove it: the
+# cascade's own unlock can arm a card the refill then leaves out of place, so the hand is re-derived.
+func arm_after_placement() -> void:
+	play_area.ungrab_cards()
+	await _arm_the_entrance()
+
+## True once the show has rested the focus on its first armed card; it never rests it again.
+var _rested_the_focus : bool = false
+
+# THE ENTRANCE IS ALWAYS ARMED: every time the board settles with nothing held, the leftmost card
+# is picked up for the player through the very pickup a click makes. A card's LIFT lives on its
+# visual, so the arm waits for the deal's visuals the way a resume does.
+func _arm_the_entrance() -> void:
+	play_area.flush_rebuild()
+	if not play_area.visuals_ready(): await play_area.board_visuals_ready
+	await play_area.arm_leftmost()
+	if _rested_the_focus or play_area.selected_cards.is_empty(): return
+	_rested_the_focus = play_area.rest_focus_on_armed()
 
 ## Repopulate the row/col score gutters from state.scores_* (after apply_act_score clears them).
 func sync_scores() -> void:
 	play_area.update_score_controls()
 
-## Rebuild EVERY board visual from the restored GameData (resume). The board is only "ready"
-## once the cards AND the row/col gutters reflect the loaded state — the normal rebuild path
-## (revision bump -> set_card_zones) does NOT touch the gutters, so a resumed show would
-## otherwise show empty gutters despite the scores being restored in state.
+# A resume rebuilds EVERY board visual from the restored GameData: the revision-bump rebuild never
+# touches the gutters. They reserve their space FIRST, so the cards lay out against the final height.
 func load_board_visuals() -> void:
-	# Create the row/col score gutters (incl. the row buffer control) FIRST, so the containers
-	# reserve their space before the cards lay out. Otherwise the cards build into an
-	# unbuffered layout, and adding the gutters afterwards shifts the board down AFTER the
-	# cards are already positioned — so a resumed mid-submit show plays its scoring jump from
-	# the old (higher, pre-buffer) spot, misaligned with the board. A fresh show avoids this
-	# because setup_gui() builds the buffer up-front, before any card exists.
-	play_area.update_score_controls()  # populate the row/col score gutters from state.scores_*
-	play_area.flush_rebuild()  # build the card controls + CardVisuals now (they add_child deferred)
-	# CardVisuals enter the tree via call_deferred (the deferral lets the container lay out first,
-	# which is what keeps board rebuilds from flying in from the origin), so they're ready one
-	# frame later. Wait on PlayArea's board_visuals_ready signal instead of polling — check first
-	# in case the build already finished, else the signal fires when the deferred adds land.
+	play_area.update_score_controls()
+	play_area.flush_rebuild()
 	if not play_area.visuals_ready():
 		await play_area.board_visuals_ready
 	print("[resume] cards ready: %d card visual(s), visuals_ready=%s"
 			% [play_area.data_card.size(), play_area.visuals_ready()])
-	# Refresh the gutter values now the board is fully laid out (idempotent; the space was
-	# already reserved above so this no longer shifts the board).
 	play_area.update_score_controls()
 	print("[resume] score gutters loaded from state: rows upper=%d lower=%d, cols=%d"
 			% [game.state.scores_row_upper.size(), game.state.scores_row_lower.size(),
@@ -426,94 +405,98 @@ func reset_meld(result: Scoring.Result) -> void:
 func update_line_score(zone: Array[BigNumber], index: int, score: BigNumber) -> void:
 	play_area.update_score(zone, index, score)
 
-## The grid board's equivalent: pop the row, column, special or height label a grid line just
-## banked into. The grid buckets are keyed dictionaries rather than the legacy zone arrays, so
-## they cannot go through `update_line_score` -- but a score the player cannot see arrive is the
-## same defect either way.
+## The grid board's equivalent, since the legacy zone-array path can't reach keyed grid buckets.
 func pop_grid_line_score(section: ScoringSection) -> void:
 	play_area.pop_grid_score_label(section)
 
-## Start one prop-simulation tick's visuals and return a signal the Game awaits for completion
-## (data is one step ahead of the view — SUIT_PROPS_PLAN §1.3). Delegates to the PropLayer,
-## which animates every live prop and emits its `tick_done` once they've all reached target.
+## Start one prop-simulation tick's visuals and return a signal the Game awaits for completion.
 func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Array) -> Signal:
 	return play_area.prop_layer.begin_prop_tick(live, spawned, movers, relocated)
 
-## Undo cancelled a resolving act: the prop simulation stopped mid-run, so free every prop
-## visual immediately (no later tick will prune them).
+## Undo cancelled a resolving act: free every prop visual immediately, since no later tick will.
 func abort_props() -> void:
 	play_area.prop_layer.abort_all()
 
-## True while the started visual tick is still animating. The Game's SYNC step awaits
-## `tick_done` only while this holds — if the events phase outlasted the animation, the
-## emission already fired and awaiting it now would hang (persistent-signal race, see
-## PropLayer.tick_pending).
+## True while the started visual tick is still animating, so the Game's SYNC step knows whether awaiting `tick_done` would hang on an emission that already fired.
 func prop_tick_pending() -> bool:
 	return play_area.prop_layer.tick_pending()
 
 # ==============================================================================
 # VIEW -> GAME INPUT (selection UI here; data queries/moves are Game commands)
 # ==============================================================================
+
+# What is held is the arm, and the arm is view-only: it is dropped here and re-derived from whatever
+# board the undo restores.
 func _on_undo_pressed() -> void:
-	# The held-cards guard is the view's job (selection state lives in PlayArea).
-	if play_area.selected_cards: return
+	play_area.ungrab_cards()
 	game.undo()
+	await _arm_the_entrance()
 
+# ONE CLICK, BOTH OUTCOMES: it locks the description to the card it landed on AND performs the
+# board action. A landed placement finishes the interaction and takes the container back to the
+# HUD; a REFUSED one leaves the description up and falls through to picking that card up instead.
 func _on_data_selected(data: CardData) -> void:
-	if game.processing: return
-	# if already holding cards
+	if game.processing:
+		play_area.stop_following()
+		return
+	hud_container.lock_to(PlayArea.card_info(data, play_area.board_card_window_px()), data)
+	play_area.locked_data = data
 	if play_area.selected_cards:
-		var held0 := play_area.selected_cards[0]
-		# do nothing if position unchanged
-		if (data == held0
-				or game.find_data_vec3(data) == game.find_data_vec3(held0) - Vector3i(0, 0, 1)):
-			play_area.ungrab_cards()
-		# dont place within own stack
-		elif data not in play_area.selected_cards:
-			# attempt placing cards, do nothing if no result
-			var placed := await game.try_place(play_area.selected_cards, data)
-			if placed:
-				play_area.ungrab_cards()
-	else:
-		var grabbed := await game.try_grab(data)
-		play_area.grab_cards(grabbed)
+		if data in play_area.selected_cards: return
+		if await _place_held_onto(data): return
+	await _pick_up(data)
+
+# THE DRAG'S RELEASE IS ANOTHER WAY TO REACH THE SAME PLACEMENT, and nothing downstream can tell
+# which route was taken. A release the board refuses returns the card instead, so a failed drag
+# leaves the player where they started.
+func _on_card_dropped(data: CardData) -> void:
+	if game.processing: return
+	if not await _place_held_onto(data): play_area.stop_following()
+
+# A TAP UNDOES THE GRAB THE PRESS BEFORE IT MADE: the card goes back and the Entrance re-derives
+# its arm, so a tap on the armed card leaves that card armed. Then the board hears the tap, which
+# is all it does in v1 -- no shipped card listens for it.
+func _on_card_tapped(data: CardData) -> void:
+	if play_area.selected_cards:
+		play_area.ungrab_cards()
+		await _arm_the_entrance()
+	await game.run_all_mods(&"on_card_tapped", data)
+
+# A landed placement finishes the interaction: the container goes back to the HUD. The placement
+# itself has already armed the Entrance's next card.
+func _place_held_onto(data: CardData) -> bool:
+	if not await game.try_place(play_area.selected_cards, data): return false
+	hud_container.dismiss_description()
+	return true
+
+# THE ONE PICKUP ROUTE: a click's last resort and a drag's first act. A card no rule grabs leaves
+# the hand exactly as it was, and drops the click's promise that the grab it asked for would
+# follow the cursor -- otherwise the next auto-armed card is born following.
+func _pick_up(data: CardData) -> void:
+	var grabbed := await game.try_grab(data)
+	if grabbed: play_area.grab_cards(grabbed)
+	else: play_area.stop_following()
 
 
-# ==============================================================================
-# THE DEBUG BAR — three buttons serving one workflow.
-#
-# Owner: *"If I see an issue during playtest, I can undo, press record, then repeat the action, and
-# then send log for debugging."* That sentence is the whole design:
-#
-#   ⏺ RECORD      start/stop an EventLog capture, and WRITE IT on stop
-#   ⏪ DEBUG UNDO  uncapped rewind, so the setup before the bug is always reachable
-#   ⏩ DEBUG REDO  step forward again, to repeat the action WHILE recording
-#
-# ⚠ **DEBUG BUILDS ONLY.** The bar is not built at all in an exported game — `Game`'s debug history
-# is also debug-only, so two of the three buttons would be dead controls there.
-# ⚠ **RECORD IS DELIBERATELY THE ONLY WAY THIS TURNS ON IN A REAL SESSION.** `EventLog` is off by
-# default and costs one static bool when off; a log that recorded every session would be a
-# performance cost paid forever to capture mostly nothing.
-# ==============================================================================
+# THE DEBUG BAR (owner tool, debug builds only): Record toggles an EventLog capture and writes it
+# on stop; Undo/Redo step the uncapped debug history so a bug's setup is always reachable and the
+# action repeatable while recording. EventLog stays off by default; Record is the only way it turns on.
 
 var _debug_bar : HBoxContainer = null
 var _record_button : Button = null
 
+# Top-right and parented to the VIEW like the prop debug box, so the two debug surfaces never
+# collide. The bar itself IGNOREs the mouse: a full-width bar would eat drags across the top.
 func _build_debug_bar() -> void:
 	if not OS.is_debug_build(): return
 	_debug_bar = HBoxContainer.new()
 	_debug_bar.name = "DebugBar"
-	# Top-right, away from the board and the HUD. MOUSE_FILTER_IGNORE on the CONTAINER so only the
-	# buttons themselves take clicks — a full-width bar would otherwise eat drags across the top.
 	_debug_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_record_button = _add_debug_button(TRANSLATION.find('DEBUG_RECORD'), _on_debug_record)
 	_add_debug_button(TRANSLATION.find('DEBUG_UNDO'), _on_debug_undo)
 	_add_debug_button(TRANSLATION.find('DEBUG_REDO'), _on_debug_redo)
 	_add_debug_button(TRANSLATION.find('DEBUG_CUE'), _on_debug_cue)
 	add_child(_debug_bar)
-	# TOP-right, growing left — the same shape as `_add_prop_debug_controls`' bottom-right box, which
-	# is why they do not collide. Parented to the VIEW rather than to `SceneRoot`, exactly as the prop
-	# debug box is, so the two debug surfaces live in one place in the tree.
 	_debug_bar.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_debug_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT,
 			Control.PRESET_MODE_MINSIZE, 8)
@@ -521,13 +504,13 @@ func _build_debug_bar() -> void:
 func _add_debug_button(text: String, handler: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.focus_mode = Control.FOCUS_NONE  # never steal focus from the board's keyboard/controller nav
+	b.focus_mode = Control.FOCUS_NONE
 	b.pressed.connect(handler)
 	_debug_bar.add_child(b)
 	return b
 
-## Toggle the capture. Stopping WRITES it and prints the folder, so the owner has a path to send
-## without hunting for one.
+# The capture records every channel, since a playtest bug can be anywhere. Stopping WRITES it and
+# prints the folder, so the owner has a path to send.
 func _on_debug_record() -> void:
 	if EventLog.enabled:
 		EventLog.end()
@@ -535,44 +518,27 @@ func _on_debug_record() -> void:
 		_record_button.text = TRANSLATION.find('DEBUG_RECORD')
 		print("=== EventLog written ===\n%s\n%s" % [dir, EventLog.summary()])
 	else:
-		EventLog.begin()   # every channel: a playtest bug can be anywhere
+		EventLog.begin()
 		_record_button.text = TRANSLATION.find('DEBUG_RECORD_STOP')
 
-## **STAMP `SpotlightProbe` ONTO A BOARD CARD AND RE-RUN THE SWEEP, SO S15's CUE ACTUALLY FIRES.**
-##
-## ⚠ **THE CUE IS OTHERWISE UNREACHABLE IN THE RUNNING GAME AND THAT IS A CONTENT FACT, NOT A BUG.**
-## `spotlight_cued` is filtered to skills implementing `on_spotlight`; before `SpotlightProbe`
-## the only one was a RULES card with no `CardVisual`, so the light set was always empty. See
-## `SpotlightProbe`'s header.
-##
-## ⚠ **IT PICKS A CARD THAT IS NOT ALREADY SPOTLIT, WHICH IS THE WHOLE TRICK.** The cue fires on the
-## EDGE — `skill_spotlight_check` only announces a card that TRANSITIONED into spotlit; one already
-## spotlit is not re-cued. A card that is uncovered when the probe lands is spotlit the
-## instant the sweep runs, so the transition happens on this click; press again and it lands on the
-## next card, so the button keeps producing cues instead of going quiet after the first.
+# The cue is unreachable without a skill implementing `on_spotlight`, so this stamps `SpotlightProbe`
+# on the first skill-free card that answers it is ACTUALLY spotlit -- a covered one says no -- and
+# runs the REAL sweep, so what shows is what a real activation looks like.
 func _on_debug_cue() -> void:
 	if not game or not game.state: return
-	# ⚠ **STAMP, THEN ASK THE CARD WHETHER IT IS ACTUALLY SPOTLIT, AND UNSTAMP IF NOT.** Picking the
-	# first skill-free board card is NOT enough and the first version of this did exactly that: it
-	# landed on a **ZONE-stage column header**, which `_blocked_from_above()` reports as covered by the
-	# cards stacked on it, so `is_spotlit()` was false, the sweep correctly ignored it and NOTHING was
-	# drawn — which looks exactly like a broken cue. Only an UNCOVERED card transitions, so the choice
-	# has to be made by asking, not by guessing which stage is on top.
 	var chosen : CardData = null
 	for data : CardData in play_area.data_card.keys():
-		if data.skill != null: continue      # never replace a real skill — it would change the act
+		if data.skill != null: continue
 		data.with_skill(SpotlightProbe.new())
 		if data.skill.is_spotlit():
 			chosen = data
 			break
-		data.with_skill(null)                # put it back exactly as it was
+		data.with_skill(null)
 	if chosen == null:
 		print("[debug cue] no UNCOVERED, skill-free board card to stamp — uncover one and retry")
 		return
 	print("[debug cue] probe -> %s; watch for the circle, the beam and the shallower casual dim"
 			% chosen.log_str())
-	# The REAL sweep, not a hand-built emit: this is the path chart T describes, so what you see is
-	# what a real activation would look like.
 	await game.skill_spotlight_check()
 
 func _on_debug_undo() -> void:

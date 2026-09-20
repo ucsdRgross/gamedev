@@ -119,8 +119,8 @@ rather than guesses.** Twelve of them, 157 nodes, 151 edges, 17 cross-chart link
 from the rendered answers — starting with the 30 where you overrode my recommendation, because those
 are the ones that go wrong when written from memory.
 
-Three answers are now superseded by later ones and are listed in a table beside the charts, so
-nothing downstream cites the losing side: `Q127`, `Q203` and `Q59`.
+Seven answers are now superseded by later ones or by an owner ruling and are listed in a table
+beside the charts, so nothing downstream cites the losing side.
 
 Section 5's tunables were re-derived from the answers: three knobs deleted because an answer removed
 the need for them, two added for the Entrance stocks, and `hud_width_fraction` retired.
@@ -455,9 +455,11 @@ Who does the drawing:
 
 - `CardData.flipped` (`card_data.gd:53`) and `CardVisual.show_front` / `basis3d`
   (`card_visual.gd:146`, `:163`) — a card is drawn face-down by a basis rotated 180°, and the
-  floating animation slerps it to front.
+  floating animation slerps it to front. A stock's face-down card is `CardVisual.face_down`, not
+  `CardData.flipped`, so saves and viewers are untouched, and its back draws
+  `CardVisual.CARD_BACK_FRAME` = 3 — the owner: *"cardback should be frame 3"*.
 - **A card drawn from the deck onto the board ALREADY flips into view** — `card_visual.gd:602-608`
-  spawns it at the Deck control's position (`get_control_center(_game_view().deck_ui)`) keeping the
+  spawns it at the Deck control's centre, keeping the
   face-down basis, and only that case flips. So the braindump's change is *where the card starts*,
   not whether flipping exists.
 - ⚠ **Owner ruling 23 is enforced at `card_visual.gd:169`:** FX is gated on `show_front`, because
@@ -620,7 +622,7 @@ tell me.**
 - **Q31** `[Q30=b]` ⚑contract — How long is the dwell? · **(a)** 150 ms — barely perceptible, kills only the sweep · **(b)** 300 ms — a deliberate pause · **(c)** a knob, defaulting to 150 ms · *default* (c)
 - **Q32** `[Q30=a|b]` — The pointer leaves every card and nothing is locked. What does the sidebar do? · **(a)** keeps showing the last thing, exactly as `Q131` ruled for the notecard: *"if mouse goes over empty space while going to next card, notecard doesn't blink in and out of existence"* · **(b)** closes after a short grace period · **(c)** closes immediately · *default* (a) · notes — (a) is a standing owner ruling and reversing it needs a reason
 - **Q33** `[root]` — What does the sidebar show, top to bottom? · **(a)** the card's visual, then its name, then its description — the picture first, because you already know which card you are pointing at · **(b)** the name, then the visual, then the description · **(c)** the name and visual side by side at the top, then the description — the notecard's current arrangement, rotated for a tall panel · *default* (b)
-- **Q34** `[root]` ⚑contract — How big is the card visual in the sidebar? · **(a)** as wide as the sidebar allows, so it is the biggest the card is ever drawn — the braindump calls it a *"popup of the card visual"* · **(b)** at the board's own card size, so it reads as the same object · **(c)** a knob as a fraction of the sidebar width, defaulting to full width · *default* (c)
+- **Q34** `[root]` ⚑contract — How big is the card visual in the sidebar? · **(a)** as wide as the sidebar allows, so it is the biggest the card is ever drawn — the braindump calls it a *"popup of the card visual"* · **(b)** at the board's own card size, so it reads as the same object · **(c)** a knob as a fraction of the sidebar width, defaulting to full width · *default* (c) · notes — `GAP-004`=(b) settles what (b) means now that the viewers publish into this same sidebar: the preview is drawn at the size of the object it points at, so a description opened inside a viewer uses THAT viewer's card size, not the board's
 - **Q35** `[root]` — The sidebar's card visual is a REAL `CardVisual`, which idles and animates. Does it keep animating there? · **(a)** yes — it is the same living object, and a still image of an animated card is a lie about it · **(b)** no — it is frozen, so the reading surface is calm · *default* (a) · notes — `InfoCard._make_inert()` already strips focus and mouse from a preview while leaving drawing and idle animation alive, so (a) is the existing behaviour
 - **Q36** `[root]` ⚑gate — Does the sidebar show anything BEYOND what `ControlCard.describe_card()` already produces (name plus modifier lines)? · **(a)** no — same string, so the two surfaces cannot drift — **→ next:** nothing further about content · **(b)** yes — the extra room is the point, so it also shows the card's suit and rank, its current score contribution, and which lines it is part of — **→ next:** exactly which of those extras ship · **(c)** yes, and the extra content is a later design; v1 ships the same string in a bigger panel — **→ next:** nothing further about content in this version · *default* (c) · notes — (b) is where the sidebar earns its size, and every item in it is a separate piece of work
 - **Q37** `[Q36=b]` — Which of those extras, exactly? · **(a)** suit and rank spelled out · **(b)** the card's current contribution to the score · **(c)** which rows, columns, diagonals and height runs it currently sits in · **(d)** all three · *default* (d) · notes — this one is genuinely a list; free text is expected
@@ -1034,15 +1036,27 @@ wrong.
 
 ### Answers that later answers superseded
 
-Three answers are still in `answers.json` but are no longer what the design says. They are listed
+Seven answers are still in `answers.json` but are no longer what the design says. They are listed
 here so nothing downstream cites the wrong one:
 
 | Superseded | By | What holds now |
 |---|---|---|
 | `Q127`=(b) — the armed card's description opens on its own | `Q240`=(a) | it does not; the container shows the HUD until something is genuinely highlighted |
-| `Q203`=(b) — a slot's depth is not visible | `Q244`=(a) | it is: a capped face-down stack, and hovering gives the exact count |
+| `Q203`=(b) — a slot's depth is not visible | `Q244`=(a) | depth is not drawn — one face-down card whatever the depth (the S21 ruling below) — and hovering the stock gives the exact count |
+| `Q217`=(b) — v1 draws up to a capped number of face-down cards | the owner's S21 ruling | one face-down card per non-empty stock |
+| `Q244`=(a) — depth is visible: the stack is drawn to a cap | the owner's S21 ruling | depth is not drawn; hovering the stock gives the exact count (`Q218`=(b) stands) |
+| `Q245` — the cap is a *"knob defaulting to 5"* | the owner's S21 ruling | no cap, no knob |
 | `Q123`=(b) in **`picture-wall`** — a touch target is *"9 mm physical, derived from the reported DPI"* | `Q284`=(d) + `Q293`=(b) | reversed outright: no DPI reading survives anywhere in the project. ⚠ This one is in ANOTHER design, and its code is shipped |
 | `Q59`=(c) — a card lifts to show it is SELECTED | `Q249` free text | *"glow means selected. lift means currently picked up which warns that next click on a highlighted space will put the lifted card down. the selection glow is over where selector is to show current selection as normal."* |
+
+The owner's S21 ruling, verbatim: *"the entrance cards refill looks wrong to me. you set it as a
+bunch of stacks of cards, but the implementation in board-plan worktree is closer to what i
+expected with cards revealed right on top of the entrance slots and only being stack of 1, which it
+has already implemented. unrevealed cards in the stocks should not be entities yet until ready to
+be flipped. expected behavior should be zone should be replaced with a flipped over card with new
+card on top. once its flipped over to reveal new set of entrance cards, the flipped card should
+take place of previously revealed card and there is another back facing card underneath, implying
+the stack instead of showing it."*
 
 ## Flowchart A — the description path as it exists today
 
@@ -1088,7 +1102,7 @@ flowchart TD
   B8["NEW — locking a second card replaces the first. Only one lock exists"]
   B9{"NEW — a dismissal arrives"}
   B10["NEW — dismissing REVERTS the container to the HUD. Nothing is hidden, because the container is always on screen"]
-  B11["NEW — the held card leaves the bounds of the cell it came from — but ONLY once it is FOLLOWING, so an untouched armed card never closes a description by accident"]
+  B11["NEW — the held card leaves the bounds of the cell it came from — but ONLY once it is FOLLOWING, so an untouched armed card never closes a description by accident, and NEVER for a card the player CLICKED to lock: that one click both locked and grabbed it, so its placement is what closes it — `GAP-008`=a"]
   B12["NEW — the card is placed: the interaction is finished, so the description closes"]
   B13["NEW — a board rebuild keeps the same CardData's description, whichever control now represents it"]
   B14["NEW — the win or lose screen leaves the description open, so a card can still be read beside the result"]
@@ -1108,7 +1122,7 @@ flowchart TD
   B7 --> B9
   B9 -- "the exit X" --> B10
   B9 -- "cancel" --> B10
-  B9 -- "the card leaves its cell" --> B11
+  B9 -- "the card leaves its cell, and the player did not click it to lock" --> B11
   B9 -- "a click on bare board" --> B10
   B11 --> B10
   B12 --> B10
@@ -1129,7 +1143,7 @@ flowchart TD
   C2["NEW — DEFAULT CONTENTS: the HUD"]
   C3["NEW — inside the HUD, top to bottom: the numbers first, then the piles as one ROW across the width, then the actions"]
   C4["NEW — members: Deck, Discard, Rules, Goal, Total, Combo, Undo, End. %MultScore and %Preview are DELETED in the same pass — chart L"]
-  C5["NEW — a highlight arrives, so the contents swap to the description — chart B"]
+  C5["NEW — a highlight arrives, so the contents swap to the description, its preview drawn at the size the highlighted object is itself drawn at: the board's card size from the board, each viewer's own from that viewer (GAP-004=b) — chart B"]
   C6["NEW — while the description shows, the HUD's controls are off screen. Accepted"]
   C7["NEW — a LOCKED description is forced back to the HUD by cancel"]
   C8["NEW — Game.processing forces it back too, lock and all, and the HUD is then what the player watches the cascade in: the score, the goal and the combo are what the cascade animates"]
@@ -1137,7 +1151,7 @@ flowchart TD
   C10["NEW — the processing rule is the GAME screen only. The map has no cascade worth watching — chart K"]
   C11["NEW — the panel eats clicks in its whole rect, which today's scattered controls do not"]
   C12["NEW — no hud_scale. The container lays out to its own rect, so the scale mechanism and both authored-offset caches go — chart L"]
-  C13["NEW — the MAP gets the same container, holding Fame, Lap, Luck and its Deck button, which is what makes the geometry identical on both screens"]
+  C13["NEW — the MAP gets the same container, holding Fame, Lap, Luck and its Deck button, and both screens convert its window px through their own picture, which is what makes the geometry identical (GAP-003=a)"]
   C14["The debug bar and the prop-step controls stay OUTSIDE it, top-right, unchanged"]
   C15["GameView win or lose overlay still covers ONLY the play area, so the container stays live"]
   C16["NEW — the exit X in the container's top-right means GO BACK TO THE HUD, sized by the same touch-target rule as every other overlay control — chart M"]
@@ -1169,12 +1183,12 @@ flowchart TD
   D3["NEW — the container is on the LEFT, full window height"]
   D4["NEW — the container moves to the TOP, where the HUD also is, so the main playing window stays as square as possible"]
   D5["NEW — at the top the same fraction is read as a HEIGHT"]
-  D6{"NEW — is the window wide enough that the fraction exceeds the maximum"}
+  D6{"NEW — is the window more extreme in SHAPE than the project's reference window, which is what makes the maximum apply at all (GAP-001=b), and does the fraction exceed it"}
   D7["NEW — clamped, and the clamp is measured INWARD: the container sits flush against the inner edge of its band, so it stays near the middle and the empty space is on its far side"]
-  D8["NEW — PlayArea.board_inset_left becomes the container's width, converted from window pixels to picture pixels through the focused picture's live scale"]
-  D9["NEW — a matching TOP inset exists for the case where the container moved up"]
-  D10["NEW — the board centres in what is left, never on the screen"]
-  D11["The MAP uses the window fraction directly: it has no picture and needs no conversion"]
+  D8["NEW — PlayArea.board_inset_left becomes the container's width, converted from window pixels to picture pixels through the focused picture's live scale, plus the crop that covering scale puts off-window on that axis (GAP-002=a)"]
+  D9["NEW — a matching TOP inset exists for the case where the container moved up, and matching RIGHT and BOTTOM edges for the crop, so the board's region is the VISIBLE picture"]
+  D10["NEW — the board centres in what is left, never on the screen — and what is left is what the player can SEE beside the container"]
+  D11["The MAP converts exactly as the board does: window px through the map picture's live cover scale and through the map camera's own zoom (GAP-003=a)"]
   D12["NEW — the overlay's Back, Forward and Wall buttons draw ON TOP of the container and stay pressable"]
   D13["InfoCard._reposition_to_window — the same re-anchor on resize, keeping its content"]
   D14["NEW — the container does NOT pan with the board. GameView._process's furniture slide and PlayArea.pan_window_left_x are both deleted — chart L"]
@@ -1201,13 +1215,19 @@ picture *covers* the window, so its scale is `max(window.x / 1576, window.y / 88
 
 - **At the picture's own aspect the window cancels out entirely.** The inset is
   `0.25 × window.x ÷ (window.x ÷ 1576)` = `0.25 × 1576` = **394 picture px** — exactly today's
-  measured `board_inset_left`, at any 16:9 window size. So the board does not move at all on the
-  shape the game is authored for.
+  measured `board_inset_left`, at any 16:9 window size — 4K included, because the cap is a rule
+  about SHAPE and a 16:9 window never reaches it (D6, `GAP-001`=b). So the board does not move at
+  all on the shape the game is authored for.
 - **At 32:9** (3840×1080) the scale is driven by width, `3840 ÷ 1576` = 2.44, and
   `container_size_max_px` 640 clamps the container. The inset is `640 ÷ 2.44` = **262 picture px** —
   narrower, because the picture is magnified and the same band of screen covers less of it. Correct,
   and it is why the clamp is measured inward (D7): the container stays beside the board rather than
   drifting to a far edge.
+- **On any window narrower than the picture's aspect the picture is CROPPED**, by
+  `(1576 − window.x ÷ scale) ÷ 2` on each side, and the inset is a POSITION measured from the
+  picture's own edge — which is off-screen by exactly that. Every inset therefore gains the crop on
+  its axis and the board's region gains matching right and bottom edges (D9, `GAP-002`=a). At 16:9
+  and at 32:9 the horizontal crop is zero, so both numbers above stand.
 
 A value therefore exists that satisfies D1, D8 and D10 at once, and at the common aspect it is the
 number already shipping.
@@ -1221,7 +1241,7 @@ flowchart TD
   E3{"NEW — a CELL, and is a card armed"}
   E4["NEW — armed: the card is placed immediately, one click, no confirm — and on touch too, because it is undoable and hesitation is worse"]
   E5{"NEW — is the cell occupied"}
-  E6["NEW — occupied: the card STACKS, and the legal-cell highlight already showed that it would"]
+  E6["NEW — occupied: the card STACKS, and the tint already showed whether it would — an occupied cell offers the card on TOP as the target, so it is marked only while a rule accepts that (GAP-005=a)"]
   E7["NEW — nothing armed: the click opens that cell's description if it holds a card"]
   E8["NEW — a BOARD card: a CLICK still needs the armed card cancelled first, or the click would try to place onto it instead"]
   E9["NEW — if the board card is not stackable, picking it up is the only remaining action, so the grab is allowed straight away"]
@@ -1231,8 +1251,8 @@ flowchart TD
   E13["NEW — within the threshold: it was a CLICK. The card is grabbed and stays held — chart M for the threshold"]
   E14["NEW — beyond it: the RELEASE places, on both mouse and touch. One gesture model for every device"]
   E15{"NEW — released over what"}
-  E16["Game.place_card_in_grid — a LEGAL cell only, so the legal-cell highlight is literally the drop map"]
-  E17["NEW — anywhere else, the container included and off-window included: the card goes back to its slot, still armed, still lifted, no longer following. A failed drag costs nothing"]
+  E16["Game.place_card_in_grid — a LEGAL cell only, and the tint is literally the drop map: it is swept through the same on_can_place_stack dispatch try_place uses (GAP-005=a)"]
+  E17["NEW — anywhere else, the container included and off-window included: the card goes back to its slot, still armed, still lifted, no longer following. A failed drag costs nothing. The return HOLDS: only a new press starts it following again, never a mouse motion (GAP-007=a)"]
   E18["NEW — a drag-placed card is an ordinary undo step and commits the Entrance to its grid exactly as a clicked one does. Nothing downstream can tell which route was taken"]
   E19{"NEW — cancel is pressed"}
   E20["NEW — the HELD CARD is released first"]
@@ -1297,13 +1317,13 @@ flowchart TD
   G3["NEW — and it moves NO focus and NO selection highlight. Nothing to suppress on the description side, because no highlight moved — chart B"]
   G4["NEW — the card LIFTS the moment it arms, to show it is selected and about to move. That lift is the first thing a fresh board shows"]
   G5["NEW — but it does NOT follow the cursor yet"]
-  G6{"NEW — has a NEW FOCUS happened"}
-  G7["NEW — focus landing on any card by key or pad, OR any mouse motion at all. No threshold: the literal reading"]
+  G6{"NEW — has the POINTER moved"}
+  G7["NEW — any mouse motion at all, including the one Godot emulates from a touch. No threshold. A key or pad focus does NOT start it: the card stays lifted in its slot and the pad player places by accept on a cell (GAP-006=b)"]
   G8["NEW — now it follows, at the same lift height, so the only visible change is that it starts moving. Following is a ONE-WAY latch until the card is placed or cancelled"]
   G9["NEW — GLOW means selected. LIFT means currently picked up, warning that the next click on a highlighted space will put it down. The selection glow sits wherever the selector is"]
   G10["NEW — focus RESTS on the armed card once, at the start of a show only. After that the two move independently"]
   G11["NEW — a card the player CLICKS follows immediately: the mouse has just moved by definition. The delay only ever applies to a card nobody touched"]
-  G12["NEW — every legal cell is highlighted, and because a card is armed for the whole show, that highlight is on for the whole show"]
+  G12["NEW — every legal cell's own zone card wears a tint, colour legal_cell_tint in player_settings.gd, re-swept when the hand or the board changes. A card is armed for the whole show, so the map is on for the whole show (GAP-005=a). ⚠ NOT ON SCREEN YET: the card shader discards modulate, so nothing modulate marks draws — GAP-011"]
   G13["Game.place_card_in_grid — the placement commits the Entrance to its grid. Arming commits nothing"]
   G14["NEW — after a placement, and after a refill, the new leftmost present card arms — chart I"]
   G15["NEW — cancel DISARMS, and clicks on cells then do nothing until something is armed again"]
@@ -1378,7 +1398,7 @@ flowchart TD
   I5["NEW — the stagger is a knob, as a fraction of get_delay per slot, never a wall-clock literal"]
   I6["NEW — slots still holding a face-up card do NOTHING. Only empty slots flip"]
   I7["NEW — there is no fly-in from the Deck control any more"]
-  I8["NEW — a capped stack of face-down cards is drawn, so depth reads at a glance. The cap is a knob defaulting to 5"]
+  I8["NEW — owner ruling at S21: a non-empty stock shows exactly ONE face-down card under the revealed card, drawn with frame 3 of the card sheet; no other stock card is an entity. At a refill it flips up to become the revealed card and a fresh face-down appears beneath while the stock has cards. No cap, no knob"]
   I9["NEW — a slot with nothing left shows an empty slot frame, which is what the Entrance already shows"]
   I10["NEW — hovering a face-down stock describes the SLOT, not a card: how many remain in this stock — chart B"]
   I11["NEW — a bonus reveal simply DEEPENS that slot's face-up stack, since the Entrance already holds a stack per slot"]
@@ -1414,6 +1434,7 @@ flowchart TD
   J10["A full board still does NOT end a show: cards may remain in the Entrance and effects may free cells"]
   J11["Game.undo — rewinds an automatic end exactly as it rewinds a manual one, back to the live board"]
   J12["Resume lands on the outcome screen, because show_ended is saved before the resolve"]
+  J13["NEW — the outcome screen carries its own Undo beside Continue, in the same SubViewport, so a d-pad walks Continue ↔ Undo. Focus navigation never crosses a viewport and no undo action is bound, so the HUD's Undo is mouse-only from here; it stays where it is, and Undo shows twice while the outcome is up (GAP-009=b)"]
   J1 --> J2
   J2 -- "goal met" --> J3
   J3 --> J4
@@ -1426,6 +1447,7 @@ flowchart TD
   J10 --> J9
   J5 --> J11
   J5 --> J12
+  J11 --> J13
 ```
 
 ## Flowchart K — the map
@@ -1530,7 +1552,6 @@ from a screenshot is a knob, not a contract** — all of these are exposed live 
 | `card_tap_window_ms` | milliseconds | 300 | the self-detected double-tap and double-press window. The OS interval is not readable from Godot, so this is the only one there is |
 | `card_drag_threshold` | fraction of the **CARD's current on-screen size** | 0.25 | how far a press must travel before the release places instead of the click grabbing. Scales with the card, so it is right at every board zoom |
 | `touch_target_fraction` | fraction of the **WINDOW's smaller dimension** | 0.06 | the minimum size of any overlay control, the sidebar's exit X included. No clamp: the fraction is the clamp |
-| `entrance_stock_face_down_cap` | count | **5** — your words: *"knob defaulting to 5"* | how many face-down cards are drawn on a slot's stock, so depth reads at a glance |
 | `entrance_flip_stagger` | fraction of `get_delay()` **per slot** | 0.15 | the left-to-right stagger as the Entrance flips up. Never a wall-clock literal — project rule |
 
 **Derived from a rule, never registered** — a stored default here could silently disagree with the
@@ -1541,8 +1562,9 @@ rule that produces it:
 - `PlayArea.board_inset_left` is the container's width converted through the focused picture's live
   scale, and the matching TOP inset likewise;
 - the sidebar's **height** on the side is the window's;
-- the **card visual's** size in the sidebar is the board's own card size, so it reads as the same
-  object — not a fraction of anything;
+- the **card visual's** size in the sidebar is the size the object it points at is drawn at — the
+  board's card size from the board, each viewer's own card size from that viewer (`GAP-004`=b) — so
+  it reads as the same object, not a fraction of anything;
 - the **lift height** is one value for both armed-and-still and following, so the only visible change
   when following starts is that the card begins to move;
 - the **armed Entrance slot** is "leftmost present", re-derived after every undo;

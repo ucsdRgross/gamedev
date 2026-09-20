@@ -53,9 +53,9 @@ func upper_zone_type() -> Array[CardData]:
 func lower_zone_type() -> Array[CardData]:
 	return _game.state.lower_zone_type if is_live() else ([] as Array[CardData])
 
-## The undealt deck.
+## Every slot's undealt cards as one flat list -- the whole show's remaining deck, read-only.
 func draw_deck() -> Array[CardData]:
-	return _game.state.draw_deck if is_live() else ([] as Array[CardData])
+	return _game.state.all_stock_cards() if is_live() else ([] as Array[CardData])
 
 ## The board revision counter — the key every cache in the engine is invalidated by.
 func revision() -> int:
@@ -150,9 +150,9 @@ func discard_data(data: CardData) -> void:
 	if not is_live(): return
 	await _game.discard_data(data)
 
-## Draw the next card from the deck, or null when it is empty.
-func draw_card() -> CardData:
-	return _game.draw_card() if is_live() else null
+## Draw the top card of an Entrance slot's own stock, or null when that stock is empty.
+func draw_card(slot: int) -> CardData:
+	return _game.draw_card(slot) if is_live() else null
 
 ## Add to the show's running total.
 func add_total_score(amount: int) -> void:
@@ -173,10 +173,14 @@ func remove_from_play(card: CardData) -> void:
 	_game.get_zone_from_vec3(vec3)[vec3.y].datas.erase(card)
 	_game.state.revision += 1
 
-## Put a card back on top of the draw deck. Caller bumps when its whole batch is consistent.
+## Put a card on top of the shortest stock, earliest slot winning ties, as the deal does.
 func return_to_draw_deck(card: CardData) -> void:
 	if not is_live(): return
-	_game.state.draw_deck.append(card)
+	var stocks := _game.state.entrance_stocks()
+	var shortest : ArrayCardData = stocks[0]
+	for stock : ArrayCardData in stocks:
+		if stock.datas.size() < shortest.datas.size(): shortest = stock
+	shortest.datas.append(card)
 
 ## Place a card that is not on the board into a zone column end.
 func place_card(card: CardData, zone_x: int, col: int) -> bool:
@@ -187,12 +191,19 @@ func add_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData],
 		header: CardData) -> void:
 	if not is_live(): return
 	Board.add_column(_game.state, zone_cols, zone_types, header)
+	_rebalance_if_entrance(zone_cols)
 
 ## Remove a zone column and its header; returns the orphaned cards for the caller to discard.
 func remove_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData],
 		index: int) -> Array[CardData]:
 	if not is_live(): return ([] as Array[CardData])
-	return Board.remove_column(_game.state, zone_cols, zone_types, index)
+	var orphans := Board.remove_column(_game.state, zone_cols, zone_types, index)
+	_rebalance_if_entrance(zone_cols)
+	return orphans
+
+## Only the Entrance owns stocks, so only a change to ITS set of slots re-spreads them.
+func _rebalance_if_entrance(zone_cols: Array[ArrayCardData]) -> void:
+	if is_same(zone_cols, _game.state.upper_zone): _game.rebalance_stocks()
 
 ## Append one grid to the board.
 func add_grid(grid: GridData) -> void:

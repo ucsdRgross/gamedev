@@ -2,7 +2,7 @@ extends CardEnvironment
 class_name Map
 
 ## The world-map screen: hosts the WorldMapController (worldgen addon + token traversal),
-## resolves node arrivals into games / booster packs, shows the node hover panel, and is
+## resolves node arrivals into games / booster packs, names the hovered node on the map, and is
 ## the CardEnvironment the booster generation mods run against (collections = the run
 ## deck in Main.save_info).
 
@@ -10,16 +10,17 @@ signal enter_game
 
 @onready var controller: WorldMapController = %WorldMapController
 @onready var ui_layer: CanvasLayer = $UI
-## Hovering a map node PUBLISHES its `InfoEntry` and stops there. ⚠ The map must NOT mount an
-## `InfoCard` of its own: there is ONE card, on the wall's overlay, anchored to the WINDOW, and a
-## second instance is not what `Main` resets, so it could never be dismissed. `Main` decides
-## whether Info mode wants this shown.
-## `MapHoverPanel`'s SCENE is no longer instantiated on the map; the class stays as `get_info()`'s
-## home.
+@onready var name_popup: MapNamePopup = %NamePopup
+## Published and nothing more: the wall's one `HudContainer` decides what is shown.
 signal info_hovered(entry: InfoEntry)
-@onready var fame_label: Label = %FameLabel
-@onready var lap_label: Label = %LapLabel
-@onready var luck_label: Label = %LuckLabel
+
+# Set by `Main` before this screen's picture is built, the same hand-over `GameView.hud_container`
+# gets. Fame/Lap/Luck/the Deck button live on its `MapHud` child, not on this scene's own `$UI`.
+var hud_container : HudContainer = null
+
+# Set by `Main` alongside `hud_container`, the same hand-over `Menu.wall_picture` gets -- lets
+# `_publish_map_inset()` convert `hud_container`'s rects into this picture's own space.
+var wall_picture : WallPicture = null
 
 var run : RunState = null
 # start_run can arrive before this scene ever entered the tree (Main pre-instantiates it);
@@ -36,6 +37,7 @@ func get_rules_collections() -> Array[CardData]:
 	return Main.save_info.rule_datas
 
 func _ready() -> void:
+	_bind_hud_container()
 	controller.node_entered.connect(_on_node_entered)
 	controller.node_hovered.connect(_on_node_hovered)
 	# Deliberately NO node_unhovered connection: the card keeps showing its last entry across
@@ -46,18 +48,39 @@ func _ready() -> void:
 		_pending_run = null
 		start_run(pending)
 
-## Begin (or resume) a run on this map screen. Safe to call before the scene is in the
-## tree — the map generates/reloads once _ready has run.
+# Same hand-over shape as `GameView._bind_hud_container()`: a standalone fixture with no `Main`
+# gets its own private container instead of a null one.
+func _bind_hud_container() -> void:
+	hud_container = HudContainer.ensure(hud_container, self)
+	hud_container.connect_for_screen(self, hud_container.map_deck_button.pressed,
+			_on_deck_clicked)
+	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _publish_map_inset)
+	hud_container.connect_for_screen(self, hud_container.active_screen_changed,
+			name_popup.hide_name)
+	_publish_map_inset()
+
+# The map DOES sit in a `WallPicture`, so the container's window px converts through that picture's
+# own cover scale -- `HudContainer.rect_beside()` is that one conversion, shared with `Menu`.
+func _publish_map_inset() -> void:
+	var remaining := hud_container.rect_beside(wall_picture)
+	var screen_size := controller.camera.get_viewport_rect().size
+	controller.apply_container_shift(screen_size / 2.0 - remaining.get_center())
+
+# Begin (or resume) a run on this map screen. Safe to call before the scene is in the tree. The
+# map persists across runs but its content is the run, so the last run's description goes here.
 func start_run(new_run: RunState) -> void:
 	run = new_run
 	if not is_node_ready():
 		_pending_run = new_run
 		return
+	name_popup.hide_name()
+	hud_container.release_screen(HudContainer.MAP_SCREEN)
 	controller.start_run(new_run)
 
 ## Node arrival dispatch: games (incl. the lap-target boss) launch a show, boosters open
 ## a take-all pack, the lap-origin anchor is just a rest stop.
 func _on_node_entered(node: WorldGraphNode) -> void:
+	name_popup.hide_name()
 	var role :String= node.meta.get(MapNodeRoles.ROLE_KEY, "")
 	if role == MapNodeRoles.ROLE_BOOSTER:
 		await _open_booster(node)
@@ -80,8 +103,9 @@ func _start_show(node: WorldGraphNode) -> void:
 # later from modifiers).
 func _open_booster(node: WorldGraphNode) -> void:
 	var booster: BoosterTemplate = node.meta.get(MapNodeRoles.BOOSTER_KEY)
-	var viewer := await booster.on_map_picked(ui_layer)
+	var viewer : ChoiceViewer = await booster.on_map_picked(ui_layer)
 	viewer.confirmed.connect(_on_booster_confirmed)
+	hud_container.host_viewer(viewer, wall_picture, info_hovered)
 
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
 	for card in cards:
@@ -123,21 +147,20 @@ func _show_lap_summary() -> void:
 		RunManager.save_run()
 		_update_hud())
 
-## Routes through `get_info()` rather than `MapHoverPanel.show_for_node()`, and only PUBLISHES the
-## entry: the card anchors itself to the WINDOW's bottom, not the node's screen position, so there
-## is no placement to compute here, and the map has no business deciding whether Info mode wants
-## it shown.
+# The description goes to the container, which anchors itself and needs no placement from here.
+# The NAME is anchored to the node itself, because a map node is a bare dot: the same entry feeds
+# both, so the two can never disagree about what the node is called.
 func _on_node_hovered(node: WorldGraphNode) -> void:
-	# Published regardless: `Main` decides whether Info mode wants it, and the map has no business
-	# knowing. `wall_screen_popups` governs the map's own panel, which no longer exists as a live
-	# scene — so there is nothing to suppress here today. See `PlayArea._popups_allowed()`.
-	info_hovered.emit(MapHoverPanel.get_info(node, run, controller.lap_target()))
+	var entry := MapHoverPanel.get_info(node, run, controller.lap_target())
+	info_hovered.emit(entry)
+	name_popup.show_above(entry.title, node)
 
 func _update_hud() -> void:
 	if run == null: return
-	fame_label.text = "Fame: %d" % run.fame
-	lap_label.text = "Lap: %d %s" % [run.lap + 1, "◀" if run.is_reversed() else "▶"]
-	luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
+	hud_container.fame_label.text = "Fame: %d" % run.fame
+	hud_container.lap_label.text = "Lap: %d %s" % [run.lap + 1, "◀" if run.is_reversed() else "▶"]
+	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
 
 func _on_deck_clicked() -> void:
-	DeckViewer.show_deck(self, Main.save_info.card_datas)
+	hud_container.host_viewer(DeckViewer.show_deck(self, Main.save_info.card_datas,
+			hud_container.map_deck_button), wall_picture, info_hovered)

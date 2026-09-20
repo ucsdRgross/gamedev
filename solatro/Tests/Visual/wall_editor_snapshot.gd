@@ -59,19 +59,13 @@ func _ready() -> void:
 	_save("wall_editor_selection_lift.png")
 	editor.preview_selected_id = &""
 
-	# Info mode, back at an ordinary window shape. The camera should drop to the home picture's
-	# info pose -- its BOTTOM frame edge revealed, top/left/right still covered -- with the real
-	# InfoCard anchored to the bottom of the WINDOW showing that picture's own get_info() entry.
-	# Both halves are by-eye: nothing here asserts a pose, and a pose that is arithmetically right
-	# can still read wrong.
-	editor.preview_focus_id = editor.layout.home_id
-	editor.preview_info_mode = true
+	editor.preview_focus_id = HudContainer.GAME_SCREEN
+	editor.preview_locked_description = true
 	await _settle()
-	_save("wall_editor_info_mode.png")
-
-	editor.preview_info_mode = false
+	_save("wall_editor_sidebar_locked.png")
+	editor.preview_locked_description = false
+	editor.preview_focus_id = &""
 	await _settle()
-	_save("wall_editor_info_mode_off.png")
 
 	# §3 Phase 8 gate ("tool opens, writes the resource, and re-opens with the same layout") --
 	# a real write, then a SEPARATE fresh disk read (CACHE_MODE_IGNORE, never the same in-memory

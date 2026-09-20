@@ -38,12 +38,10 @@ func suite_name() -> String:
 func _ready() -> void:
 	# Runs after UI PROPS (shares CardEnvironment.CURRENT) and before E2E. Excludes only E2E (which
 	# waits on everything). See TestSuite.await_siblings_except and its DEADLOCK RULE.
-	await await_siblings_except(["GRID LAYOUT", "GRID VIEW", "SETTINGS RANGE", "E2E RUN",
-			"LEAK CANARY", "WALL PAUSE"])
+	await await_siblings_except(["GRID LAYOUT", "GRID VIEW", "SIDEBAR", "SETTINGS RANGE",
+			"DRAG PLACE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ VISUAL LAYERS TEST PASS ============")
 	backup_real_settings()
-	var prev_delay := SettingsManager.settings.base_delay
-	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	implementation_section("STRUCTURAL ORDER (no z_index anywhere)")
 	await test_fresh_deal_structure()
 	behavior_section("PROP / CARD / OVERLAY LAYERING")
@@ -68,7 +66,6 @@ func _ready() -> void:
 	await test_the_reveal_keeps_props_and_gutters_glued_G31_G32()
 	await test_lights_stay_glued_to_cards_that_move_while_lit()
 	await test_lights_track_a_scrolled_board()
-	SettingsManager.settings.base_delay = prev_delay
 	restore_real_settings()
 	finish()
 
@@ -434,7 +431,7 @@ func test_fx_inside_its_host() -> void:
 	check(vis.fx.visible, "and flipping back restores them")
 	await cleanup(g, pa)
 
-## The OverlayLayer (focus inspector) renders above every card and prop.
+## The OverlayLayer renders above every card and prop, driven by the score-name popup that lives on it.
 func test_overlay_above_everything() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
@@ -445,22 +442,19 @@ func test_overlay_above_everything() -> void:
 	p.at = BoardCoord.new(0, 1, 0, 0)
 	p.route = [BoardCoord.new(0, 2, 0, 0)] as Array[BoardCoord]
 	await run_tick(pl, [p], [p], [p], [])
-	var control : Control = pa.data_ui.get(cell_card(g, 0, 0))
-	control.grab_focus()
+	var popup := TextPopup.new_popup("Flush 12", pa.global_position)
+	pa.overlay_layer.add_child(popup)
 	await get_tree().process_frame
-	check(pa._focus_info != null and pa._focus_info.visible, "the focus inspector is shown")
-	var order := dump_draw_order("overlay (focus panel) over board + prop", pa)
-	var panel_rank := draw_rank(order, pa._focus_info)
-	var ok := panel_rank >= 0
+	var order := dump_draw_order("overlay (score popup) over board + prop", pa)
+	var popup_rank := draw_rank(order, popup)
+	var ok := popup_rank >= 0
 	var prop_vis : PropVisual = pl._visuals.get(p)
-	if prop_vis and draw_rank(order, prop_vis) > panel_rank: ok = false
+	if prop_vis and draw_rank(order, prop_vis) > popup_rank: ok = false
 	for i in 3:
 		var cv : CardVisual = pa.data_card.get(cell_card(g, i, 0))
-		if cv and draw_rank(order, cv) > panel_rank: ok = false
-	check(ok, "the focus inspector renders above every prop and card (OverlayLayer last sibling)")
-	check_impl(pa._focus_info.get_parent() == pa.overlay_layer,
-			"the focus panel lives on OverlayLayer")
-	pa.hide_focus_info()
+		if cv and draw_rank(order, cv) > popup_rank: ok = false
+	check(ok, "the overlay renders above every prop and card (OverlayLayer last sibling)")
+	popup.queue_free()
 	await cleanup(g, pa)
 
 ## Entrance-backed — see `make_stack_game`. The grid form of this claim is
@@ -1421,6 +1415,7 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 	# nothing that carries a light.
 	var at : Dictionary[Vector4i, CardData] = {}
 	for data : CardData in pa.data_card.keys():
+		if data.stage == CardData.Stage.DRAW: continue
 		at[view.game.state.grid_position_of(data).pack()] = data
 	var lit : Array[CardData] = []
 	var mover : CardData = null
@@ -1455,10 +1450,7 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 		var want := _centre_for(view, mover)
 		moved = maxf(moved, start_centre.distance_to(want))
 		# Some light must be sitting on this card's CURRENT art square, not the one it left.
-		var nearest := INF
-		for l : LightLayer.Light in layer._lights:
-			nearest = minf(nearest, l.centre.distance_to(want))
-		if not layer._lights.is_empty(): worst = maxf(worst, nearest)
+		worst = maxf(worst, _nearest_light_offset(layer, want))
 		if elapsed > 2.5 and not pa._row_open_wanted.is_empty():
 			view.game.spotlight_section_changed.emit([] as Array[CardData])
 		if elapsed > 2.5 and pa._row_open.is_empty(): break
@@ -1526,26 +1518,24 @@ func test_lights_track_a_scrolled_board() -> void:
 	check(target != null, "there is a card to light on the scrolled board")
 	var worst := 0.0
 	var moved := 0.0
+	var waited := 0.0
 	if target != null and scrollable:
 		view.game.spotlight_section_changed.emit([target] as Array[CardData])
 		for _i : int in 3: await _tick_seconds()
 		var before := _centre_for(view, target)
-		# Scroll to the far end — every card slides under the lights at once.
 		scroll.scroll_horizontal = int(bar.max_value)
-		for _i : int in 3: await _tick_seconds()
+		waited = await _wait_for_light_on_scrolled_card(view, target, before)
 		var after := _centre_for(view, target)
 		moved = before.distance_to(after)
-		var nearest := INF
-		for l : LightLayer.Light in layer._lights:
-			nearest = minf(nearest, l.centre.distance_to(after))
-		worst = nearest if not layer._lights.is_empty() else 0.0
+		worst = _nearest_light_offset(layer, after)
 		view.game.spotlight_section_changed.emit([] as Array[CardData])
 		for _i : int in 2: await _tick_seconds()
 
 	check(moved > 20.0, "scrolling really did move the lit card (else this is vacuous)",
-			"it shifted only %.1f px" % moved)
+			"it shifted only %.1f px in %.0f ms" % [moved, waited * 1000.0])
 	check(worst < 1.0, "a light follows its card across a board SCROLL, not just a layout move",
-			"the nearest light was %.2f px off the scrolled card's centre" % worst)
+			"the nearest light was %.2f px off the scrolled card's centre after %.0f ms"
+			% [worst, waited * 1000.0])
 
 	SettingsManager.settings.card_scale = prev_scale
 	pa.flush_rebuild()
@@ -1600,6 +1590,25 @@ func _deal_until_stacked(view: GameView) -> void:
 func _centre_for(view: GameView, data: CardData) -> Vector2:
 	var cv : CardVisual = view.play_area.data_card.get(data)
 	return cv.spotlight_center() if is_instance_valid(cv) else Vector2.ZERO
+
+## How far the closest light sits from `point`; 0 with nothing lit, which the vacuity guards catch.
+func _nearest_light_offset(layer: LightLayer, point: Vector2) -> float:
+	var nearest := INF
+	for l : LightLayer.Light in layer._lights:
+		nearest = minf(nearest, l.centre.distance_to(point))
+	return nearest if not layer._lights.is_empty() else 0.0
+
+# Scrolled content lands 1-3 frames after the set (a deferred layout sort) and the light re-reads
+# its card one frame behind that, so a wait counted in frames is a race. Returns the seconds
+# waited; the 1 s cap is what fails a light that never follows.
+func _wait_for_light_on_scrolled_card(view: GameView, target: CardData, before: Vector2) -> float:
+	var waited := 0.0
+	while waited < 1.0:
+		waited += await _tick_seconds()
+		var after := _centre_for(view, target)
+		if before.distance_to(after) > 20.0 and _nearest_light_offset(view.light_layer, after) < 1.0:
+			break
+	return waited
 
 ## One frame of real time, and how long it took.
 func _tick_seconds() -> float:

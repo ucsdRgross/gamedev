@@ -28,8 +28,6 @@ func _ready() -> void:
 	behavior_section("SPATIAL SELECTION (I5, I6)")
 	_test_arrow_selection_is_spatial()
 	_test_selection_wraps()
-	behavior_section("THE INFO CONTROL IS THE GLASS, NOT THE WORD (MINOR, J1/Q135)")
-	_test_the_info_button_wears_the_magnifying_glass()
 	behavior_section("THE SELECTION IS ACTUALLY DRAWN (MINOR, PICTURE_WALL.md, F11/Q105=b)")
 	_test_the_selected_picture_is_the_one_visibly_lifted()
 	behavior_section("HELD-STICK REPEAT (M9, PICTURE_WALL.md, I7/Q116=a)")
@@ -53,12 +51,11 @@ func _ready() -> void:
 	await _test_non_focused_picture_never_receives_input()
 	behavior_section("MOUSE (I8, S20)")
 	_test_wheel_reaches_the_focused_screen_but_never_the_wall()
-	behavior_section("THE FOUR wall_* ACTIONS HAVE READERS (M3, PICTURE_WALL.md, I6/Q102=a)")
+	behavior_section("THE THREE wall_* ACTIONS HAVE READERS (M3, PICTURE_WALL.md, I6/Q102=a)")
 	_test_wall_overview_asks_for_wall_view()
 	_test_wall_back_asks_for_back()
 	_test_wall_forward_asks_for_forward()
-	_test_wall_info_asks_for_an_info_toggle()
-	implementation_section("THE FOUR wall_* ACTIONS ARE ACTUALLY BOUND (M3)")
+	implementation_section("THE THREE wall_* ACTIONS ARE ACTUALLY BOUND (M3)")
 	_test_every_wall_action_has_at_least_one_binding()
 	behavior_section("KEYBOARD (I3, I4, I7, I14, S21)")
 	_test_screen_that_consumes_escape_wall_does_not_go_back()
@@ -71,11 +68,11 @@ func _ready() -> void:
 	behavior_section("CONTROLLER (I10, S22 -- automated coverage only, see ASSUMPTIONS.md)")
 	_test_most_recent_device_wins_controller_after_mouse()
 	behavior_section("TOUCH TARGETS REACH THE REAL CONTROLS (M6, PICTURE_WALL.md, GAP-004=b)")
-	_test_every_overlay_control_meets_the_clamped_touch_target()
+	_test_every_overlay_control_meets_the_touch_target()
 	behavior_section("TOUCH (I11, I12, I13, S23)")
 	_test_pinch_is_derived_from_two_touches()
 	_test_magnify_gesture_is_never_listened_for()
-	_test_touch_target_size_is_clamped()
+	_test_touch_target_size_is_a_window_fraction()
 	behavior_section("PINCH WIRING (A3, PICTURE_WALL.md, Q119=a)")
 	_test_pinch_out_enters_the_selected_picture()
 	_test_pinch_in_returns_to_wall_view()
@@ -430,7 +427,7 @@ func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() ->
 		# is what made get_global_transform_with_canvas() stop returning a stale/repeated value.
 		await get_tree().process_frame
 		await get_tree().process_frame
-		await RenderingServer.frame_post_draw
+		await await_drawn_frames(1)
 		var pressed : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
 		# Signal.connect() returns an Error code (int), not a handle -- keep the Callable itself so
 		# disconnect() below has something it actually accepts.
@@ -943,37 +940,29 @@ func _feed_pinch_in(wall: Wall) -> void:
 	drag.position = Vector2(120, 100)   # distance now 20px, delta -40, past the -24px threshold
 	wall._unhandled_input(drag)
 
-## I13 (GAP-004=b, §1.9's literal formula): the touch target size clamps to the configured
-## floor/ceiling at absurd DPI readings -- DPI 1 (absurdly low) and DPI 10000 (absurdly high).
-func _test_touch_target_size_is_clamped() -> void:
+# I13: the touch target is a fraction of the window's SMALLER dimension, and nothing clamps it.
+func _test_touch_target_size_is_a_window_fraction() -> void:
 	var settings := PlayerSettings.new()
-	check(settings.wall_touch_target_mm > 0.0 and settings.wall_touch_target_min_px > 0.0
-			and settings.wall_touch_target_max_px > settings.wall_touch_target_min_px,
-			"the settings this test clamps against are sane before asserting the clamp itself",
-			"mm=%.2f min=%.1f max=%.1f" % [settings.wall_touch_target_mm,
-					settings.wall_touch_target_min_px, settings.wall_touch_target_max_px])
+	var fraction := settings.touch_target_fraction
+	check(fraction > 0.0,
+			"the fraction this test measures against is a real one before asserting on it",
+			"fraction=%.4f" % fraction)
 
-	var low := WallInput.touch_target_px(1.0, settings)
-	check(is_equal_approx(low, settings.wall_touch_target_min_px),
-			"DPI 1 (absurdly low) clamps to the configured FLOOR",
-			"got=%.4f floor=%.1f" % [low, settings.wall_touch_target_min_px])
+	var wide := WallInput.touch_target_px(Vector2(3840.0, 1080.0), settings)
+	check(is_equal_approx(wide, 1080.0 * fraction),
+			"a wide window sizes the target off its SMALLER dimension (M7)",
+			"got=%.4f expected=%.4f" % [wide, 1080.0 * fraction])
 
-	var high := WallInput.touch_target_px(10000.0, settings)
-	check(is_equal_approx(high, settings.wall_touch_target_max_px),
-			"DPI 10000 (absurdly high) clamps to the configured CEILING",
-			"got=%.4f ceiling=%.1f" % [high, settings.wall_touch_target_max_px])
+	var small := WallInput.touch_target_px(Vector2(320.0, 240.0), settings)
+	var huge := WallInput.touch_target_px(Vector2(32000.0, 24000.0), settings)
+	check(is_equal_approx(huge, small * 100.0),
+			"NO CLAMP: a window a hundred times the size gives a target a hundred times the size, "
+			+ "so the fraction is the only bound it has (M8, Q301=a)",
+			"small=%.4f huge=%.4f" % [small, huge])
 
 # ------------------------------------------------------------------ M3 (PICTURE_WALL.md)
 
-## M3 (PICTURE_WALL.md): `wall_overview`, `wall_back`, `wall_forward` and `wall_info` were
-## registered in the InputMap and read by NOTHING -- Tab, L1/LB, R1/RB and `I` all did nothing, so a
-## controller had no Back, no Forward and no Wall at all. One test per action, each asserting the
-## signal that action's own reader emits; every one goes red if its `is_action_pressed` branch in
-## `Wall._unhandled_input()` is deleted.
-##
-## Fed as `InputEventAction`, the same shape `ui_cancel` and `wall_jump_3` above already use -- it
-## matches by action NAME, so these stay true through any rebinding (I6/Q102=a: they are ordinary
-## rebindable actions).
+## Fed by action NAME, so these stay true through any rebinding.
 func _feed_action(wall: Wall, action: StringName) -> void:
 	var event := InputEventAction.new()
 	event.action = action
@@ -1024,20 +1013,6 @@ func _test_wall_forward_asks_for_forward() -> void:
 	check(asked[0], "wall_forward asks for Forward -- the controller had no Forward at all")
 	_teardown(wall, [wp])
 
-## J1/Q135 note: the Info toggle is "always accessible regardless of screen", so `I` is read while a
-## picture is focused too -- which is the only state in which Info has anything to reveal.
-func _test_wall_info_asks_for_an_info_toggle() -> void:
-	var wall := _build_wall()
-	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
-	wp.focus()
-	var asked : Array[bool] = [false]
-	wall.info_toggle_requested.connect(func() -> void: asked[0] = true)
-
-	_feed_action(wall, &"wall_info")
-
-	check(asked[0], "wall_info asks for an Info toggle -- the `I` key had no reader at all")
-	_teardown(wall, [wp])
-
 ## A reader is only half of it: `wall_back` and `wall_forward` were registered with an EMPTY event
 ## list, so even a wired reader could never fire from a real controller. Asserts that the bindings
 ## exist and that BOTH input families reach all four navigation actions -- never which button or
@@ -1063,7 +1038,7 @@ func _test_touch_events_route_to_the_same_place_a_click_does() -> void:
 	var screen : Sprite2D = wp.get_node(^"%Screen")
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await RenderingServer.frame_post_draw
+	await await_drawn_frames(1)
 
 	var landed : Array[Vector2] = [Vector2.INF]   # boxed -- lambdas capture locals BY VALUE
 	(wp.screen_root as Control).gui_input.connect(func(e: InputEvent) -> void:
@@ -1108,7 +1083,7 @@ func _test_view_margin_is_read_once_not_per_call() -> void:
 	_teardown(wall, pictures)
 
 func _test_every_wall_action_has_at_least_one_binding() -> void:
-	var actions : Array[StringName] = [&"wall_overview", &"wall_back", &"wall_forward", &"wall_info"]
+	var actions : Array[StringName] = [&"wall_overview", &"wall_back", &"wall_forward"]
 	for action : StringName in actions:
 		check(InputMap.has_action(action), "the InputMap registers %s" % action)
 		if not InputMap.has_action(action): continue
@@ -1116,12 +1091,6 @@ func _test_every_wall_action_has_at_least_one_binding() -> void:
 		var message := "%s has at least one real binding -- an action nobody can press is as " % action
 		check(not events.is_empty(), message + "dead as one nobody reads",
 				"events=%d" % events.size())
-		# ⚠ "AT LEAST ONE" IS NOT ENOUGH FOR THESE FOUR, and that is how `wall_back`/`wall_forward`
-		# shipped joypad-ONLY (buttons 9 and 10, no key at all) while `wall_info` shipped key-only.
-		# A keyboard player had no Forward and a controller player had no Info -- each invisible to
-		# the other's half of the check. These four are the wall's whole navigation vocabulary, so
-		# both input families must reach all of them. Asserts the KIND of event, never the button or
-		# keycode: Q102=a makes them rebindable, and pinning one would turn a rebind into a failure.
 		var has_key := false
 		var has_pad := false
 		for e : InputEvent in events:
@@ -1238,38 +1207,29 @@ func _test_dragging_pans_nothing_when_the_whole_wall_already_fits() -> void:
 
 # ------------------------------------------------------------------ M6 (PICTURE_WALL.md)
 
-## M6 (PICTURE_WALL.md, GAP-004=b, I8c): `WallInput.touch_target_px()` had NO CALLER -- the
-## overlay's buttons were whatever size the scene authored (80x32), and GAP-004's clamp, which its
-## own answer calls "a contract, not a guard clause", never ran on anything. `_test_touch_target_
-## size_is_clamped()` below pins the FORMULA; this pins the fact that a real control obeys it.
-##
-## Driven through a DELIBERATELY LARGE `wall_touch_target_min_px` rather than the machine's own DPI:
-## the real reading on this box already produces a target the authored 80 px width happens to
-## exceed, so a same-DPI assertion would pass against a `_ready()` that did nothing at all. The
-## floor is raised past every authored dimension, so only a real clamp can satisfy it -- and it also
-## proves the KNOB is read, not just some constant.
-func _test_every_overlay_control_meets_the_clamped_touch_target() -> void:
+# M6: `WallInput.touch_target_px()` had NO CALLER -- the overlay's buttons were whatever size the
+# scene authored (80x32). The fraction is raised past every authored dimension, and the target is
+# read off the MODEL, so a `_ready()` that stopped delegating cannot satisfy these.
+func _test_every_overlay_control_meets_the_touch_target() -> void:
 	backup_real_settings()
 	var settings := SettingsManager.settings
-	var real_min := settings.wall_touch_target_min_px
-	var real_max := settings.wall_touch_target_max_px
-	settings.wall_touch_target_max_px = 400.0
-	settings.wall_touch_target_min_px = 120.0   # larger than every authored offset in the scene
+	var real_fraction := settings.touch_target_fraction
+	var window := get_viewport().get_visible_rect().size
+	settings.touch_target_fraction = 120.0 / minf(window.x, window.y)
 
 	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
 	add_child(overlay)
-	var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(), settings)
-	check(target >= 120.0,
-			"fixture: the raised floor really is what the clamp returns, so the assertions below "
-			+ "cannot be satisfied by the scene's own authored sizes", "target=%.1f" % target)
+	var target := GestureMetrics.touch_target_px(window, settings)
+	check(is_equal_approx(target, 120.0),
+			"fixture: the raised fraction really is what the model returns, so the assertions below "
+			+ "cannot be satisfied by the scene's own authored sizes", "target=%.4f" % target)
 
-	var names : Array[StringName] = [&"%BackButton", &"%ForwardButton", &"%WallButton",
-			&"%InfoButton"]
+	var names : Array[StringName] = [&"%BackButton", &"%ForwardButton", &"%WallButton"]
 	var previous_right := -INF
 	for path : StringName in names:
 		var button : Button = overlay.get_node(NodePath(path))
 		check(button.size.x >= target and button.size.y >= target,
-				"%s is at least the clamped touch target on BOTH axes" % path,
+				"%s is at least the touch target on BOTH axes" % path,
 				"size=%s target=%.1f" % [button.size, target])
 	# The three left-hand buttons grew; they must not have grown INTO each other.
 	for path : StringName in [&"%BackButton", &"%ForwardButton", &"%WallButton"]:
@@ -1281,8 +1241,7 @@ func _test_every_overlay_control_meets_the_clamped_touch_target() -> void:
 		previous_right = button.position.x + button.size.x
 
 	overlay.queue_free()
-	settings.wall_touch_target_min_px = real_min
-	settings.wall_touch_target_max_px = real_max
+	settings.touch_target_fraction = real_fraction
 	restore_real_settings()
 
 # ------------------------------------------------------------------ M9 (PICTURE_WALL.md)
@@ -1427,39 +1386,3 @@ func _test_the_selected_picture_is_the_one_visibly_lifted() -> void:
 			"...and only that one")
 	_teardown(wall, [top, bottom])
 
-# ------------------------------------------------------------------ MINOR (PICTURE_WALL.md)
-
-## MINOR (PICTURE_WALL.md, J1, Q135's note): the Info control is "a top-right magnifying
-## glass"; it shipped wearing the word "Info". The icon is built procedurally
-## (`WallOverlay.magnifier_icon()`, the `WallPicture.shared_frame_texture()` idiom) because the
-## project's font has no magnifier glyph.
-##
-## ⚠ This asserts the WIRING and the icon's STRUCTURE only. Whether the drawing reads as a
-## magnifying glass is a by-eye question (CLAUDE.md rule 4) and was answered by rendering it and
-## looking: a closed circular lens ring with an even-width diagonal handle. No test can make that
-## claim, so none here pretends to.
-func _test_the_info_button_wears_the_magnifying_glass() -> void:
-	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
-	add_child(overlay)
-	var info_button : Button = overlay.get_node(^"%InfoButton")
-
-	check(info_button.icon != null, "the Info button carries an icon at all (J1)")
-	check(info_button.text == "",
-			"...and no longer wears the WORD -- the glass IS the label", info_button.text)
-	check(info_button.tooltip_text == TRANSLATION.find(&"WALL_INFO"),
-			"the localised string survives as the tooltip, so the control is still named for a "
-			+ "screen reader and still translatable", info_button.tooltip_text)
-
-	# Structure, not looks: an icon that is entirely transparent, or entirely opaque, is not a
-	# drawing of anything -- and either would sail past a mere "icon != null" check.
-	var img := info_button.icon.get_image()
-	var opaque := 0
-	for y : int in img.get_height():
-		for x : int in img.get_width():
-			if img.get_pixel(x, y).a > 0.5: opaque += 1
-	var total := img.get_width() * img.get_height()
-	check(total > 0, "the icon has pixels to inspect", "total=%d" % total)
-	check(opaque > 0 and opaque < total,
-			"the icon is a DRAWING -- partly opaque, partly transparent, not a blank or a solid "
-			+ "block", "opaque=%d of %d" % [opaque, total])
-	overlay.queue_free()

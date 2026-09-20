@@ -37,6 +37,9 @@ written when a run stalls or fails.
   await and no branch, while the process burned a full core. ⚠ Two confident explanations were
   written down and both were WRONG: `GRID VIEW` has no concurrent siblings (every suite it excludes
   waits for IT), and every wait on its path is bounded. Do not re-derive either.
+  **Untried, and now cheap:** subsets cost seconds since `run_tests.py --filter`, so the hang is
+  bisectable BY SUBSET for the first time — the suites above pass alone, so ask which COMBINATION
+  reproduces it.
 - ⬜ **Godot intermittently SEGFAULTS during final teardown**, after the banner and log paths print
   normally. Still unattributed — likely the exit-time leak's family, objects surviving into
   `cleanup()`. ✅ `run_tests.py` no longer misreports it: an exit status outside 0..125 is not a
@@ -126,6 +129,56 @@ written when a run stalls or fails.
     two, with no cue explaining it (Q33=a chose that). That the cue is ABSENT is pinned by tests
     (`test_comparator.gd` §10 asserts the ordinary meld name, no marker); whether its absence reads
     as a scoring bug to a human is not a test's question.
+- ⬜ **Sidebar: two measured costs the legal-cell tint left behind.**
+  - **The drop-map sweep is not free, and the number is here so nobody re-measures it.** It runs one
+    `on_can_place_stack` dispatch per cell per rebuild (`set_card_zones`, once a frame) while a card
+    is held — an empty hand is an empty map with no dispatch — which is the ruling's OWN cost: "the
+    tint follows what `try_place` accepts" means asking the real dispatch rather than a second
+    legality rule. Before the empty-hand short-circuit the full suite went **351.6 s → 370.4 s**,
+    carried by the board-mutating suites — E2E RUN 27.7→31.5, GRID LAYOUT 17.4→20.9, LEAK CANARY
+    10.7→12.6, DRAG PLACE 14.0→15.3. No "skip while processing" narrowing was added: nobody ruled
+    one, and it would leave the map stale at the end of a cascade.
+  - **The two no-legal-placement loops in `game.gd` lost their early exit** when they were composed
+    over `Game.legal_cells_for` (one walk, three readers): each now walks every cell of a grid
+    before answering, after every placement and every commit. Unmeasured; the sweep already pays
+    the same walk per rebuild, so this at most doubles it. Measure on Box A before narrowing.
+  - **Two stick "rest" checks in `test_sidebar.gd` hold `STICK_HELD_FRAMES` (10 frames, ~15 ms at
+    Box B's ~660 fps)**, so they prove rest over a frame-rate-dependent span. A time span costs
+    ~2 s per suite run; the owner's call.
+  - **The placeholder-warning headroom is gone.** The gate allows at most 22 and the run now emits
+    exactly 22, the new one being `legal_cell_tint` itself — so the NEXT item to add an off-palette
+    colour breaches the gate. That warning is provisional: `GAP-011` option (b) replaces the knob
+    with a palette entry and gives the slot back.
+- ⬜ **Sidebar: owner should see** — built as ruled or pre-existing; each is a look call:
+  - The board's scroll container draws its focus border as two lines across the board while a card inside it holds focus. `draw_focus_border = false` on it removes them.
+  - **The focus glow is now DRAWN** (`GAP-011`=a): `CardVisual.FOCUS_GLOW` 1.825 pushes the paper face to
+    pure white and shifts orange ink to yellow on the focused or held card (`card_lifted.png`,
+    `menu_inspect.png`, `viewer_description.png`). The value was chosen while nothing drew it.
+  - The outcome's Continue and Undo sit under the spotlight layer's dim: text peaks at (73,71,80) over (12,10,22) in `outcome_buttons.png`. Whether the outcome row should be lit is a look call.
+  - In the 600×1000 top case the stock row's top overlaps the grid's bottom row by about 10 px (`game_hud_top.png`).
+  - A click on a card the board refuses to grab (a locked or occupied cell) while another card is armed parks the armed card until the next press — every `stop_following` clears `_motion_may_start_following`, not only a failed drag's. The `GAP-007` ruling names the failed drag; whether a refused click should hold the return too is a look call.
+  - A second click on the same cell inside the double-click window closes a pair, so a rapid same-cell stack is swallowed. Should stacking cost a wait?
+  - Escape → Back → re-entering the game leaves nothing armed until a placement, undo or processing edge.
+  - The map's name popup keeps its name after the pointer leaves the dot, and is not clamped at the picture's top edge, where the name clips off.
+  - A resume after "undo the automatic end, then quit" lands on the outcome again.
+  - Opening any viewer hides the HUD stack, so a mouse player cannot swap Deck → Discard without closing first.
+  - `Q102b`, `Q102c` and `Q106b` in `design/sidebar/` are unanswered; their branches were skipped.
+  - Back mid-show, then travel: the new node is consumed with no show, and the frozen old show banks its win against it (pre-existing).
+  - Preview-card FX art below the description's fold escapes its scroll clip while the card frames are clipped (pre-existing).
+  - WALL FOCUS, WALL RENDER and WALL INPUT still run their Main fixtures unpaused, because they run beside the ordering chain.
+  - The name column is narrow, and what wraps in it reads badly. A card name without spaces breaks at its period ("NumeralRank3." / "0") now that the title leaves the exit X's column, and the way back narrows the same row again by taking its head: about 170 px of title column before it, about 100 px with it up. A card whose whole description IS its title — pre-existing and shared with the board and both viewers, since `card_info` splits at the first newline and a one-part card has none — then wraps to sixteen lines of one word each, filling the panel top to bottom. The narrowing is the new half. Shot: `map_preview_card.png`.
+  - At a 1280×1000 window the HUD runs about 30 px past the bottom of its top band at the shipped `container_size_fraction`; the band is shorter than the HUD. Under a 0.1 fraction the exit X hangs below the band. The knob's range is a look call.
+  - The exit X overlaps the top of the description's scrollbar (pre-existing).
+  - The overlay buttons grow to the touch target when the window grows, but never shrink when it shrinks.
+  - A resize pans the board to its new resting x over several frames while the Entrance moves at once, so the two are briefly out of line: measured mid-pan, 31 px at 1280x800 and 65 px at 600x1000, converging to within 1 px once the board stops. Whether the pan should be instant on a resize is a look call.
+  - In the top case the map picture sits off-centre below the band, cut at its edge.
+  - The start menu's title and buttons are squashed horizontally in the top case; whether the sidebar causes it is unmeasured.
+  - In the top case an Entrance card draws over the deck viewer's panel; the deck picker's list text draws over the Inspect viewer's panel (pre-existing).
+  - Mid-cascade, a stack of cards in column 0 draws above the picture's top edge.
+  - No focus highlight is visible on the focused card inside a viewer.
+  - In the 9.4 still, the focused empty grid cell is indistinguishable from the other 24 — every empty cell wears the same animated dashed border, so there is no way in the image to see where a pad player's selector is.
+  - An intermittent engine crash in teardown (0xC0000005) after a passing banner makes `run_tests.py` exit 3; seen twice, unattributed.
+
 Everything below is unscheduled backlog.
 
 ## Visual effects
@@ -353,9 +406,6 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Testing / infrastructure
 
-- ⬜ **Focused suite testing** — a suite filter, timing instrumentation and a headless logic tier, so
-  a one-line change stops costing a full windowed run. Plan, task list, and the doc/memory/skill
-  updates it forces: `FOCUSED_TESTING_PLAN.md`. Delete this line and that file when it lands.
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
 - Background-save robustness at scale unverified (large history serialize on a worker thread) —
   watch the console; the history cap bounds it.
@@ -402,18 +452,6 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will bite you, and
 [HANDOFF_picture_wall.md](HANDOFF_picture_wall.md) for where the stream stands.
 
-- **`sample_at()`'s INFO branch holds the SOURCE's info zoom for the whole transition**, so the
-  approach to a differently-sized destination is framed on the picture being LEFT. `J10`/`Q137`
-  ("the camera never leaves the info zoom") is what asks for one fixed value, and `_settle_camera()`
-  now cuts to the destination's own info pose on landing — so the resting state is right and what
-  remains is a single cut at the end, exactly the shape GAP-019=(c) chose deliberately for reduced
-  motion. Left as-is unless the cut reads badly in playtest.
-- **The map still BUILDS a full preview-card `InfoEntry` on every booster hover with Info mode off**,
-  and `Main` frees it immediately. The leak is gone; the waste is not. Fixing that properly means
-  either the map learning about Info mode (which `map.gd`'s own comment forbids — "the map has no
-  business deciding whether Info mode wants it shown") or `info_hovered` carrying the NODE instead
-  of a built entry, which is a `NAMES.md` signal-signature change and so a gap by that doc's own
-  rule. Left as waste on a hover-enter path, deliberately.
 - ⬜ **Camera/view findings — PARKED BY THE OWNER as todo, and NONE of them is verified.**
   ⚠ **The suite structurally cannot see any of these**: the layout suites are pinned to the OVERVIEW,
   and no `Tests/Visual/` harness drives props at all, so nothing renders a prop over a card at a
@@ -457,13 +495,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   Entrance rows is a STRUCTURAL change (it becomes cell-shaped like GridData), not a label one. ⚠ Row/col label COUNTS and the
   per-height stacks are ALREADY derived from the grid's own dimensions and buckets, so an 8x7 grid
   needs no work there; do not rebuild them.
-- **The retired act payout's HUD nodes are EMPTIED, not removed, and the removal belongs to the
-  GAP-038 pass.** `%MultScore` and its `Col`/`x`/`Row` children showed a frozen "0 x 0" because
-  nothing in the grid economy writes `mult_score`/`col_total`/`row_total`; `GameView._ready` now
-  blanks them. ⚠ **Deleting the nodes is the deeper fix and it is NOT free**: `%MultScore` is in
-  `_furniture`, and `_hud_authored_width()` maxes over that list to publish
-  `PlayArea.board_inset_left`, so removing it can shrink the HUD reserve and re-centre every grid.
-  That is HUD geometry, which is parked on `GAP-038`. Do it with that pass, not before.
 - **`ProfileManager.unlock()` has no production caller** — only tests call it, and `book` is the only
   locked entry, so S38/K2/K3/K4, `_repack_wall()`, `apply_layout(animate = true)` and
   `picture_unlocked` are all unreachable in the shipped game. Built-but-not-wired, and on neither
@@ -490,44 +521,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   and loads there as a placeholder. All four work when the tool is RUN (F6), which hosts the real
   `wall.tscn`. Making `Wall` `@tool` would close this, but it would also instantiate the shipped
   autoload-facing shell in the editor — not attempted.
-- **`UI/deck_builder.gd` is dead code with BROKEN preloads** — `res://Cards/card.tscn` and
-  `res://UI/card_control.tscn` do not exist, so it throws four parse errors into any editor session
-  that reloads scripts. Nothing references it but its own `deck_builder.tscn`; `player_save.gd`
-  calls it "the Deck Maker dev tool". Unrelated to the wall — it surfaced while verifying the wall
-  editor in editor mode. Delete both files, or repoint the preloads; not touched because removing a
-  dev tool is an owner call.
-- 🔴 **The info card lays its text out before the zoom-out finishes**, so the text is sized against
-  the pre-move framing rather than what you end up looking at. Cause is an ordering choice I made
-  deliberately: `_apply_info_mode()` shows the card FIRST so the camera's reserve can use the
-  card's live height, which means the card pops to full size while the camera is still travelling.
-  Fix paths: (a) split MEASUREMENT from DISPLAY — measure the entry's height with the card still
-  hidden, reserve against that, and reveal it as the tween lands; (b) tween the card in over the
-  same clock as the zoom so the two arrive together; (c) re-run `_resize_to_content()` on the
-  camera's `finished`. (a) is the honest one — the reserve needs the height, not the visibility.
-- 🔴 **Card descriptions are unreachable in the deck / discard / rules viewers.** `Q134`=c and chart
-  J8 say every tooltip migrates to the info card; only `PlayArea` and the map were done.
-  `DeckViewer`/`ChoiceViewer` still draw their own (`choice_viewer.gd` sets
-  `card_info.text = ControlCard.describe_card(card)`), and publish nothing, so Info mode shows
-  nothing there. Fix path: the same shape `PlayArea` now uses — give each viewer an
-  `info_requested(entry)` signal, gate its own panel on a `_popups_allowed()` equivalent, and route
-  it to `Main._on_screen_info_hovered`. `CardsViewer.populate()` already takes an `on_inspect`
-  callback these viewers pass, so the hook exists; it needs pointing at `PlayArea.card_info()`.
-- 🔴 **The per-screen info card does not actually persist across a transition** (`GAP-023` round 5
-  claims it does — the mechanism landed, the behaviour did not). Suspects, in order: `Main` only
-  RESTORES a remembered entry and never shows a default, so a screen entered with Info on and
-  nothing stashed shows a blank card; `_info_entry_owner` is written from `_current_focus`, which
-  is still the SOURCE for the whole of a move, so an entry read mid-move may be stashed against the
-  wrong picture; and the tool rebuilds `wp.get_info()` on every `_apply_info_mode()`, which
-  overwrites what was remembered. Nothing drives *enter A → read a card → go to B → come back* and
-  looks at the result — write that case in `wall_editor_soak.gd` FIRST, then fix what it shows.
-- **Bind the info-card scroll stick** (`GAP-023`, answered): the stick with NO d-pad beside it,
-  since the stick+d-pad side is normal movement. Needs an InputMap action, wiring into
-  `InfoCard`'s `ScrollContainer`, and a real pad to verify. Mouse wheel already works.
-- **Possible split: popup = summary, info card = in-depth** (`GAP-023`, owner note). Both read
-  `ControlCard.describe_card()` today — one string, no drift. Splitting them means a second
-  authored description per card and is its own design question.
-- **Touch is undefined for Info mode** (`GAP-023`) — neither hover nor click is specified for a
-  finger on a card.
 - **Controller still untested by anything automated**: deadzones, analogue-stick ramps, and device
   hotplug mid-session. `wall_selection_repeat_delay`'s repeat is now real and covered by a synthetic
   action test, but no real stick has driven it.

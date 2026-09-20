@@ -13,9 +13,9 @@ create a parallel copy of an existing handoff. Update it in place.
 
 1. Read it, plus the `entry_docs` it names. Do not rely on conversation history — the file is the
    source of truth.
-2. Confirm the tree is actually green before trusting any `done` status: run the suite,
-   `<binary> --path solatro res://Tests/all_tests.tscn`, **windowed, no `--headless`** (~60 s,
-   self-quits with the failure count). Check the owner's Godot editor is closed first.
+2. Confirm the tree is actually green before trusting any `done` status: run the full suite through
+   `py solatro/Tools/run_tests.py`, **windowed, no `--headless`**. `running-godot-scenes.md` in
+   `.claude/memory/` carries the launch rules and timings. Check the owner's Godot editor is closed first.
 3. Summarize goal, what is done (with its evidence), what is in progress or blocked, what is
    next. That summary must stand on its own with zero prior context.
 4. Continue from the first `pending` task.

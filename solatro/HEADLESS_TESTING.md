@@ -33,6 +33,35 @@ STDERR (the engine splits teardown errors across both) and reports any error lin
 `godot.log`**, which is by definition one the in-run gate could not have seen. Its allowlist is
 PARSED OUT of `all_tests.gd` rather than restated, so the two gates cannot drift apart.
 
+### The two-tier loop — headless logic tier inside, full windowed run at the gate
+
+```bash
+py solatro/Tools/run_tests.py --logic     # inner loop: 32 renderer-independent suites, ~65 s
+py solatro/Tools/run_tests.py             # the gate: all 45, windowed, ~190 s
+```
+
+The tier is a `logic` GROUP on the suite nodes in `Tests/all_tests.tscn`, not a list in the runner —
+the scene is the registry, so putting a suite in the tier is one scene edit. `--logic` forwards the
+pattern `@logic` to it; any other `--filter PATTERN` is a case-insensitive substring of a suite's
+NODE name (`--filter Wall TestBoard`). Only `--logic` runs headless.
+
+⚠ **NEITHER THE TIER NOR A FILTER IS A VERDICT.** A subset voids the suite-count detector (§0a), so
+the banner reads `FILTERED n of <total> SUITES` and the wrapper refuses a clean verdict. The full
+unfiltered windowed run is the only green.
+
+Deliberately out of the tier, each measured headless:
+
+- `TestPixels` — renders real effects, and a dummy renderer cannot compile a shader, so it FAILS
+  rather than skips (owner ruling, below).
+- `TestWallInput` — hangs in HELD-STICK REPEAT: the dummy DisplayServer delivers no held input. It
+  takes LEAK CANARY and WALL PAUSE with it, since both await every sibling.
+- `TestLeakCanary` — its OBJECT_COUNT baseline does not return headless (+24 non-node objects,
+  identical figures on two runs). Green windowed.
+
+⚠ **A GREEN TIER RUN EXITS 2, NOT 0**, and so does a green FULL run: both end with the same two
+standing exit-time lines, `PagedAllocator ... WorkerThreadPool` and `15 resources still in use`,
+which the wrapper counts. Judge by the banner plus the error lines it names, never by `exit == 0`.
+
 ### ⚠ It also NAMES a stalled suite, and preserves that run's logs
 
 `--stall-timeout` (default 600 s, `0` disables) watches the test log's SIZE as a heartbeat —
@@ -52,6 +81,18 @@ to attribute it with.
 Every run reopens these logs with truncate, so the NEXT run destroys the stalled one's evidence — and
 a stall is both when that evidence matters most and when someone re-runs first.
 
+### ⚠ Never `await RenderingServer.frame_post_draw` bare — use `await_drawn_frames()`
+
+**The engine can keep running its main loop while it draws nothing**, and that signal then never
+fires again for anybody: `Main::iteration` skips the draw, and the signal with it, whenever no window
+can draw. Measured here — four suites hung inside that await while their siblings went on streaming
+checks for another ~34 s, and one hung suite costs the verdict of all 46.
+
+`TestSuite.await_drawn_frames(count)` waits on `Engine.get_frames_drawn()` instead, bounded by
+`DRAWN_FRAME_WATCHDOG_SECS`, and on timeout reports ONE named failure carrying
+`DisplayServer.window_can_draw()`. What stops the drawing is still open; `HANDOFF_poker_patience.md`
+holds what is known.
+
 **The longest LEGITIMATE silence in a full run is ~3 minutes** (the `SETTINGS RANGE` tail), so the
 600 s default leaves better than 3x margin. Do not lower it toward 300 without re-measuring.
 
@@ -68,9 +109,8 @@ over skipping them, even if that means all tests never run headless anymore"*, b
 pixel check looks exactly like a passing one in a log. Four real render bugs survived a green suite
 that way.
 
-Headless is still fine (and faster) for `--import`, for compile/parse checks, and when you only
-care about the renderer-independent suites — expect exit code 1 from PIXELS and read the rest of
-the log normally.
+Headless is still fine (and faster) for `--import`, for compile/parse checks, and for the
+renderer-independent suites — which is what `--logic` runs, PIXELS excluded.
 
 **Launch gotchas:**
 
@@ -122,6 +162,17 @@ this. A `Variant` typing error in one suite drops the count by one while the run
 pass. ⚠ **Re-derive the expected count, never trust a doc for it:**
 `grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn`.
 
+⚠ **A FILTERED RUN VOIDS THAT DETECTOR BY CONSTRUCTION** — it removes suites on purpose, so the
+count proves nothing about the ones it dropped. That is why `--filter` / `--logic` print
+`FILTERED n of <total>` at both ends of the log and the wrapper prints no clean verdict.
+
+⚠ **BOUNDING ALSO COVERS A SOLO SUITE SCENE**, which never exits at all: `finish()` only emits
+`suite_finished`, and `get_tree().quit()` lives in `all_tests.gd`. A lone suite also has NO
+engine-error gate and TRUNCATES `test_output_all.log` as it starts. From a shell use `--filter
+<NodeName>` instead — it keeps the quit, the exit code, the gate and the log discipline. The solo
+scene is an editor-side convenience; if the last run's transcript still matters, copy the log
+directory before pressing play.
+
 **There is no working pre-flight parse check.** Both obvious candidates are useless here:
 
 - `--check-only --script res://...` does NOT register autoloads, so every script mentioning
@@ -167,6 +218,15 @@ than asserting. Three scenes write reviewable panels, each to its own directory 
 py solatro/Tools/snapshot_diff.py save    # stash the panels you trust
 py solatro/Tools/snapshot_diff.py diff    # re-run the scenes first, then prove nothing moved
 ```
+
+Two more write panels the diff does not cover — read them by eye:
+
+```bash
+"$GODOT_CONSOLE" --path solatro res://Tests/Visual/sidebar_snapshot.tscn      # -> sidebar_snapshot/
+"$GODOT_CONSOLE" --path solatro res://Tests/Visual/wall_editor_snapshot.tscn  # -> wall_editor_snapshot/
+```
+
+All of them `quit()` themselves. Run from the REPO ROOT (`--path solatro` is relative).
 
 **For a change that must NOT alter the picture, the diff is the instrument and your eye is not.**
 The reverse also holds: for a change that is supposed to look different, the diff says nothing.
@@ -259,12 +319,18 @@ and then produces nothing, parked on the first GPU `flush()`
 ## 2. Stale global class cache ("Could not find type X" cascades)
 
 `.godot/global_script_class_cache.cfg` goes stale when class-bearing scripts change outside the
-editor (agent edits, re-copying the vendored addon). Symptoms range from silent suite skips to hard
-parse-error cascades ("Identifier X not declared"). Fix FIRST, before debugging code:
+editor (agent edits, adding a `class_name`, re-copying the vendored addon, a branch's first
+checkout on another machine). Symptoms range from silent suite skips to hundreds of `Could not find
+type X` failures. Fix FIRST, before trusting any baseline: delete `.godot/`, then run
 
     Godot --headless --path <project> --import
 
-(`--import` itself exits cleanly headless.)
+**twice** — the first pass still reports errors while it builds the cache. (`--import` itself exits
+cleanly headless.)
+
+⚠ **`--import` is a writer.** It rewrites tracked files: `Locale/localization.en.translation`,
+`design/effect-review/*.translation` and their `.csv.import`. Check `git status` after it and put
+them back, or they land in the next commit.
 
 ## 3. Headless window size is (0,0)
 
@@ -279,3 +345,50 @@ helper in `Tests/UI/test_interaction.gd`; reuse that pattern for any future synt
 - Suite check TOTALS vary run-to-run (data-dependent suites). Compare FAILURE SETS, not counts.
 - Worldgen scenes `addon_bake_test` / `addon_node_test` never call `quit()` (by design — they are
   also demos); kill them after the PASS lines.
+- `--filter` patterns are suite NODE-name substrings, case-insensitive: `WallRender`, `Pixels`
+  (`Tests/all_tests.tscn`); a pattern with a space matches nothing.
+- The full windowed gate on the sidebar work: `ALL 48 SUITES ... CHECKS PASSED`, at most 22
+  placeholder warnings (the gate is AT its cap; the next off-palette colour breaches it), 0
+  `SCRIPT ERROR` in `godot.log`, exit profile exactly `PagedAllocator ... WorkerThreadPool` +
+  `15 resources still in use` + the `135 ObjectDB` note (wrapper exit 2 on a green run).
+- Known flakes, each seen once or twice and never twice in a row — rerun once: a TEARDOWN crash
+  (0xC0000005) after a passing banner (wrapper exit 3); a map Deck-button click failure right after
+  a viewport resize; `PIXELS: card_scale 1.5`.
+- ⚠ **A windowed suite on Box B runs at ~660 fps.** A wait of N process frames is a frame-rate
+  dependent TIME: 30 frames measured 45 ms there, under the 50 ms a delta-integrated stick scroll
+  needs for its first whole pixel. Wait on the moved value or on summed delta, never on a count.
+- ⚠ **The git index carries `solatro/tools/run_tests.py` (lowercase) beside `solatro/Tools/`.**
+  On a case-insensitive checkout they are one directory; a checkout that materialises `tools/`
+  registers `WallEditor` at `res://tools/...` against the tests' `res://Tools/...` and WALL RENDER
+  fails with `hides a global script class`. Rename the directory through a temporary name, then
+  rebuild the class cache (§2).
+
+## 5. Suite ordering — the wait chain
+
+Most suites run concurrently. A few need near-exclusive access to global singletons
+(`CardEnvironment.CURRENT`, `Main.save_info`, `SettingsManager`) and wait for other suites at the top
+of their `_ready()` via `await_siblings_except()`.
+
+- **Waiting protects the suite that NEEDS the state; nothing protects it from a suite that needs
+  nothing and MUTATES it in passing.** Constructing production objects has production side effects:
+  one suite's fixture failed another mid-await, 2 runs in 3, in a suite the change never touched. If
+  a fixture constructs something real, ask what it writes on the way up and preserve/restore it.
+- **Waiting is a directed dependency.** If A waits for B, B must not wait for A — directly or
+  transitively — or both hang and the run never quits (the log tail just stops). Measured once, when
+  VISUAL LAYERS waited for INTERACTION while INTERACTION still waited for it.
+- The canonical linear order; each waiter excludes every suite AFTER it, plus itself:
+  `<engine/map suites: no wait>` → INTERACTION → UI PROPS → VISUAL LAYERS → GRID LAYOUT → GRID VIEW →
+  SIDEBAR → DRAG PLACE → SETTINGS RANGE → E2E RUN → LEAK CANARY → WALL PAUSE.
+- GRID LAYOUT is in the chain because it measures through `CardEnvironment.CURRENT` across awaits
+  (`PlayArea._own_grid_row_height` resolves its grid from `get_current_game()`): concurrently, another
+  suite took CURRENT and a two-deep row measured as a bare card height, 10 runs in 11.
+- WALL PAUSE is the permanent tail: its real `Wall._ready()` sets `get_tree().paused = true` and never
+  clears it (that persistence is what it tests), so nothing may run after it. It excludes nothing and
+  every suite before it excludes `"WALL PAUSE"` by name.
+- Adding a waiting suite: place it in the chain, pass the names of every suite AFTER it to
+  `await_siblings_except()`, and add its name to the excludes of every suite BEFORE it. Never let two
+  suites exclude-then-wait on each other.
+- **The shared `PlayerSettings` is live for every concurrent suite, and every setter emits
+  `settings_changed` even for an unchanged value** — a write from one suite restyles every live
+  `FxAttachment`, including a sibling's parked shot. `apply_test_speed()` therefore writes only when
+  the pacing differs; a suite that must change a knob mid-run restores it and accepts the emit.

@@ -33,12 +33,10 @@ func suite_name() -> String:
 func _ready() -> void:
 	# Runs before VISUAL LAYERS / E2E (they wait on this — shared CardEnvironment.CURRENT), so
 	# exclude them to avoid a deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
-	await await_siblings_except(["VISUAL LAYERS", "GRID LAYOUT", "GRID VIEW", "SETTINGS RANGE",
-			"E2E RUN", "LEAK CANARY", "WALL PAUSE"])
+	await await_siblings_except(["VISUAL LAYERS", "GRID LAYOUT", "GRID VIEW", "SIDEBAR",
+			"DRAG PLACE", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ UI PROPS TEST PASS ============")
 	backup_real_settings()
-	var prev_delay := SettingsManager.settings.base_delay
-	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	implementation_section("SLOT GEOMETRY")
 	await test_slot_geometry()
 	await test_a_board_wider_than_the_window_stays_reachable()
@@ -56,11 +54,9 @@ func _ready() -> void:
 	await test_reactions_drive_card_pose()
 	behavior_section("STATUS + CARD TEXT SURFACES")
 	await test_status_and_description_surface()
-	await test_focus_inspector_all_input_modes()
 	behavior_section("FULL VIEW SUBMIT (REAL GAMEVIEW SEAM)")
 	await test_game_view_scoring_pass_with_props()
 	await test_all_kinds_live_in_game_view()
-	SettingsManager.settings.base_delay = prev_delay
 	restore_real_settings()
 	finish()
 
@@ -996,51 +992,13 @@ func test_status_and_description_surface() -> void:
 	check(text.contains(card.suit.get_str()), "the card description names the suit", text)
 	await cleanup(g, pa)
 
-func test_focus_inspector_all_input_modes() -> void:
-	var g := make_board_game(2)
-	var pa := make_play_area()
-	await settle(pa)
-	var card := g.state.upper_zone[0].datas[0]
-	var control : Control = pa.data_ui.get(card)
-	control.grab_focus()   # keyboard/controller path
-	check(pa._focus_info != null and pa._focus_info.visible,
-			"keyboard/controller focus pops the card inspector panel")
-	check(pa._focus_info_label.text == ControlCard.describe_card(card),
-			"the inspector shows the focused card's full description")
-	# descriptions must NEVER interact with input: pure-display panel, no tooltip Window
-	check(pa._focus_info.mouse_filter == Control.MOUSE_FILTER_IGNORE
-			and pa._focus_info.focus_mode == Control.FOCUS_NONE,
-			"the inspector ignores the mouse and can never take focus (no click blocking)")
-	check(pa._focus_info.get_parent() == pa.overlay_layer,
-			"the inspector stays a permanent child of the overlay layer (scroll content) — never of a card control")
-	# the per-frame pin places it beside the anchor control (right of it, or flipped left)
-	await get_tree().process_frame
-	var panel_x := pa._focus_info.global_position.x
-	var right_x : float = control.global_position.x + control.size.x + pa.FOCUS_INFO_GAP
-	var left_x : float = control.global_position.x - pa._focus_info.size.x - pa.FOCUS_INFO_GAP
-	check(is_equal_approx(panel_x, right_x) or is_equal_approx(panel_x, left_x),
-			"the inspector is pinned beside its anchor control every frame",
-			"panel x %.1f vs %.1f / %.1f" % [panel_x, right_x, left_x])
-	check(control.tooltip_text.is_empty(),
-			"board controls carry NO native tooltip (its popup window blocked clicks)")
-	# the mouse path shows the same panel (hover grabs focus), and hides on hover exit
-	pa.moused_hovered_control = control
-	pa.on_control_focus_entered(control)
-	check(pa._focus_info.visible, "mouse-hover focus pops the same inspector")
-	pa.moused_hovered_control = null
-	pa.hide_focus_info()   # what the control's mouse_exited handler does
-	check(not pa._focus_info.visible, "leaving the hover hides it")
-	pa.on_control_focus_entered(control)
-	check(pa._focus_info.visible, "re-focusing pops it again")
-	pa.ungrab_cards()   # the ui_cancel path
-	check(not pa._focus_info.visible, "ui_cancel/ungrab dismisses the inspector")
-	await cleanup(g, pa)
-
 # ==============================================================================
 # FULL VIEW SCORING PASS — a real GameView (real game_view.begin_prop_tick seam), real
 # starter deck (every card suited -> scored melds spawn props), driven like E2E's
 # win scenario but WITH the view attached. The scoring pass runs under a watchdog: a
 # prop-tick sync regression fails the check instead of hanging the suite.
+# The deck is FROZEN (TestDecks.seeded_deck, never Decks/deck.gd) and the seed is chosen so the
+# deal scores prop-spawning melds.
 # ⚠ THE PASS IS DRIVEN BY A PLACEMENT, NOT BY A SUBMIT. Scoring is no longer an act that
 # banks a performed board -- a line scores the instant a placement completes it, so the
 # fifth card into row 0 is what makes the props fly.
@@ -1049,15 +1007,13 @@ func test_game_view_scoring_pass_with_props() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
-	# FROZEN test deck, never Decks/deck.gd: this seeded run's observations (the 424242 deal
-	# scores knife melds) replay against TestDecks.seeded_deck's exact composition.
 	var src_cards := TestDecks.seeded_deck()
 	var src_rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(src_cards, src_rules)
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
-	seed(424242)
+	seed(424245)
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
 	var picture_vp := TestGameViewHost.host(self, view)
 	await get_tree().process_frame
@@ -1076,9 +1032,6 @@ func test_game_view_scoring_pass_with_props() -> void:
 			break
 	check(focusable != null, "the dealt board has a focusable card control")
 	if focusable: focusable.grab_focus()
-	check(pa._focus_info != null and pa._focus_info.visible
-			and not pa._focus_info_label.text.is_empty(),
-			"focusing a dealt board card pops its inspector text in the real view")
 	# fire the submit WITHOUT awaiting it, then poll EVERY FRAME: watchdog + prop high-water
 	# mark + the live-seam guards (owner reports 2026-07-13): every hoop/knife must hold its
 	# anchor row's y through the REAL submit — score labels re-lay the board every banked pass,

@@ -30,9 +30,8 @@ must not also try to scroll itself, or the two fight.
 |---|---|
 | `Levels/main.gd` (`Main`) | **The orchestrator.** Focus, transitions, the `FocusStack`, every wall↔screen connection. Nothing else decides what a wall intent *means*. |
 | `UI/Wall/wall.gd` (`Wall`) | The camera, the pictures, input reading, selection. Announces player INTENT as signals; never resolves it. |
-| `UI/Wall/wall_picture.gd` | One picture: its SubViewport, frame, shadow, focus/unfocus, filter, `get_info()`. |
-| `UI/Wall/wall_overlay.gd` | Back / Forward / Wall / Info controls, and the touch-target clamp. |
-| `UI/Wall/info_card.gd` | The ONE info card, on the overlay. Anchored to the window, not to any screen. |
+| `UI/Wall/wall_picture.gd` | One picture: its SubViewport, frame, shadow, focus/unfocus, filter. |
+| `UI/Wall/wall_overlay.gd` | Back / Forward / Wall controls, and touch-target sizing (no clamp). |
 | `Scripts/Wall/wall_packer.gd` | Pure layout. No singletons, no nodes — keep it that way (§1.3). |
 | `Scripts/Wall/wall_transition.gd` | The camera tween and its clock. Pure `sample_at()` core plus a thin `_apply()`. |
 | `Scripts/Wall/focus_stack.gd` | Back/Forward history, ids only. Never positions. |
@@ -50,11 +49,13 @@ existing; if you delete one, the feature silently stops existing and its unit te
 | `Main._on_window_resized()` | `get_viewport().size_changed`, connected in `Main._ready()` | as above — nothing else listens |
 | `Wall.clamp_pan()` | `Wall.pan_by()`, from the drag branch of `_unhandled_input()` | free pan (G10) does not exist |
 | `WallPicture.update_filter()` | `Wall._process()` | the focused picture samples NEAREST through every zoom (S13 dead) |
-| `WallInput.touch_target_px()` | `WallOverlay._apply_touch_targets()` | GAP-004's mandatory clamp never runs |
-| `WallPicture.get_info()` | `Main._on_picture_hovered()` | info mode on the wall describes nothing |
+| `WallInput.touch_target_px()` | `WallOverlay._apply_touch_targets()` | every overlay control stays at whatever size the scene authored, and the touch-target size applies to nothing |
 | `Wall.back_requested` etc. | connected in `Main._ready()` | the key/button does nothing at all |
 | `WallTransition.input_unlocked` | connected to `wall.unlock_input` in `Main._focus_picture()` | input stays locked until landing, defeating C13 |
-| `Map.info_hovered` | connected in `Main._ready()` | the map's hover reaches no card |
+| `Map.info_hovered` | connected in `Main._ready()` | the map's hover reaches no container |
+| `HudContainer.connect_for_screen()` | every HUD-button and inset connection in `GameView`, `Map`, `Menu` | a hand-wired connection is never dropped when its screen leaves the tree, and the next show's buttons and resize call into a freed screen |
+| `HudContainer.host_viewer()` | `GameView._open_deck_viewer()`, `Map` (deck and booster viewers), `Menu` via the picker's `viewer_opened` | the viewer publishes nothing, sits under the container, never re-fits, and its close never returns to the lock |
+| `MapNamePopup._place_above_node()` | `MapNamePopup._process()`, enabled by `show_above()`, against `WorldMapController.node_screen_rect` | the name floats where the hover left it while the camera travels, pans, zooms or resizes |
 | `Wall.apply_layout()` | `Main._build_pictures()` **and** `_repack_wall()`/`_on_window_resized()` | `_placement_order` stays empty, so all nine `wall_jump_N` keys are inert until something else happens to re-pack |
 
 **Every overlay control is `FOCUS_NONE`.** A `Control` holding GUI focus eats `ui_up/down/left/right`
@@ -83,10 +84,6 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
 - **`focused_scale()` applies its margin only when the aspects DIFFER.** That conditionality is what
   makes G10's "panning is off when everything fits" an exact zero rather than a few per cent of
   slack. Do not make it unconditional.
-- **Constructing a `Main` CLEARS the shared `wall_info_mode`** (C3, its own startup rule). Every
-  concurrently-running suite sees that, so a test that builds one while another suite is mid-await
-  on that flag will fail the OTHER suite. Preserve and restore it around any `Main` a suite builds
-  for some unrelated reason.
 - **A live `Main` puts a real `Map` in the tree, and `Map` is a `CardEnvironment`,** so
   `CardEnvironment.CURRENT` is non-null for as long as it lives. Any test holding one is visible to
   every concurrently-running suite.
@@ -98,9 +95,12 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   the camera's** — props and animations are authored to leave the board's edges, and a clip there
   culls them. So a grid that is off-window is off-CAMERA, not culled, and a card flying between
   grids is never cut.
-- ⚠ **The HUD follows the camera, and that is a decision, not an accident.** `GameView`
-  publishes the HUD's width to `PlayArea.board_inset_left` and the board centres in what is
-  LEFT of the screen, not on the screen. **The board's WINDOW is what moves, not the content** —
+- ⚠ **The HUD follows the camera, and that is a decision, not an accident.** `HudContainer` is in
+  window px; `GameView._publish_board_inset` converts it with `WallPicture.inset_beside` — the
+  container's px over `WallPicture.cover_scale` — into `PlayArea.board_inset_left`, or
+  `board_inset_top` in the top case (`HudContainer.container_is_top`: the space left beside a side
+  container is taller than wide). The board centres in what is LEFT of the screen, not on the
+  screen. **The board's WINDOW is what moves, not the content** —
   insetting the scroller's own left edge makes every centring the board already does (the focused
   aim, the resting position, the removal re-centre) land in the post-HUD space for free.
   Offsetting the content instead leaves each of those to rediscover the inset separately.
@@ -112,7 +112,7 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
 - **The one-move flag goes on the HANDLER that mutates, not only on the mover.** `FocusStack.back()`
   and `forward()` change history BEFORE `_focus_picture()`/`_go_to_wall_view()` reach their own
   `if _move_in_flight: return`, so a second press popped an entry and then refused to navigate to
-  it. `Q56`=b means IGNORED, not half-applied. The Info toggle is a move too and holds the same flag.
+  it. `Q56`=b means IGNORED, not half-applied.
 - **In wall view the stack's top is still the picture you LEFT** (`Q66`=b: wall view is never an
   entry), so `_current_focus` and `FocusStack` disagree there by construction. Back reads
   `current()`, not `back()`, or it steps past that picture and files it under Forward
@@ -123,7 +123,7 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   child obeys its host's process mode, which is what makes a frozen screen's pacing freeze and a
   live screen's run (D6/`Q75`=b).
 - **A move keeps the settings it was REQUESTED with.** `sample_at()` branches on
-  `wall_reduced_motion`/`wall_info_mode` and the tween callback re-reads them every frame, so
+  `wall_reduced_motion` and the tween callback re-reads it every frame, so
   `request()` holds a `duplicate()`. Flipping a knob mid-move otherwise switches the camera's whole
   model underneath the running tween.
 - **`%Screen` and `%Shadow` draw `viewport.size * scale`, not `design_size * scale`.** Their texture
@@ -137,10 +137,12 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   advances there, and `await tween.finished` never returns: that is how a total soft-lock on the
   first Wall press shipped with a green suite. Any tween driving the wall goes on `%Camera2D`
   (PROCESS_MODE_ALWAYS), never on `Main`, which has no `process_mode`.
-- ⚠ **A test that unpauses cannot see any of that.** Most Wall-building suites do set
-  `get_tree().paused = false` right after `add_child()`, and must — they run alongside ~38 others
-  that need frames. But that workaround is a blind spot, not a rule: it is why the soft-lock,
-  `Pacing.wait()` and reduced motion's resting zoom all stayed invisible. **Anything asserting the
+- ⚠ **A test that unpauses cannot see any of that** — it is why the soft-lock, `Pacing.wait()` and
+  reduced motion's resting zoom all stayed invisible. Main-hosted fixtures keep the wall's pause by
+  mounting through `TestMainHost.mount`/`unmount`, which record `paused` before the mount and write
+  it back at teardown, so a later suite with no wall does not freeze. WALL FOCUS, WALL RENDER and
+  WALL INPUT still set `get_tree().paused = false`: they run beside the ordering chain, and a
+  leftover pause hangs them. **Anything asserting the
   PAUSE MODEL itself belongs in `TestWallPause`**, the one suite that runs dead last and alone and
   leaves the tree paused — and it must drive each move without `await`, polling `process_frame`
   under a bounded escape, so a move that never returns fails a check instead of hanging the run
@@ -155,39 +157,31 @@ Inspector already gives arrays, undo and nested resources.
 | Panel | What it holds |
 |---|---|
 | `layout` | `gap_px`, the ellipse clamps, `view_margin`, `home_id`, and every `PictureEntry`: `slot` (placement ORDER — the packer resolves the angles), `size_multiplier`, `design_size`, `frame_px`, `frame_colour`, `keep_aspect`, `music`, `background_texture`. |
-| `preview_settings` | A standalone `PlayerSettings`. Transition duration and phase fractions, easing curves, overfill margin, shadow offset/opacity, info-card size, reveal scale, touch targets. |
+| `preview_settings` | A standalone `PlayerSettings`. Transition duration and phase fractions, easing curves, overfill margin, shadow offset/opacity, reveal scale, touch targets. |
 | `preview_aspect` | 0.5–4.0, re-packs live. The clamps only do something at the extremes. |
 | `unlocked_ids` | Seeded with EVERY id. Delete some to simulate a partial unlock. |
 | Transition preview | `preview_source_id`/`preview_dest_id` are seeded with the longest move on the wall; `play_transition` runs the real `WallTransition`. |
 | Focus | `preview_focus_id` focuses that picture through the real `WallPicture.focus()` and poses the camera at its resting pose — the state a player is in most of the time, and the only place a too-small `wall_overfill_margin` shows as a sliver of frame at a window edge. `&""` is wall view. `preview_selected_id` drives the real `set_selected()`, so `wall_selected_lift` is visible. `preview_wall_view_resolution` renders unfocused pictures at their wall-view footprint, as the game does. |
 | Gestures | `preview_pinch` routes real touch through the real `WallInput.PinchTracker`, so `wall_pinch_threshold_px` is tunable against actual fingers. Needs a touch device or `emulate_mouse_from_touch` off; `gesture_log` shows what the tracker saw. |
-| Info mode | PER PICTURE — each screen remembers whether it is on, and the card it was showing. `preview_info_mode` ANIMATES the camera to `preview_info_id`'s info pose (bottom frame revealed, the other three edges covered) and shows the real `InfoCard`. The ONLY way to reach `wall_info_mode` from an Inspector — it is not `@export`ed on `PlayerSettings`, being session state that must never persist. With it on, `play_transition` previews the INFO transition: a pure travel at constant zoom. |
-| Overlay | The REAL overlay from the hosted `wall.tscn`, with its info card. Back / Forward / Wall / Info are **pressable** and drive real moves through a real `FocusStack`, so the overlay and a running transition contend the way they do in the game. `_apply_touch_targets()` runs, so the touch-target knobs are live. |
+| Overlay | The REAL overlay from the hosted `wall.tscn`. Back / Forward / Wall are **pressable** and drive real moves through a real `FocusStack`, so the overlay and a running transition contend the way they do in the game. `_apply_touch_targets()` runs, so the touch-target knob is live. |
 | Save | `save_now` writes `Assets/Wall/layout_default.tres` — the resource the game boots from. `revert_now` reloads it. `preview_settings` is NOT saved. |
 
 `save_now` / `revert_now` / `play_transition` are booleans acting as BUTTONS: they run on the rising
 edge and reset themselves.
 
-⚠ **PREVIEW vs F6 differ, deliberately.** In the Inspector the tool draws empty frames, builds no
-`InfoCard`, and the camera does not follow — the editor's 2D view is the user's own; `menu.tscn` /
-`map.tscn` are not safe to instantiate there; and `InfoCard` is not `@tool`, so it would load as a
-placeholder and throw on any call. **Run it (F6) for real screens, the info card, and transitions.**
-Geometry, framing, packing and the info camera POSE are live in both.
-
-⚠ **Info mode ANIMATES, over `wall_transition_delay * wall_info_zoom_scale`.** It is not a snap in
-the game and must not be one here — a tool whose timing differs from the product cannot be used to
-judge timing. `wall_info_zoom_scale` defaults to 1.0, i.e. exactly an ordinary wall move; drop it
-below 1.0 for a snappier reveal, since the info pose only shifts the camera a little way down.
+⚠ **PREVIEW vs F6 differ, deliberately.** In the Inspector the tool draws empty frames and the
+camera does not follow — the editor's 2D view is the user's own, and `menu.tscn` / `map.tscn` are
+not safe to instantiate there. **Run it (F6) for real screens and transitions.** Geometry, framing
+and packing are live in both.
 
 `Tests/Visual/wall_editor_soak.tscn` drives the tool through aspects 0.5–4.0, `gap_px` 0 and 200,
-overfill 1.0 and 1.25, one/two/all pictures, reduced motion, the info animation, and every overlay
-button including a press landing mid-move — 55 checks plus a screenshot per case. Run it after
-touching the tool.
+overfill 1.0 and 1.25, one/two/all pictures, reduced motion, and every overlay button including a
+press landing mid-move — a screenshot per case. Run it after touching the tool.
 
 ⚠ **RUN (F6), THE TOOL HOSTS THE REAL `wall.tscn`** — surface, camera, pictures, viewports,
-overlay, info card and both music players. Not a stand-in and not a re-derivation: the wall's own
-input runs, so arrow selection with its held repeat, click-to-enter, `wall_jump_N`, pinch and the
-Back/Forward/Wall/Info actions all reach the preview, and every knob goes through the same code the
+overlay, HUD container and both music players. Not a stand-in and not a re-derivation: the wall's
+own input runs, so arrow selection with its held repeat, click-to-enter, `wall_jump_N`, pinch and
+the Back/Forward/Wall actions all reach the preview, and every knob goes through the same code the
 game runs it through. **`knobs_this_preview_does_not_drive` is empty when run.**
 
 ⚠ **The global pause is KEPT.** `Wall._ready()` pauses the whole tree and the tool leaves it
@@ -208,18 +202,6 @@ scenes that assert on pixels (`test_pixels`, `test_outline`); everything else un
 is a hand-run diagnostic that renders, screenshots and prints. That is why the wall-editor runs look
 different from a suite run — they are a different kind of instrument.
 
-⚠ **Info mode covers NOTHING.** The camera zooms out — it never pans, which would crop the top of
-the screen — far enough that the whole screen clears the info card, bar `wall_info_card_overlap`.
-The reserve is the card's LIVE height, not `wall_info_card_max_height`; that cap is only the
-fallback for callers with no card on screen. Every mover aims at `WallPicture.resting_state()`,
-which is info-aware, so a move made in Info mode LANDS in the info pose instead of being cut there.
-
-⚠ **A visual inside the info card is a real game node made inert.** `InfoCard._make_inert()` strips
-`focus_mode` and `mouse_filter` recursively as the card takes ownership, so a preview cannot take
-focus or swallow a click. It cannot mutate what it shows either: `CardVisual` never writes to its
-`CardData`. Keep that guarantee at the ONE site — a per-builder rule would have to be remembered
-every time a new `get_info()` is written.
-
 ⚠ **Wall view is framed with `layout.view_margin`, exactly as `Wall.wall_view_zoom()` frames it —
 NOT with `wall_overfill_margin`, which is a picture's own overfill when focused.** Using the picture
 knob here framed the preview ~4% tighter than the game and made `view_margin` do nothing, which
@@ -238,11 +220,10 @@ id to the contract it produced, for anyone reading the review documents.
 
 | Id | The contract it pins |
 |---|---|
-| A1–A4 | The info card lives on the wall; the Info button has a consumer; `PinchTracker` is wired; `NAMES.md`'s `Wall` signals are declared and emitted. |
+| A3–A4 | `PinchTracker` is wired; `NAMES.md`'s `Wall` signals are declared and emitted. |
 | B1–B2 | `WallPacker` rejects intersection independently of `gap_px`; the selected lift is a knob, not a literal. |
 | C1 | Alt-tab re-renders every FROZEN picture — never the focused one, which must stay `UPDATE_ALWAYS`. |
 | C2 | Reduced motion cross-fades IN PLACE (no camera move at all, GAP-019=c) and still ARRIVES at the destination — by a cut on landing, not by travel. |
-| C3 | Info mode never survives a quit. |
 | C4 | `wall_jump_N` enters through the same path a click does, in placement order. |
 | C5 | One move at a time (`Q56`=b); input is inert mid-move and unlocks early (I12/C13). |
 | C6 | The game loads the layout the tool edits. |

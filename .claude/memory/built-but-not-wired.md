@@ -14,9 +14,8 @@ editing a resource the game never loaded — every one with green tests.
 to the done-when it is handed. Nothing says "and something calls it".
 
 **Fixes:**
-- Every step brief names the **CALL SITE**: where is this invoked from, and what breaks if it is
-  deleted? Require a test that fails when the wiring is removed.
-- Never accept `done` on a component whose consumer does not exist.
+- The step brief names the **CALL SITE** and a test that fails when the wiring is removed, and
+  `done` is refused on a component with no consumer — `/plan-run` "Writing a step brief" item 4.
 - Audit registries (identifier lists, signal tables, settings keys) **directly against the
   implementation**, not against the test plan — a test plan only covers what someone thought to row.
   See [[design-answers-need-a-claimant]] for the design-side version of the same check.
