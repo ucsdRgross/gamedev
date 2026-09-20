@@ -972,3 +972,15 @@
   should be same value", and on which value: "ok 1.45".
 - Playtest follow-up ruling on the title's plural ("5 of Fires", and the suit-only title) -
   owner: "plural form, same as hearts spades clubs diamonds".
+- Playtest follow-up rulings after the one-glow step. The paper still going flat white at 1.45 -
+  owner: "previous highlights looked fine, so use same value for that". A cell both legal and
+  focused drawing at the glow squared - owner: "have card outer outline change/glow when focused,
+  legal glows the inner art, not the outlines. matching marks get glow outline currently." A
+  dropped card keeping its focus glow and a click-made description lock - owner: "dropped/placed
+  card should cancel its locked description and focus glow, since player should have finished
+  reading it before they took action with the card."
+- Playtest follow-up rulings on the overlay sidebar. The menu's deck picker publishes card
+  descriptions into the container - owner: "ii hidden while nothing to show" (on the menu the
+  container shows only while it has a description). The Back/Forward/Wall band floating over the
+  picture while the sidebar is slid out - owner: "back forward wall not being part of sidebar is
+  fine."
