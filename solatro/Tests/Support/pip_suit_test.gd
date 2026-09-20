@@ -10,6 +10,7 @@ var id : int = 0
 func get_suit_index() -> int: return id % 4          # art slot only; never rendered in tests
 func palette_role() -> int: return PaletteDB.ROLES.suit_hoop   # never drawn; any valid role will do
 func get_str() -> String: return "TestSuit%d" % id   # distinct id => distinct suit
+func get_plural_str() -> String: return "TestSuit%ds" % id
 func get_description() -> String: return "test suit"
 func spawn_props() -> Array[PropSpawner]: return []  # inert in scoring tests
 

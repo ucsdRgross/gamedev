@@ -41,10 +41,10 @@ static func add_child_control_card(parent:Node,connected_data:CardData, context:
 ## The description's large font: the title's size, which every effect NAME shares.
 const NAME_FONT_SIZE := 20
 
-## The card's title -- "<Rank> of <Suit>", or whichever of the two a face card carries on its own.
+## The card's title -- "<Rank> of <Suits>", or whichever of the two a face card carries on its own.
 static func card_title(data: CardData) -> String:
 	if data.rank and data.suit:
-		return TRANSLATION.find('CARD_TITLE') % [data.rank.get_str(), data.suit.get_str()]
+		return TRANSLATION.find('CARD_TITLE') % [data.rank.get_str(), data.suit.get_plural_str()]
 	if data.rank: return data.rank.get_str()
 	if data.suit: return data.suit.get_str()
 	return ""

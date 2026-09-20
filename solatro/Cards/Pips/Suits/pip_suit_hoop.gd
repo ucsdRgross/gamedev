@@ -8,6 +8,7 @@ const HOOP_TICKS_PER_SLOT := 2
 func get_suit_index() -> int: return 0
 func palette_role() -> int: return PaletteDB.ROLES.suit_hoop
 func get_str() -> String: return TRANSLATION.find('SUIT_HOOP')
+func get_plural_str() -> String: return TRANSLATION.find('SUIT_HOOP_PLURAL')
 func get_description() -> String: return TRANSLATION.find('SUIT_HOOP_DESCRIPTION')
 
 #Hoops burst all at once from the card and cross the whole row, on a deterministic side, scoring

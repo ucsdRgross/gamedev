@@ -66,6 +66,7 @@ func _ready() -> void:
 	behavior_section("S5: A HIGHLIGHT PUBLISHES AND THE CONTAINER SHOWS")
 	await test_a_highlight_opens_the_description()
 	await test_the_description_titles_a_card_and_sizes_its_effect_names()
+	await test_the_title_names_the_suit_in_the_plural()
 	await test_a_hovered_cards_description_draws_inside_the_container()
 	await test_the_containers_content_starts_one_inset_inside_its_left_edge()
 	await test_the_title_leaves_the_exit_xs_column()
@@ -1526,12 +1527,12 @@ func _preview_card(node: Node) -> ControlCard:
 		if found: return found
 	return null
 
-## R10: the title is the card's own name, "<Rank> of <Suit>", and every effect is a block whose NAME is written larger than the description under it.
+## The title is the card's own name, "<Rank> of <Suits>", and every effect is a block whose NAME is written larger than the description under it.
 func test_the_description_titles_a_card_and_sizes_its_effect_names() -> void:
 	await _start_game_fixture()
 	var title : Label = _panel.get_node(^"%Title")
 	var body : RichTextLabel = _panel.get_node(^"%Body")
-	var knife := PipSuitKnife.new().get_str()
+	var knife := PipSuitKnife.new().get_plural_str()
 	var numeral := CardData.new().with_suit(PipSuitKnife.new())
 	numeral.rank = PipRankNumeral.new().with_value(5)
 	check(ControlCard.card_title(numeral) == "5 of %s" % knife,
@@ -1556,6 +1557,46 @@ func test_the_description_titles_a_card_and_sizes_its_effect_names() -> void:
 	check(body.get_theme_font_size(&"normal_font_size") != ControlCard.NAME_FONT_SIZE,
 			"...in a font size of its own, smaller than the name's (R10)",
 			"%d vs %d" % [body.get_theme_font_size(&"normal_font_size"), ControlCard.NAME_FONT_SIZE])
+	await _end_main_fixture()
+
+## The title names the suit in the plural ("King of Knives") for every suit, while the suit's own block and every other reader keep the singular.
+func test_the_title_names_the_suit_in_the_plural() -> void:
+	await _start_game_fixture()
+	var title : Label = _panel.get_node(^"%Title")
+	var body : RichTextLabel = _panel.get_node(^"%Body")
+	var suits : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire,
+			PipSuitFirework]
+	var plural_keys : Array[StringName] = [&'SUIT_HOOP_PLURAL', &'SUIT_KNIFE_PLURAL',
+			&'SUIT_BALL_PLURAL', &'SUIT_FIRE_PLURAL', &'SUIT_FIREWORK_PLURAL']
+	var card_px := CardVisual.preview_window_px(_play_area.picture_to_window_scale)
+	for i : int in suits.size():
+		var suit_script : GDScript = suits[i]
+		var suit : PipSuit = suit_script.new()
+		var singular : String = suit.get_str()
+		var plural : String = TRANSLATION.find(plural_keys[i])
+		var numeral : CardData = CardData.new().with_suit(suit)
+		numeral.rank = PipRankNumeral.new().with_value(5)
+		_container.show_description(PlayArea.card_info(numeral, card_px))
+		await get_tree().process_frame
+		check(title.text == "5 of %s" % plural,
+				"the published title of a %s numeral card names the suit in the plural"
+						% singular, title.text)
+		check(not title.text.contains("SUIT_"),
+				"...and no %s title falls back to a raw localisation key" % singular,
+				title.text)
+		check(body.text.contains("[font_size=%d]%s[/font_size]"
+						% [ControlCard.NAME_FONT_SIZE, singular]),
+				"...while the %s block under it stays singular" % singular, body.text)
+		check(str(numeral).begins_with(singular + " "),
+				"...and CardData's own string keeps the %s singular" % singular,
+				str(numeral))
+		var face_suit : PipSuit = suit_script.new()
+		var face : CardData = CardData.new().with_suit(face_suit)
+		face.rank = PipRankNumeral.new().with_value(13)
+		_container.show_description(PlayArea.card_info(face, card_px))
+		await get_tree().process_frame
+		check(title.text == "%s of %s" % [TRANSLATION.find('RANK_KING'), plural],
+				"...and a %s court card's published title too" % singular, title.text)
 	await _end_main_fixture()
 
 ## 1.2/B1/B2: a highlight -- key/pad focus or a real mouse hover -- swaps the container to that card's description.

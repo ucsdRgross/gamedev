@@ -946,9 +946,10 @@
 - Playtest ruling, same exclusion for the focus glow: brightness lands on the card back alone, on
   a held or focused card as on a legal cell; ink keeps its palette colour.
 - Playtest ruling, overturns `GAP-004`=b: one preview size on every surface, the deck viewer's.
-- Playtest ruling, extends `Q33`=c: the title is "<Rank> of <Suit>" (a face card by its name);
-  below it one block per skill, stamp, status and type, the effect's name in the large font and
-  its description in the small one.
+- Playtest ruling, extends `Q33`=c: the title is "<Rank> of <Suits>" (a face card by its name),
+  the suit named in the PLURAL there and in the singular everywhere else; below it one block per
+  suit, skill, stamp, status and type, the effect's name in the large font and its description in
+  the small one.
 - Playtest ruling, new, overturns the viewer's click-takes-the-pack and K4's accept-enters-a-node.
   Owner: "click selects; a take button confirms. choosing next path on map should always require
   pressing dedicated button press in sidebar to choose, so that player can click on nodes to

@@ -28,6 +28,12 @@ const ART_TEXTURE : Texture2D = preload("res://Assets/suit_art.png")
 const ART_TEXTURE_H_FRAMES : int = 13
 const ART_TEXTURE_V_FRAMES : int = 13
 
+#Only a card's title reads the plural ("King of Knives"); every other surface, the suit's own
+#description block included, names the suit in the singular get_str.
+
+## The suit's name in the plural.
+@abstract func get_plural_str() -> String
+
 ## 0..4 — art/palette slot ONLY, never orderable.
 @abstract func get_suit_index() -> int
 #For the polygons that are RECOLOURED, the rank pips and card art, both drawn as single-colour

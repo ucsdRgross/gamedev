@@ -105,6 +105,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `GameView` | `func _on_outcome_undo_pressed() -> void` | The outcome row's Undo: the shared `_on_undo_pressed`, then a board rest of the picture viewport's focus, which the HUD's Undo (a root-viewport press) must not do (J13, `GAP-009`=b) |
 | `TestGridFixtures` | `static func lit_cell_count(...) -> int` | Test support: the cells whose face is DRAWN at `legal_cell_glow` (focused or not) — the one counter `TestSidebar`, `TestDragPlace` and the snapshot share |
 | `TestGridFixtures` | `static func brightness_of(poly: Polygon2D) -> float` | Test support: the `u_brighten` one card polygon is drawn at; an unset uniform reads back as the shader's 1.0 |
+| `PipSuit` | `func get_plural_str() -> String` | The suit's name in the plural, read by the card title alone ("King of Knives"); every other surface, the suit's own description block included, names it through `get_str()` |
 | `CardOutline` | `static func set_brightness(poly: Polygon2D, brightness: float) -> void` | The per-element highlight channel: an equal-channel multiplier on this polygon's drawn colour, 1.0 unlit |
 | `CardVisual` | `var on_drop_map : bool` | This card's cell is one the held card may land in; with `focused`, the two marks `_apply_marks` brightens the face by |
 | `WorldMapController` | `static func node_screen_rect(node: WorldGraphNode) -> Rect2` | A map node's marker rect in the map viewport's coordinates |

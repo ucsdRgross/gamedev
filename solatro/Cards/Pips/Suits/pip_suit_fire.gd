@@ -5,6 +5,7 @@ extends PipSuit
 func get_suit_index() -> int: return 3
 func palette_role() -> int: return PaletteDB.ROLES.suit_fire
 func get_str() -> String: return TRANSLATION.find('SUIT_FIRE')
+func get_plural_str() -> String: return TRANSLATION.find('SUIT_FIRE_PLURAL')
 func get_description() -> String: return TRANSLATION.find('SUIT_FIRE_DESCRIPTION')
 
 #Fire is ballistic like Ball, but its mancala eligibility skips talents AND other Fire cards, and

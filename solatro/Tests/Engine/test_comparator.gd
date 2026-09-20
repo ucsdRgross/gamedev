@@ -38,6 +38,7 @@ class WeirdSuit extends PipSuit:
 # never drawn
 	func palette_role() -> int: return PaletteDB.ROLES.suit_hoop
 	func get_str() -> String: return "Weird%d" % id
+	func get_plural_str() -> String: return "Weird%ds" % id
 	func get_description() -> String: return "?"
 	func spawn_props() -> Array: return []
 	static func with_id(i: int) -> WeirdSuit:
