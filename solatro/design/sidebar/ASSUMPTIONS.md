@@ -943,6 +943,8 @@
 - Playtest ruling, narrows `GAP-005`: the legal cell's zone-card BACK brightens toward white, as
   the focus glow lifts paper; a mark's rank and suit pips are excluded from that modulate. No
   colour cast.
+- Playtest ruling, same exclusion for the focus glow: brightness lands on the card back alone, on
+  a held or focused card as on a legal cell; ink keeps its palette colour.
 - Playtest ruling, overturns `GAP-004`=b: one preview size on every surface, the deck viewer's.
 - Playtest ruling, extends `Q33`=c: the title is "<Rank> of <Suit>" (a face card by its name);
   below it one block per skill, stamp, status and type, the effect's name in the large font and
