@@ -351,7 +351,8 @@ func _ball_rotation() -> Array[Case]:
 ## A host's modulate reaches the effects it carries, not just its own art.
 func _focus_highlight() -> Array[Case]:
 	var out : Array[Case] = []
-	var highlight := Color(CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW)
+	var lift : float = PlayArea.settings().highlight_glow
+	var highlight := Color(lift, lift, lift)
 	for lit : bool in [false, true]:
 		var fire := _card_case("fire, %s" % ("FOCUSED" if lit else "plain"),
 				[FxFire.request(&"fire", 6, StatusBurning.CARD_FIRE_STYLE)] as Array[FxRequest])

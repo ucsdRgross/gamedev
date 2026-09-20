@@ -372,11 +372,13 @@ history stored in forward orientation).
   ends it.
 - **Nothing is held until the player acts.** A CLICK on a card lifts it, held and raised in its own
   slot, not following. A DRAG carries it while the button is down. The board picks nothing up for
-  the player: not at the deal, not after a placement, not on undo or resume. `armed_slot()` is a
-  state query — the leftmost Entrance slot holding a card — and nothing stores a selection.
+  the player: not at the deal, not after a placement, not on undo or resume, and nothing stores a
+  selection.
 - **Click versus drag** is decided at the RELEASE: travel past `card_drag_threshold` × the pressed
   card's width as drawn at the board's zoom is a drag. A drag places only when its card is in
   `selected_cards`; one from a card no rule picked up places nothing (`_consume_as_card_release`).
+  A release that places nothing DROPS the card: nothing under the pointer is `ungrab_cards` in
+  `_release_places`, a cell the board refuses is the same call in `GameView._on_card_dropped`.
 - **Tap** is a double press inside `card_tap_window_ms`, paired by the board itself (Godot never
   marks a double tap on a Windows touchscreen). `_close_a_pair` is the one closing site: a closed
   pair, tapped or refused, eats its own release. A tap after a placement is refused — the committed

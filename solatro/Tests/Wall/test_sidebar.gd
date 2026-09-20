@@ -287,8 +287,8 @@ func test_the_outcome_screen_leaves_no_card_held() -> void:
 	var entrance := await _entrance_card_controls()
 	check(not entrance.is_empty(), "the dealt board offers an Entrance card to pick up",
 			str(entrance.size()))
-	if not entrance.is_empty(): await _lift_by_a_returned_drag(entrance[0])
-	check(not _play_area.selected_cards.is_empty(), "a drag left a card in hand")
+	if not entrance.is_empty(): await _lift_by_click(entrance[0])
+	check(not _play_area.selected_cards.is_empty(), "a click left a card in hand")
 	if _container.showing_description():
 		await _click(_exit_button().get_global_rect().get_center(), _booted_viewport)
 	check(_hud_is_up(), "...and the X put the HUD back, where End is drawn")
@@ -394,7 +394,7 @@ func test_undo_from_an_end_reached_outcome_with_an_empty_entrance() -> void:
 	await _start_game_fixture()
 	var view := _main._pictures[&"game"].screen_root as GameView
 	await _commit_an_empty_entrance(view.game)
-	check(_play_area.armed_slot() == -1 and view.game.state.stocks_are_empty(),
+	check(TestGridFixtures.leftmost_entrance_slot() == -1 and view.game.state.stocks_are_empty(),
 			"7.7: sanity: the Entrance and every stock are empty before End")
 	await _end_the_show_by_its_button(view)
 	await get_tree().process_frame
@@ -413,7 +413,7 @@ func test_undo_from_an_end_reached_outcome_with_an_empty_entrance() -> void:
 	check(not view.game.state.show_ended and not view.game.processing,
 			"7.7: ...leaving the show live again",
 			"ended=%s busy=%s" % [view.game.state.show_ended, view.game.processing])
-	check(_play_area.selected_cards.is_empty() and _play_area.armed_slot() == -1,
+	check(_play_area.selected_cards.is_empty() and TestGridFixtures.leftmost_entrance_slot() == -1,
 			"7.7: sanity: the undone End put back an empty Entrance",
 			str(_play_area.selected_cards.size()))
 	var owner := _game_viewport.gui_get_focus_owner()
@@ -1601,6 +1601,16 @@ func test_the_title_names_the_suit_in_the_plural() -> void:
 		await get_tree().process_frame
 		check(title.text == "%s of %s" % [TRANSLATION.find('RANK_KING'), plural],
 				"...and a %s court card's published title too" % singular, title.text)
+		var rankless_suit : PipSuit = suit_script.new()
+		var rankless : CardData = CardData.new().with_suit(rankless_suit)
+		_container.show_description(PlayArea.card_info(rankless, card_px))
+		await get_tree().process_frame
+		check(title.text == plural,
+				"...and a %s card with no rank is titled by the plural alone" % singular,
+				title.text)
+		check(body.text.contains("[font_size=%d]%s[/font_size]"
+						% [ControlCard.NAME_FONT_SIZE, singular]),
+				"...while its own %s block stays singular" % singular, body.text)
 	await _end_main_fixture()
 
 ## 1.2/B1/B2: a highlight -- key/pad focus or a real mouse hover -- swaps the container to that card's description.
@@ -3933,22 +3943,6 @@ func _release_at(at: Vector2) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-# A card left LIFTED with NO description locked over the HUD: a drag released where no cell takes
-# it returns the card to its slot, still held. It is the one pickup route that locks nothing, so
-# it is how a row holds a card and still reaches the HUD's own buttons.
-func _lift_by_a_returned_drag(control: Control) -> CardData:
-	var data : CardData = _play_area.ui_data[control]
-	var from := control.get_global_rect().get_center()
-	var at := _bare_board_point(await _hoverable_card_controls())
-	_hover(from)
-	await get_tree().process_frame
-	_push_mouse_button(from, _game_viewport, true)
-	await get_tree().process_frame
-	_hover(at)
-	await get_tree().process_frame
-	await _release_at(at)
-	return data
-
 # A board card EASES toward its target rather than snapping, so a position read on the next frame
 # is mid-flight. Bounded, and it returns the instant the card is actually still.
 func _await_card_settled(visual: CardVisual) -> void:
@@ -4024,7 +4018,7 @@ func test_a_key_focus_leaves_the_card_resting_in_its_slot() -> void:
 				"%s vs %s" % [visual.global_position, rest])
 	await _end_main_fixture()
 
-## 6.7/G8/GAP-007: the follow ends with its gesture -- the release leaves the card in its slot, lifted, chasing nothing.
+## 6.7/G8: the follow ends with its gesture -- a release over bare board takes no cell, so the card goes back to its slot with nothing holding it.
 func test_the_release_ends_the_follow() -> void:
 	await _start_game_fixture()
 	var controls := await _hoverable_card_controls()
@@ -4040,8 +4034,12 @@ func test_the_release_ends_the_follow() -> void:
 		await get_tree().process_frame
 		await _release_at(at)
 		check(visual != null and not visual.following, "the release ends the follow (6.7)")
-		check(visual != null and visual.held != 0, "...and the card is still held and lifted",
-				str(visual.held))
+		check(_play_area.selected_cards.is_empty() and visual != null and visual.held == 0,
+				"...and the card bare board took nothing from is flat in its slot (6.7)",
+				"%d held, lift %d" % [_play_area.selected_cards.size(), visual.held])
+		check(TestGridFixtures.lit_cell_count(_play_area) == 0,
+				"...with the drop map out on every cell (6.7)",
+				str(TestGridFixtures.lit_cell_count(_play_area)))
 		_hover(_off_the_board_point())
 		await get_tree().process_frame
 		check(visual != null and not visual.following,
@@ -4178,7 +4176,7 @@ func _held_card() -> CardData:
 
 ## The leftmost Entrance card the STATE holds.
 func _leftmost_present_card() -> CardData:
-	var slot := _play_area.armed_slot()
+	var slot := TestGridFixtures.leftmost_entrance_slot()
 	if slot == -1: return null
 	return CardEnvironment.get_current_game().state.upper_zone[slot].datas.back()
 
@@ -4222,8 +4220,8 @@ func _lift_and_place_a_card() -> CardData:
 func test_a_fresh_show_holds_nothing_and_shows_the_hud() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
-	check(_play_area.armed_slot() != -1, "the deal filled the Entrance",
-			str(_play_area.armed_slot()))
+	check(TestGridFixtures.leftmost_entrance_slot() != -1, "the deal filled the Entrance",
+			str(TestGridFixtures.leftmost_entrance_slot()))
 	check(_play_area.selected_cards.is_empty(),
 			"...and left nothing in the player's hand", str(_play_area.selected_cards.size()))
 	var lifted : Array[CardData] = []
@@ -4279,8 +4277,9 @@ func test_a_refill_fills_the_leftmost_slot_and_holds_nothing() -> void:
 			break
 	check(refilled, "placing the Entrance out refills it", str(dealt.size()))
 	if refilled:
-		check(_play_area.armed_slot() == 0, "the refill lands in the leftmost slot (Q118)",
-				str(_play_area.armed_slot()))
+		check(TestGridFixtures.leftmost_entrance_slot() == 0,
+				"the refill lands in the leftmost slot (Q118)",
+				str(TestGridFixtures.leftmost_entrance_slot()))
 		check(_play_area.selected_cards.is_empty(),
 				"...and nothing picks the refilled card up for the player (Q118, G14)",
 				str(_play_area.selected_cards.size()))
@@ -4318,7 +4317,7 @@ func test_a_resumed_placement_leaves_nothing_held() -> void:
 	check(not resumed.processing and RunManager.run.pending_action == &""
 			and not resumed_grid.cells[resumed_grid.cell_index(0, 0)].datas.is_empty(),
 			"sanity: the resume replayed the placement and handed the board back (Q233=b)")
-	check(_play_area.armed_slot() != -1,
+	check(TestGridFixtures.leftmost_entrance_slot() != -1,
 			"sanity: the refill drew into the Entrance the placement emptied")
 	check(_play_area.selected_cards.is_empty(),
 			"the resumed show hands the board back holding nothing (Q116/Q118, Q233=b)",
@@ -4444,7 +4443,8 @@ func test_an_empty_entrance_lifts_nothing() -> void:
 		column.datas.clear()
 	_play_area.setup_gui()
 	await get_tree().process_frame
-	check(_play_area.armed_slot() == -1, "an emptied Entrance holds no card to lift (Q119=a)")
+	check(TestGridFixtures.leftmost_entrance_slot() == -1,
+			"an emptied Entrance holds no card to lift")
 	check(_play_area.selected_cards.is_empty(), "...and nothing is held (Q119=a)",
 			str(_play_area.selected_cards.size()))
 	var cells := await _hoverable_card_controls()
@@ -4472,7 +4472,7 @@ func test_the_legal_cell_highlight_follows_what_a_placement_accepts() -> void:
 			var accepted := await _board_accepts(held, cell)
 			check(accepted, "the board takes the held card onto that cell (6.11)")
 			check(is_equal_approx(_glow_of(zone_card),
-					_drawn(_legal_cell_glow(), zone_card)),
+					_drawn(_highlight_glow(), zone_card)),
 					"...and the cell's zone card is DRAWN with the legal-cell brightening (6.11, G12)",
 					str(_glow_of(zone_card)))
 			check(is_equal_approx(_glow_of(refused_cell), _drawn(1.0, refused_cell)),
@@ -4542,10 +4542,10 @@ func _glow_of(data: CardData) -> float:
 ## What `mark` looks like drawn on this card: under the focus glow if the card holds the focus.
 func _drawn(mark: float, data: CardData) -> float:
 	var visual : CardVisual = _play_area.data_card[data]
-	return mark * CardVisual.FOCUS_GLOW if visual.focused else mark
+	return mark * PlayArea.settings().highlight_glow if visual.focused else mark
 
-func _legal_cell_glow() -> float:
-	return PlayArea.settings().legal_cell_glow
+func _highlight_glow() -> float:
+	return PlayArea.settings().highlight_glow
 
 ## An EMPTY cell's own zone control -- what a release onto that cell lands on.
 func _an_empty_cells_control(controls: Array[Control]) -> Control:
@@ -4993,10 +4993,12 @@ func _card_entities(slot: int) -> int:
 func test_a_stocked_slot_draws_its_card_as_flat_as_an_exhausted_one() -> void:
 	await _start_game_fixture()
 	var state := _fixture_game().state
-	check(state.upper_zone.size() >= 3, "sanity: three Entrance slots, so two are not the armed one",
+	check(state.upper_zone.size() >= 3,
+			"sanity: three Entrance slots, so two are not the leftmost present one",
 			str(state.upper_zone.size()))
-	check(_play_area.armed_slot() != 1 and _play_area.armed_slot() != 2,
-			"sanity: neither slot under test is the armed one", str(_play_area.armed_slot()))
+	var leftmost := TestGridFixtures.leftmost_entrance_slot()
+	check(leftmost != 1 and leftmost != 2,
+			"sanity: neither slot under test is the leftmost present one", str(leftmost))
 	var stocks := state.entrance_stocks()
 	check(not stocks[1].datas.is_empty(), "sanity: slot 1 still has a stock behind its card",
 			str(stocks[1].datas.size()))
@@ -5061,7 +5063,7 @@ func test_one_drained_stock_drops_nothing() -> void:
 		return
 	await _click_card(entrance[0])
 	var held := _held_card()
-	var slot := _play_area.armed_slot()
+	var slot := TestGridFixtures.leftmost_entrance_slot()
 	check(held != null, "the click left that slot's card in hand", str(slot))
 	state.discard_deck.append_array(state.entrance_stocks()[slot].datas)
 	state.entrance_stocks()[slot].datas.clear()
@@ -5070,9 +5072,9 @@ func test_one_drained_stock_drops_nothing() -> void:
 	await get_tree().process_frame
 	check(not state.stocks_are_empty(), "that slot's drained stock is not an empty deck (4.7)",
 			str(_stock_controls(slot).size()))
-	check(_held_card() == held and _play_area.armed_slot() == slot,
+	check(_held_card() == held and TestGridFixtures.leftmost_entrance_slot() == slot,
 			"...and nothing drops it: the same card is still held off its own drained slot (4.7)",
-			"%s in %d" % [_held_card(), _play_area.armed_slot()])
+			"%s in %d" % [_held_card(), TestGridFixtures.leftmost_entrance_slot()])
 	check(held != null and _play_area.data_card[held].held > 0,
 			"...still lifted as a held card (4.7)")
 	check(not (_main._pictures[&"game"].screen_root as GameView).submit_button.visible,

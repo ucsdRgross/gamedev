@@ -1323,7 +1323,7 @@ flowchart TD
   G9["NEW — GLOW means selected. LIFT means currently picked up, warning that the next click on a highlighted space will put it down. The selection glow sits wherever the selector is"]
   G10["NEW — focus RESTS on the armed card once, at the start of a show only. After that the two move independently"]
   G11["NEW — a card the player CLICKS follows immediately: the mouse has just moved by definition. The delay only ever applies to a card nobody touched"]
-  G12["NEW — every legal cell's own zone card has its FACE brightened toward white by legal_cell_glow in player_settings.gd, the rank, suit, stamp and art excluded, re-swept when the hand or the board changes. Nothing is lit until the player lifts a card, so the map is on for as long as one is in hand (GAP-005=a, R6)"]
+  G12["NEW — every legal cell's own zone card has its FACE brightened toward white by highlight_glow in player_settings.gd, the rank, suit, stamp and art excluded, re-swept when the hand or the board changes. Nothing is lit until the player lifts a card, so the map is on for as long as one is in hand (GAP-005=a, R6)"]
   G13["Game.place_card_in_grid — the placement commits the Entrance to its grid. Arming commits nothing"]
   G14["NEW — after a placement, and after a refill, the new leftmost present card arms — chart I"]
   G15["NEW — cancel DISARMS, and clicks on cells then do nothing until something is armed again"]

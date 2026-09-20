@@ -31,8 +31,8 @@ const FLIP_STILL_STAGGER := 0.5
 const FLIP_STILL_FRAMES := 30
 const CARD_LIFTED_OUT_PATH := "user://sidebar_snapshot/card_lifted.png"
 const CARD_FOLLOWING_OUT_PATH := "user://sidebar_snapshot/card_following.png"
-const ARMED_FOCUS_ELSEWHERE_OUT_PATH := "user://sidebar_snapshot/armed_focus_elsewhere.png"
-const DRAG_RELEASE_RETURNED_OUT_PATH := "user://sidebar_snapshot/drag_release_returned.png"
+const LIFTED_FOCUS_ELSEWHERE_OUT_PATH := "user://sidebar_snapshot/lifted_focus_elsewhere.png"
+const DRAG_RELEASE_DROPPED_OUT_PATH := "user://sidebar_snapshot/drag_release_dropped.png"
 const CANCEL_FIRST_PRESS_OUT_PATH := "user://sidebar_snapshot/cancel_first_press.png"
 const GOAL_MET_OUT_PATH := "user://sidebar_snapshot/goal_met.png"
 const OUTCOME_BUTTONS_OUT_PATH := "user://sidebar_snapshot/outcome_buttons.png"
@@ -160,7 +160,12 @@ func _ready() -> void:
 	await _move_the_focus_off_the_lifted_card(main, view)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
-	_capture(ARMED_FOCUS_ELSEWHERE_OUT_PATH)
+	_capture(LIFTED_FOCUS_ELSEWHERE_OUT_PATH)
+#The click that lifts the card also locks its description, and a lock outlives every hover: the
+#stills below are of what a HOVER publishes, so the hand and the lock are emptied before them.
+	view.play_area.ungrab_cards()
+	view.hud_container.dismiss_description()
+	await get_tree().process_frame
 
 	_hover_a_board_card(main, view)
 	await get_tree().process_frame
@@ -218,9 +223,9 @@ func _ready() -> void:
 	await _await_held_card_settled(view, lifted)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
-	_capture(DRAG_RELEASE_RETURNED_OUT_PATH)
-	_report_held_lift(view, lifted, "drag_release_returned")
-	view.play_area.ungrab_cards()
+	_capture(DRAG_RELEASE_DROPPED_OUT_PATH)
+	_report_held_lift(view, lifted, "drag_release_dropped")
+	_report_the_drop_map(view, "drag_release_dropped")
 	await get_tree().process_frame
 
 	await _click_an_entrance_card(main, view)
@@ -684,13 +689,12 @@ func _lift_an_entrance_card(main: Main, view: GameView) -> CardData:
 	await _click_an_entrance_card(main, view)
 	return view.play_area.selected_cards[0]
 
-# The FOCUS-ELSEWHERE still: a card RESTING in its slot at its lift, taken up by a drag that was
-# released where nothing takes it, so no description is locked over the shot. The focus then moves
-# by ARROW ALONE, and what actually happened is printed beside the still.
+# The FOCUS-ELSEWHERE still: a card RESTING in its slot at its lift, taken up by the CLICK that is
+# the only route to that state. The focus then moves by ARROW ALONE, and what actually happened is
+# printed beside the still.
 func _move_the_focus_off_the_lifted_card(main: Main, view: GameView) -> void:
 	var viewport : SubViewport = main._pictures[&"game"].viewport
-	var data : CardData = view.play_area.ui_data[_entrance_controls(view, viewport)[0]]
-	await _release_off_a_cell(main, view, data)
+	var data := await _lift_an_entrance_card(main, view)
 	await _await_held_card_settled(view, data)
 	var key := InputEventKey.new()
 	key.keycode = KEY_UP
@@ -698,7 +702,7 @@ func _move_the_focus_off_the_lifted_card(main: Main, view: GameView) -> void:
 	viewport.push_input(key)
 	await get_tree().process_frame
 	var visual : CardVisual = view.play_area.data_card[data]
-	print("SIDEBAR_SNAPSHOT armed_focus_elsewhere focus_is_the_card=%s held=%d glow=%s following=%s"
+	print("SIDEBAR_SNAPSHOT lifted_focus_elsewhere focus_is_the_card=%s held=%d glow=%s following=%s"
 			% [viewport.gui_get_focus_owner() == view.play_area.data_ui[data], visual.held,
 					visual.focused, visual.following])
 
@@ -716,9 +720,9 @@ func _drag_over_the_board(main: Main, view: GameView, data: CardData) -> Vector2
 	await get_tree().process_frame
 	return at
 
-# THE FAILED DRAG's still: a real press on the armed card, carried out over the board and released
-# where there is no cell to land on -- not a placeable spot -- so the card goes back to its slot,
-# still lifted and no longer following, with the pointer left where it let go.
+# THE FAILED DRAG's still: a real press on the held card, carried out over the board and released
+# where there is no cell to land on -- not a placeable spot -- so the card goes back to its slot
+# with nothing holding it, and the pointer is left where it let go.
 func _release_off_a_cell(main: Main, view: GameView, data: CardData) -> void:
 	var viewport : SubViewport = main._pictures[&"game"].viewport
 	var from : Vector2 = view.play_area.data_ui[data].get_global_rect().get_center()
@@ -739,7 +743,7 @@ func _report_the_drop_map(view: GameView, shot: String) -> void:
 		cells += grid.cells.size()
 	print("SIDEBAR_SNAPSHOT %s legal_cells=%d of=%d glow=%.3f held=%d" % [
 			shot, TestGridFixtures.lit_cell_count(view.play_area), cells,
-			PlayArea.settings().legal_cell_glow, view.play_area.selected_cards.size()])
+			PlayArea.settings().highlight_glow, view.play_area.selected_cards.size()])
 
 # A held card EASES toward its target rather than snapping, so a still taken on the next frame
 # catches it mid-flight. The grab's own rebuild can hand the card a DIFFERENT visual, so the live

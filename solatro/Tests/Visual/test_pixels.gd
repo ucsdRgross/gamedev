@@ -831,7 +831,8 @@ func _check_directions_split() -> void:
 # there, so the peak barely moves under a highlight even when everything else does.
 func test_effects_take_their_host_modulate() -> void:
 	behavior_section("EFFECTS FOLLOW THEIR HOST'S MODULATE (focus highlight, fade)")
-	var highlight := Color(CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW)
+	var lift : float = PlayArea.settings().highlight_glow
+	var highlight := Color(lift, lift, lift)
 	for kind : String in ["fire", "balls"] as Array[String]:
 		var plain := await _shoot_modulated(kind, Color.WHITE)
 		var lit := await _shoot_modulated(kind, highlight)
@@ -891,10 +892,12 @@ func test_the_marks_brighten_the_face_and_not_the_pips() -> void:
 	check(_mean_colour(plain_pips, area).a > 0.0,
 			"the rank, suit, stamp and art drew something of their own to compare against",
 			"no opaque pixel on the stage")
+	var lit_means : Array[Color] = []
 	for legal : bool in [true, false] as Array[bool]:
 		var mark := "the legal-cell highlight" if legal else "the focus glow"
-		var glow : float = PlayArea.settings().legal_cell_glow if legal else CardVisual.FOCUS_GLOW
+		var glow : float = PlayArea.settings().highlight_glow
 		var lit_mean := _mean_colour(await _shoot_card(legal, not legal, true), area)
+		lit_means.append(lit_mean)
 		check(lit_mean.r > plain_mean.r and lit_mean.g > plain_mean.g and lit_mean.b > plain_mean.b,
 				"%s lifts the card's face in EVERY channel -- no channel goes down" % mark,
 				"plain %s vs lit %s" % [plain_mean, lit_mean])
@@ -906,6 +909,11 @@ func test_the_marks_brighten_the_face_and_not_the_pips() -> void:
 		check(lit_pips.get_data() == plain_pips.get_data(),
 				"...and the rank, suit, stamp and art are byte-identical under %s" % mark,
 				"%d bytes differ" % _bytes_differing(lit_pips.get_data(), plain_pips.get_data()))
+#ONE GLOW, read off the pixels rather than the uniform: the drop map and the focus lift the same
+#face by the same amount, so the two lit faces are the same face.
+	check(_channels_within(lit_means[0], lit_means[1], PIXEL_TOLERANCE),
+			"the legal-cell highlight and the focus glow brighten the face by the SAME multiplier",
+			"legal %s vs focused %s" % [lit_means[0], lit_means[1]])
 
 # The card as CardVisual draws it for the player, under one mark, with either its FACE or the rank,
 # suit, stamp and art printed over it left showing -- they share one node, so the exclusion is only

@@ -188,9 +188,6 @@ written when a run stalls or fails.
     slot it held came back. The next two items to add an off-palette colour breach the gate.
 - ⬜ **Sidebar: owner should see** — built as ruled or pre-existing; each is a look call:
   - The board's scroll container draws its focus border as two lines across the board while a card inside it holds focus. `draw_focus_border = false` on it removes them.
-  - **`CardVisual.FOCUS_GLOW` 1.825 clamps the focused or held card's face to flat white**, so the
-    paper's own shading is gone at that value (`card_lifted.png`). Its rank, suit, stamp and art are
-    no longer touched (R6). The value was chosen while nothing drew it.
   - The outcome's Continue and Undo sit under the spotlight layer's dim: text peaks at (73,71,80) over (12,10,22) in `outcome_buttons.png`. Whether the outcome row should be lit is a look call.
   - In the 600×1000 top case the stock row's top overlaps the grid's bottom row by about 10 px (`game_hud_top.png`).
   - A second click on the same cell inside the double-click window closes a pair, so a rapid same-cell stack is swallowed. Should stacking cost a wait?

@@ -996,8 +996,8 @@ func test_the_highlight_lights_elements_rather_than_tinting_the_cell() -> void:
 			uniform_of(visual.suit, &"u_outline_width")])
 	check(uniform_of(visual.type, &"u_outline_width") == 0,
 			"TP-64: the cell frame under them stays rimless, so the mark still reads as a mark")
-	var explained : float = PlayArea.settings().legal_cell_glow
-	if visual.focused: explained *= CardVisual.FOCUS_GLOW
+	var explained : float = PlayArea.settings().highlight_glow
+	if visual.focused: explained *= PlayArea.settings().highlight_glow
 	var face := TestGridFixtures.brightness_of(visual.type)
 	check(control.modulate == control_was
 			and visual.modulate == Color.WHITE

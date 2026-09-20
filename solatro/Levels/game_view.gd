@@ -508,11 +508,11 @@ func _on_data_selected(data: CardData) -> void:
 	await _pick_up(data)
 
 # THE DRAG'S RELEASE IS ANOTHER WAY TO REACH THE SAME PLACEMENT, and nothing downstream can tell
-# which route was taken. A release the board refuses returns the card instead, so a failed drag
-# leaves the player where they started.
+# which route was taken. A release the board refuses lets the card go instead, the way a cancel
+# does: only a release over a cell that takes it ends with anything in hand.
 func _on_card_dropped(data: CardData) -> void:
-	if game.processing: return
-	await _place_held_onto(data)
+	if game.processing or not await _place_held_onto(data):
+		play_area.ungrab_cards()
 
 # A TAP UNDOES THE GRAB THE PRESS BEFORE IT MADE: the card goes back to its slot. Then the board
 # hears the tap, which is all it does in v1 -- no shipped card listens for it.

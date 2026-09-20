@@ -115,9 +115,6 @@ static var card_jump_rise_play : float:
 	get():
 		return CARD_JUMP_RISE * settings().card_scale
 
-## The focus glow's brightness, as an equal-channel multiplier on the card's face.
-const FOCUS_GLOW : float = 1.825
-
 var focused : bool = false:
 	set(value):
 		focused = value
@@ -129,14 +126,14 @@ var on_drop_map : bool = false:
 		_apply_marks()
 
 # ⚠ THE ONE PLACE THE HIGHLIGHT IS WRITTEN, and it lands on the FACE ALONE: the rank, suit, stamp and
-# art printed over it keep their own colours, so a lit cell still reads as the mark it carries. Both
-# marks brighten one face, so it is derived from both -- either setter alone makes the last one win.
+# art keep their own colours. Both marks brighten one face by the one glow, so it is derived from
+# both -- either setter alone makes the last one win.
 func _apply_marks() -> void:
 	if not is_node_ready():
 		await ready
 	var glow := 1.0
-	if on_drop_map: glow *= settings().legal_cell_glow
-	if focused: glow *= FOCUS_GLOW
+	if on_drop_map: glow *= settings().highlight_glow
+	if focused: glow *= settings().highlight_glow
 	CardOutline.set_brightness(type, glow)
 
 @export var data : CardData:

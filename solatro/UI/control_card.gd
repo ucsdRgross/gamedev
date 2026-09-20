@@ -46,7 +46,7 @@ static func card_title(data: CardData) -> String:
 	if data.rank and data.suit:
 		return TRANSLATION.find('CARD_TITLE') % [data.rank.get_str(), data.suit.get_plural_str()]
 	if data.rank: return data.rank.get_str()
-	if data.suit: return data.suit.get_str()
+	if data.suit: return data.suit.get_plural_str()
 	return ""
 
 ## One effect, for a surface that reads BBCode: its NAME in the large font, its description under it.

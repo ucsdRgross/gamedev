@@ -22,6 +22,10 @@ const GOAL_OUT_OF_REACH : int = 100000000
 const PUSHED_PAIR_WINDOW_MS := 2000.0
 ## How far either side of a card's drag threshold a release lands: past float noise, well inside a zoom's change to it.
 const THRESHOLD_MARGIN_PX := 2.0
+## The picture's own top-left corner, where the board lays out no cell and no card.
+const BARE_BOARD_CORNER_PX := 24.0
+## How far past the picture's far corner a release lands to be off the window altogether.
+const OFF_WINDOW_PX := 80.0
 
 var _viewport : SubViewport = null
 var _main : Main = null
@@ -51,9 +55,11 @@ func _ready() -> void:
 	await test_a_sub_threshold_release_is_a_click()
 	await test_an_over_threshold_release_on_a_legal_cell_places()
 	await test_the_drag_threshold_follows_the_boards_zoom()
-	await test_a_release_on_an_illegal_cell_returns_the_card()
+	await test_a_release_on_an_illegal_cell_drops_the_card()
+	await test_a_lifted_card_follows_only_on_a_new_press_with_travel()
 	behavior_section("RELEASES THE BOARD DOES NOT OWN")
-	await test_a_release_over_the_container_returns_the_card()
+	await test_a_release_over_the_container_drops_the_card()
+	await test_a_release_away_from_the_cells_drops_the_card()
 	await test_a_cancel_mid_drag_leaves_nothing_for_the_release()
 	await test_an_escape_mid_drag_leaves_nothing_for_the_release()
 	await test_a_touch_tap_selects_and_lifts_without_placing()
@@ -267,7 +273,7 @@ func _hand_str() -> String:
 	var held := _held_card()
 	return "held %d, following %s, lifted %s, leftmost slot %d, placed %d, undo steps %d" % [
 			_pa.selected_cards.size(), _is_following(held) if held else false,
-			_is_lifted(held) if held else false, _pa.armed_slot(),
+			_is_lifted(held) if held else false, TestGridFixtures.leftmost_entrance_slot(),
 			_placed_cards().size(), _game.save_history.size()]
 
 # A cell on the board's own drop map, fully on screen where a real drag can reach it -- no
@@ -428,7 +434,7 @@ func _right_click(at: Vector2, paired: bool) -> void:
 # card is lifted, and the board's opening focus rests on a grid cell a pad can move from.
 func test_the_show_opens_with_nothing_held() -> void:
 	await _start_fixture()
-	check(not _entrance_controls().is_empty() and _pa.armed_slot() != -1,
+	check(not _entrance_controls().is_empty() and TestGridFixtures.leftmost_entrance_slot() != -1,
 			"the deal filled the Entrance", _hand_str())
 	check(_pa.selected_cards.is_empty(), "...and left nothing in the player's hand", _hand_str())
 	var lifted : Array[CardData] = []
@@ -598,10 +604,10 @@ func _spy_on_drops() -> Array[CardData]:
 	_pa.card_dropped.connect(func(dropped: CardData) -> void: drops.append(dropped))
 	return drops
 
-# 5.3 (E17, Q280=a, Q281=a, GAP-007=a): a release over a cell the board refuses returns the card —
-# back in its slot, still lifted, no longer following. The return survives mouse motion and ends
-# only on a new press that travels past the threshold again. A failed drag costs nothing.
-func test_a_release_on_an_illegal_cell_returns_the_card() -> void:
+# 5.3 (E17): only a cell that takes the card ends a drag holding anything. A
+# release over a cell the board refuses lets it go: the hand empties, the card lies flat in its
+# slot and the drop map goes out, exactly as a cancel leaves them.
+func test_a_release_on_an_illegal_cell_drops_the_card() -> void:
 	await _start_fixture()
 	await _drag_a_card_into_the_grid()
 	var occupied := _placed_cards()
@@ -614,26 +620,42 @@ func test_a_release_on_an_illegal_cell_returns_the_card() -> void:
 		await _begin_drag(_card_centre(held), _card_centre(occupied[0]))
 		check(_is_following(held), "the drag carries the card: it tracks the cursor (5.3)",
 				_hand_str())
+		check(TestGridFixtures.lit_cell_count(_pa) > 0,
+				"...with the drop map lit while it is in hand (5.3)",
+				str(TestGridFixtures.lit_cell_count(_pa)))
 		await _end_drag(_card_centre(occupied[0]))
-		check(_pa.selected_cards.has(held) and _is_lifted(held),
-				"...and a refused release leaves it held and lifted (5.3, Q281=a)", _hand_str())
-		check(not _is_following(held), "...and no longer following (5.3, Q281=a)", _hand_str())
-		check(_pa.selected_cards.has(held) and _game.save_history.size() == committed,
-				"...still in hand, with nothing committed (5.3)", _hand_str())
-		await _nudge(_card_centre(occupied[0]))
-		check(not _is_following(held) and _placed_cards().size() == 1,
-				"...and a mouse motion afterwards leaves it resting in its slot (5.3, GAP-007=a)",
-				_hand_str())
+		check(_pa.selected_cards.is_empty(),
+				"...and a refused release empties the hand (5.3)", _hand_str())
+		check(not _is_lifted(held) and not _is_following(held),
+				"...the card flat in its slot, following nothing (5.3)", _hand_str())
+		check(_game.save_history.size() == committed and _placed_cards().size() == 1,
+				"...with nothing placed and nothing committed (5.3)", _hand_str())
+		check(TestGridFixtures.lit_cell_count(_pa) == 0,
+				"...and the drop map out on every cell (5.3)",
+				str(TestGridFixtures.lit_cell_count(_pa)))
+	await _end_fixture()
+
+# The chase restarts on a new press AND travel past the threshold, never on either
+# alone. A CLICK is how a card reaches the lifted, not-following state the restart starts from.
+func test_a_lifted_card_follows_only_on_a_new_press_with_travel() -> void:
+	await _start_fixture()
+	var held := await _lift_the_leftmost()
+	check(held != null and _is_lifted(held) and not _is_following(held),
+			"a click left a card lifted in its slot, following nothing", _hand_str())
+	if held:
 		var from := _card_centre(held)
+		await _nudge(from)
+		check(not _is_following(held),
+				"a mouse motion alone leaves it resting in its slot", _hand_str())
 		await _push(_mouse_button(from, true), _picture_viewport)
 		await _nudge(from)
 		check(not _is_following(held),
-				"...a new press alone does not restart the follow (5.3, GAP-007=a)", _hand_str())
+				"...a new press alone does not restart the follow", _hand_str())
 		await _push(_motion(from + Vector2(
 				_drawn_threshold_px(_pa.data_ui[held]) + THRESHOLD_MARGIN_PX, 0.0)),
 				_picture_viewport)
 		check(_is_following(held),
-				"...it takes a press AND travel past the threshold (5.3, GAP-007=a)", _hand_str())
+				"...it takes a press AND travel past the threshold", _hand_str())
 	await _end_fixture()
 
 # A motion the card cannot read as a drag: short of every threshold, so what it proves is the
@@ -646,9 +668,9 @@ func _nudge(from: Vector2) -> void:
 # ==============================================================================
 
 # 5.4 (E17, Q288=a): the container is not a placeable spot. The release lands in the WINDOW's own
-# viewport, over the container, where a player's would — and the board still hears it and returns
-# the card.
-func test_a_release_over_the_container_returns_the_card() -> void:
+# viewport, over the container, where a player's would — and the board still hears it and lets the
+# card go.
+func test_a_release_over_the_container_drops_the_card() -> void:
 	await _start_fixture()
 	var held := await _lift_the_leftmost()
 	var cell := await _legal_cell_control(held) if held else null
@@ -658,17 +680,47 @@ func test_a_release_over_the_container_returns_the_card() -> void:
 		var committed := _game.save_history.size()
 		await _begin_drag(_card_centre(held), _control_centre(cell))
 		check(_is_following(held), "the drag is live before the release (5.4)", _hand_str())
+		check(TestGridFixtures.lit_cell_count(_pa) > 0,
+				"...with the drop map lit while it is in hand (5.4)",
+				str(TestGridFixtures.lit_cell_count(_pa)))
 		await _push(_mouse_button(_container.container_rect().get_center(), false), _viewport)
 		await _frames(3)
 		check(not _is_following(held),
-				"the release over the container reached the board and returned the card (5.4)",
+				"the release over the container reached the board and ended the chase (5.4)",
 				_hand_str())
-		check(_pa.selected_cards.has(held) and _is_lifted(held),
-				"...still held and still lifted (5.4, Q288=a)", _hand_str())
+		check(_pa.selected_cards.is_empty() and not _is_lifted(held),
+				"...the hand empty, the card flat in its slot (5.4)", _hand_str())
 		check(_placed_cards().is_empty() and _game.save_history.size() == committed,
 				"...and nothing was placed (5.4)", _hand_str())
-		check(TestGridFixtures.lit_cell_count(_pa) > 0,
-				"...and the drop map stays lit, the card still being in hand (5.4)",
+		check(TestGridFixtures.lit_cell_count(_pa) == 0,
+				"...and the drop map out on every cell (5.4)",
+				str(TestGridFixtures.lit_cell_count(_pa)))
+	await _end_fixture()
+
+## Where a release lands on no cell the board takes: bare board, another Entrance card's own slot, and off the window entirely.
+func _release_points_that_take_nothing() -> Array[Vector2]:
+	var entrance := _entrance_controls()
+	var rightmost : Control = entrance.back()
+	return [Vector2(BARE_BOARD_CORNER_PX, BARE_BOARD_CORNER_PX), _control_centre(rightmost),
+			Vector2(_picture_viewport.size) + Vector2(OFF_WINDOW_PX, OFF_WINDOW_PX)]
+
+# Only a cell that takes the card ends a drag holding anything. Over bare board, over another
+# Entrance card and off the window entirely, the release lets go of what it was carrying.
+func test_a_release_away_from_the_cells_drops_the_card() -> void:
+	await _start_fixture()
+	var places : Array[String] = ["bare board", "another Entrance card", "off the window"]
+	var points := _release_points_that_take_nothing()
+	for i : int in points.size():
+		var held := await _lift_the_leftmost()
+		check(held != null and TestGridFixtures.lit_cell_count(_pa) > 0,
+				"a card is lifted with the drop map lit, before the release over %s" % places[i],
+				_hand_str())
+		if not held: continue
+		await _drag(_card_centre(held), points[i])
+		check(_pa.selected_cards.is_empty() and not _is_lifted(held) and not _is_following(held),
+				"a release over %s drops the card" % places[i], _hand_str())
+		check(TestGridFixtures.lit_cell_count(_pa) == 0,
+				"...and the drop map is out over %s" % places[i],
 				str(TestGridFixtures.lit_cell_count(_pa)))
 	await _end_fixture()
 

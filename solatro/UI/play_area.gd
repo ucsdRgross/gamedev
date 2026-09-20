@@ -1680,10 +1680,12 @@ func _consume_as_card_release(button: InputEventMouseButton) -> bool:
 	return true
 
 # The release places onto whatever the board offers under it, and the board answers whether that
-# is legal. Over bare board, over the container or off the window nothing is under it at all.
+# is legal. Over bare board, over the container or off the window nothing is under it at all, and a
+# release that places nothing lets the card go the way a cancel does.
 func _release_places(at: Vector2) -> void:
 	var target := _card_control_at(at)
 	if target: _emit_if_played(card_dropped, ui_data[target])
+	else: ungrab_cards()
 
 ## Nothing tracks the cursor until the next drag: a held card stays held and lifted, and a drag still waiting on its grab no longer promises one.
 func stop_following() -> void:
@@ -1883,15 +1885,6 @@ func ungrab_cards() -> void:
 	selected_cards = []
 	set_card_zones_visuals()
 	_sweep_legal_cells()
-
-# The leftmost Entrance slot holding a card, or -1. Re-derived on every read and never stored, so
-# an undo that restores the board carries it.
-func armed_slot() -> int:
-	var game := CardEnvironment.get_current_game()
-	if not game: return -1
-	for slot : int in game.state.upper_zone.size():
-		if not game.state.upper_zone[slot].datas.is_empty(): return slot
-	return -1
 
 # THE EXIT X TAKES THE FOCUS OUT OF THE BOARD'S VIEWPORT, and hiding it leaves nothing focused, so a
 # key/pad player is put back on the card they were reading, or rested on the board once that control

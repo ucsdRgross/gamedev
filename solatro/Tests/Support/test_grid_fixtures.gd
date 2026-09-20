@@ -276,16 +276,28 @@ static func brightness_of(poly: Polygon2D) -> float:
 	var shown : float = set_to
 	return shown
 
+# The leftmost Entrance slot holding a card, or -1. Re-derived on every read and never stored, so
+# an undo that restores the board carries it.
+static func leftmost_entrance_slot() -> int:
+	var game := CardEnvironment.get_current_game()
+	assert(game != null)
+	var state := game.state
+	for slot : int in state.upper_zone.size():
+		if not state.upper_zone[slot].datas.is_empty(): return slot
+	return -1
+
 # How many of the board's cells are DRAWN wearing the drop map, never the `on_drop_map` field it is
-# derived from. A focused cell is lit under the focus glow as well, and still counts.
+# derived from. The two marks share one glow, so a FOCUSED cell is lit only at the squared value --
+# the focus alone puts it at the same brightness one mark does, and that one is not the drop map.
 static func lit_cell_count(play_area: PlayArea) -> int:
 	var state := CardEnvironment.get_current_game().state
-	var glow : float = PlayArea.settings().legal_cell_glow
+	var glow : float = PlayArea.settings().highlight_glow
 	var marked := 0
 	for data : CardData in play_area.data_card:
 		if state.cell_type_coord(data).is_nowhere(): continue
-		var shown := brightness_of(play_area.data_card[data].type)
-		if is_equal_approx(shown, glow) or is_equal_approx(shown, glow * CardVisual.FOCUS_GLOW):
+		var visual := play_area.data_card[data]
+		var lit := glow * glow if visual.focused else glow
+		if is_equal_approx(brightness_of(visual.type), lit):
 			marked += 1
 	return marked
 
