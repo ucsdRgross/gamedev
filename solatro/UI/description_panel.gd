@@ -7,7 +7,7 @@ extends Control
 @onready var _visual_slot : HBoxContainer = %VisualSlot
 @onready var _grid_slot : VBoxContainer = %GridSlot
 @onready var _title_label : Label = %Title
-@onready var _body_label : Label = %Body
+@onready var _body_label : RichTextLabel = %Body
 @onready var _back_button : Button = %Back
 
 ## Godot's own mouse wheel steps an eighth of a page per notch, so a key or a stick meaning "a nudge" moves by the same step.
@@ -27,6 +27,11 @@ var scroll_position : int:
 	set(value):
 		_scroll.get_v_scroll_bar().max_value = _content.custom_minimum_size.y
 		_scroll.scroll_vertical = value
+
+# ONE HOME FOR THE LARGE FONT: the title's size is the size an effect NAME is written in inside the
+# body, and `ControlCard` bakes that number into the BBCode it publishes.
+func _ready() -> void:
+	_title_label.add_theme_font_size_override(&"font_size", ControlCard.NAME_FONT_SIZE)
 
 ## Fills the panel from `entry` and lays it out inside `panel_size` -- `HudContainer` passes its own `container_rect()`'s size.
 func show_entry(entry: InfoEntry, panel_size: Vector2) -> void:
@@ -149,7 +154,7 @@ func resize_to(panel_size: Vector2) -> void:
 	_scroll.size = panel_size
 	_grid_slot.size.x = panel_size.x
 	_grid_slot.custom_minimum_size.x = panel_size.x
-	var content_h := _top_row_height(panel_size.x) + _text_height(_body_label, panel_size.x)
+	var content_h := _top_row_height(panel_size.x) + _body_height(panel_size.x)
 	content_h += _grid_slot.get_combined_minimum_size().y
 	_content.size = Vector2(panel_size.x, content_h)
 	_content.custom_minimum_size.y = content_h
@@ -167,3 +172,14 @@ static func _text_height(label: Label, width: float) -> float:
 	var font := label.get_theme_font(&"font")
 	var font_size := label.get_theme_font_size(&"font_size")
 	return font.get_multiline_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, width, font_size).y
+
+# The body is RICH, so its height is the text server's answer rather than one font's metrics: the
+# NAME lines are written larger than the descriptions under them. Asking for it forces the wrap.
+
+# ⚠ IT IS ALSO WRITTEN BACK AS THE LABEL'S OWN MINIMUM. A RichTextLabel reports no minimum height
+# until a layout pass has given it a width, so inside the content box it would draw zero tall.
+func _body_height(width: float) -> float:
+	_body_label.size.x = width
+	var h := float(_body_label.get_content_height())
+	_body_label.custom_minimum_size = Vector2(0.0, h)
+	return h

@@ -65,7 +65,8 @@ func update_viewer() -> void:
 # A HOVER OR A KEY/PAD FOCUS, NEVER A CLICK: a click in this viewer is its own action, and the lock
 # belongs to the board.
 func _publish_info(data: CardData) -> void:
-	PlayArea.card_info(data, _cards.card_window_px()).relay_to(info_requested)
+	PlayArea.card_info(data,
+			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)
 
 # ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
 # so its cards list inside the space left beside it -- ALL FOUR EDGES, or a row runs off the far one.
@@ -94,8 +95,7 @@ func _inset_margin(margin: StringName, inset: float) -> void:
 	margin_container.add_theme_constant_override(margin,
 			_authored_margins[margin] + ceili(inset))
 
-## Keyboard/controller close: Escape/back AND Enter/accept both close (the viewer is
-## read-only, so accept has no other meaning). Mouse click on the margin closes below.
+## Keyboard/controller close: Escape/back AND Enter/accept both close (the viewer is read-only, so accept has no other meaning). Mouse click on the margin closes below.
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"ui_accept"):
 		get_viewport().set_input_as_handled()

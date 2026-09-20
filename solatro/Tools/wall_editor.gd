@@ -1,44 +1,48 @@
 @tool
 class_name WallEditor
 extends Node2D
-## The picture-wall layout tool. Open `Tools/wall_editor.tscn`, edit any field in the Inspector,
-## and the packed wall rebuilds live. Every wall number is an editable field here, never a
-## constant in code.
-##
-## Three Inspector panels, no custom UI — the Inspector already gives every field, array
-## add/remove and undo for free, as `fx_editor.gd` and `spotlight_tool.gd` also rely on:
-##  * `layout` — every `WallLayout` field, and every `PictureEntry` field per picture.
-##  * `preview_settings` — a standalone `PlayerSettings`. Never `SettingsManager.settings`: a
-##    knob tuned here must not rewrite the player's `user://settings.tres`.
-##  * the tool's own state — `preview_aspect`, `unlocked_ids`, the transition picker, content
-##    mode, and save/revert.
-##
-## `save_now` / `revert_now` / `play_transition` are booleans acting as BUTTONS: they run on the
-## rising edge and reset themselves. This Godot version has no `@export` button annotation.
-##
-## ⚠ EDITOR CONSTRAINTS:
-##  * **Every script this tool loads or builds must be `@tool`** (`WallLayout`, `PictureEntry`,
-##    `WallPicture`). A non-`@tool` script loads in the editor as a PLACEHOLDER: reads work, but a
-##    method call throws *"Attempt to call a method on a placeholder instance"*, and SAVING a
-##    `.tres` whose script is a placeholder silently DROPS every property the editor could not
-##    see — which would corrupt the layout the game loads.
-##  * **The editor instantiates no autoloads**, so `SettingsManager` is absent here. The wall asks
-##    `WallPicture.settings()`, and this tool assigns `WallPicture.editor_settings` — an override
-##    that wins in BOTH contexts. Editor-only would be the bug `LightLayer` already paid for: a
-##    PLAYED tool scene would read the player's saved `settings.tres` while this panel kept showing
-##    its own resource, and the preview would stop being evidence.
-##  * **`Camera2D` does not drive the editor's 2D viewport** — only a RUNNING scene's window
-##    follows a current camera. Every field is live either way, but the transition preview is only
-##    watchable when this scene is actually RUN (F6).
-##  * **Every preview `WallPicture` is OWNERLESS** and rebuilt on each re-pack; an owned child
-##    would be saved into `wall_editor.tscn` itself.
-##  * This script never references `ProfileManager` or `user://profile.tres`. `unlocked_ids` is an
-##    in-memory simulation only.
+## The picture-wall layout tool. Open `Tools/wall_editor.tscn`, edit any field in the Inspector, and the packed wall rebuilds live. Every wall number is an editable field here, never a constant in code.
+
+# Three Inspector panels, no custom UI — the Inspector already gives every field, array
+# add/remove and undo for free, as `fx_editor.gd` and `spotlight_tool.gd` also rely on:
+# * `layout` — every `WallLayout` field, and every `PictureEntry` field per picture.
+
+# * `preview_settings` — a standalone `PlayerSettings`. Never `SettingsManager.settings`: a
+# knob tuned here must not rewrite the player's `user://settings.tres`.
+# * the tool's own state — `preview_aspect`, `unlocked_ids`, the transition picker, content
+
+# mode, and save/revert.
+
+# `save_now` / `revert_now` / `play_transition` are booleans acting as BUTTONS: they run on the
+# rising edge and reset themselves. This Godot version has no `@export` button annotation.
+
+# ⚠ EDITOR CONSTRAINTS:
+# * **Every script this tool loads or builds must be `@tool`** (`WallLayout`, `PictureEntry`,
+# `WallPicture`). A non-`@tool` script loads in the editor as a PLACEHOLDER: reads work, but a
+
+# method call throws *"Attempt to call a method on a placeholder instance"*, and SAVING a
+# `.tres` whose script is a placeholder silently DROPS every property the editor could not
+# see — which would corrupt the layout the game loads.
+
+# * **The editor instantiates no autoloads**, so `SettingsManager` is absent here. The wall asks
+# `WallPicture.settings()`, and this tool assigns `WallPicture.editor_settings` — an override
+# that wins in BOTH contexts. Editor-only would be the bug `LightLayer` already paid for: a
+
+# PLAYED tool scene would read the player's saved `settings.tres` while this panel kept showing
+# its own resource, and the preview would stop being evidence.
+# * **`Camera2D` does not drive the editor's 2D viewport** — only a RUNNING scene's window
+
+# follows a current camera. Every field is live either way, but the transition preview is only
+# watchable when this scene is actually RUN (F6).
+# * **Every preview `WallPicture` is OWNERLESS** and rebuilt on each re-pack; an owned child
+
+# would be saved into `wall_editor.tscn` itself.
+# * This script never references `ProfileManager` or `user://profile.tres`. `unlocked_ids` is an
+# in-memory simulation only.
 
 const LAYOUT_PATH := "res://Assets/Wall/layout_default.tres"
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
-## The screens `Main` reparents onto the wall at runtime, so a RUN tool shows the same content the
-## game does. Ids with no entry here draw their `background_texture`, or nothing.
+## The screens `Main` reparents onto the wall at runtime, so a RUN tool shows the same content the game does. Ids with no entry here draw their `background_texture`, or nothing.
 const OVERLAY_SCENE := preload("res://UI/Wall/wall_overlay.tscn")
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const LIVE_SCREENS : Dictionary[StringName, PackedScene] = {
@@ -46,116 +50,94 @@ const LIVE_SCREENS : Dictionary[StringName, PackedScene] = {
 	&"map": preload("res://Levels/map.tscn"),
 	&"game": preload("res://Levels/game_view.tscn"),
 }
-## How often to re-read every Inspector-visible field for an edit nothing notifies us of: a plain
-## `@export var` with no setter does not announce being edited in place inside a nested panel.
+## How often to re-read every Inspector-visible field for an edit nothing notifies us of: a plain `@export var` with no setter does not announce being edited in place inside a nested panel.
 const WATCH_SECS := 0.25
-## Knobs the EDITOR preview cannot exercise. Empty when RUN: F6 hosts a real `Wall`, so every knob
-## reaches the same code the game runs it through. These four need that `Wall` (or, for
-## `wall_reveal_delay_scale`, the `play_reveal` button), and `Wall` is not `@tool`.
+## Knobs the EDITOR preview cannot exercise. Empty when RUN: F6 hosts a real `Wall`, so every knob reaches the same code the game runs it through. These four need that `Wall` (or, for `wall_reveal_delay_scale`, the `play_reveal` button), and `Wall` is not `@tool`.
 const EDITOR_INERT_KNOBS : Array[String] = ["wall_selection_repeat_delay", "wall_debug_readout",
 		"wall_reveal_delay_scale", "wall_unlock_all"]
 
-## The layout this tool edits and saves — `layout_default.tres`, the same resource the game loads.
-## Seeded from `Wall.initial_layout()` the first time the tool runs with no file on disk.
+## The layout this tool edits and saves — `layout_default.tres`, the same resource the game loads. Seeded from `Wall.initial_layout()` the first time the tool runs with no file on disk.
 @export var layout : WallLayout = null:
 	set(v):
 		layout = v
 		_seed_unlocked_ids()
 		_repack()
 
-## The settings the whole preview reads, in the editor and when played alike. A STANDALONE
-## resource carrying the shipped defaults — never the player's `user://settings.tres`, so tuning
-## here cannot rewrite a real save. Never null: a null assignment falls back to fresh defaults
-## rather than leaving the preview with nothing to read.
+## The settings the whole preview reads, in the editor and when played alike. A STANDALONE resource carrying the shipped defaults — never the player's `user://settings.tres`, so tuning here cannot rewrite a real save. Never null: a null assignment falls back to fresh defaults rather than leaving the preview with nothing to read.
 @export var preview_settings : PlayerSettings = PlayerSettings.new():
 	set(v):
 		preview_settings = v if v else PlayerSettings.new()
 		_apply_preview_settings()
 		_repack()
 
-## Window aspect ratio to pack against. The range runs well outside `WallLayout`'s own ellipse
-## clamps so the clamping itself is visible at the extremes.
-##
-## ⚠ SEEDED FROM THE LIVE WINDOW in `_ready()`, never left at a rounded literal. `focused_scale()`
-## skips its overfill margin only when the two axis ratios are EXACTLY equal, and a rounded aspect
-## misses that by ~1.4e-05 — just past `is_equal_approx` — so the margin fires and crops 2% off a
-## focused picture that the game shows uncropped. Measured: the start menu's `Profile` and
-## `Language` buttons lost their outer edges, which reads as a menu-layout bug and is not one.
+# ⚠ SEEDED FROM THE LIVE WINDOW in `_ready()`, never left at a rounded literal. `focused_scale()`
+# skips its overfill margin only when the two axis ratios are EXACTLY equal, and a rounded aspect
+# misses that by ~1.4e-05 — just past `is_equal_approx` — so the margin fires and crops 2% off a
+
+# focused picture that the game shows uncropped. Measured: the start menu's `Profile` and
+# `Language` buttons lost their outer edges, which reads as a menu-layout bug and is not one.
+
+## Window aspect ratio to pack against. The range runs well outside `WallLayout`'s own ellipse clamps so the clamping itself is visible at the extremes.
 @export_range(0.5, 4.0, 0.01) var preview_aspect : float = 1.7778:
 	set(v):
 		preview_aspect = v
 		_repack()
 
-## Which picture ids to treat as unlocked. Seeded with EVERY id in the layout the first time one
-## loads, so the tool opens on the whole wall rather than on the subset a fresh save would see —
-## tuning spacing against pictures that are not there is the mistake that default prevents. Delete
-## ids to simulate a partial unlock; an id absent here is locked.
+## Which picture ids to treat as unlocked. Seeded with EVERY id in the layout the first time one loads, so the tool opens on the whole wall rather than on the subset a fresh save would see — tuning spacing against pictures that are not there is the mistake that default prevents. Delete ids to simulate a partial unlock; an id absent here is locked.
 @export var unlocked_ids : Array[StringName] = []:
 	set(v):
 		unlocked_ids = v
 		_repack()
 
 @export_group("Transition preview")
-## The two ids to move between; both must be in `unlocked_ids`. Seeded when a layout loads —
-## `home_id` and the picture packed furthest from it, which is the longest move on the wall and so
-## the one that shows the curves most clearly.
+## The two ids to move between; both must be in `unlocked_ids`. Seeded when a layout loads — `home_id` and the picture packed furthest from it, which is the longest move on the wall and so the one that shows the curves most clearly.
 @export var preview_source_id : StringName = &""
 @export var preview_dest_id : StringName = &""
-## BUTTON. Plays a real `WallTransition` between the two picked pictures. Only watchable in a
-## running window (F6) — see the "Camera2D does not drive the editor's viewport" note above.
+## BUTTON. Plays a real `WallTransition` between the two picked pictures. Only watchable in a running window (F6) — see the "Camera2D does not drive the editor's viewport" note above.
 @export var play_transition : bool = false:
 	set(v):
 		play_transition = false
 		if v: _play_transition()
 
 @export_group("Content mode")
-## Draw empty frames instead of hosting each picture's real screen. Faster to re-pack while
-## dragging geometry numbers, but defects that only show with real content are then invisible, so
-## this is off by default.
-##
-## ⚠ Real content needs the tool RUN (F6), not previewed: `start_menu`/`map`/`game` are ordinary
-## game scenes and instantiating them inside the editor is not safe. Previewing in the Inspector
-## therefore draws empty frames whatever this says, which is correct for geometry work.
+# ⚠ Real content needs the tool RUN (F6), not previewed: `start_menu`/`map`/`game` are ordinary
+# game scenes and instantiating them inside the editor is not safe. Previewing in the Inspector
+# therefore draws empty frames whatever this says, which is correct for geometry work.
+
+## Draw empty frames instead of hosting each picture's real screen. Faster to re-pack while dragging geometry numbers, but defects that only show with real content are then invisible, so this is off by default.
 @export var use_placeholder_content : bool = false:
 	set(v):
 		use_placeholder_content = v
 		_repack()
 
 @export_group("Focus")
-## Which picture is FOCUSED, or `&""` for wall view. Focusing poses the camera at that picture's
-## resting pose and calls the real `WallPicture.focus()`; everything else is `unfocus()`ed at its
-## wall-view footprint — so render targets, texture filters and sizes match the running game.
-##
-## ⚠ A focused picture at rest is the state a player is in most of the time, and the one where a
-## too-small `wall_overfill_margin` shows a sliver of frame or bare wall at a window edge. Wall view
-## alone cannot show that.
+# ⚠ A focused picture at rest is the state a player is in most of the time, and the one where a
+# too-small `wall_overfill_margin` shows a sliver of frame or bare wall at a window edge. Wall view
+# alone cannot show that.
+
+## Which picture is FOCUSED, or `&""` for wall view. Focusing poses the camera at that picture's resting pose and calls the real `WallPicture.focus()`; everything else is `unfocus()`ed at its wall-view footprint — so render targets, texture filters and sizes match the running game.
 @export var preview_focus_id : StringName = &"":
 	set(v):
 		preview_focus_id = v
 		_apply_focus()
-## Which picture carries the wall-view selection cursor, or `&""` for none. Drives the real
-## `WallPicture.set_selected()`, so `wall_selected_lift` is visible. Ignored while a picture is
-## focused — the lift is a wall-view affordance.
+## Which picture carries the wall-view selection cursor, or `&""` for none. Drives the real `WallPicture.set_selected()`, so `wall_selected_lift` is visible. Ignored while a picture is focused — the lift is a wall-view affordance.
 @export var preview_selected_id : StringName = &"":
 	set(v):
 		preview_selected_id = v
 		_apply_selection()
-## Render every UNFOCUSED picture at its wall-view FOOTPRINT resolution, as the running game does,
-## instead of at full `design_size`. This is what `wall_view_min_texture_px` governs and the only
-## way to judge how sharp the wall actually looks.
-##
-## ⚠ OFF BY DEFAULT, and the reason is worth knowing: a screen laid out for its `design_size` does
-## NOT re-flow into a smaller viewport, it CROPS — so at wall-view resolution the pictures show an
-## enlarged top-left corner rather than a shrunken screen. Whether that is also true of the running
-## game has not been checked; if it is, it is a product defect, not a tool artefact.
+# ⚠ OFF BY DEFAULT, and the reason is worth knowing: a screen laid out for its `design_size` does
+# NOT re-flow into a smaller viewport, it CROPS — so at wall-view resolution the pictures show an
+# enlarged top-left corner rather than a shrunken screen. Whether that is also true of the running
+
+# game has not been checked; if it is, it is a product defect, not a tool artefact.
+
+## Render every UNFOCUSED picture at its wall-view FOOTPRINT resolution, as the running game does, instead of at full `design_size`. This is what `wall_view_min_texture_px` governs and the only way to judge how sharp the wall actually looks.
 @export var preview_wall_view_resolution : bool = false:
 	set(v):
 		preview_wall_view_resolution = v
 		_repack()
 
-## BUTTON. Plays the one-off OPENING REVEAL — the move `Main` runs when a save is chosen, scaled by
-## `wall_reveal_delay_scale` so it reads as longer and slower than an ordinary Wall press. This is
-## the only thing that exercises that knob.
+## BUTTON. Plays the one-off OPENING REVEAL — the move `Main` runs when a save is chosen, scaled by `wall_reveal_delay_scale` so it reads as longer and slower than an ordinary Wall press. This is the only thing that exercises that knob.
 @export var play_reveal : bool = false:
 	set(v):
 		play_reveal = false
@@ -173,17 +155,16 @@ const EDITOR_INERT_KNOBS : Array[String] = ["wall_selection_repeat_delay", "wall
 	get: return _container_side()
 
 @export_group("Gestures")
-## Route real touch input through the REAL `WallInput.PinchTracker`, so
-## `wall_pinch_threshold_px` is tunable against actual fingers: pinch OUT enters the selected
-## picture, pinch IN goes to wall view.
-##
-## ⚠ Needs a touch device, or `emulate_mouse_from_touch` turned OFF — on desktop Godot converts
-## touches to mouse events before they ever reach a tracker. `_gesture_log` below records what the
-## tracker actually saw, so a threshold that never fires is visible rather than merely silent.
+# ⚠ Needs a touch device, or `emulate_mouse_from_touch` turned OFF — on desktop Godot converts
+# touches to mouse events before they ever reach a tracker. `_gesture_log` below records what the
+# tracker actually saw, so a threshold that never fires is visible rather than merely silent.
+
+## Route real touch input through the REAL `WallInput.PinchTracker`, so `wall_pinch_threshold_px` is tunable against actual fingers: pinch OUT enters the selected picture, pinch IN goes to wall view.
 @export var preview_pinch : bool = false:
 	set(v):
 		preview_pinch = v
-		_pinch = WallInput.PinchTracker.new()   # a fresh tracker, never a half-finished gesture
+# a fresh tracker, never a half-finished gesture
+		_pinch = WallInput.PinchTracker.new()
 		_gesture_log = ""
 ## The last gesture the tracker reported, for reading back in the Inspector.
 @export var gesture_log : String = "":
@@ -191,13 +172,14 @@ const EDITOR_INERT_KNOBS : Array[String] = ["wall_selection_repeat_delay", "wall
 	get: return _gesture_log
 
 @export_group("Honesty")
+# ⚠ **THE LIST IS CHECKED, NOT DECLARED.** It used to return `""` for any run that had a `Wall`,
+# which made it a claim about the code rather than a reading of it -- and it stayed empty while
+# the board knobs it had never covered were being ignored by the hosted `GameView`. Now the two
+
+# things that can actually be wrong are asked: whether there is a `Wall` for the knobs that need
+# one, and whether the screens the tool hosts really resolve to THIS panel's `preview_settings`.
+
 ## ⚠ READ-ONLY. The knobs this preview cannot exercise right now, or "" when it drives them all.
-##
-## ⚠ **THE LIST IS CHECKED, NOT DECLARED.** It used to return `""` for any run that had a `Wall`,
-## which made it a claim about the code rather than a reading of it -- and it stayed empty while
-## the board knobs it had never covered were being ignored by the hosted `GameView`. Now the two
-## things that can actually be wrong are asked: whether there is a `Wall` for the knobs that need
-## one, and whether the screens the tool hosts really resolve to THIS panel's `preview_settings`.
 @export var knobs_this_preview_does_not_drive : String = "":
 	set(_v): pass
 	get: return ", ".join(undriven_knobs())
@@ -207,15 +189,14 @@ func undriven_knobs() -> Array[String]:
 	var out : Array[String] = []
 	if not is_instance_valid(_wall):
 		out.append_array(EDITOR_INERT_KNOBS)
-	# The board's own knobs reach a hosted `GameView` only through `PlayArea.settings()`, which
-	# resolves the SAME override this tool sets. If that ever stops being true, every board knob on
-	# the panel is inert and nothing else here would say so.
+# The board's own knobs reach a hosted `GameView` only through `PlayArea.settings()`, which
+# resolves the SAME override this tool sets. If that ever stops being true, every board knob on
+# the panel is inert and nothing else here would say so.
 	if preview_settings and PlayArea.settings() != preview_settings:
 		out.append_array(BOARD_KNOBS)
 	return out
 
-## The board-side knobs the panel edits. They are not `wall_*`, they reach the hosted `GameView`
-## by a different route, and nothing else in this file would notice that route breaking.
+## The board-side knobs the panel edits. They are not `wall_*`, they reach the hosted `GameView` by a different route, and nothing else in this file would notice that route breaking.
 const BOARD_KNOBS : Array[String] = ["board_edge_pad_rows", "container_size_fraction",
 		"container_size_max_px", "grid_align_rows_globally", "card_scale", "card_separation_scale"]
 
@@ -225,8 +206,7 @@ const BOARD_KNOBS : Array[String] = ["board_edge_pad_rows", "container_size_frac
 	set(v):
 		save_now = false
 		if v: _save()
-## BUTTON. Discards every in-memory edit and reloads `layout` from disk (or reseeds
-## `Wall.initial_layout()` if nothing has been saved yet).
+## BUTTON. Discards every in-memory edit and reloads `layout` from disk (or reseeds `Wall.initial_layout()` if nothing has been saved yet).
 @export var revert_now : bool = false:
 	set(v):
 		revert_now = false
@@ -245,16 +225,12 @@ var _wall : Wall = null
 var _overlay : WallOverlay = null
 ## Real Back/Forward history behind the overlay's own buttons. Seeded from `preview_focus_id`.
 var _focus_stack : FocusStack = null
-## True while a preview move owns the camera. The overlay stays PRESSABLE throughout on purpose —
-## the game locks wall INPUT during a move, not the overlay's buttons, and whether that is right is
-## one of the things this tool exists to let you feel.
+## True while a preview move owns the camera. The overlay stays PRESSABLE throughout on purpose — the game locks wall INPUT during a move, not the overlay's buttons, and whether that is right is one of the things this tool exists to let you feel.
 var _move_active : bool = false
 var _pinch := WallInput.PinchTracker.new()
 var _gesture_log : String = ""
 
-## Feeds real input through the real pinch tracker. `Wall` does this from its own
-## `_unhandled_input` for the same reason: a gesture must be derived from the events that actually
-## arrived, never re-simulated.
+## Feeds real input through the real pinch tracker. `Wall` does this from its own `_unhandled_input` for the same reason: a gesture must be derived from the events that actually arrived, never re-simulated.
 func _unhandled_input(event: InputEvent) -> void:
 	if not preview_pinch or Engine.is_editor_hint() or _move_active: return
 	var gesture := _pinch.feed(event, preview_settings.wall_pinch_threshold_px)
@@ -266,14 +242,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		await _move_to(&"")
 var _last_rects : Array[PictureRect] = []
 
-## Whatever `WallPicture.editor_settings` held before this tool claimed it, restored on the way
-## out so a played tool scene leaves the shipped game reading `SettingsManager` again.
+## Whatever `WallPicture.editor_settings` held before this tool claimed it, restored on the way out so a played tool scene leaves the shipped game reading `SettingsManager` again.
 var _previous_editor_settings : PlayerSettings = null
 
 func _ready() -> void:
-	# ⚠ `Wall._ready()` pauses the whole tree and this tool KEEPS that pause, because it is what
-	# makes an unfocused screen freeze the way the game freezes it. Everything here must therefore
-	# opt out, exactly as `Wall`, `%Camera2D` and `%Overlay` do in `wall.tscn`.
+# ⚠ `Wall._ready()` pauses the whole tree and this tool KEEPS that pause, because it is what
+# makes an unfocused screen freeze the way the game freezes it. Everything here must therefore
+# opt out, exactly as `Wall`, `%Camera2D` and `%Overlay` do in `wall.tscn`.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_previous_editor_settings = WallPicture.editor_settings
 	var window := _viewport_size()
@@ -284,7 +259,8 @@ func _ready() -> void:
 		_seed_unlocked_ids()
 		_repack()
 	else:
-		layout = _load_or_seed_layout()   # setter itself seeds + repacks
+# setter itself seeds + repacks
+		layout = _load_or_seed_layout()
 
 func _exit_tree() -> void:
 	WallPicture.editor_settings = _previous_editor_settings
@@ -298,20 +274,18 @@ func _process(delta: float) -> void:
 
 # ============================================================== Settings override
 
-## Points the whole wall at `preview_settings`. One assignment, no node, no autoload — and it wins
-## whether this scene is previewed or played.
+## Points the whole wall at `preview_settings`. One assignment, no node, no autoload — and it wins whether this scene is previewed or played.
 func _apply_preview_settings() -> void:
 	WallPicture.editor_settings = preview_settings
 
 # ============================================================== Layout load / save / revert
 
-## Loads `LAYOUT_PATH` fresh off disk, bypassing the resource path cache so a revert discards
-## in-memory edits rather than handing back the same mutated object.
+## Loads `LAYOUT_PATH` fresh off disk, bypassing the resource path cache so a revert discards in-memory edits rather than handing back the same mutated object.
 func _load_or_seed_layout() -> WallLayout:
 	if ResourceLoader.exists(LAYOUT_PATH):
 		return ResourceLoader.load(LAYOUT_PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as WallLayout
-	# Nothing on disk yet: seed from the same starting content the game boots with, so there is
-	# something real to tune immediately.
+# Nothing on disk yet: seed from the same starting content the game boots with, so there is
+# something real to tune immediately.
 	return Wall.initial_layout()
 
 func _save() -> void:
@@ -330,19 +304,16 @@ func _revert() -> void:
 	print("WallEditor: reverted -- ", ("loaded " + LAYOUT_PATH) if ResourceLoader.exists(LAYOUT_PATH)
 			else "no saved file yet, reseeded Wall.initial_layout()")
 
-## Seeds EVERY id in the layout the first time one is assigned — an empty `unlocked_ids` means
-## "nothing chosen yet", not "everything locked". Never overwrites a simulation already in
-## progress.
+## Seeds EVERY id in the layout the first time one is assigned — an empty `unlocked_ids` means "nothing chosen yet", not "everything locked". Never overwrites a simulation already in progress.
 func _seed_unlocked_ids() -> void:
 	if not layout or not unlocked_ids.is_empty(): return
 	var seeded : Array[StringName] = []
 	for e : PictureEntry in layout.pictures:
 		seeded.append(e.id)
-	unlocked_ids = seeded   # fires this field's own setter -> one extra harmless repack
+# fires this field's own setter -> one extra harmless repack
+	unlocked_ids = seeded
 
-## Seeds the transition picker with `home_id` and the picture packed furthest from it — the
-## longest move the wall can make, and so the clearest look at the curves. Only fills a blank
-## field, so a pair chosen by hand survives a re-pack.
+## Seeds the transition picker with `home_id` and the picture packed furthest from it — the longest move the wall can make, and so the clearest look at the curves. Only fills a blank field, so a pair chosen by hand survives a re-pack.
 func _seed_transition_ids() -> void:
 	if not layout or _last_rects.is_empty(): return
 	if preview_source_id == &"": preview_source_id = layout.home_id
@@ -362,18 +333,16 @@ func _seed_transition_ids() -> void:
 
 # ============================================================== Live preview scaffold
 
-## Builds the roots and camera the preview lives under. ⚠ Deliberately NOT a real `Wall`:
-## `Wall._ready()` sets `get_tree().paused = true` GLOBALLY, which would freeze the editor's own
-## tree and every other open `@tool` scene. `WallPicture`/`WallPacker`/`WallTransition` are used
-## directly — the real code, just not the pausing shell around it.
+## Builds the roots and camera the preview lives under. ⚠ Deliberately NOT a real `Wall`: `Wall._ready()` sets `get_tree().paused = true` GLOBALLY, which would freeze the editor's own tree and every other open `@tool` scene. `WallPicture`/`WallPacker`/`WallTransition` are used directly — the real code, just not the pausing shell around it.
 func _build_preview_scaffold() -> void:
-	# RUNNING: the real shell, so every knob reaches the code the game runs it through.
+# RUNNING: the real shell, so every knob reaches the code the game runs it through.
 	if not Engine.is_editor_hint():
 		_build_real_wall()
 		return
 	_pictures_root = Node2D.new()
 	_pictures_root.name = "PreviewPictures"
-	add_child(_pictures_root)   # NO owner -- see the class doc comment
+# NO owner -- see the class doc comment
+	add_child(_pictures_root)
 	_viewports_root = Node.new()
 	_viewports_root.name = "PreviewViewports"
 	add_child(_viewports_root)
@@ -387,7 +356,8 @@ func _build_preview_scaffold() -> void:
 # and that is KEPT — it is what freezes an unfocused screen.
 func _build_real_wall() -> void:
 	_wall = WALL_SCENE.instantiate()
-	add_child(_wall)   # NO owner
+# NO owner
+	add_child(_wall)
 	_pictures_root = _wall.get_node(^"%Pictures")
 	_viewports_root = _wall.get_node(^"%Viewports")
 	_camera = _wall.get_node(^"%Camera2D")
@@ -412,9 +382,7 @@ func _teardown_preview_pictures() -> void:
 
 # ============================================================== Re-pack
 
-## The one place every live edit converges: re-runs `WallPacker.pack()` over `layout`'s current
-## fields, `unlocked_ids` and `preview_aspect`, rebuilds every preview `WallPicture` through the
-## real `WallPicture.build()`, and reframes the camera to the packed extent.
+## The one place every live edit converges: re-runs `WallPacker.pack()` over `layout`'s current fields, `unlocked_ids` and `preview_aspect`, rebuilds every preview `WallPicture` through the real `WallPicture.build()`, and reframes the camera to the packed extent.
 func _repack() -> void:
 	if not layout or not _pictures_root: return
 	_teardown_preview_pictures()
@@ -423,21 +391,22 @@ func _repack() -> void:
 	var ids : Array[StringName] = []
 	for id : StringName in unlocked_ids:
 		if by_id.has(id): ids.append(id)
-	# `wall_unlock_all` is a real knob with a real effect in the game, so it has one here. Honoured
-	# by widening the SIMULATED unlock set rather than by reading `ProfileManager`, which this tool
-	# must never touch.
+# `wall_unlock_all` is a real knob with a real effect in the game, so it has one here. Honoured
+# by widening the SIMULATED unlock set rather than by reading `ProfileManager`, which this tool
+# must never touch.
 	if preview_settings.wall_unlock_all:
 		ids.clear()
 		for e : PictureEntry in layout.pictures: ids.append(e.id)
 	var rects := WallPacker.pack(layout, ids, preview_aspect)
 	for rect : PictureRect in rects:
 		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
-		_pictures_root.add_child(wp)   # NO owner
+# NO owner
+		_pictures_root.add_child(wp)
 		wp.build(rect, _build_entry(by_id[rect.id]), _viewports_root, _live_screen(rect.id))
 		_preview_pictures[rect.id] = wp
 	_last_rects = rects
-	# `Wall` records placement order here, which is what `wall_jump_N` counts by. Geometry is a
-	# no-op -- every picture was just built at exactly this rect.
+# `Wall` records placement order here, which is what `wall_jump_N` counts by. Geometry is a
+# no-op -- every picture was just built at exactly this rect.
 	if is_instance_valid(_wall):
 		var rects_by_id : Dictionary[StringName, PictureRect] = {}
 		for rect : PictureRect in rects: rects_by_id[rect.id] = rect
@@ -445,22 +414,22 @@ func _repack() -> void:
 	_seed_transition_ids()
 	_apply_focus()
 	_print_debug_readout()
-	# Recorded here, not only inside _process()'s poll -- a repack triggered by one of THIS
-	# script's own setters (layout/preview_settings/preview_aspect/unlocked_ids all call _repack()
-	# directly, for instant feedback) must not leave _watched stale, or the very next poll tick
-	# would see a "changed" fingerprint and redundantly repack a second time for the same edit.
+# Recorded here, not only inside _process()'s poll -- a repack triggered by one of THIS
+# script's own setters (layout/preview_settings/preview_aspect/unlocked_ids all call _repack()
+# directly, for instant feedback) must not leave _watched stale, or the very next poll tick
+
+# would see a "changed" fingerprint and redundantly repack a second time for the same edit.
 	_watched = _fingerprint()
 	print("WallEditor: packed %d/%d pictures at aspect %.3f" \
 			% [rects.size(), layout.pictures.size(), preview_aspect])
 
-## The real screen for `id`, so the tool shows the wall the way the game does rather than a grid
-## of empty frames. `layout_default.tres` carries no `PackedScene` on any entry — the game's
-## screens are reparented in by `Main` at runtime — so without this there is nothing to draw.
-##
-## ⚠ RUNNING ONLY (F6). These are ordinary game scenes: instantiating `menu.tscn`/`map.tscn` inside
-## the EDITOR runs their `_ready()` against absent autoloads. Previewing in the Inspector therefore
-## draws empty frames, which is the right trade for geometry work; press F6 to see content.
-## Freed with the rest of the preview by `_teardown_preview_pictures()` -> `WallPicture.teardown()`.
+# ⚠ RUNNING ONLY (F6). These are ordinary game scenes: instantiating `menu.tscn`/`map.tscn` inside
+# the EDITOR runs their `_ready()` against absent autoloads. Previewing in the Inspector therefore
+# draws empty frames, which is the right trade for geometry work; press F6 to see content.
+
+# Freed with the rest of the preview by `_teardown_preview_pictures()` -> `WallPicture.teardown()`.
+
+## The real screen for `id`, so the tool shows the wall the way the game does rather than a grid of empty frames. `layout_default.tres` carries no `PackedScene` on any entry — the game's screens are reparented in by `Main` at runtime — so without this there is nothing to draw.
 func _live_screen(id: StringName) -> Node:
 	if use_placeholder_content or Engine.is_editor_hint(): return null
 	var scene : PackedScene = LIVE_SCREENS.get(id)
@@ -469,12 +438,10 @@ func _live_screen(id: StringName) -> Node:
 	_listen_for_info(screen)
 	return screen
 
-## ⚠ A HOSTED SCREEN PUBLISHES DESCRIPTIONS AND NOTHING HERE HEARD THEM. `Main` connects
-## `GameView.info_requested` and `Map.info_hovered`; this tool hosts the same screens and did not,
-## so highlighting a card in the preview raised an entry into the void.
-##
-## Duck-typed on the signal NAME rather than the class: the two screens use different ones, and a
-## third would need no change here.
+# Duck-typed on the signal NAME rather than the class: the two screens use different ones, and a
+# third would need no change here.
+
+## ⚠ A HOSTED SCREEN PUBLISHES DESCRIPTIONS AND NOTHING HERE HEARD THEM. `Main` connects `GameView.info_requested` and `Map.info_hovered`; this tool hosts the same screens and did not, so highlighting a card in the preview raised an entry into the void.
 func _listen_for_info(screen: Node) -> void:
 	for signal_name : StringName in [&"info_requested", &"info_hovered"]:
 		if screen.has_signal(signal_name):
@@ -510,7 +477,8 @@ func _apply_locked_description() -> void:
 	var area := _hosted_play_area()
 	if area == null: return
 	var data : CardData = area.ui_data.values()[0]
-	container.lock_to(PlayArea.card_info(data, area.board_card_window_px()), data)
+	container.lock_to(PlayArea.card_info(data,
+			CardVisual.preview_window_px(area.picture_to_window_scale)), data)
 
 ## The hosted game screen's board, or null while the game picture is locked out of the pack or drawing a placeholder.
 func _hosted_play_area() -> PlayArea:
@@ -525,8 +493,7 @@ func _entry_for(id: StringName) -> PictureEntry:
 		if e.id == id: return e
 	return null
 
-## The entry `_repack()` builds from: the real entry, or — under `use_placeholder_content` — a
-## copy with `scene = null`. Never mutates the real `PictureEntry`, which `save_now` would persist.
+## The entry `_repack()` builds from: the real entry, or — under `use_placeholder_content` — a copy with `scene = null`. Never mutates the real `PictureEntry`, which `save_now` would persist.
 func _build_entry(entry: PictureEntry) -> PictureEntry:
 	if not use_placeholder_content or entry.scene == null: return entry
 	var stand_in := PictureEntry.new()
@@ -541,7 +508,8 @@ func _build_entry(entry: PictureEntry) -> PictureEntry:
 	stand_in.music = entry.music
 	stand_in.frame_colour = entry.frame_colour
 	stand_in.background_texture = entry.background_texture
-	stand_in.scene = null   # the one field placeholder mode actually changes
+# the one field placeholder mode actually changes
+	stand_in.scene = null
 	return stand_in
 
 ## Poses the camera for whatever the preview shows — wall view, or a focused picture at rest.
@@ -555,10 +523,7 @@ func _pose_camera() -> void:
 	_camera.position = rest["position"] as Vector2
 	_camera.zoom = Vector2.ONE * (rest["zoom"] as float)
 
-## Focuses `preview_focus_id` and unfocuses everything else, through the REAL
-## `WallPicture.focus()`/`unfocus()`. That is what puts each picture's SubViewport at the resolution
-## and texture filter the running game gives it, so `wall_view_min_texture_px` and the sharpness of
-## an unfocused picture are visible here rather than only in the game.
+## Focuses `preview_focus_id` and unfocuses everything else, through the REAL `WallPicture.focus()`/`unfocus()`. That is what puts each picture's SubViewport at the resolution and texture filter the running game gives it, so `wall_view_min_texture_px` and the sharpness of an unfocused picture are visible here rather than only in the game.
 func _apply_focus() -> void:
 	for id : StringName in _preview_pictures:
 		var wp : WallPicture = _preview_pictures[id]
@@ -566,20 +531,22 @@ func _apply_focus() -> void:
 		if id == preview_focus_id:
 			wp.focus()
 			continue
-		# ⚠ EVERY non-focused picture is really `unfocus()`ed, never merely skipped. Skipping it
-		# leaves `is_focused` true on whatever was focused last, and `Wall._focused_picture()` then
-		# reports a picture that is not focused -- which silently kills the wall's filter updates
-		# and its held-direction selection repeat, both of which bail when anything is focused.
-		#
-		# `preview_wall_view_resolution` chooses only the SIZE passed in: the real wall-view
-		# footprint, or the viewport's current size, which makes the resize a no-op. Shrinking is
-		# off by default because a screen laid out for its `design_size` does not re-flow into a
-		# smaller viewport -- it CROPS.
+# ⚠ EVERY non-focused picture is really `unfocus()`ed, never merely skipped. Skipping it
+# leaves `is_focused` true on whatever was focused last, and `Wall._focused_picture()` then
+# reports a picture that is not focused -- which silently kills the wall's filter updates
+
+# and its held-direction selection repeat, both of which bail when anything is focused.
+
+# `preview_wall_view_resolution` chooses only the SIZE passed in: the real wall-view
+# footprint, or the viewport's current size, which makes the resize a no-op. Shrinking is
+# off by default because a screen laid out for its `design_size` does not re-flow into a
+
+# smaller viewport -- it CROPS.
 		var footprint := _footprint(_rect_for(id)) if preview_wall_view_resolution 				else Vector2(wp.viewport.size)
 		wp.unfocus(footprint)
-		# `unfocus()` leaves the viewport at UPDATE_DISABLED, which is right in the game because the
-		# picture rendered while it was focused. Here it may never have rendered at all -- so
-		# repaint once through the real frozen-texture path.
+# `unfocus()` leaves the viewport at UPDATE_DISABLED, which is right in the game because the
+# picture rendered while it was focused. Here it may never have rendered at all -- so
+# repaint once through the real frozen-texture path.
 		wp.mark_for_rerender()
 	_apply_selection()
 	_pose_camera()
@@ -589,14 +556,12 @@ func _apply_focus() -> void:
 	var container := _container()
 	if container: container.set_active_screen(preview_focus_id)
 
-## The on-screen pixel footprint a picture gets while NOT focused, at the tool's own wall-view zoom
-## — the same quantity `Main._footprint()` computes for the running game.
+## The on-screen pixel footprint a picture gets while NOT focused, at the tool's own wall-view zoom — the same quantity `Main._footprint()` computes for the running game.
 func _footprint(rect: PictureRect) -> Vector2:
 	if rect == null: return Vector2.ONE
 	return rect.size * _wall_view_zoom()
 
-## Applies the wall-view selection cursor. A focused picture is not in wall view, so nothing is
-## lifted while one is focused — `WallPicture` enforces that itself; this only chooses the id.
+## Applies the wall-view selection cursor. A focused picture is not in wall view, so nothing is lifted while one is focused — `WallPicture` enforces that itself; this only chooses the id.
 func _apply_selection() -> void:
 	for id : StringName in _preview_pictures:
 		var wp : WallPicture = _preview_pictures[id]
@@ -607,8 +572,7 @@ func _print_debug_readout() -> void:
 	if not is_instance_valid(_wall) or not preview_settings.wall_debug_readout: return
 	print(_wall.debug_memory_readout())
 
-## Plays the one-off opening reveal: whatever is focused zooms out to wall view over the ordinary
-## clock multiplied by `wall_reveal_delay_scale`, which is the only thing that reads that knob.
+## Plays the one-off opening reveal: whatever is focused zooms out to wall view over the ordinary clock multiplied by `wall_reveal_delay_scale`, which is the only thing that reads that knob.
 func _play_reveal() -> void:
 	if Engine.is_editor_hint():
 		push_warning("WallEditor: the reveal only plays when the tool is RUN (F6)")
@@ -624,13 +588,14 @@ func _rect_for(id: StringName) -> PictureRect:
 		if rect.id == id: return rect
 	return null
 
+# ⚠ THE CROP BIAS IS `layout.view_margin`, NOT `wall_overfill_margin`. They are different knobs
+# for different jobs — `wall_overfill_margin` is a PICTURE's own overfill when focused — and using
+# the picture knob here framed the preview ~4% tighter than the game while making `view_margin`
+
+# do nothing at all. A tool that composes the wall differently from the product cannot be used to
+# rule on composition, which is the one job this framing has.
+
 ## The wall-view zoom, computed exactly as `Wall.wall_view_zoom()` does.
-##
-## ⚠ THE CROP BIAS IS `layout.view_margin`, NOT `wall_overfill_margin`. They are different knobs
-## for different jobs — `wall_overfill_margin` is a PICTURE's own overfill when focused — and using
-## the picture knob here framed the preview ~4% tighter than the game while making `view_margin`
-## do nothing at all. A tool that composes the wall differently from the product cannot be used to
-## rule on composition, which is the one job this framing has.
 func _wall_view_zoom() -> float:
 	var extent := _wall_extent()
 	if extent.size.x <= 0.0 or extent.size.y <= 0.0: return 1.0
@@ -668,8 +633,7 @@ func _viewport_size() -> Vector2:
 
 # ============================================================== Overlay
 
-## Reflects the preview's state back onto the real overlay: Back/Forward enabled from the real
-## `FocusStack`, the Wall button hidden below two pictures.
+## Reflects the preview's state back onto the real overlay: Back/Forward enabled from the real `FocusStack`, the Wall button hidden below two pictures.
 func _refresh_overlay() -> void:
 	if not is_instance_valid(_overlay) or _focus_stack == null: return
 	_overlay.refresh(_focus_stack, _preview_pictures.size(), preview_focus_id == &"")
@@ -692,12 +656,11 @@ func _on_overlay_wall() -> void:
 	if _move_active: return
 	await _move_to(&"", false)
 
-## Moves the preview to `dest_id` (`&""` = wall view) with a REAL animation, so the overlay and a
-## running transition genuinely contend the way they do in the game.
-##
-## ⚠ This is the tool's OWN mover, not a second copy of `Main`'s orchestration — it drives the
-## camera and the focus state and nothing else. It does not touch profiles, screens, music or the
-## input lock, all of which are `Main`'s and none of which this tool has.
+# ⚠ This is the tool's OWN mover, not a second copy of `Main`'s orchestration — it drives the
+# camera and the focus state and nothing else. It does not touch profiles, screens, music or the
+# input lock, all of which are `Main`'s and none of which this tool has.
+
+## Moves the preview to `dest_id` (`&""` = wall view) with a REAL animation, so the overlay and a running transition genuinely contend the way they do in the game.
 func _move_to(dest_id: StringName, record: bool = true, duration_scale: float = 1.0) -> void:
 	if _move_active or dest_id == preview_focus_id: return
 	var source_rect := _rect_for(preview_focus_id)
@@ -707,11 +670,12 @@ func _move_to(dest_id: StringName, record: bool = true, duration_scale: float = 
 	if is_instance_valid(_wall):
 		_wall.begin_music_crossfade(_entry_for(dest_id))
 	if source_rect != null and dest_rect != null:
-		# Picture to picture: the real `WallTransition`, on the real curves.
+# Picture to picture: the real `WallTransition`, on the real curves.
 		var source_wp : WallPicture = _preview_pictures[preview_focus_id]
 		var dest_wp : WallPicture = _preview_pictures[dest_id]
 		var transition := WallTransition.new()
-		var landed : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+# boxed -- lambdas capture locals BY VALUE
+		var landed : Array[bool] = [false]
 		transition.landed.connect(func(_id: StringName) -> void: landed[0] = true)
 		transition.request(_camera, source_wp, source_rect, dest_wp, dest_rect, _viewport_size(),
 				preview_settings)
@@ -720,8 +684,8 @@ func _move_to(dest_id: StringName, record: bool = true, duration_scale: float = 
 				_wall.update_travel_music(source_rect.centre, dest_rect.centre, _camera.position)
 			await get_tree().process_frame
 	else:
-		# Wall view is one end of this move, which `WallTransition` cannot express -- it only ever
-		# runs picture to picture. A plain tween on the authored travel curve, same clock.
+# Wall view is one end of this move, which `WallTransition` cannot express -- it only ever
+# runs picture to picture. A plain tween on the authored travel curve, same clock.
 		var target_pos := _wall_extent().get_center()
 		var target_zoom := _wall_view_zoom()
 		if dest_rect:
@@ -748,10 +712,11 @@ func _move_to(dest_id: StringName, record: bool = true, duration_scale: float = 
 		_wall.finish_music_crossfade()
 	_move_active = false
 	if record and dest_id != &"": _focus_stack.visit(dest_id)
-	# Wall view re-seeds the wall's own selection cursor to the picture just left, as the game does.
+# Wall view re-seeds the wall's own selection cursor to the picture just left, as the game does.
 	if is_instance_valid(_wall) and dest_id == &"" and preview_focus_id != &"":
 		_wall.enter_wall_view(preview_focus_id)
-	preview_focus_id = dest_id   # setter re-poses, re-selects and refreshes the overlay
+# setter re-poses, re-selects and refreshes the overlay
+	preview_focus_id = dest_id
 
 # ============================================================== Transition preview
 
@@ -765,8 +730,8 @@ func _play_transition() -> void:
 	var src := _preview_pictures[preview_source_id]
 	var dst := _preview_pictures[preview_dest_id]
 	var transition := WallTransition.new()
-	# Re-frame the preview camera back over the whole wall once the move lands, so the tool is
-	# never left staring at just the two pictures the last preview used.
+# Re-frame the preview camera back over the whole wall once the move lands, so the tool is
+# never left staring at just the two pictures the last preview used.
 	transition.landed.connect(func(_id: StringName) -> void: _pose_camera())
 	transition.request(_camera, src, src.rect, dst, dst.rect, _viewport_size(), preview_settings)
 	print("WallEditor: previewing %s -> %s with the real WallTransition curves" \
@@ -774,9 +739,7 @@ func _play_transition() -> void:
 
 # ============================================================== Live-edit watch (WATCH_SECS)
 
-## Every Inspector-visible value of `layout` (recursing into its `PictureEntry` array) and
-## `preview_settings`, flattened for comparison. Polled rather than driven by per-field setters so
-## it cannot go stale when a field is added to either class.
+## Every Inspector-visible value of `layout` (recursing into its `PictureEntry` array) and `preview_settings`, flattened for comparison. Polled rather than driven by per-field setters so it cannot go stale when a field is added to either class.
 func _fingerprint() -> Array:
 	var out : Array = []
 	_read_into(layout, out, 3)
@@ -792,8 +755,8 @@ func _read_into(res: Resource, out: Array, depth: int) -> void:
 		if not (usage & PROPERTY_USAGE_EDITOR): continue
 		var key : StringName = prop["name"]
 		var value : Variant = res.get(key)
-		# ⚠ Copy the reference types: `Array`/`Dictionary` are references, so an entry edited in
-		# place would compare equal to itself forever.
+# ⚠ Copy the reference types: `Array`/`Dictionary` are references, so an entry edited in
+# place would compare equal to itself forever.
 		if value is Array: value = (value as Array).duplicate()
 		elif value is Dictionary: value = (value as Dictionary).duplicate()
 		out.append(value)

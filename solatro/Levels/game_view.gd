@@ -268,7 +268,7 @@ func _publish_board_inset() -> void:
 	play_area.board_inset_left = region.position.x
 	play_area.board_inset_top = region.position.y
 	play_area.board_visible_crop = design - region.end
-	hud_container.resize_preview(play_area.board_card_window_px())
+	hud_container.resize_preview(CardVisual.preview_window_px(play_area.picture_to_window_scale))
 
 # Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this
 # picture. `Tests/Engine/test_leak_canary.gd` discards through a view with no `Main`, hence no picture.
@@ -510,7 +510,8 @@ func _on_data_selected(data: CardData) -> void:
 	if game.processing:
 		play_area.stop_following()
 		return
-	hud_container.lock_to(PlayArea.card_info(data, play_area.board_card_window_px()), data)
+	hud_container.lock_to(PlayArea.card_info(data,
+			CardVisual.preview_window_px(play_area.picture_to_window_scale)), data)
 	play_area.locked_data = data
 	if play_area.selected_cards:
 		if data in play_area.selected_cards: return

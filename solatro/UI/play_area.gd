@@ -1985,6 +1985,9 @@ func _stack_slot_center(origin_x: float, floor_y: float, column: int, h: int) ->
 #⚠ A FACE-DOWN STOCK CARD KEEPS ITS OWN FOCUS_CLICK, which is what walks the arrows past it.
 #This runs on every refresh, after `_mark_stock_controls` set it.
 
+#⚠ A FACE-DOWN STOCK CARD TAKES NO HEIGHT: a lift means the player is holding the card, so the
+#stock must sit UNDER the slot's card at the same point rather than displace it one pitch up.
+
 ## **THE ONE PLACE A STACK'S CONTROLS ARE SIZED, AND SO WHERE A CELL'S FOCUS LANDS.**
 func _size_stack_slot(slot: Control, marks_layer: bool) -> void:
 	slot.add_theme_constant_override("separation", 0)
@@ -1996,7 +1999,7 @@ func _size_stack_slot(slot: Control, marks_layer: bool) -> void:
 	for j : int in slot.get_child_count() - 1:
 		var card_control : Control = slot.get_child(j)
 		card_control.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
-				0.0 if marks_layer else _depth_pitch_px())
+				0.0 if marks_layer or is_stock_control(card_control) else _depth_pitch_px())
 		card_control.focus_mode = (Control.FOCUS_NONE if marks_layer or not grants_focus
 				else Control.FOCUS_CLICK if is_stock_control(card_control)
 				else Control.FOCUS_ALL)
@@ -2078,15 +2081,17 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 
 #⚠ Reading the STRIP instead is not the answer either: its height comes from
 #`entrance_visible_rows`, so it stops being the columns' line the moment they outgrow it.
+
+#⚠ THE FACE-DOWN STOCK CARD IS NOT A ROW. It draws under the slot's own card at the same point,
+#so it adds neither to the resting height nor to the height of the card above it.
 	var deepest := 0
 	var game := CardEnvironment.get_current_game()
 	if game:
 		for i : int in game.state.upper_zone.size():
-			deepest = maxi(deepest,
-					game.state.upper_zone[i].datas.size() + _face_down_depth(i))
+			deepest = maxi(deepest, game.state.upper_zone[i].datas.size())
 	var resting_h := CardVisual.card_size_play.y 			+ float(maxi(deepest - 1, 0)) * _depth_pitch_px()
 	var floor_y := upper_zone_right.global_position.y + resting_h * board_zoom
-	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h + _face_down_depth(coord.x))
+	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h)
 #⚠ THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS. A reveal grows one
 #layer's strip and lifts every layer above it by an amount the pitch does not describe. The offset
 #comes from the same eased numbers that size the controls, so geometry outlives relayout timing.
@@ -3241,7 +3246,7 @@ func _publish_focus_left_cards() -> void:
 
 # THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike.
 func _publish_info(data: CardData) -> void:
-	card_info(data, board_card_window_px()).relay_to(info_requested)
+	card_info(data, CardVisual.preview_window_px(picture_to_window_scale)).relay_to(info_requested)
 
 # A FACE-DOWN CARD DESCRIBES THE SLOT, NEVER ITSELF -- what is hidden stays hidden, and what the
 # player is asking is how much this slot has left to draw.
@@ -3318,10 +3323,13 @@ func on_control_focus_entered(control:Control) -> void:
 # ⚠ THE CALLER OWNS `entry.visual`, a LIVE preview card built per call, and re-applies
 # `size_preview_to()` when the window moves the size a board card is drawn at. A BOX, never a
 # `FlowContainer`: a flow reports the minimum its LAST SORT measured, so a re-size reads stale.
+
+# ⚠ THE EMPTY FIRST LINE IS KEPT: a card with neither rank nor suit has no title, and dropping it
+# would promote its first effect BLOCK into the title, BBCode tags and all.
 static func card_info(data: CardData, card_px: Vector2) -> InfoEntry:
 	var entry := InfoEntry.new()
 	var text := ControlCard.describe_card(data)
-	var split := text.split("\n", false, 1)
+	var split := text.split("\n", true, 1)
 	entry.title = split[0] if split.size() > 0 else ""
 	entry.body = split[1] if split.size() > 1 else ""
 	var row := HBoxContainer.new()
@@ -3366,12 +3374,17 @@ func _apply_row_openings() -> void:
 #⚠ THIS FOLLOWS THE ENTRANCE'S REVERSED ORDER AND IS THE LAST WRITER OF THOSE HEIGHTS. Child 0 is
 #the newest card and shows whole, each card under it shows one depth pitch, and the slot's own
 #zone card is the last child, which update_card_zone_visuals() owns.
+
+#A face-down stock card under a card the slot holds shows nothing of itself, so no height here.
 		for i : int in hbox.get_child_count():
 			var col : Node = hbox.get_child(i)
 			var depth := col.get_child_count() - 1
 			for j : int in depth:
 				var c := col.get_child(j) as Control
 				if not c: continue
+				if j > 0 and is_stock_control(c):
+					c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, 0.0)
+					continue
 				var base : float = CardVisual.card_size_play.y if j == 0 else _depth_pitch_px()
 				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
 						base + row_open_extra(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW,

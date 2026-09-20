@@ -65,11 +65,12 @@ func _ready() -> void:
 	await test_menus_title_and_button_row_centre_on_the_remaining_space()
 	behavior_section("S5: A HIGHLIGHT PUBLISHES AND THE CONTAINER SHOWS")
 	await test_a_highlight_opens_the_description()
+	await test_the_description_titles_a_card_and_sizes_its_effect_names()
 	await test_a_hovered_cards_description_draws_inside_the_container()
 	await test_the_containers_content_starts_one_inset_inside_its_left_edge()
 	await test_the_title_leaves_the_exit_xs_column()
-	await test_the_preview_is_drawn_at_the_boards_own_card_size()
-	await test_the_preview_follows_a_resize_to_the_boards_new_card_size()
+	await test_the_preview_is_drawn_at_the_one_preview_size()
+	await test_the_preview_follows_a_resize_to_the_new_preview_size()
 	await test_losing_the_highlight_keeps_the_last_entry()
 	await test_leaving_and_returning_restores_the_screens_own_description()
 	await test_a_description_dismissed_with_the_x_stays_dismissed_on_return()
@@ -192,6 +193,7 @@ func _ready() -> void:
 	await test_accepting_a_stock_describes_the_slot_and_locks_nothing()
 	await test_the_deck_viewer_lists_every_stock_as_one_sorted_pile()
 	await test_an_arrow_never_stops_on_a_face_down_card()
+	await test_a_stocked_slot_draws_its_card_as_flat_as_an_exhausted_one()
 	behavior_section("S22: END IS REVEALED ONLY WHEN THE SHOW CAN NO LONGER PROGRESS")
 	await test_end_is_revealed_when_no_action_remains()
 	await test_end_stays_hidden_through_the_shows_first_frames()
@@ -1497,7 +1499,7 @@ func _bare_board_point(controls: Array[Control]) -> Vector2:
 # The text the board publishes for a card, split the way `PlayArea.card_info()` splits it: the
 # first line is the card's name, the rest is its description.
 func _expected_text(data: CardData) -> PackedStringArray:
-	return ControlCard.describe_card(data).split("\n", false, 1)
+	return ControlCard.describe_card(data).split("\n", true, 1)
 
 func _preview_card(node: Node) -> ControlCard:
 	var card := node as ControlCard
@@ -1507,12 +1509,44 @@ func _preview_card(node: Node) -> ControlCard:
 		if found: return found
 	return null
 
+## R10: the title is the card's own name, "<Rank> of <Suit>", and every effect is a block whose NAME is written larger than the description under it.
+func test_the_description_titles_a_card_and_sizes_its_effect_names() -> void:
+	await _start_game_fixture()
+	var title : Label = _panel.get_node(^"%Title")
+	var body : RichTextLabel = _panel.get_node(^"%Body")
+	var knife := PipSuitKnife.new().get_str()
+	var numeral := CardData.new().with_suit(PipSuitKnife.new())
+	numeral.rank = PipRankNumeral.new().with_value(5)
+	check(ControlCard.card_title(numeral) == "5 of %s" % knife,
+			"a numeral card is titled by its rank and suit (R10)", ControlCard.card_title(numeral))
+	var face := CardData.new().with_suit(PipSuitKnife.new())
+	face.rank = PipRankNumeral.new().with_value(13)
+	check(ControlCard.card_title(face) == "%s of %s" % [TRANSLATION.find('RANK_KING'), knife],
+			"...and a court card by its own name (R10)", ControlCard.card_title(face))
+	var skilled := CardData.new().with_suit(PipSuitKnife.new()).with_skill(SkillExtraPoint.new())
+	skilled.rank = PipRankNumeral.new().with_value(5)
+	_container.show_description(PlayArea.card_info(skilled,
+			CardVisual.preview_window_px(_play_area.picture_to_window_scale)))
+	await get_tree().process_frame
+	check(title.text == ControlCard.card_title(skilled),
+			"the panel's title is that name and nothing else (R10)", title.text)
+	var named := "[font_size=%d]%s[/font_size]" % [ControlCard.NAME_FONT_SIZE,
+			SkillExtraPoint.new().get_str()]
+	check(body.text.contains(named),
+			"...and the effect's NAME is written in the large font (R10)", body.text)
+	check(body.get_parsed_text().contains(SkillExtraPoint.new().get_description()),
+			"...with its description under it (R10)", body.get_parsed_text())
+	check(body.get_theme_font_size(&"normal_font_size") != ControlCard.NAME_FONT_SIZE,
+			"...in a font size of its own, smaller than the name's (R10)",
+			"%d vs %d" % [body.get_theme_font_size(&"normal_font_size"), ControlCard.NAME_FONT_SIZE])
+	await _end_main_fixture()
+
 ## 1.2/B1/B2: a highlight -- key/pad focus or a real mouse hover -- swaps the container to that card's description.
 func test_a_highlight_opens_the_description() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
 	var title : Label = _panel.get_node(^"%Title")
-	var body : Label = _panel.get_node(^"%Body")
+	var body : RichTextLabel = _panel.get_node(^"%Body")
 	var slot : Control = _panel.get_node(^"%VisualSlot")
 
 	var spelled := InfoEntry.new()
@@ -1574,13 +1608,19 @@ func test_a_hovered_cards_description_draws_inside_the_container() -> void:
 			_check_description_draws_inside_the_container(window)
 	await _end_main_fixture()
 
+# ⚠ THE BODY IS THE ONE PART ALLOWED TO RUN PAST THE BOTTOM: at the one preview size (R9) the top
+# row alone can fill a short top band, and what is below the fold is what the scroll is for. It
+# still has to START inside the container and stay inside it sideways.
 func _check_description_draws_inside_the_container(window: Vector2i) -> void:
 	var bounds := _sidebar_screen_rect(_container)
 	var parts : Array[Control] = [_panel.get_node(^"%Title") as Control,
 			_preview_card(_panel.current_entry.visual), _panel.get_node(^"%Body") as Control]
 	for part : Control in parts:
 		var rect := _sidebar_screen_rect(part)
-		check(part.is_visible_in_tree() and rect.has_area() and bounds.encloses(rect),
+		var fits := bounds.encloses(rect) if part.name != &"Body" else (
+				bounds.has_point(rect.position)
+				and rect.end.x <= bounds.end.x + PREVIEW_WIDTH_TOLERANCE_PX)
+		check(part.is_visible_in_tree() and rect.has_area() and fits,
 				"the description's %s draws inside the container at %s" % [part.name, window],
 				"%s vs container %s" % [rect, bounds])
 
@@ -1692,8 +1732,8 @@ func _hover_a_card_with_a_visual() -> CardData:
 	var data : CardData = _play_area.ui_data[hovered]
 	return data if _play_area.data_card.has(data) else null
 
-## Q34=b/Q33=c: the description's card is drawn at the size that same card has on the board, with the name beside it.
-func test_the_preview_is_drawn_at_the_boards_own_card_size() -> void:
+## R9/Q33=c: every description draws its card at the ONE preview size, the deck viewer's, with the name beside it.
+func test_the_preview_is_drawn_at_the_one_preview_size() -> void:
 	await _start_game_fixture()
 	var data := await _hover_a_card_with_a_visual()
 	if data != null:
@@ -1704,10 +1744,14 @@ func test_the_preview_is_drawn_at_the_boards_own_card_size() -> void:
 		if preview != null and preview.child != null:
 			var preview_px := _card_drawn_width(preview.child)
 			var preview_rect := _sidebar_screen_rect(preview)
-			check(absf(preview_px - board_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
-					"the preview is drawn at the board card's own screen width (Q34=b)",
-					"preview %.1f px vs board %.1f px at board zoom %.3f"
-					% [preview_px, board_px, _play_area.board_zoom])
+			var one_size := CardVisual.preview_window_px(_play_area.picture_to_window_scale).x
+			check(absf(one_size - board_px) > PREVIEW_WIDTH_TOLERANCE_PX,
+					"sanity: the one preview size and the board's own card width differ enough to tell apart",
+					"one size %.1f px vs board %.1f px" % [one_size, board_px])
+			check(absf(preview_px - one_size) <= PREVIEW_WIDTH_TOLERANCE_PX,
+					"the preview is drawn at the deck viewer's card size, not the board's (R9)",
+					"preview %.1f px vs one size %.1f px, board %.1f px at board zoom %.3f"
+					% [preview_px, one_size, board_px, _play_area.board_zoom])
 			check(absf(preview_rect.size.x - preview_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
 					"...and the slot it was given is that same width, so the name clears it",
 					"slot %.1f px vs card %.1f px" % [preview_rect.size.x, preview_px])
@@ -1722,8 +1766,8 @@ func test_the_preview_is_drawn_at_the_boards_own_card_size() -> void:
 					"name %s vs visual %s" % [title_rect, preview_rect])
 	await _end_main_fixture()
 
-## Q34=b through a resize: the preview is re-drawn at the board's NEW card size, not the one it was published at.
-func test_the_preview_follows_a_resize_to_the_boards_new_card_size() -> void:
+## R9 through a resize: the preview is re-drawn at the one preview size at the NEW window, not the one it was published at.
+func test_the_preview_follows_a_resize_to_the_new_preview_size() -> void:
 	await _start_game_fixture()
 	var data := await _hover_a_card_with_a_visual()
 	if data != null:
@@ -1738,10 +1782,14 @@ func test_the_preview_follows_a_resize_to_the_boards_new_card_size() -> void:
 				"the description still holds its preview after the resize")
 		if preview != null and preview.child != null:
 			var preview_px := _card_drawn_width(preview.child)
-			check(absf(preview_px - board_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
-					"the preview is re-drawn at the board card's width at the new window (Q34=b)",
-					"preview %.1f px vs board %.1f px at board zoom %.3f"
-					% [preview_px, board_px, _play_area.board_zoom])
+			var one_size := CardVisual.preview_window_px(_play_area.picture_to_window_scale).x
+			check(absf(one_size - board_px) > PREVIEW_WIDTH_TOLERANCE_PX,
+					"sanity: the one preview size and the board's own card width still differ",
+					"one size %.1f px vs board %.1f px" % [one_size, board_px])
+			check(absf(preview_px - one_size) <= PREVIEW_WIDTH_TOLERANCE_PX,
+					"the preview is re-drawn at the one preview size at the new window (R9)",
+					"preview %.1f px vs one size %.1f px, board %.1f px at board zoom %.3f"
+					% [preview_px, one_size, board_px, _play_area.board_zoom])
 	await _end_main_fixture()
 
 ## 1.3/B4/Q32=a: the pointer leaving every card publishes nothing, so the description keeps its last entry.
@@ -3379,7 +3427,7 @@ func test_a_resize_does_not_re_open_a_dismissed_description() -> void:
 				"a resize under the open viewer leaves the dismissal standing (B9-B11)")
 	await _end_main_fixture()
 
-## The mounted preview belongs to whoever published it: a rect change re-draws a viewer's entry at the VIEWER's own card size, not at the board's.
+## A rect change re-draws an open viewer's entry, and it comes back at the one preview size the deck viewer already draws at.
 func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> void:
 	await _start_game_fixture()
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
@@ -3399,7 +3447,7 @@ func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> voi
 					"sanity: the viewer's card width and the board's are far enough apart to tell apart",
 					"viewer %.1f vs board %.1f" % [viewer_px, board_px])
 			check(absf(_card_drawn_width(preview.child) - viewer_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
-					"the resize re-draws the entry at the VIEWER's own card size (S12.14, GAP-004's built reading)",
+					"the resize re-draws the entry at the one preview size (S12.14, R9)",
 					"preview %.1f vs viewer %.1f, board %.1f"
 					% [_card_drawn_width(preview.child), viewer_px, board_px])
 	await _end_main_fixture()
@@ -4915,10 +4963,43 @@ func _sheet_frame_origin(frame_index: int) -> Vector2:
 func _card_entities(slot: int) -> int:
 	return _play_area.upper_zone_right.get_child(slot).get_child_count() - 1
 
+## S21.8: a face-down stock card sits UNDER the slot's own card and never lifts it -- a lift means the player is holding that card.
+func test_a_stocked_slot_draws_its_card_as_flat_as_an_exhausted_one() -> void:
+	await _start_game_fixture()
+	var state := _fixture_game().state
+	check(state.upper_zone.size() >= 3, "sanity: three Entrance slots, so two are not the armed one",
+			str(state.upper_zone.size()))
+	check(_play_area.armed_slot() != 1 and _play_area.armed_slot() != 2,
+			"sanity: neither slot under test is the armed one", str(_play_area.armed_slot()))
+	var stocks := state.entrance_stocks()
+	check(not stocks[1].datas.is_empty(), "sanity: slot 1 still has a stock behind its card",
+			str(stocks[1].datas.size()))
+	state.discard_deck.append_array(stocks[2].datas)
+	stocks[2].datas.clear()
+	state.revision += 1
+	_play_area.set_card_zones()
+	await get_tree().process_frame
+	check(state.upper_zone[1].datas.size() == state.upper_zone[2].datas.size(),
+			"sanity: the two slots hold the same number of cards",
+			"%d vs %d" % [state.upper_zone[1].datas.size(), state.upper_zone[2].datas.size()])
+	var stocked : CardVisual = _play_area.data_card[state.upper_zone[1].datas.back()]
+	var bare : CardVisual = _play_area.data_card[state.upper_zone[2].datas.back()]
+	await _await_card_settled(stocked)
+	await _await_card_settled(bare)
+	check(absf(stocked.global_position.y - bare.global_position.y) < 1.0,
+			"a stocked slot's card sits as flat as an exhausted slot's (S21.8)",
+			"%.1f vs %.1f" % [stocked.global_position.y, bare.global_position.y])
+	var face_down : CardVisual = _play_area.data_card[_play_area.ui_data[_stock_controls(1)[0]]]
+	await _await_card_settled(face_down)
+	check(face_down.global_position.distance_to(stocked.global_position) < 1.0,
+			"...and its face-down card rests at the same point, drawn under it (S21.8)",
+			"%s vs %s" % [face_down.global_position, stocked.global_position])
+	await _end_main_fixture()
+
 ## S21.5: a face-down card describes the SLOT -- how many it has left -- never the card it hides. The focus LEAVES and comes back for the second read: a control already focused publishes nothing.
 func test_hovering_a_stock_says_how_many_it_has_left() -> void:
 	await _start_game_fixture()
-	var body : Label = _panel.get_node(^"%Body")
+	var body : RichTextLabel = _panel.get_node(^"%Body")
 	var state := _fixture_game().state
 	var stock_control := _stock_controls(1)[0]
 	stock_control.grab_focus()
@@ -4975,11 +5056,15 @@ func test_one_drained_stock_disarms_nothing() -> void:
 	await _end_main_fixture()
 
 ## S21.5b: a CLICK on the face-down card describes the slot too -- it never hands the hidden card to the view, so nothing locks to a card the player cannot see.
+
+# The slot is emptied first: a face-down card under a card the slot holds is covered by it exactly,
+# so the only place a POINTER can reach one is a slot showing nothing else.
 func test_clicking_a_stock_describes_the_slot_and_locks_nothing() -> void:
 	await _start_game_fixture()
 	var title : Label = _panel.get_node(^"%Title")
-	var body : Label = _panel.get_node(^"%Body")
+	var body : RichTextLabel = _panel.get_node(^"%Body")
 	var state := _fixture_game().state
+	await _discard_held_cards_of(1)
 	var stock_control := _stock_controls(1)[0]
 	var hidden : CardData = _play_area.ui_data[stock_control]
 	var clicked := _watch_clicks()
@@ -4999,7 +5084,7 @@ func test_clicking_a_stock_describes_the_slot_and_locks_nothing() -> void:
 func test_accepting_a_stock_describes_the_slot_and_locks_nothing() -> void:
 	await _start_game_fixture()
 	var title : Label = _panel.get_node(^"%Title")
-	var body : Label = _panel.get_node(^"%Body")
+	var body : RichTextLabel = _panel.get_node(^"%Body")
 	var state := _fixture_game().state
 	var stock_control := _stock_controls(1)[0]
 	var hidden : CardData = _play_area.ui_data[stock_control]

@@ -36,10 +36,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="CardInfo" type="Label" parent="VBox"]
+[node name="CardInfo" type="RichTextLabel" parent="VBox"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-autowrap_mode = 3
 custom_minimum_size = Vector2(480, 0)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 text = ""

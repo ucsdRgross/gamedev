@@ -2,12 +2,14 @@ extends TestSuite
 # res://Tests/UI/test_ui_viewers.gd
 # ==============================================================================
 # UI VIEWERS — regression tests for the playtest bugs of 2026-07:
-#   * DeckViewer stacking (Enter on a still-focused button opened endless copies)
-#   * ControlCards not keyboard-focusable (arrow keys dead in viewers)
-#   * ChoiceViewer take-all wiring + deferred population
-#   * CardVisual partial-card rendering (rank-only colored / suit-only art square)
-#   * describe_card inspector text
-#
+
+# * DeckViewer stacking (Enter on a still-focused button opened endless copies)
+# * ControlCards not keyboard-focusable (arrow keys dead in viewers)
+# * ChoiceViewer take-all wiring + deferred population
+
+# * CardVisual partial-card rendering (rank-only colored / suit-only art square)
+# * describe_card inspector text
+
 # CATEGORY MAP: all BEHAVIOR — every check here is something the player saw go
 # wrong in a playtest (stacked viewers, dead keyboard, broken card art/text).
 # ==============================================================================
@@ -27,9 +29,7 @@ func _ready() -> void:
 	await test_booster_pool_comes_from_settings()
 	finish()
 
-## A dummy pack. It overrides create_one_choice so a roll needs no RunManager.run (the real one
-## goes through luck(), which dereferences a null run in a bare test), while still driving the
-## REAL on_map_picked -> ChoiceViewer path — which is where booster_reroll_pool is read.
+## A dummy pack. It overrides create_one_choice so a roll needs no RunManager.run (the real one goes through luck(), which dereferences a null run in a bare test), while still driving the REAL on_map_picked -> ChoiceViewer path — which is where booster_reroll_pool is read.
 class StubBooster extends BoosterTemplate:
 	func get_str() -> String: return "StubPack"
 	func get_description() -> String: return "a test pack"
@@ -53,18 +53,17 @@ func _count_viewers() -> int:
 			n += 1
 	return n
 
-## ⚠ **THE DETAIL LINE FOR AN INTERMITTENT NOBODY HAS CAUGHT.** `repeated show_deck replaces instead
-## of stacking` failed once in four runs and did not recur in ~20 consecutive runs on
-## 2026-08-07, so the next occurrence has to carry its own evidence or it costs another twenty runs.
-##
-## What was RULED OUT on 2026-08-07, so it is not re-tried from scratch: "a concurrent suite hijacks
-## the static `DeckViewer._open`". UI VIEWERS is the one UI suite with NO `await_siblings_except`, so
-## it does run beside everything — but the three `show_deck` calls have **no `await` between them**,
-## and GDScript suites can only interleave at an await. Within that frame the sequence is atomic, and
-## a viewer opened by another suite is parented to that suite, not counted here.
-##
-## What that leaves is the state of OUR OWN children, which is what this prints: every DeckViewer
-## under this node with its queued-for-deletion flag, plus who `_open` currently points at.
+# What was RULED OUT on 2026-08-07, so it is not re-tried from scratch: "a concurrent suite hijacks
+# the static `DeckViewer._open`". UI VIEWERS is the one UI suite with NO `await_siblings_except`, so
+# it does run beside everything — but the three `show_deck` calls have **no `await` between them**,
+
+# and GDScript suites can only interleave at an await. Within that frame the sequence is atomic, and
+# a viewer opened by another suite is parented to that suite, not counted here.
+
+# What that leaves is the state of OUR OWN children, which is what this prints: every DeckViewer
+# under this node with its queued-for-deletion flag, plus who `_open` currently points at.
+
+## ⚠ **THE DETAIL LINE FOR AN INTERMITTENT NOBODY HAS CAUGHT.** `repeated show_deck replaces instead of stacking` failed once in four runs and did not recur in ~20 consecutive runs on 2026-08-07, so the next occurrence has to carry its own evidence or it costs another twenty runs.
 func _viewer_detail() -> String:
 	var parts : Array[String] = []
 	for child : Node in get_children():
@@ -103,8 +102,8 @@ func test_control_card_focus() -> void:
 	await get_tree().process_frame
 
 func test_describe_card() -> void:
-	# Use TypeHeavy (a NAMED type) — TypePaper's get_str() is "" and describe_card skips
-	# nameless modifiers, so it can't be asserted with contains().
+# Use TypeHeavy (a NAMED type) — TypePaper's get_str() is "" and describe_card skips
+# nameless modifiers, so it can't be asserted with contains().
 	var data := _card().with_skill(SkillExtraPoint.new()).with_stamp(StampGlobal.new()) \
 			.with_type(TypeHeavy.new())
 	var text := ControlCard.describe_card(data)
@@ -114,24 +113,25 @@ func test_describe_card() -> void:
 			"describe_card names every modifier", text)
 	check(text.contains(SkillExtraPoint.new().get_description()),
 			"describe_card includes the modifier descriptions")
-	# Nameless types must not add a blank " — " line. Suitless card so the (now described)
-	# suit line doesn't introduce a legitimate "—" and confound the assertion.
+# A nameless type must not add an empty block: a block is a NAME in the large font and a
+# description under it, and there is no name to write.
 	var paper := CardData.new().with_type(TypePaper.new())
-	check(not ControlCard.describe_card(paper).contains("—"),
-			"nameless type produces no blank modifier line")
+	check(not ControlCard.describe_card(paper).contains("[font_size="),
+			"nameless type produces no effect block")
 
 func test_choice_viewer_take_all() -> void:
 	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 5, 0)
 	await get_tree().process_frame
-	await get_tree().process_frame  # population is deferred one frame (fly-in fix)
+# population is deferred one frame (fly-in fix)
+	await get_tree().process_frame
 	var cards := 0
 	for child in viewer.flex_container.get_children():
 		if child is ControlCard:
 			cards += 1
 	check(cards == 5, "viewer shows every generated card", "cards: %d" % cards)
-	# GDScript lambdas capture locals by VALUE — `got = taken` inside the lambda would not
-	# escape. Mutate the shared array in place (arrays are reference-typed) so the outer
-	# `got` sees the result.
+# GDScript lambdas capture locals by VALUE — `got = taken` inside the lambda would not
+# escape. Mutate the shared array in place (arrays are reference-typed) so the outer
+# `got` sees the result.
 	var got: Array[CardData] = []
 	viewer.confirmed.connect(func(taken: Array[CardData]) -> void: got.assign(taken))
 	viewer._on_confirm_pressed()
@@ -139,12 +139,9 @@ func test_choice_viewer_take_all() -> void:
 	check(viewer.is_queued_for_deletion(), "viewer frees itself after confirming")
 	await get_tree().process_frame
 
-## Booster rerolls: a pack opens with a SHARED pool of free rerolls; each slot's
-## Reroll re-rolls that slot through the same generator, spending from the one pool, and the
-## buttons gray out at zero. Driven through the data API (reroll()) — the buttons are thin
-## wrappers over it.
+## Booster rerolls: a pack opens with a SHARED pool of free rerolls; each slot's Reroll re-rolls that slot through the same generator, spending from the one pool, and the buttons gray out at zero. Driven through the data API (reroll()) — the buttons are thin wrappers over it.
 func test_booster_rerolls() -> void:
-	# A stub generator that marks every card it makes, so a rerolled slot is identifiable.
+# A stub generator that marks every card it makes, so a rerolled slot is identifiable.
 	var made : Array[CardData] = []
 	var generate := func() -> CardData:
 		var c := _card().with_type(TypeHeavy.new())
@@ -161,7 +158,7 @@ func test_booster_rerolls() -> void:
 			"the slot now holds a card fresh from create_one_choice")
 	check(viewer.data.rerolls == 1, "a reroll spends one from the pool", str(viewer.data.rerolls))
 	check(viewer.data.current_choices.size() == 3, "rerolling replaces, never adds or drops")
-	# the pool is SHARED: a different slot draws from the same counter, then it is empty
+# the pool is SHARED: a different slot draws from the same counter, then it is empty
 	check(await viewer.reroll(2), "another slot spends the SAME shared pool")
 	check(viewer.data.rerolls == 0, "the shared pool is now empty", str(viewer.data.rerolls))
 	check(not await viewer.reroll(1), "reroll fails once the pool is empty")
@@ -174,12 +171,10 @@ func test_booster_rerolls() -> void:
 	viewer.queue_free()
 	await get_tree().process_frame
 
-## The pool is owner-tunable, not a hardcoded 5: on_map_picked must read
-## settings.booster_reroll_pool. Driven at a NON-default value and at 0 (rerolls switched off
-## entirely — every button dead from the moment the pack opens).
+## The pool is owner-tunable, not a hardcoded 5: on_map_picked must read settings.booster_reroll_pool. Driven at a NON-default value and at 0 (rerolls switched off entirely — every button dead from the moment the pack opens).
 func test_booster_pool_comes_from_settings() -> void:
 	backup_real_settings()
-	# scoped to "booster_": the live settings are shared with the suites running alongside us
+# scoped to "booster_": the live settings are shared with the suites running alongside us
 	var snap := snapshot_settings("booster_")
 	var pack := StubBooster.new()
 	SettingsManager.settings.booster_reroll_pool = 4
@@ -208,8 +203,8 @@ func test_booster_pool_comes_from_settings() -> void:
 	restore_real_settings()
 
 func test_partial_card_rendering() -> void:
-	# Rank-only (suitless) preview cards must render uncolored; suit-only (rankless)
-	# cards must not show the art polygon (it degenerates to a colored square).
+# Rank-only (suitless) preview cards must render uncolored; suit-only (rankless)
+# cards must not show the art polygon (it degenerates to a colored square).
 	var rank_only := ControlCard.add_child_control_card(
 		self, CardData.new().with_rank(PipRankNumeral.new().with_value(4)),
 		CardVisual.DisplayContext.DECK_VIEWER)
@@ -220,10 +215,11 @@ func test_partial_card_rendering() -> void:
 	await get_tree().process_frame
 	rank_only.child.show_front = true
 	suit_only.child.show_front = true
-	# "Uncolored" used to mean `material == null`, and it cannot any more: every element on a card wears
-	# the outline material, so a null there would mean the pip lost its RIM — and because these polygons
-	# are pooled, it would lose it only on whichever cards happened to land on a recycled node. The claim
-	# is now made against the fill MODE, which is the thing that was ever actually being asserted.
+# "Uncolored" used to mean `material == null`, and it cannot any more: every element on a card wears
+# the outline material, so a null there would mean the pip lost its RIM — and because these polygons
+# are pooled, it would lose it only on whichever cards happened to land on a recycled node. The claim
+
+# is now made against the fill MODE, which is the thing that was ever actually being asserted.
 	var rank_mat := rank_only.child.rank.material as ShaderMaterial
 	var rank_fill := -1
 	if rank_mat: rank_fill = rank_mat.get_shader_parameter(&"u_fill_mode")

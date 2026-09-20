@@ -1,13 +1,7 @@
 class_name CardsViewer
 extends RefCounted
 
-## Owns the card-list contents of ONE container Control: instantiates a ControlCard per
-## CardData and (optionally) wires an inspector callback fired on hover AND keyboard/controller
-## focus. Composed into each viewer (DeckViewer / ChoiceViewer / MapHoverPanel) — they differ
-## only in their container and whether they inspect, so the listing logic lives here once,
-## rather than copied per viewer. Composition (not a shared base class): the viewers' scene
-## roots differ (CanvasLayer / Control / PanelContainer), and ControlCard stays singular (one
-## card, not a list).
+## Owns the card-list contents of ONE container Control: instantiates a ControlCard per CardData and (optionally) wires an inspector callback fired on hover AND keyboard/controller focus. Composed into each viewer (DeckViewer / ChoiceViewer / MapHoverPanel) — they differ only in their container and whether they inspect, so the listing logic lives here once, rather than copied per viewer. Composition (not a shared base class): the viewers' scene roots differ (CanvasLayer / Control / PanelContainer), and ControlCard stays singular (one card, not a list).
 
 var _container: Node
 var _context: CardVisual.DisplayContext
@@ -17,17 +11,11 @@ var controls: Array[ControlCard] = []
 ## How big a window pixel is against one of the picture these cards are listed in; pushed in by the screen that hosts the list.
 var picture_to_window_scale : float = 1.0
 
-## The size one of these cards has in WINDOW pixels, so a description published from this list is previewed as the very object the player is pointing at.
-func card_window_px() -> Vector2:
-	return controls[0].child.card_size * picture_to_window_scale
-
 func _init(container: Node, context := CardVisual.DisplayContext.DECK_VIEWER) -> void:
 	_container = container
 	_context = context
 
-## Fill the container with one ControlCard per card. `on_inspect(card)` (optional) fires on
-## hover AND focus. Returns the first card (for initial focus), or null when empty. Call clear()
-## first if repopulating.
+## Fill the container with one ControlCard per card. `on_inspect(card)` (optional) fires on hover AND focus. Returns the first card (for initial focus), or null when empty. Call clear() first if repopulating.
 func populate(cards: Array[CardData], on_inspect := Callable()) -> ControlCard:
 	_on_inspect = on_inspect
 	for data in cards:
@@ -63,8 +51,7 @@ func republish_highlight() -> void:
 func rehighlight(replaced: CardData, data: CardData) -> void:
 	if _highlighted == replaced: _publish_highlight(data)
 
-## Remove every listed ControlCard (before repopulating, or when the viewer hides). Detaches
-## immediately (not just queue_free) so a same-frame repopulate never shows stale cards.
+## Remove every listed ControlCard (before repopulating, or when the viewer hides). Detaches immediately (not just queue_free) so a same-frame repopulate never shows stale cards.
 func clear() -> void:
 	for control in controls:
 		if is_instance_valid(control):

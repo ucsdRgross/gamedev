@@ -1,14 +1,7 @@
 class_name MapHoverPanel
 extends PanelContainer
 
-## Tooltip panel for world-map nodes (lives on the map's UI CanvasLayer, so the map
-## camera never drags it): shows the node kind + biome, the fame requirement for shows,
-## and for booster nodes the pack's POSSIBLE contents as preview cards in a scrollable
-## strip. The panel stays open while the cursor is over it (so the preview cards can be
-## hovered/focused to inspect their modifiers via ControlCard.describe_card in %CardInfo),
-## and only hides once the cursor is off BOTH the node and the panel for the grace period.
-## Visibility is polled by rect in _process because the panel's own mouse_entered never
-## fires — the child containers cover it.
+## Tooltip panel for world-map nodes (lives on the map's UI CanvasLayer, so the map camera never drags it): shows the node kind + biome, the fame requirement for shows, and for booster nodes the pack's POSSIBLE contents as preview cards in a scrollable strip. The panel stays open while the cursor is over it (so the preview cards can be hovered/focused to inspect their modifiers via ControlCard.describe_card in %CardInfo), and only hides once the cursor is off BOTH the node and the panel for the grace period. Visibility is polled by rect in _process because the panel's own mouse_entered never fires — the child containers cover it.
 
 const MOUSE_OFFSET := Vector2(24, 12)
 ## Keep the panel this far from the screen edges (so it never touches an edge).
@@ -20,7 +13,7 @@ const HIDE_GRACE_MS := 350.0
 @onready var info_label: Label = %Info
 @onready var cards_scroll: ScrollContainer = %CardsScroll
 @onready var cards_flow: FlowContainer = %Cards
-@onready var card_info: Label = %CardInfo
+@onready var card_info: RichTextLabel = %CardInfo
 
 # Owns the listed booster-preview cards (the shared listing logic; see CardsViewer).
 var _cards : CardsViewer
@@ -31,12 +24,10 @@ var _engaged : bool = false
 # msec timestamp to hide at; < 0 = not scheduled.
 var _hide_at : float = -1.0
 
-## The title/body text for `node`, as `{"title": String, "body": String, "booster":
-## BoosterTemplate}` — `booster` is null unless this is a booster node. Shared by `get_info()` and
-## `show_for_node()` so the role/biome/fame logic exists once.
-##
-## STATIC, like `get_info()` and `_populate_preview_visual()`: none of the three read `self`, so
-## reaching `get_info()` never means instantiating a whole `MapHoverPanel` scene.
+# STATIC, like `get_info()` and `_populate_preview_visual()`: none of the three read `self`, so
+# reaching `get_info()` never means instantiating a whole `MapHoverPanel` scene.
+
+## The title/body text for `node`, as `{"title": String, "body": String, "booster": BoosterTemplate}` — `booster` is null unless this is a booster node. Shared by `get_info()` and `show_for_node()` so the role/biome/fame logic exists once.
 static func _describe_node(node: WorldGraphNode, run: RunState,
 		lap_target: WorldGraphNode) -> Dictionary:
 	var role : String = node.meta.get(MapNodeRoles.ROLE_KEY, "")
@@ -59,11 +50,7 @@ static func _describe_node(node: WorldGraphNode, run: RunState,
 		lines.append("3 acts to reach it — or the tour ends.")
 	return {"title": title, "body": "\n".join(lines), "booster": booster}
 
-## A map node's `InfoEntry`. Lives here rather than on `WorldGraphNode`, which is vendored and so
-## not edited.
-## ⚠ For a booster node `entry.visual` is a FRESH `FlowContainer`, never a live reference into this
-## panel's own `%Cards`: the caller takes ownership of it and frees it. Every other node gets
-## `visual = null`.
+## A map node's `InfoEntry`. Lives here rather than on `WorldGraphNode`, which is vendored and so not edited. ⚠ For a booster node `entry.visual` is a FRESH `FlowContainer`, never a live reference into this panel's own `%Cards`: the caller takes ownership of it and frees it. Every other node gets `visual = null`.
 static func get_info(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode) -> InfoEntry:
 	var described := _describe_node(node, run, lap_target)
 	var entry := InfoEntry.new()
@@ -78,21 +65,13 @@ static func get_info(node: WorldGraphNode, run: RunState, lap_target: WorldGraph
 		entry.visual = null
 	return entry
 
-## The same preview-card listing `_populate_cards()` uses, aimed at `container` rather than this
-## panel's `%Cards`.
-## ⚠ Deliberately NOT awaited by `get_info()`, whose signature is synchronous. Safe because
-## `get_possible_preview_cards()` never actually suspends today — no mod implements a hook that
-## would make it — so this coroutine runs to completion before the caller regains control. If a
-## mod ever makes it genuinely async, `entry.visual` starts EMPTY and fills a frame late rather
-## than being wrong.
+## The same preview-card listing `_populate_cards()` uses, aimed at `container` rather than this panel's `%Cards`. ⚠ Deliberately NOT awaited by `get_info()`, whose signature is synchronous. Safe because `get_possible_preview_cards()` never actually suspends today — no mod implements a hook that would make it — so this coroutine runs to completion before the caller regains control. If a mod ever makes it genuinely async, `entry.visual` starts EMPTY and fills a frame late rather than being wrong.
 static func _populate_preview_visual(container: Node, booster: BoosterTemplate) -> void:
 	var viewer := CardsViewer.new(container)
 	var cards := await booster.get_possible_preview_cards()
 	viewer.populate(cards)
 
-## Populate and place the panel for `node` beside `anchor_screen_pos` (the node's screen
-## position — correct for both mouse hover and keyboard selection). `lap_target` marks
-## the boss anchor.
+## Populate and place the panel for `node` beside `anchor_screen_pos` (the node's screen position — correct for both mouse hover and keyboard selection). `lap_target` marks the boss anchor.
 func show_for_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode,
 		anchor_screen_pos: Vector2) -> void:
 	_engaged = true
@@ -104,7 +83,7 @@ func show_for_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNo
 	var booster : BoosterTemplate = described["booster"]
 	cards_scroll.visible = booster != null
 	visible = true
-	# Clamp inside the screen margin (never touches an edge).
+# Clamp inside the screen margin (never touches an edge).
 	reset_size()
 	var vp := get_viewport_rect().size
 	position = (anchor_screen_pos + MOUSE_OFFSET).clamp(SCREEN_MARGIN, vp - size - SCREEN_MARGIN)
@@ -114,24 +93,24 @@ func show_for_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNo
 # Populate effectively-synchronously (like DeckViewer): the preview-pool awaits only
 # suspend if an async mod actually implements an on_get_possible_* hook (none today).
 # The no-fly-in guarantee is CardVisual's own: non-PLAY_AREA cards track their anchor
+
 # exactly, so no per-viewer deferral is needed.
 func _populate_cards(booster: BoosterTemplate) -> void:
 	if not visible or not cards_scroll.visible:
 		return
 	if not _cards:
 		_cards = CardsViewer.new(cards_flow)
-	_cards.clear()  # a previous hover may have listed different cards
+# a previous hover may have listed different cards
+	_cards.clear()
 	_preview_cards = await booster.get_possible_preview_cards()
 	_cards.populate(_preview_cards, _on_card_inspected)
 
-## Inspector: hovering/focusing a preview card explains its parts via their own
-## get_str/get_description.
+## Inspector: hovering/focusing a preview card explains its parts via their own get_str/get_description.
 func _on_card_inspected(data: CardData) -> void:
 	card_info.text = ControlCard.describe_card(data)
 	card_info.visible = not card_info.text.is_empty()
 
-## The node is no longer hovered (node_unhovered): start the hide grace unless the cursor
-## is over the panel.
+## The node is no longer hovered (node_unhovered): start the hide grace unless the cursor is over the panel.
 func request_hide() -> void:
 	_engaged = false
 
@@ -141,7 +120,7 @@ func _process(_delta: float) -> void:
 	if _engaged or _mouse_over_panel():
 		_hide_at = -1.0
 		return
-	# Off both the node and the panel: schedule, then hide once the grace elapses.
+# Off both the node and the panel: schedule, then hide once the grace elapses.
 	if _hide_at < 0.0:
 		_hide_at = Time.get_ticks_msec() + HIDE_GRACE_MS
 	elif Time.get_ticks_msec() >= _hide_at:

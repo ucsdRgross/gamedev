@@ -8,47 +8,54 @@ const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 const CARD_ART_SIZE := Vector2(38, 52)
 ## The rim `Shaders/outline.gdshader` paints, in art units. Not a second opinion — `CardOutline` owns it.
 const ART_OUTLINE := CardOutline.WIDTH
-#⚠ THE MASK AND THE DRAWN EDGE AGREE ONLY BECAUSE THE RIM EXACTLY FILLS THE POLYGON, AND NOTHING
-#ELSE IN THE CODE SAYS SO. Switch the outline off and the art shrinks to 38x52 while the
-#geometry-derived mask still says 40x54, rooting every flame one art unit off on all four sides.
+# ⚠ THE MASK AND THE DRAWN EDGE AGREE ONLY BECAUSE THE RIM EXACTLY FILLS THE POLYGON, AND NOTHING
+# ELSE IN THE CODE SAYS SO. Switch the outline off and the art shrinks to 38x52 while the
+# geometry-derived mask still says 40x54, rooting every flame one art unit off on all four sides.
 
-#⚠ It is NOT a one-line "remove the outline": the 16 bones are AUTHORED in card_visual.tscn, so a
-#real removal is a scene edit plus a skin re-bake. This constant makes the shader and the mask
-#follow; the skeleton cannot.
+# ⚠ It is NOT a one-line "remove the outline": the 16 bones are AUTHORED in card_visual.tscn, so a
+# real removal is a scene edit plus a skin re-bake. This constant makes the shader and the mask
+# follow; the skeleton cannot.
 
-#⚠ Do not read the mask from alpha instead. The rig is what DEFORMS, and alpha can describe the
-#shape at rest but not where it went when Arm_TopLeft swings out 26 %.
+# ⚠ Do not read the mask from alpha instead. The rig is what DEFORMS, and alpha can describe the
+# shape at rest but not where it went when Arm_TopLeft swings out 26 %.
 
 ## The DRAWN card: 40x54, stated as art + rim so the shader and the FX mask move together.
 const CARD_SIZE := CARD_ART_SIZE + Vector2.ONE * ART_OUTLINE * 2.0
-#Stacks grow UPWARD, so the visible strip of a covered card is its BOTTOM band and that card's pip
-#row has to fit inside it. The Rank/Suit polygons sit at y = 18 with a +/-5 extent and the bottom
-#edge at 27, so the pitch is 4 (margin) + 10 (the outlined pip) + 2 (idle-rig clearance).
+# Stacks grow UPWARD, so the visible strip of a covered card is its BOTTOM band and that card's pip
+# row has to fit inside it. The Rank/Suit polygons sit at y = 18 with a +/-5 extent and the bottom
+# edge at 27, so the pitch is 4 (margin) + 10 (the outlined pip) + 2 (idle-rig clearance).
 
-#⚠ IT IS A BOARD-LAYOUT NUMBER, NOT JUST A CARD ONE: it is the board's row pitch, so moving it
-#moves every stacked card and every prop anchored to a slot. Only the 2 is a choice (owner: *"pip
-#added 2 pixels, need 2 unit clearance to account for animations"*); test_outline re-derives the rest.
+# ⚠ IT IS A BOARD-LAYOUT NUMBER, NOT JUST A CARD ONE: it is the board's row pitch, so moving it
+# moves every stacked card and every prop anchored to a slot. Only the 2 is a choice (owner: *"pip
+# added 2 pixels, need 2 unit clearance to account for animations"*); test_outline re-derives the rest.
 
 ## The strip of a covered card that stays visible in a stack, in art units.
 const CARD_SEPARATION : int = 16
-#Props a card jumps INTO (the hoop) ride at exactly this height so the two CENTRES coincide, which
-#is what PropVisual.rides_card_jump reads jump_rise_play for. Hardcode it in either place and the
-#card jumps through the side of the hoop.
+# Props a card jumps INTO (the hoop) ride at exactly this height so the two CENTRES coincide, which
+# is what PropVisual.rides_card_jump reads jump_rise_play for. Hardcode it in either place and the
+# card jumps through the side of the hoop.
 
 ## How far anim_jump lifts a card, in UNSCALED units.
 const CARD_JUMP_RISE := CARD_SIZE.y / 5.0
 
-#NAMED HERE BECAUSE IT IS NOT ON `autoplay`: the idle is off in the shipped card (owner: it was only
-#ever on to eyeball that the VFX overlay tracked a moving rig), and test_pixels, fx_editor,
-#outline_atlas and spotlight_tool each need the animation's NAME so they can seek it themselves.
+## How much bigger than a board card the DECK VIEWER draws one, and so how big every description preview is.
+const DECK_VIEWER_SCALE := 2.0
 
-#⚠ THOSE FOUR SITES GUARD ON `if ap.autoplay != ""`, so without this constant the seek is skipped,
-#the card stays at its REST pose, and the mask check goes on passing while measuring the one pose
-#where the corner model is exact by construction - the case that proves nothing.
+## THE ONE PREVIEW SIZE, for every surface that describes a card (owner: one size everywhere, the deck viewer's): its card size, in the window pixels of the picture publishing it.
+static func preview_window_px(picture_to_window: float) -> Vector2:
+	return CARD_SIZE * DECK_VIEWER_SCALE * picture_to_window
 
-#The deformed-pose signature to check after any change here is the suite's own printout: worst
-#edge/corner 0.00/0.00 at t=0.00, 0.48/1.21 at t=0.15, 1.50/2.45 at t=0.30. All-zero everywhere
-#means the rig stopped moving.
+# NAMED HERE BECAUSE IT IS NOT ON `autoplay`: the idle is off in the shipped card (owner: it was only
+# ever on to eyeball that the VFX overlay tracked a moving rig), and test_pixels, fx_editor,
+# outline_atlas and spotlight_tool each need the animation's NAME so they can seek it themselves.
+
+# ⚠ THOSE FOUR SITES GUARD ON `if ap.autoplay != ""`, so without this constant the seek is skipped,
+# the card stays at its REST pose, and the mask check goes on passing while measuring the one pose
+# where the corner model is exact by construction - the case that proves nothing.
+
+# The deformed-pose signature to check after any change here is the suite's own printout: worst
+# edge/corner 0.00/0.00 at t=0.00, 0.48/1.21 at t=0.15, 1.50/2.45 at t=0.30. All-zero everywhere
+# means the rig stopped moving.
 
 ## The rig's idle ("wiggle") animation in card_visual.tscn.
 const RIG_ANIM : StringName = &"new_animation_2"
@@ -63,9 +70,9 @@ const BLANK_CARD_FRAME : int = 1
 enum DisplayContext {PLAY_AREA, MAP, DECK_VIEWER, PREVIEW}
 @export var current_context: DisplayContext = DisplayContext.PLAY_AREA
 var control_anchor: Control = null
-#A grid cell's stack grows UPWARD and every card in a row shares a BOTTOM edge, so a covered card
-#shows its bottom strip, which is where the pips are. The Entrance still fans DOWNWARD from its
-#control tops, and PlayArea sets this per card when it binds the slot.
+# A grid cell's stack grows UPWARD and every card in a row shares a BOTTOM edge, so a covered card
+# shows its bottom strip, which is where the pips are. The Entrance still fans DOWNWARD from its
+# control tops, and PlayArea sets this per card when it binds the slot.
 
 ## Which EDGE of `control_anchor` the card hangs from.
 var bottom_anchored := false
@@ -81,13 +88,13 @@ var card_size : Vector2
 var card_separation: int
 var card_separation_custom: int
 
-#NOT `SettingsManager.settings`: this script is @tool and the FX editor instantiates no autoloads
-#while standing up a REAL card (owner: *"no useless mocks when you can just use actual original
-#scene"*), so every settings read on the construction path has to survive their absence.
+# NOT `SettingsManager.settings`: this script is @tool and the FX editor instantiates no autoloads
+# while standing up a REAL card (owner: *"no useless mocks when you can just use actual original
+# scene"*), so every settings read on the construction path has to survive their absence.
 
-#⚠ ONE ACCESSOR, DELEGATED. FxAttachment is the right home because a card already depends on it
-#and it depends on no host; a second copy leaves the editor holding TWO PlayerSettings, tuning
-#fx_intensity against one object while the card it previews sizes itself against the other.
+# ⚠ ONE ACCESSOR, DELEGATED. FxAttachment is the right home because a card already depends on it
+# and it depends on no host; a second copy leaves the editor holding TWO PlayerSettings, tuning
+# fx_intensity against one object while the card it previews sizes itself against the other.
 static func settings() -> PlayerSettings:
 	return FxAttachment.settings()
 
@@ -100,8 +107,8 @@ static var card_separation_play : int:
 static var card_separation_play_custom : int:
 	get():
 		return card_separation_play * settings().card_separation_scale
-#The jump lives on `offset`, inside the card root's card_scale, so anything outside the card -
-#PropLayer - has to scale it the same way to line up.
+# The jump lives on `offset`, inside the card root's card_scale, so anything outside the card -
+# PropLayer - has to scale it the same way to line up.
 
 ## CARD_JUMP_RISE in SCREEN pixels.
 static var card_jump_rise_play : float:
@@ -185,24 +192,24 @@ var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 		visual.transform.x = Vector2(basis3d.x[0], basis3d.x[1])
 		visual.transform.y = Vector2(basis3d.y[0], basis3d.y[1])
 		show_front = basis3d.z[2] > 0
-#change flipped instead
+# change flipped instead
 var show_front := false :
 	set(value):
 		if value != show_front:
 			show_front = value
 			update_visual()
 
-#@onready polygon nodes only exist once ready, so the await comes BEFORE the branch: deciding first
-#and awaiting inside a branch lets an early call resume into a now-stale branch and clobber a face
-#already set during _ready.
+# @onready polygon nodes only exist once ready, so the await comes BEFORE the branch: deciding first
+# and awaiting inside a branch lets an early call resume into a now-stale branch and clobber a face
+# already set during _ready.
 
-#⚠ FX DRAWS OUTSIDE THE SILHOUETTE, so it is gated on show_front - a hidden card must reveal zero
-#information (owner). This is the one deliberate exception to "no visual jumps": show_front flips at
-#the basis3d midpoint, when the card is edge-on and a sliver, so the cut is invisible.
+# ⚠ FX DRAWS OUTSIDE THE SILHOUETTE, so it is gated on show_front - a hidden card must reveal zero
+# information (owner). This is the one deliberate exception to "no visual jumps": show_front flips at
+# the basis3d midpoint, when the card is edge-on and a sliver, so the cut is invisible.
 
-#The pip keeps its OWN colours, its sheet being authored in the palette; only suit-agnostic art is
-#recoloured to the suit's palette entry. A suitless card falls back to the sheet's own colours
-#through fill_texture - never `material = null`, which would take the rim with it.
+# The pip keeps its OWN colours, its sheet being authored in the palette; only suit-agnostic art is
+# recoloured to the suit's palette entry. A suitless card falls back to the sheet's own colours
+# through fill_texture - never `material = null`, which would take the rim with it.
 func update_visual() -> void:
 	if not is_node_ready():
 		await ready
@@ -266,13 +273,13 @@ func _hold_mark_back() -> void:
 	for poly : Polygon2D in [rank, stamp, suit, art]:
 		poly.hide()
 
-#⚠ THIS INVERTS WHO OWNS THE MATERIAL, and that is the structural half of the feature. A modifier
-#still sets its own polygon's TEXTURE and FILL, which are facts about the element; the outline
-#colour is a fact about the CARD, so it is resolved once here instead of five times over.
+# ⚠ THIS INVERTS WHO OWNS THE MATERIAL, and that is the structural half of the feature. A modifier
+# still sets its own polygon's TEXTURE and FILL, which are facts about the element; the outline
+# colour is a fact about the CARD, so it is resolved once here instead of five times over.
 
-#The value comes from the card's TYPE, because the type is the card's whole face and the ink has to
-#work against it. A card with no type falls back to the shared `art_outline` role, which is what an
-#unauthored type answers with anyway.
+# The value comes from the card's TYPE, because the type is the card's whole face and the ink has to
+# work against it. A card with no type falls back to the shared `art_outline` role, which is what an
+# unauthored type answers with anyway.
 func _push_outline_ink() -> void:
 	var style := outline_style()
 	CardOutline.set_rim(type, style, CARD_SIZE)
@@ -282,9 +289,9 @@ func _push_outline_ink() -> void:
 	CardOutline.set_rim(stamp, _rim_of(MarkMatch.Property.HAT, style), CARD_SIZE)
 	_push_alert()
 
-#SET TOGETHER: a mask with no ink draws nothing and an ink with no mask has nothing to draw. The
-#board re-derives both on every refresh, so a rebuild restores them and an undo leaves nothing.
-## Which of this card's elements wear the match rim, and in which ink -- a MarkMatch.Property mask.
+# SET TOGETHER: a mask with no ink draws nothing and an ink with no mask has nothing to draw. The
+# board re-derives both on every refresh, so a rebuild restores them and an undo leaves nothing.
+# Which of this card's elements wear the match rim, and in which ink -- a MarkMatch.Property mask.
 func set_match_rim(properties : int, palette_index : int) -> void:
 	if matched_properties == properties and match_rim_index == palette_index: return
 	matched_properties = properties
@@ -311,23 +318,23 @@ static func _match_style(palette_index : int) -> OutlineStyle:
 
 static var _match_styles : Dictionary[int, OutlineStyle] = {}
 
-#THIS CARD'S OUTLINE STYLE - its TYPE's, or the shipped default when it has no type. The type owns
-#it because the type is the card's face and the ink's job is to read against that face.
+# THIS CARD'S OUTLINE STYLE - its TYPE's, or the shipped default when it has no type. The type owns
+# it because the type is the card's face and the ink's job is to read against that face.
 func outline_style() -> OutlineStyle:
 	if data and data.type: return data.type.outline_style()
 	return CardOutline.STYLE
 
-#⚠ RE-DERIVED, NOT TOGGLED (see CardModifierStatus.alert_request). Because this runs on every
-#refresh and reads the whole status list, an alert whose status was removed, merged away or rewound
-#is already off, and adding a "stop alerting" method would reintroduce exactly that leak.
+# ⚠ RE-DERIVED, NOT TOGGLED (see CardModifierStatus.alert_request). Because this runs on every
+# refresh and reads the whole status list, an alert whose status was removed, merged away or rewound
+# is already off, and adding a "stop alerting" method would reintroduce exactly that leak.
 
-#The shader runs ONE kind at a time, so when several statuses alert together the LAST declared wins,
-#the status list being ordered and the order the card's own. The shimmer is declared by no status,
-#so it yields to any status that is alerting.
+# The shader runs ONE kind at a time, so when several statuses alert together the LAST declared wins,
+# the status list being ordered and the order the card's own. The shimmer is declared by no status,
+# so it yields to any status that is alerting.
 
-#The phase is parked at rest so a card that alerted and stopped is bit-identical to one that never
-#did, and a shimmer parks it too, not being a status alert. Pushed either way, so a card built
-#mid-drift opens on the phase the board is already running.
+# The phase is parked at rest so a card that alerted and stopped is bit-identical to one that never
+# did, and a shimmer parks it too, not being a status alert. Pushed either way, so a card built
+# mid-drift opens on the phase the board is already running.
 func _push_alert() -> void:
 	var reqs := _alert_requests()
 	_alert = reqs[reqs.size() - 1] if not reqs.is_empty() else _shimmer_request()
@@ -338,8 +345,8 @@ func _push_alert() -> void:
 	if not _card_alert(): _alert_clock = 0.0
 	_push_alert_clock()
 
-#THE FIVE POLYGONS AND THE PRINTED PROPERTY EACH ONE DRAWS. The card frame draws none, so it asks
-#with 0 and takes the card's own alert -- the per-element shimmer is a fact about a printed slot.
+# THE FIVE POLYGONS AND THE PRINTED PROPERTY EACH ONE DRAWS. The card frame draws none, so it asks
+# with 0 and takes the card's own alert -- the per-element shimmer is a fact about a printed slot.
 func _alert_elements() -> Dictionary[Polygon2D, int]:
 	return {type: 0, rank: MarkMatch.Property.RANK, suit: MarkMatch.Property.SUIT,
 			art: MarkMatch.Property.TALENT, stamp: MarkMatch.Property.HAT}
@@ -370,8 +377,8 @@ func _shimmer_request() -> CardAlert:
 # every activated rim is asking for exactly the same thing and a per-element copy would say nothing.
 static var _SHIMMER : CardAlert = CardAlert.shimmer()
 
-#Every outline alert this card's statuses ask for, in status order. The alert twin of _fx_requests,
-#and generic in the same way: CardVisual never names an alert.
+# Every outline alert this card's statuses ask for, in status order. The alert twin of _fx_requests,
+# and generic in the same way: CardVisual never names an alert.
 func _alert_requests() -> Array[CardAlert]:
 	var reqs : Array[CardAlert] = []
 	if not data: return reqs
@@ -384,23 +391,23 @@ func _push_alert_clock() -> void:
 	for poly : Polygon2D in elements:
 		CardOutline.set_clock(poly, _clock_of(_alert_of(elements[poly])))
 
-#THE PHASE ONE ELEMENT READS: the board-wide one for a shimmer, this card's own for the other kinds.
+# THE PHASE ONE ELEMENT READS: the board-wide one for a shimmer, this card's own for the other kinds.
 func _clock_of(alert : CardAlert) -> float:
 	if alert and alert.kind == CardOutline.Alert.SHIMMER: return _shimmer_clock
 	return _alert_clock
 
-#The alert currently running on this card's outline, or null. Null is the overwhelmingly common case
-#and is what makes the per-frame cost of this feature one null check on a resting board.
+# The alert currently running on this card's outline, or null. Null is the overwhelmingly common case
+# and is what makes the per-frame cost of this feature one null check on a resting board.
 var _alert : CardAlert = null
 ## This card's GLARE or THROB phase, in TURNS -- one bounce per unit; the shader takes `fract()`.
 var _alert_clock : float = 0.0
 
-#The phase advances over a period that is a FRACTION OF THE LIVE DELAY, so the cue quickens with act
-#compression exactly as the cascade it is announcing does.
+# The phase advances over a period that is a FRACTION OF THE LIVE DELAY, so the cue quickens with act
+# compression exactly as the cascade it is announcing does.
 
-#⚠ It does NOT also multiply by FxAttachment.pacing(): pacing() IS base_delay / get_delay(), so a
-#period already built from get_delay() would take the same compression twice and the alert would
-#race the board it is pacing against.
+# ⚠ It does NOT also multiply by FxAttachment.pacing(): pacing() IS base_delay / get_delay(), so a
+# period already built from get_delay() would take the same compression twice and the alert would
+# race the board it is pacing against.
 func _advance_alert(delta : float) -> void:
 	var delay : float = settings().base_delay
 	if CardEnvironment.CURRENT: delay = CardEnvironment.CURRENT.get_delay()
@@ -409,15 +416,15 @@ func _advance_alert(delta : float) -> void:
 		_alert_clock += delta / _alert_period(_alert, outline_style(), delay)
 	_push_alert_clock()
 
-#The period is this alert's own fraction of the live delay when it named one, else the style's --
-#glare, throb and shimmer read different fields, being different cues. Floored because get_delay()
-#reaches zero under the compression floor and on an undo-cancel snap, which would NaN the uniform.
+# The period is this alert's own fraction of the live delay when it named one, else the style's --
+# glare, throb and shimmer read different fields, being different cues. Floored because get_delay()
+# reaches zero under the compression floor and on an undo-cancel snap, which would NaN the uniform.
 static func _alert_period(alert : CardAlert, style : OutlineStyle, delay : float) -> float:
 	return maxf(alert.resolved_period(style) * delay, 0.05)
 
-#ONE PHASE FOR EVERY SHIMMER ON THE BOARD (owner, from playtest: a per-card phase is distracting):
-#the first card to reach it in a frame moves it and every other card that frame reads what it wrote.
-#Its tempo is the SHIPPED style's, because a board-wide clock can take no one card's type override.
+# ONE PHASE FOR EVERY SHIMMER ON THE BOARD (owner, from playtest: a per-card phase is distracting):
+# the first card to reach it in a frame moves it and every other card that frame reads what it wrote.
+# Its tempo is the SHIPPED style's, because a board-wide clock can take no one card's type override.
 static func _advance_shimmer(delta : float, delay : float) -> void:
 	if _shimmer_frame == Engine.get_process_frames(): return
 	_shimmer_frame = Engine.get_process_frames()
@@ -428,8 +435,8 @@ static var _shimmer_clock : float = 0.0
 ## The frame it last advanced on, so a hundred shimmering cards move it once between them.
 static var _shimmer_frame : int = -1
 
-#Every visual effect this card's statuses ask for, in status order, later drawing on top. Generic by
-#construction: CardVisual never names an effect - statuses declare their own via fx_request().
+# Every visual effect this card's statuses ask for, in status order, later drawing on top. Generic by
+# construction: CardVisual never names an effect - statuses declare their own via fx_request().
 func _fx_requests() -> Array[FxRequest]:
 	var reqs : Array[FxRequest] = []
 	if not data: return reqs
@@ -454,63 +461,63 @@ var hover : bool = false
 @onready var suit: Polygon2D  = $Offset/Visual/Suit
 @onready var art: Polygon2D = $Offset/Visual/Art
 
-#WHERE A SPOTLIGHT CIRCLE GOES ON THIS CARD: the centre of the ART SQUARE at radius 17 art units,
-#not the card's own origin. `Art` sits at (0, 6) inside `Visual` and spans +/-17 - 32 of drawing plus
-#the shader's 1-unit rim each side - and centring on the origin put the pool high and read ambiguous.
+# WHERE A SPOTLIGHT CIRCLE GOES ON THIS CARD: the centre of the ART SQUARE at radius 17 art units,
+# not the card's own origin. `Art` sits at (0, 6) inside `Visual` and spans +/-17 - 32 of drawing plus
+# the shader's 1-unit rim each side - and centring on the origin put the pool high and read ambiguous.
 
-#⚠ ASKED OF THE CARD, never re-derived by the caller. The offset is authored in card_visual.tscn
-#and rides `Offset`'s own transform, which the scoring jump lives on, so a second copy in the
-#director would disagree the moment a card moves.
+# ⚠ ASKED OF THE CARD, never re-derived by the caller. The offset is authored in card_visual.tscn
+# and rides `Offset`'s own transform, which the scoring jump lives on, so a second copy in the
+# director would disagree the moment a card moves.
 
-#`art` is @onready, so a card asked before it is in the tree answers with the honest fallback rather
-#than crashing; the caller's own is_inside_tree guard is what normally prevents it.
+# `art` is @onready, so a card asked before it is in the tree answers with the honest fallback rather
+# than crashing; the caller's own is_inside_tree guard is what normally prevents it.
 func spotlight_center() -> Vector2:
 	return art.global_position if art else global_position
-#Created at runtime - there is no .tscn slot - and OWNERLESS, because this script is @tool and an
-#owned child would be written into card_visual.tscn by the editor.
+# Created at runtime - there is no .tscn slot - and OWNERLESS, because this script is @tool and an
+# owned child would be written into card_visual.tscn by the editor.
 
-#⚠ IT IS A STATUS'S ONLY CARD-SIDE PRESENCE: the card carries no status icons at all (owner: *"no
-#more status icons, they are represented by status effects like fire and juggling shader... stack
-#count and status names stay in description at top"*). CardModifierStatus.fx_request declares them.
+# ⚠ IT IS A STATUS'S ONLY CARD-SIDE PRESENCE: the card carries no status icons at all (owner: *"no
+# more status icons, they are represented by status effects like fire and juggling shader... stack
+# count and status names stay in description at top"*). CardModifierStatus.fx_request declares them.
 
 ## Shader effects for this card's statuses.
 var fx : FxAttachment
 
-#The bones come in the order the bake laid them down: one walk around the card, top edge left to
-#right, then right, bottom, left. That order IS FxAttachment.measure_outline's contract, and it is
-#what makes the outline resolvable in one pass.
+# The bones come in the order the bake laid them down: one walk around the card, top edge left to
+# right, then right, bottom, left. That order IS FxAttachment.measure_outline's contract, and it is
+# what makes the outline resolvable in one pass.
 
 ## The rig's root and its arm bones.
 var _rig_root : Bone2D = null
 var _rig_arms : Array[Bone2D] = []
-#Rebuilt in place each frame and never reallocated, since this runs on every card on the board.
-#Longer than the arm count when the art clips its corners: the bite needs three points where the rig
-#has one.
+# Rebuilt in place each frame and never reallocated, since this runs on every card on the board.
+# Longer than the arm count when the art clips its corners: the bite needs three points where the rig
+# has one.
 
 ## The arm tips in the card's own art units.
 var _rig_outline_buf : PackedVector2Array = PackedVector2Array()
-#Resolved once in _bind_rig; zero for a frame with square corners, which is the boosters.
+# Resolved once in _bind_rig; zero for a frame with square corners, which is the boosters.
 
 ## How far into each corner this card's TYPE art bites, as a fraction of the corner cell's two edges.
 var _notch_frac : Vector2 = Vector2.ZERO
 
-#A card silhouette with its four CORNERS pulled outward by `warp` of their rest reach, as the 16
-#points the star rig hands over and IN THE ORDER it hands them over. The interior points stay on the
-#rest edge, so the box becomes a STAR rather than simply growing.
+# A card silhouette with its four CORNERS pulled outward by `warp` of their rest reach, as the 16
+# points the star rig hands over and IN THE ORDER it hands them over. The interior points stay on the
+# rest edge, so the box becomes a STAR rather than simply growing.
 
-#The edges alternate horizontal / vertical around the walk, so which of the notch's two dimensions
-#belongs to which of a corner's edges alternates with it.
+# The edges alternate horizontal / vertical around the walk, so which of the notch's two dimensions
+# belongs to which of a corner's edges alternates with it.
 
-#It lives on the class that owns the rig because four harnesses need to stand a card up without one
-#- the FX editor's warp slider, fx_snapshot's warp panel, fx_behind's seam shots and fx_cost's
-#deformed-card row - and a private copy in any of them can drift from the rig.
+# It lives on the class that owns the rig because four harnesses need to stand a card up without one
+# - the FX editor's warp slider, fx_snapshot's warp panel, fx_behind's seam shots and fx_cost's
+# deformed-card row - and a private copy in any of them can drift from the rig.
 
-#⚠ IT IS A HAND MODEL AND THE RIG NEVER EXACTLY MAKES IT: measured against the real animation, the
-#closest `warp` is off by 2.3 to 3.3 art units at four points of the loop, because the shipped
-#animation bulges and pinches the long edges and the corners do not move together (2.9 against 0.5).
+# ⚠ IT IS A HAND MODEL AND THE RIG NEVER EXACTLY MAKES IT: measured against the real animation, the
+# closest `warp` is off by 2.3 to 3.3 art units at four points of the loop, because the shipped
+# animation bulges and pinches the long edges and the corners do not move together (2.9 against 0.5).
 
-#So a warp claim made on a harness panel is a claim about THIS shape; the only place a real
-#CardVisual is stood up is the card-mask check in test_pixels.gd.
+# So a warp claim made on a harness panel is a claim about THIS shape; the only place a real
+# CardVisual is stood up is the card-mask check in test_pixels.gd.
 static func star_outline(body: Vector2, warp: float,
 		notch: Vector2 = SHIPPED_CORNER_NOTCH) -> PackedVector2Array:
 	var h := body * 0.5
@@ -530,30 +537,30 @@ static func star_outline(body: Vector2, warp: float,
 			out.append(from.lerp(to, float(step) * 0.25))
 	return out
 
-#The DEFAULT for star_outline, so the harnesses model a real card without naming a type; the game
-#measures its own card's type instead, through CardModifierType.corner_notch, which is exact for all
-#of them.
+# The DEFAULT for star_outline, so the harnesses model a real card without naming a type; the game
+# measures its own card's type instead, through CardModifierType.corner_notch, which is exact for all
+# of them.
 
 ## The corner bite every shipped type but the boosters has, in ART UNITS - one texel, one art unit.
 const SHIPPED_CORNER_NOTCH := Vector2.ONE
 
-#The outline builders need a FRACTION because a deformed edge is not its rest length. The perimeter
-#points sit at quarter points, so a corner's own cell is a quarter of the card in each direction.
+# The outline builders need a FRACTION because a deformed edge is not its rest length. The perimeter
+# points sit at quarter points, so a corner's own cell is a quarter of the card in each direction.
 
 ## How far along each of a corner's two edges the notch reaches, as a fraction of that edge.
 static func notch_fraction(body: Vector2, notch: Vector2) -> Vector2:
 	return Vector2(notch.x / maxf(body.x * 0.25, 1e-4), notch.y / maxf(body.y * 0.25, 1e-4))
 
-#ONE CORNER OF THE SILHOUETTE, as the three points its clipped art actually has: in along the edge
-#we arrive on, across the bite, then out along the edge we leave on. `prev` and `next` are the
-#neighbouring perimeter points, `frac` what notch_fraction returned.
+# ONE CORNER OF THE SILHOUETTE, as the three points its clipped art actually has: in along the edge
+# we arrive on, across the bite, then out along the edge we leave on. `prev` and `next` are the
+# neighbouring perimeter points, `frac` what notch_fraction returned.
 
-#⚠ THE MIDDLE POINT IS THE CELL'S BILINEAR CORNER, which is what makes this exact under deformation
-#and not only at rest: the art's corner texel is a fixed fraction of the corner grid cell in each
-#direction, so a stretched or SHEARED cell carries the bite with it as a parallelogram.
+# ⚠ THE MIDDLE POINT IS THE CELL'S BILINEAR CORNER, which is what makes this exact under deformation
+# and not only at rest: the art's corner texel is a fixed fraction of the corner grid cell in each
+# direction, so a stretched or SHEARED cell carries the bite with it as a parallelogram.
 
-#⚠ A ZERO notch returns the corner alone, so a booster - whose frame has square corners - keeps a
-#16-point outline and pays nothing.
+# ⚠ A ZERO notch returns the corner alone, so a booster - whose frame has square corners - keeps a
+# 16-point outline and pays nothing.
 static func corner_points(corner: Vector2, prev: Vector2, next: Vector2, frac_prev: float,
 		frac_next: float) -> PackedVector2Array:
 	if frac_prev <= 0.0 or frac_next <= 0.0: return PackedVector2Array([corner])
@@ -562,16 +569,16 @@ static func corner_points(corner: Vector2, prev: Vector2, next: Vector2, frac_pr
 	return PackedVector2Array([corner + along_prev, corner + along_prev + along_next,
 			corner + along_next])
 
-#Find the rig once. Absent - a stripped card in a test, or art without a skeleton - simply means the
-#caller falls back to the baked polygon.
+# Find the rig once. Absent - a stripped card in a test, or art without a skeleton - simply means the
+# caller falls back to the baked polygon.
 
-#The corner bite is resolved ONCE here because it comes from this card's own type frame and never
-#changes at runtime, while _rig_outline runs every frame on every card on the board. It needs three
-#points per corner instead of one, wherever there is a bite to describe.
+# The corner bite is resolved ONCE here because it comes from this card's own type frame and never
+# changes at runtime, while _rig_outline runs every frame on every card on the board. It needs three
+# points per corner instead of one, wherever there is a bite to describe.
 
-#⚠ DIVIDE BY THE INNER RECT, NOT BY `CARD_SIZE`, when turning texels into art units. The frame is
-#38x52 inside a 40x54 polygon, so CARD_SIZE gives (1.0526, 1.0385) and inflates every corner notch
-#by 4-5 %; the value must be exactly 1.0, and test_pixels asserts that directly.
+# ⚠ DIVIDE BY THE INNER RECT, NOT BY `CARD_SIZE`, when turning texels into art units. The frame is
+# 38x52 inside a 40x54 polygon, so CARD_SIZE gives (1.0526, 1.0385) and inflates every corner notch
+# by 4-5 %; the value must be exactly 1.0, and test_pixels asserts that directly.
 func _bind_rig() -> void:
 	_rig_root = get_node_or_null("Offset/Visual/Skeleton2D/Bone_Center") as Bone2D
 	if not _rig_root: return
@@ -588,17 +595,17 @@ func _bind_rig() -> void:
 	var extra := 8 if _notch_frac.x > 0.0 and _notch_frac.y > 0.0 else 0
 	_rig_outline_buf.resize(_rig_arms.size() + extra)
 
-#⚠ COMPOSED FROM THE BONES' OWN LOCAL TRANSFORMS, never from global_position: the rig hangs under
-#`visual`, which carries the bob and the basis3d flip, a basis that goes SINGULAR edge-on. Neither
-#may reach the effects, or a flipping card's silhouette collapses to a line and takes its flames.
+# ⚠ COMPOSED FROM THE BONES' OWN LOCAL TRANSFORMS, never from global_position: the rig hangs under
+# `visual`, which carries the bob and the basis3d flip, a basis that goes SINGULAR edge-on. Neither
+# may reach the effects, or a flipping card's silhouette collapses to a line and takes its flames.
 
-#⚠ AND IT CARRIES THE ART'S CORNER BITE. Every shipped type frame clips its corners by one texel
-#while the RIG is the full rectangle, so an outline of bare arm tips puts one FX pixel of flame on
-#nothing at each corner. The bite is emitted from the live neighbours, so it shears with the cell.
+# ⚠ AND IT CARRIES THE ART'S CORNER BITE. Every shipped type frame clips its corners by one texel
+# while the RIG is the full rectangle, so an outline of bare arm tips puts one FX pixel of flame on
+# nothing at each corner. The bite is emitted from the live neighbours, so it shears with the cell.
 
-#There are four arms per edge on a 16-arm rig and the corners are every fourth arm in bake order; a
-#corner's neighbours are the arms either side of it, live, and which of the notch's two dimensions
-#belongs to which edge alternates around the walk exactly as in star_outline.
+# There are four arms per edge on a 16-arm rig and the corners are every fourth arm in bake order; a
+# corner's neighbours are the arms either side of it, live, and which of the notch's two dimensions
+# belongs to which edge alternates around the walk exactly as in star_outline.
 
 ## The rig's arm tips, in the card's UNSCALED art space.
 func _rig_outline() -> PackedVector2Array:
@@ -626,19 +633,19 @@ func _rig_outline() -> PackedVector2Array:
 			at += 1
 	return _rig_outline_buf
 
-#Hand the DEFORMED outline to the effects every frame, because a jump, a spin or a warp can pose the
-#rig at any time; the attachment early-outs when nothing moved, so a settled card costs this walk
-#and no upload.
+# Hand the DEFORMED outline to the effects every frame, because a jump, a spin or a warp can pose the
+# rig at any time; the attachment early-outs when nothing moved, so a settled card costs this walk
+# and no upload.
 
-#⚠ A REAL OPTIMISATION IS DELIBERATELY NOT TAKEN HERE: with the idle animation off, the walk could
-#be skipped entirely while the rig is unposed. FX performance is PAUSED by owner ruling, and
-#PERFORMANCE.md's "always running" figure for the rig no longer holds - re-read it before pricing.
+# ⚠ A REAL OPTIMISATION IS DELIBERATELY NOT TAKEN HERE: with the idle animation off, the walk could
+# be skipped entirely while the rig is unposed. FX performance is PAUSED by owner ruling, and
+# PERFORMANCE.md's "always running" figure for the rig no longer holds - re-read it before pricing.
 func _track_fx_outline() -> void:
 	if not fx or _rig_arms.is_empty(): return
 	fx.track_outline(_rig_outline())
 
 
-#Added deferred, so the play area's containers have a frame to update their control positions first.
+# Added deferred, so the play area's containers have a frame to update their control positions first.
 static func add_child_card_visual(parent:Node,connected_data:CardData, context:DisplayContext, target_control: Control = null) -> CardVisual:
 	var card : CardVisual = (CARD_VISUAL.instantiate() as CardVisual).with_data(connected_data)
 	card.current_context = context
@@ -647,29 +654,29 @@ static func add_child_card_visual(parent:Node,connected_data:CardData, context:D
 	parent.call_deferred("add_child", card)
 	return card
 
-#⚠ FX HANGS OFF OFFSET, NEVER OFF `visual`: `visual` carries the basis3d flip, whose basis goes
-#ZERO edge-on, and the effects' quads must never inherit a singular matrix. Added after `visual`, so
-#it draws above the card's face while the whole subtree stays one unit in CardLayer's draw order.
+# ⚠ FX HANGS OFF OFFSET, NEVER OFF `visual`: `visual` carries the basis3d flip, whose basis goes
+# ZERO edge-on, and the effects' quads must never inherit a singular matrix. Added after `visual`, so
+# it draws above the card's face while the whole subtree stays one unit in CardLayer's draw order.
 
-#The FX child is runtime-only and OWNERLESS, this script being @tool. The rig, by contrast, is bound
-#in EITHER mode, because the FX editor previews a REAL card and needs the same outline the game
-#hands over (owner: *"no useless mocks when you can just use actual original scene"*).
+# The FX child is runtime-only and OWNERLESS, this script being @tool. The rig, by contrast, is bound
+# in EITHER mode, because the FX editor previews a REAL card and needs the same outline the game
+# hands over (owner: *"no useless mocks when you can just use actual original scene"*).
 
-#Motion effects - embers, the cape - are board-only: they exist for cards that travel and are
-#dropped, and the deck viewer, 50+ cards all showing their statuses, is the densest screen in the
-#game. The flames and balls themselves are identical everywhere.
+# Motion effects - embers, the cape - are board-only: they exist for cards that travel and are
+# dropped, and the deck viewer, 50+ cards all showing their statuses, is the densest screen in the
+# game. The flames and balls themselves are identical everywhere.
 
-#The outline comes from the STAR RIG rather than from the rest polygon, because the rig is what
-#deforms the card and a silhouette baked once leaves the flames standing on a shape the card no
-#longer has. Jumps, spins and warps still pose it, so _track_fx_outline re-reads it every frame.
+# The outline comes from the STAR RIG rather than from the rest polygon, because the rig is what
+# deforms the card and a silhouette baked once leaves the flames standing on a shape the card no
+# longer has. Jumps, spins and warps still pose it, so _track_fx_outline re-reads it every frame.
 
-#A visual built the same frame as its control has no anchor yet, and a viewer or preview visual
-#never gets one - hence the same guard on_stage_changed puts on that call. Without it a preview card
-#whose previous_stage is PLAY or ZONE crashes whenever any CardEnvironment is on screen.
+# A visual built the same frame as its control has no anchor yet, and a viewer or preview visual
+# never gets one - hence the same guard on_stage_changed puts on that call. Without it a preview card
+# whose previous_stage is PLAY or ZONE crashes whenever any CardEnvironment is on screen.
 
-#Only a card drawn from the deck ONTO THE BOARD flips into view: it keeps the face-down basis3d and
-#the floating anim slerps it to front. Every other card spawns already showing its resting face, or
-#the slerp would flip all of them from back to front on init.
+# Only a card drawn from the deck ONTO THE BOARD flips into view: it keeps the face-down basis3d and
+# the floating anim slerps it to front. Every other card spawns already showing its resting face, or
+# the slerp would flip all of them from back to front on init.
 func _ready() -> void:
 	type.hide()
 	rank.hide()
@@ -691,11 +698,12 @@ func _ready() -> void:
 	recalculate_size()
 	match data.previous_stage:
 		data.Stage.PLAY, data.Stage.ZONE, data.Stage.DRAW:
-			# The anchor may not exist yet (a visual built the same frame as its control), and a
-			# viewer/preview visual never gets one at all -- the SAME guard `on_stage_changed()`
-			# already puts on this exact call. Without it, a preview card whose previous_stage is
-			# PLAY/ZONE threw "Invalid access to property 'global_position' on Nil" whenever ANY
-			# CardEnvironment was on screen, which a live `Map` (one itself) makes most of the time.
+# The anchor may not exist yet (a visual built the same frame as its control), and a
+# viewer/preview visual never gets one at all -- the SAME guard `on_stage_changed()`
+# already puts on this exact call. Without it, a preview card whose previous_stage is
+
+# PLAY/ZONE threw "Invalid access to property 'global_position' on Nil" whenever ANY
+# CardEnvironment was on screen, which a live `Map` (one itself) makes most of the time.
 			if CardEnvironment.CURRENT and is_instance_valid(control_anchor):
 				global_position = get_card_control_center(control_anchor)
 		data.Stage.DISCARD:
@@ -716,10 +724,10 @@ var preview_size : Vector2 = Vector2.ZERO
 func recalculate_size() -> void:
 	match current_context:
 		DisplayContext.DECK_VIEWER:
-			card_size = CARD_SIZE * 2
+			card_size = CARD_SIZE * DECK_VIEWER_SCALE
 			card_separation = CARD_SEPARATION * settings().card_scale
 			card_separation_custom = card_separation * settings().card_separation_scale
-			scale = Vector2.ONE * 2
+			scale = Vector2.ONE * DECK_VIEWER_SCALE
 		DisplayContext.PLAY_AREA:
 			card_size = CARD_SIZE * settings().card_scale
 			card_separation = CARD_SEPARATION * settings().card_scale
@@ -734,7 +742,7 @@ func recalculate_size() -> void:
 		card_size = preview_size
 		scale = preview_size / CARD_SIZE
 
-#The anchor may not exist yet, a visual being created the same frame as its control.
+# The anchor may not exist yet, a visual being created the same frame as its control.
 func on_stage_changed() -> void:
 	if current_context != DisplayContext.PLAY_AREA: return
 	if not data: return
@@ -754,16 +762,16 @@ func on_stage_changed() -> void:
 				var target_pos := _game_view().pile_center(_game_view().rules_ui)
 				create_move_tween(target_pos).tween_callback(queue_free)
 
-#Null when headless, and every caller null-checks, so those visual moves simply skip.
+# Null when headless, and every caller null-checks, so those visual moves simply skip.
 
 ## The active game's view: the UI layer owning the deck, discard and rules anchors and PlayArea.
 func _game_view() -> GameView:
 	var game := CardEnvironment.get_current_game()
 	return game.view if game else null
 
-#⚠ A CONTROL-LOCAL LENGTH IS NOT A GLOBAL ONE. global_position carries every scale above the
-#control - the board's zoom lives on the scroll container - while `size` and `card_size` never do.
-#Adding them raw spread one row's zone cards by 69.74 px at board_zoom 2.29, and by 0 at 1.0.
+# ⚠ A CONTROL-LOCAL LENGTH IS NOT A GLOBAL ONE. global_position carries every scale above the
+# control - the board's zoom lives on the scroll container - while `size` and `card_size` never do.
+# Adding them raw spread one row's zone cards by 69.74 px at board_zoom 2.29, and by 0 at 1.0.
 func _control_scale(control:Control) -> Vector2:
 	return control.get_global_transform().get_scale()
 
@@ -791,21 +799,21 @@ func cursor_ride_offset() -> Vector2:
 
 var rot_delta : float
 var y_delta : float
-#TODO(discard animation): this needs a stage check - a card leaving to the discard pile should play
-#a discard animation BEFORE the queue_free, not vanish instantly.
+# TODO(discard animation): this needs a stage check - a card leaving to the discard pile should play
+# a discard animation BEFORE the queue_free, not vanish instantly.
 
-#Only PLAY_AREA cards ease toward their slot, which smooths slot-to-slot moves and the fly-in from
-#the deck, discard or rules pile. Every other context is a static display that tracks its anchor
-#exactly, so the difference is inherent to the context and branches on it rather than on a flag.
+# Only PLAY_AREA cards ease toward their slot, which smooths slot-to-slot moves and the fly-in from
+# the deck, discard or rules pile. Every other context is a static display that tracks its anchor
+# exactly, so the difference is inherent to the context and branches on it rather than on a flag.
 
-#PLAY_AREA cards live on PlayArea's CardLayer INSIDE the scroll content, so a scroll shifts card and
-#anchor globals identically: the ease sees no scroll motion and never lags behind a scroll.
+# PLAY_AREA cards live on PlayArea's CardLayer INSIDE the scroll content, so a scroll shifts card and
+# anchor globals identically: the ease sees no scroll motion and never lags behind a scroll.
 
-#The ease is a frame-dependent lerp and should be a tween when data is moving slots, but something
-#has to keep the card attached to its control between moves.
+# The ease is a frame-dependent lerp and should be a tween when data is moving slots, but something
+# has to keep the card attached to its control between moves.
 
-#Tilt and bob juice react to `move`, and only PLAY_AREA cards actually travel: a viewer card's
-#one-frame settle would otherwise read as a big move.x and spin it into place.
+# Tilt and bob juice react to `move`, and only PLAY_AREA cards actually travel: a viewer card's
+# one-frame settle would otherwise read as a big move.x and spin it into place.
 func delta_self_moving_logic(delta:float) -> void:
 	match current_context:
 		DisplayContext.PLAY_AREA:
@@ -871,11 +879,11 @@ func create_move_tween(target_pos:Vector2) -> Tween:
 	move_tween.tween_property(self, "rotation_degrees", 0, delay*0.1)
 	return move_tween
 
-#`offset` is @onready and null until this visual's _ready runs, and a freshly built board adds its
-#visuals deferred, so the guard is what stops a tween being aimed at a null target.
+# `offset` is @onready and null until this visual's _ready runs, and a freshly built board adds its
+# visuals deferred, so the guard is what stops a tween being aimed at a null target.
 
-#Phase lengths are PlayerSettings fractions of the live delay, so the jump respects the pacing and
-#compression instead of running on a fixed wall-clock length.
+# Phase lengths are PlayerSettings fractions of the live delay, so the jump respects the pacing and
+# compression instead of running on a fixed wall-clock length.
 func anim_jump() -> float:
 	if not offset: return 0.0
 	reset_tween(move_tween)
@@ -891,16 +899,16 @@ func anim_jump() -> float:
 			delay * s.card_jump_settle_fraction)
 	return delay * s.card_jump_raise_fraction
 
-#THE SPRING: a card riding a jump that happened BENEATH it, as if the jumping card had every card
-#above it on its shoulder. It mirrors anim_jump's phase fractions and holds for exactly as long as
-#the jumping card holds its pose, so the stack moves as ONE RIGID BODY with it.
+# THE SPRING: a card riding a jump that happened BENEATH it, as if the jumping card had every card
+# above it on its shoulder. It mirrors anim_jump's phase fractions and holds for exactly as long as
+# the jumping card holds its pose, so the stack moves as ONE RIGID BODY with it.
 
-#The SCALE PULSE is deliberately omitted: the pulse belongs to the card the effect is happening to,
-#and pulsing the whole stack reads as five cards being hit rather than one card lifting the others.
+# The SCALE PULSE is deliberately omitted: the pulse belongs to the card the effect is happening to,
+# and pulsing the whole stack reads as five cards being hit rather than one card lifting the others.
 
-#⚠ It rides `offset`, which lives INSIDE the card root and is invisible to the containers, so a
-#springing stack OVERLAPS the rows above it and the board does not re-flow. That is the one place
-#the "rows never overlap" rule is deliberately broken, and it is broken here rather than found later.
+# ⚠ It rides `offset`, which lives INSIDE the card root and is invisible to the containers, so a
+# springing stack OVERLAPS the rows above it and the board does not re-flow. That is the one place
+# the "rows never overlap" rule is deliberately broken, and it is broken here rather than found later.
 func anim_spring_lift() -> float:
 	if not offset: return 0.0
 	reset_tween(move_tween)
@@ -929,12 +937,12 @@ func anim_spin(delay: float) -> float:
 ## Held-spin state (PropLayer SPIN hold): true while the looping spin owns offset.rotation.
 var _spin_holding : bool = false
 
-#One full revolution per pulse, LOOPING until anim_spin_stop, so a stream of spin-hinting props
-#keeps the card turning instead of restarting a one-shot per prop (owner spec). Self-guarding:
-#calling it again while held is a no-op.
+# One full revolution per pulse, LOOPING until anim_spin_stop, so a stream of spin-hinting props
+# keeps the card turning instead of restarting a one-shot per prop (owner spec). Self-guarding:
+# calling it again while held is a no-op.
 
-#The revolution time is floored because get_delay() can be 0, on an undo-cancel snap or at the
-#compression floor, and a zero-duration LOOPING tween trips Godot's infinite-loop guard every frame.
+# The revolution time is floored because get_delay() can be 0, on an undo-cancel snap or at the
+# compression floor, and a zero-duration LOOPING tween trips Godot's infinite-loop guard every frame.
 func anim_spin_start() -> void:
 	if not offset or _spin_holding: return
 	_spin_holding = true
@@ -980,19 +988,19 @@ var editor_bake_mesh : Callable = func() -> void:
 	generate_editor_mesh(target_polygon_node, bake_sample_texture, bake_h_frames, bake_v_frames, subdivisions_x, subdivisions_y)
 	print("CardVisual Tool: Successfully baked ", target_polygon_node.name, " diamond grid structure!")
 
-#⚠ THE POLYGON IS THE FRAME PLUS THE OUTLINE'S MARGIN, NOT THE FRAME. Shaders/outline.gdshader can
-#only write inside its own polygon, so with no margin there is nowhere for the rim to go and
-#CardOutline.frame_polygon stretches the art over the whole box instead.
+# ⚠ THE POLYGON IS THE FRAME PLUS THE OUTLINE'S MARGIN, NOT THE FRAME. Shaders/outline.gdshader can
+# only write inside its own polygon, so with no margin there is nowhere for the rim to go and
+# CardOutline.frame_polygon stretches the art over the whole box instead.
 
-#Re-baking without that pad is a silent way to delete the outline from one element and make its art
-#25 % too big, so the pad lives here rather than in a checkbox someone has to remember.
+# Re-baking without that pad is a silent way to delete the outline from one element and make its art
+# 25 % too big, so the pad lives here rather than in a checkbox someone has to remember.
 
-#Exact Vector2 keys are safe in the vertex index: every queried point is bit-identical to its
-#grid_pts source. The index is what keeps the bake linear rather than quadratic in vertices.
+# Exact Vector2 keys are safe in the vertex index: every queried point is bit-identical to its
+# grid_pts source. The index is what keeps the bake linear rather than quadratic in vertices.
 
-#The baseline UVs are the PADDED window of frame 0, so they agree with what CardOutline.frame_polygon
-#writes at runtime: the frame's own texels sit in the middle and the polygon's outer ring hangs
-#ART_OUTLINE texels outside the sheet, which the shader's frame clamp reads as empty either way.
+# The baseline UVs are the PADDED window of frame 0, so they agree with what CardOutline.frame_polygon
+# writes at runtime: the frame's own texels sit in the middle and the polygon's outer ring hangs
+# ART_OUTLINE texels outside the sheet, which the shader's frame clamp reads as empty either way.
 
 ## Bakes a pristine diamond grid while isolating internal vertices from the perimeter chain.
 func generate_editor_mesh(poly: Polygon2D, tex: Texture2D, h_f: int, v_f: int, subdiv_x: int, subdiv_y: int) -> void:
@@ -1088,16 +1096,16 @@ func generate_editor_mesh(poly: Polygon2D, tex: Texture2D, h_f: int, v_f: int, s
 ## Changes how many structural arms the star splits into based on edge segments (1 = 8 arms, 2 = 12 arms, 3 = 16 arms)
 @export var edge_subdivisions: int = 1
 
-#⚠ THE SKELETON GOES UNDER `Offset/Visual`, BESIDE THE POLYGONS, NOT UNDER THE ROOT. _bind_rig
-#looks it up at Offset/Visual/Skeleton2D/Bone_Center, and a root-parented one inherits neither the
-#bob nor the basis3d flip the polygons ride, so the rig is never found and never deforms.
+# ⚠ THE SKELETON GOES UNDER `Offset/Visual`, BESIDE THE POLYGONS, NOT UNDER THE ROOT. _bind_rig
+# looks it up at Offset/Visual/Skeleton2D/Bone_Center, and a root-parented one inherits neither the
+# bob nor the basis3d flip the polygons ride, so the rig is never found and never deforms.
 
-#⚠ The outgoing skeleton is queue_freed, which orphans both animations' track paths until the
-#regenerated bone names match. They do at `edge_subdivisions = 3`; at any other value the animation
-#tracks must be re-pointed by hand.
+# ⚠ The outgoing skeleton is queue_freed, which orphans both animations' track paths until the
+# regenerated bone names match. They do at `edge_subdivisions = 3`; at any other value the animation
+# tracks must be re-pointed by hand.
 
-#It is renamed before freeing because queue_free is deferred: the outgoing node still holds the name
-#when the new one is added, and Godot would silently make the new one "Skeleton2D2".
+# It is renamed before freeing because queue_free is deferred: the outgoing node still holds the name
+# when the new one is added, and Godot would silently make the new one "Skeleton2D2".
 @export_tool_button("Generate Star Skeleton & Bind")
 var editor_setup_skeleton : Callable = func() -> void:
 	var visual_container := get_node_or_null("Offset/Visual")

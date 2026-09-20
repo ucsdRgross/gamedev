@@ -40,17 +40,18 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 autowrap_mode = 3
-theme_override_font_sizes/font_size = 20
 
 [node name="ExitColumn" type="Control" parent="Scroll/Content/TopRow"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Body" type="Label" parent="Scroll/Content"]
+[node name="Body" type="RichTextLabel" parent="Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-autowrap_mode = 3
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 
 [node name="GridSlot" type="VBoxContainer" parent="Scroll/Content"]
 unique_name_in_owner = true

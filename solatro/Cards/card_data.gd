@@ -1,13 +1,7 @@
 @tool
 class_name CardData
 extends Resource
-## ⚠ `@tool` BECAUSE THE FX EDITOR PREVIEWS A REAL CARD, and a class whose chain is not `@tool` loads in
-## the editor as a PLACEHOLDER: the type name survives and every member does not. Measured 2026-07-29 in
-## the owner's editor — *"Invalid access to property or key 'data_changed' on a base object of type
-## 'Resource (CardData)'"*, and a `PipSuitHoop` that came back as a bare `Resource` with no
-## `set_texture`. Nothing here needs a running game (the `_init` registry is a weakref, the setters only
-## emit), so the flag costs nothing and it is what lets a tool stand up the card the player sees rather
-## than a mock of one. THE WHOLE CHAIN HAS TO CARRY IT: CardModifier, CardModifierType, PipSuit, PipRank.
+## ⚠ `@tool` BECAUSE THE FX EDITOR PREVIEWS A REAL CARD, and a class whose chain is not `@tool` loads in the editor as a PLACEHOLDER: the type name survives and every member does not. Measured 2026-07-29 in the owner's editor — *"Invalid access to property or key 'data_changed' on a base object of type 'Resource (CardData)'"*, and a `PipSuitHoop` that came back as a bare `Resource` with no `set_texture`. Nothing here needs a running game (the `_init` registry is a weakref, the setters only emit), so the flag costs nothing and it is what lets a tool stand up the card the player sees rather than a mock of one. THE WHOLE CHAIN HAS TO CARRY IT: CardModifier, CardModifierType, PipSuit, PipRank.
 
 signal data_changed
 signal stage_changed
@@ -88,15 +82,13 @@ func with_stamp(stamp:CardModifier) -> CardData:
 		self.stamp = null
 	return self
 
-## Apply a status: merge into an existing same-class status (stacks add) or append a fresh
-## copy. S7 trap: a status arriving already bound to another card is duplicated so the two
-## cards never share one stacks/data.
+## Apply a status: merge into an existing same-class status (stacks add) or append a fresh copy. S7 trap: a status arriving already bound to another card is duplicated so the two cards never share one stacks/data.
 func add_status(status: CardModifierStatus) -> void:
 	for existing: CardModifierStatus in statuses:
 		if existing.can_merge_with(status):
-			# Not `stacks +=`: a status carrying per-stack data must extend it in the SAME
-			# operation, which is what merge_from exists for. The stacks setter still emits
-			# data_changed.
+# Not `stacks +=`: a status carrying per-stack data must extend it in the SAME
+# operation, which is what merge_from exists for. The stacks setter still emits
+# data_changed.
 			existing.merge_from(status)
 			return
 	if status.data != null and status.data != self:
@@ -115,24 +107,22 @@ func with_status(status: CardModifierStatus) -> CardData:
 func _on_child_data_changed() -> void:
 	data_changed.emit()
 
-## **THE COMPACT FORM, FOR LOGS.** `Hoop NumeralRank1.0 Extra Point  PLAY PLAY` becomes `Ho1*+`.
-## Owner: *"Logs should be as compact as possible, current card data to_str may need
-## changes."* A log line repeated thousands of times is mostly card identifiers, and the verbose form
-## also prints the stage TWICE, which is pure noise in a per-frame record.
-##
-## ⚠ **THIS IS A SECOND METHOD RATHER THAN AN EDIT TO `_to_string()`, DELIBERATELY.** `_to_string()`
-## feeds test assertions and the **G1.7 headless-parity diff**, which compares whole log sections
-## between two runs — shortening it would either break those or, worse, change what the parity gate
-## compares without anyone noticing. The verbose form stays exactly as it is for those readers.
-##
-## Shape: `<suit 2 chars><rank><flags>`, e.g. `Kn3sR` = Knife, rank 3, Stone, Revealing. Stage is
-## appended ONLY when it is not `PLAY`, since almost every logged card is on the board.
+# ⚠ **THIS IS A SECOND METHOD RATHER THAN AN EDIT TO `_to_string()`, DELIBERATELY.** `_to_string()`
+# feeds test assertions and the **G1.7 headless-parity diff**, which compares whole log sections
+# between two runs — shortening it would either break those or, worse, change what the parity gate
+
+# compares without anyone noticing. The verbose form stays exactly as it is for those readers.
+
+# Shape: `<suit 2 chars><rank><flags>`, e.g. `Kn3sR` = Knife, rank 3, Stone, Revealing. Stage is
+# appended ONLY when it is not `PLAY`, since almost every logged card is on the board.
+
+## **THE COMPACT FORM, FOR LOGS.** `Hoop Ace Extra Point  PLAY PLAY` becomes `HoAce*+`. Owner: *"Logs should be as compact as possible, current card data to_str may need changes."* A log line repeated thousands of times is mostly card identifiers, and the verbose form also prints the stage TWICE, which is pure noise in a per-frame record.
 func log_str() -> String:
 	var s := ""
 	if suit: s += suit.get_str().substr(0, 2)
-	if rank: s += rank.get_str().trim_suffix(".0")
-	# One character per modifier, because WHICH skill it is almost never matters in a log line —
-	# that it HAS one is what changes behaviour, and the verbose form is one call away when it does.
+	if rank: s += rank.get_str()
+# One character per modifier, because WHICH skill it is almost never matters in a log line —
+# that it HAS one is what changes behaviour, and the verbose form is one call away when it does.
 	if skill: s += "*"
 	if stamp: s += "+"
 	if type and not type.get_str().is_empty(): s += "^"

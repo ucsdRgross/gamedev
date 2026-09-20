@@ -1,11 +1,7 @@
 class_name ChoiceViewer
 extends Control
 
-## Modal viewer for pack-opening: shows the generated cards over a dimmed backdrop.
-## choose == 0 is the wired take-all mode ("Take all" force-adds every card via the
-## `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers.
-## Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in
-## CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
+## Modal viewer for pack-opening: shows the generated cards over a dimmed backdrop. choose == 0 is the wired take-all mode ("Take all" force-adds every card via the `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers. Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
 
 ## Fired when the player accepts the shown cards; the viewer frees itself afterwards.
 signal confirmed(cards: Array[CardData])
@@ -38,8 +34,7 @@ var _reroll_buttons : Array[Button] = []
 class Data:
 	var current_choices : Array[CardData]
 	var create_one_choice : Callable
-	## Shared free-reroll pool for the WHOLE pack (any slot may spend it). Seeded from
-	## SettingsManager.settings.booster_reroll_pool by BoosterTemplate.on_map_picked.
+## Shared free-reroll pool for the WHOLE pack (any slot may spend it). Seeded from SettingsManager.settings.booster_reroll_pool by BoosterTemplate.on_map_picked.
 	var rerolls : int
 	var choose : int
 
@@ -50,8 +45,8 @@ static func add_to_scene(parent:Node, create_one:Callable, choices:int, choose:i
 	data.choose = choose
 	data.rerolls = rerolls
 	for i in choices:
-		# awaited: generators may be coroutines (BoosterTemplate awaits its pool
-		# broadcasts, E8); a plain sync callable resumes immediately
+# awaited: generators may be coroutines (BoosterTemplate awaits its pool
+# broadcasts, E8); a plain sync callable resumes immediately
 		var card_data : CardData = await create_one.call()
 		if card_data: data.current_choices.append(card_data)
 	return add_choices_to_scene(parent, data)
@@ -63,7 +58,7 @@ static func add_choices_to_scene(parent:Node, data:Data) -> ChoiceViewer:
 	return choice_viewer
 
 func _ready() -> void:
-	# ui_accept confirms immediately; arrow keys walk the (focusable) cards.
+# ui_accept confirms immediately; arrow keys walk the (focusable) cards.
 	confirm_button.grab_focus()
 	_populate()
 
@@ -89,8 +84,7 @@ func fit_beside(remaining: Rect2, window_scale: float) -> void:
 func republish_highlight() -> void:
 	_cards.republish_highlight()
 
-## One slot's Reroll button, parented to its card and hanging just below it (the flex container
-## lays out the cards only). A focus stop like the card itself — keyboard/controller reach it.
+## One slot's Reroll button, parented to its card and hanging just below it (the flex container lays out the cards only). A focus stop like the card itself — keyboard/controller reach it.
 func _add_reroll_button(control: ControlCard, index: int) -> Button:
 	var button := Button.new()
 	button.text = TRANSLATION.find('CHOICE_REROLL')
@@ -101,14 +95,11 @@ func _add_reroll_button(control: ControlCard, index: int) -> Button:
 	button.pressed.connect(func() -> void: await reroll(index))
 	return button
 
-## Re-roll ONE shown slot from the same generator that produced it, spending one of the shared
-## pool. Returns false (and changes nothing) when the pool is empty, the index is out of range,
-## or the generator produced nothing. Pure data + a targeted visual swap, so it is testable
-## without driving the buttons.
+## Re-roll ONE shown slot from the same generator that produced it, spending one of the shared pool. Returns false (and changes nothing) when the pool is empty, the index is out of range, or the generator produced nothing. Pure data + a targeted visual swap, so it is testable without driving the buttons.
 func reroll(index: int) -> bool:
 	if data.rerolls <= 0 or index < 0 or index >= data.current_choices.size():
 		return false
-	# awaited: create_one_choice is a coroutine (BoosterTemplate awaits its pool broadcasts, E8)
+# awaited: create_one_choice is a coroutine (BoosterTemplate awaits its pool broadcasts, E8)
 	var fresh : CardData = await data.create_one_choice.call()
 	if fresh == null:
 		return false
@@ -118,8 +109,7 @@ func reroll(index: int) -> bool:
 	_refresh_rerolls()
 	return true
 
-## Replace only slot `index`'s ControlCard with one showing `card`, keeping its position in the
-## container, its inspector wiring, its Reroll button — and the focus, if it was there.
+## Replace only slot `index`'s ControlCard with one showing `card`, keeping its position in the container, its inspector wiring, its Reroll button — and the focus, if it was there.
 func _swap_card_control(index: int, card: CardData) -> void:
 	if not is_node_ready() or index >= _cards.controls.size(): return
 	var old := _cards.controls[index]
@@ -134,8 +124,8 @@ func _swap_card_control(index: int, card: CardData) -> void:
 	_cards.controls[index] = control
 	_cards.rehighlight(replaced, card)
 	_reroll_buttons[index] = _add_reroll_button(control, index)
-	# Keyboard/controller: the pressed button was just freed — put focus back on its replacement
-	# (or on Confirm if this reroll emptied the pool and disabled every button).
+# Keyboard/controller: the pressed button was just freed — put focus back on its replacement
+# (or on Confirm if this reroll emptied the pool and disabled every button).
 	if had_focus:
 		if data.rerolls > 0: _reroll_buttons[index].grab_focus()
 		else: confirm_button.grab_focus()
@@ -151,7 +141,8 @@ func _refresh_rerolls() -> void:
 # A HOVER OR A KEY/PAD FOCUS, NEVER A CLICK: a click in this viewer takes the pack, and the lock
 # belongs to the board.
 func _publish_info(card: CardData) -> void:
-	PlayArea.card_info(card, _cards.card_window_px()).relay_to(info_requested)
+	PlayArea.card_info(card,
+			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)
 
 # Confirming closes this viewer, so it announces the lost highlight the same way the board does: a
 # description locked before it opened comes back.

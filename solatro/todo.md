@@ -204,7 +204,7 @@ written when a run stalls or fails.
   - Back mid-show, then travel: the new node is consumed with no show, and the frozen old show banks its win against it (pre-existing).
   - Preview-card FX art below the description's fold escapes its scroll clip while the card frames are clipped (pre-existing).
   - WALL FOCUS, WALL RENDER and WALL INPUT still run their Main fixtures unpaused, because they run beside the ordering chain.
-  - The name column is narrow, and what wraps in it reads badly. A card name without spaces breaks at its period ("NumeralRank3." / "0") now that the title leaves the exit X's column, and the way back narrows the same row again by taking its head: about 170 px of title column before it, about 100 px with it up. A card whose whole description IS its title — pre-existing and shared with the board and both viewers, since `card_info` splits at the first newline and a one-part card has none — then wraps to sixteen lines of one word each, filling the panel top to bottom. The narrowing is the new half. Shot: `map_preview_card.png`.
+  - The name column is narrow: about 170 px of title column before the way back, about 100 px with it up, because the way back takes the head of the same row. Shot: `map_preview_card.png`.
   - At a 1280×1000 window the HUD runs about 30 px past the bottom of its top band at the shipped `container_size_fraction`; the band is shorter than the HUD. Under a 0.1 fraction the exit X hangs below the band. The knob's range is a look call.
   - The exit X overlaps the top of the description's scrollbar (pre-existing).
   - The overlay buttons grow to the touch target when the window grows, but never shrink when it shrinks.
@@ -386,9 +386,8 @@ while `test_game_headless.gd` drives PLAN §6's six checks through a real `Game`
 - Firework in-run acquisition beyond deck12 (owner decision). Per-pip tooltip granularity.
 - Win/lose screen font (226px) clips long "Fame +N" text. `game.tscn` grabs no initial focus, so
   keyboard/controller players must click first.
-- `PipRankNumeral.get_str()` prints "NumeralRank5.0" wherever a rank is described in text, which a
-  mark's description shows. A sprung grid card (`CardVisual.anim_spring_lift`) never resets
-  `floating`, so it stays false until the next rebuild.
+- A sprung grid card (`CardVisual.anim_spring_lift`) never resets `floating`, so it stays false
+  until the next rebuild.
 
 ## Universal palette (owner playtest pending)
 

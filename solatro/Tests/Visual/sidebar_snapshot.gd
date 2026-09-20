@@ -464,7 +464,7 @@ func _capture_a_picked_preview_card(main: Main) -> void:
 	await RenderingServer.frame_post_draw
 	_capture(MAP_PREVIEW_CARD_OUT_PATH)
 	print("SIDEBAR_SNAPSHOT map_preview_card title=\"%s\" body=\"%s\" describes=\"%s\" back_visible=%s"
-			% [(panel.get_node(^"%Title") as Label).text, (panel.get_node(^"%Body") as Label).text,
+			% [(panel.get_node(^"%Title") as Label).text, (panel.get_node(^"%Body") as RichTextLabel).text,
 			ControlCard.describe_card(picked.child.data),
 			(panel.get_node(^"%Back") as Button).visible])
 	container.return_to_pack()
