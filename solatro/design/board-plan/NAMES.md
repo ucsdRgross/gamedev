@@ -157,7 +157,7 @@ func reroll_grid(grid: int) -> void                # GAP-003: every cell of one 
 
 ## InputMap action
 
-`ui_plan_layer` — held to peek: the `M` key and the X face button (`button_index` 2, GAP-005); the mouse and touch reach the view through the HUD `Marks` button.
+`ui_plan_layer` — held to peek: the `M` key and the Y face button (`button_index` 3, GAP-005); the mouse and touch reach the view through the HUD `Marks` button.
 Keyboard binding `M`; the CONTROLLER binding is parked on `gaps/GAP-005.md` — every shoulder is
 already taken. The HUD control is what a pad reaches today.
 

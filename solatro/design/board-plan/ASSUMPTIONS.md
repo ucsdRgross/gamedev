@@ -336,10 +336,11 @@ gap under `gaps/`.
   revision bump reaches) and in `setup_gui()` (the rebuild an undo or a resume drives), in both
   cases AFTER the rebuild is under way -- a close asks for a visual refresh, and a refresh run
   against a board whose data has already changed reads a stale control tree.
-- S13 / Q117, NAMES: `ui_plan_layer` is bound to the `M` key (`M` for mark) and to the X face
-  button (`button_index` 2), both HELD to peek. Every shoulder was already taken -- L1/R1 are
+- S13 / Q117, NAMES: `ui_plan_layer` is bound to the `M` key (`M` for mark) and to the Y face
+  button (`button_index` 3), both HELD to peek. Every shoulder was already taken -- L1/R1 are
   `wall_back` / `wall_forward` and the L2/R2 triggers are `grid_pan_left` / `grid_pan_right` -- so
-  GAP-005 put the peek on the one free face button.
+  GAP-005 put the peek on a free face button. X went to `card_tap` when the two branches merged;
+  the owner's ruling is that a pad reaches a tap by double-pressing Accept, so the peek moved.
 - S13 / TEST_PLAN TP-69: the mutation that closes the view is `swap_marks`, not `reroll_mark`. The
   PLAN VISUALS fixture deliberately runs with no planner card, so `plan_seed` is 0 and `reroll_mark`
   asserts on it; `swap_marks` is the same kind of caller -- a mark effect bumping `revision` -- and

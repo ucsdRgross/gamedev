@@ -804,7 +804,7 @@ that by re-checking every cell of `Line.cells` against the live board.
   (`GameData.plan_reveal_order`, transient and read by nothing else). The WHOLE deal takes
   `plan_reveal_multiplier` × `get_delay()`: the cells start that span divided by their count apart,
   on one Tween of delayed callbacks, and each cell's spin is left running as the next arrives. The marks LAYER (`PlayArea.plan_layer_open`) hides the
-  played cards and draws every cell's mark: `ui_plan_layer` (M, or the X face button) PEEKS while
+  played cards and draws every cell's mark: `ui_plan_layer` (M, or the Y face button) PEEKS while
   held, the HUD Marks button toggles, `_select_data` refuses selection while it is open,
   `GameView._board_is_playable()` gates undo and End, and `queue_rebuild()` / `setup_gui()` close
   it, so one board mutation always ends it. ⚠ WHAT IS LOOKED AT IS WHAT IS DRAWN: while it is open

@@ -1402,15 +1402,15 @@ func test_the_layer_toggle_is_reachable_by_every_input_mode() -> void:
 # ==============================================================================
 
 #The pad reaches this view two ways that are NOT the same gesture: the HUD control TOGGLES on
-#Accept, while the X face button peeks only while it is down. A second face button is pressed to
+#Accept, while the Y face button peeks only while it is down. A second face button is pressed to
 #prove the peek belongs to that one button and not to any pad press at all.
 func test_the_layer_view_peeks_while_the_face_button_is_held() -> void:
-	await input.joy_press(JOY_BUTTON_X)
-	check(pa.plan_layer_open, "TP-89: holding the X face button opens the layer view")
+	await input.joy_press(JOY_BUTTON_Y)
+	check(pa.plan_layer_open, "TP-89: holding the Y face button opens the layer view")
 	var peeked := cells_not_in_layer(true)
 	check(peeked.is_empty(),
 			"TP-89: and while it is down every marked cell draws its mark", str(peeked))
-	await input.joy_release(JOY_BUTTON_X)
+	await input.joy_release(JOY_BUTTON_Y)
 	check(not pa.plan_layer_open, "TP-89: letting the face button go closes the view again")
 	var back := cells_not_in_layer(false)
 	check(back.is_empty(), "TP-89: and the played board is back", str(back))
