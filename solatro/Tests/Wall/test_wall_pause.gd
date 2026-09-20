@@ -1,24 +1,17 @@
 extends TestSuite
 # res://Tests/Wall/test_wall_pause.gd
-# ==============================================================================
-# WALL PAUSE (S12): the engine's own pause system wired to the wall -- Wall/%Camera2D ALWAYS,
-# every picture and screen root PAUSABLE by default, exactly one screen root ALWAYS while focused,
-# Pacing vs a bare create_timer under the pause.
-# PLAN.md §1.6; TEST_PLAN.md §4, U1-U7.
-#
+
+# WALL PAUSE: the engine's own pause system wired to the wall -- Wall, %Camera2D and the overlay
+# ALWAYS, every picture and screen root PAUSABLE by default, exactly one screen root ALWAYS while
+# focused, and Pacing vs a bare create_timer under the pause.
+
 # ⚠ RUNS DEAD LAST, ALONE, AFTER LEAK CANARY -- see the SUITE ORDERING chain in test_base.gd. This
 # suite constructs a REAL Wall, whose _ready() sets get_tree().paused = true GLOBALLY AND
-# PERMANENTLY (§1.6, QR6=a). U1 requires this test to NOT undo that afterward (ASSUMPTIONS.md) --
-# unlike test_wall_render.gd's fixture, which unpauses immediately as a concurrency workaround
-# because IT runs alongside ~34 other suites that need normal frame processing to finish. That
-# workaround would make U1 pass vacuously (proving only that paused briefly became true, never that
-# it STAYS true), so this suite instead waits for literally everyone else to finish first
-# (await_siblings_except([])) and is the one suite every other waiter now excludes by name.
-#
-# U2 now covers all three ALWAYS nodes -- WallOverlay (S35) landed after this suite was first
-# written (which asserted only Wall and %Camera2D, reporting the omission per the coordinator's
-# instruction at the time); extended here now that %Overlay exists in wall.tscn.
-# ==============================================================================
+# PERMANENTLY, and it deliberately never undoes that afterward (ASSUMPTIONS.md).
+
+# Unpausing immediately, as test_wall_render.gd's fixture does for concurrency, would make the
+# "stays paused" check pass vacuously -- so this suite waits for literally everyone else to finish
+# first (await_siblings_except([])) and is the one suite every other waiter excludes by name.
 
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
@@ -52,8 +45,8 @@ func _ready() -> void:
 
 # ------------------------------------------------------------------ fixture
 
-## A throwaway PackedScene wrapping a bare Node, standing in for a real screen -- U3/U4/U7 only
-## need something instantiable whose process_mode they can read (ASSUMPTIONS.md).
+# A throwaway PackedScene wrapping a bare Node, standing in for a real screen -- these tests only
+# need something instantiable whose process_mode they can read (ASSUMPTIONS.md).
 func _dummy_scene() -> PackedScene:
 	var root := Node.new()
 	root.name = "DummyScreen"
@@ -62,8 +55,8 @@ func _dummy_scene() -> PackedScene:
 	root.free()
 	return packed
 
-## One authored picture entry at the given angle, always carrying a _dummy_scene() so its packed
-## WallPicture has a real "screen root" to flip process_mode on.
+# One authored picture entry at the given angle, always carrying a _dummy_scene() so its packed
+# WallPicture has a real "screen root" to flip process_mode on.
 func _entry(id: StringName, slot_deg: int) -> PictureEntry:
 	var e := PictureEntry.new()
 	e.id = id
@@ -71,8 +64,8 @@ func _entry(id: StringName, slot_deg: int) -> PictureEntry:
 	e.scene = _dummy_scene()
 	return e
 
-## A small, programmatic three-picture layout -- never res://Assets/Wall/layout_default.tres (the
-## layout tool's own output, S34, out of scope here), same convention as test_wall_render.gd.
+# A small, programmatic three-picture layout -- never res://Assets/Wall/layout_default.tres, the
+# layout tool's own output, which is out of scope here; same convention as test_wall_render.gd.
 func _make_layout() -> WallLayout:
 	var l := WallLayout.new()
 	l.gap_px = 24.0
@@ -85,9 +78,9 @@ func _make_layout() -> WallLayout:
 	l.pictures = pics
 	return l
 
-## U1 (D1, QR6=a): constructing a real Wall pauses the tree globally and PERMANENTLY -- unlike
-## every other suite that builds a Wall, this one deliberately never clears it afterward. Safe only
-## because this suite runs dead last and alone (see header).
+# Constructing a real Wall pauses the tree globally and PERMANENTLY -- unlike every other suite
+# that builds a Wall, this one deliberately never clears it afterward. Safe only because this
+# suite runs dead last and alone (see header).
 func _build_wall() -> void:
 	_wall = WALL_SCENE.instantiate()
 	add_child(_wall)
@@ -104,15 +97,14 @@ func _build_wall() -> void:
 		wp.build(rect, by_id[rect.id], viewports)
 		_pictures.append(wp)
 
-## Leaves exactly `target` focused (screen root ALWAYS) and unfocuses every other picture --
-## simulating the arbitration wall_picture.gd's own docstring says is the caller's job (S12+'s real
-## caller, not yet built, will do the same).
+# Leaves exactly `target` focused (screen root ALWAYS) and unfocuses every other picture -- the
+# arbitration wall_picture.gd's own docstring says is the caller's job.
 func _focus_only(target: WallPicture) -> void:
 	for wp : WallPicture in _pictures:
 		if wp == target: wp.focus()
 		else: wp.unfocus(Vector2(200, 120))
 
-## How many of _pictures currently have an ALWAYS screen root -- U3/U4's own invariant, read out.
+# How many of _pictures currently have an ALWAYS screen root -- the invariant, read out.
 func _always_screen_count() -> int:
 	var n := 0
 	for wp : WallPicture in _pictures:
@@ -122,14 +114,14 @@ func _always_screen_count() -> int:
 
 # ------------------------------------------------------------------ U1-U4, U7
 
-## U1 (D1, QR6=a): the tree is paused right after construction, and STAYS paused across at least
-## one frame boundary with nothing in this test undoing it.
+# The tree is paused right after construction, and STAYS paused across at least one frame boundary
+# with nothing in this test undoing it.
 func test_tree_paused_and_stays_paused() -> void:
 	check(get_tree().paused, "the tree is paused immediately after constructing a real Wall")
 	await get_tree().process_frame
 	check(get_tree().paused, "the tree is STILL paused one frame later -- nothing cleared it")
 
-## U2 (D2): Wall, %Camera2D and WallOverlay (mounted at %Overlay, S35) are all PROCESS_MODE_ALWAYS.
+# Wall, %Camera2D and WallOverlay (mounted at %Overlay) are all PROCESS_MODE_ALWAYS.
 func test_shell_stays_always() -> void:
 	check(_wall.process_mode == Node.PROCESS_MODE_ALWAYS, "Wall is PROCESS_MODE_ALWAYS")
 	var camera : Node = _wall.get_node(^"%Camera2D")
@@ -137,7 +129,7 @@ func test_shell_stays_always() -> void:
 	var overlay : Node = _wall.get_node(^"%Overlay")
 	check(overlay.process_mode == Node.PROCESS_MODE_ALWAYS, "%Overlay (WallOverlay) is PROCESS_MODE_ALWAYS")
 
-## U3 (D4, Q74=a): focus each of 3 pictures in turn -> exactly one screen root is ALWAYS each time.
+# Focus each of 3 pictures in turn -> exactly one screen root is ALWAYS each time.
 func test_exactly_one_screen_live() -> void:
 	for target : WallPicture in _pictures:
 		_focus_only(target)
@@ -145,7 +137,7 @@ func test_exactly_one_screen_live() -> void:
 				"exactly one screen root is ALWAYS while %s is focused" % target.name,
 				str(_always_screen_count()))
 
-## U4 (D8, Q74=a): wall view -- every picture unfocused -- leaves zero screen roots ALWAYS.
+# Wall view -- every picture unfocused -- leaves zero screen roots ALWAYS.
 func test_wall_view_leaves_zero_live() -> void:
 	for wp : WallPicture in _pictures:
 		wp.unfocus(Vector2(200, 120))
@@ -154,22 +146,20 @@ func test_wall_view_leaves_zero_live() -> void:
 
 # ------------------------------------------------------------------ U5, U6
 
-## U5 (D6, Q75=b): Pacing.wait freezes with ITS OWN SCREEN, which is the contract D6 asked for --
-## NOT with the tree. Both halves are asserted, because either alone is satisfied by a broken
-## implementation: a timer that never fires passes the frozen half, and a bare `create_timer` passes
-## the live half.
-##
-## ⚠ This test used to assert "Pacing.wait does not fire while paused" and called that correct. It
-## was measuring a `SceneTreeTimer`, which has NO node binding: `process_always = false` keys on the
-## TREE's pause flag, and §1.6 holds that on for the whole session -- so the helper never fired in
-## ANY screen and `game.gd`'s scoring cascade stalled mid-reveal forever, with this check green.
-## "Does not fire while the tree is paused" is indistinguishable from "does not fire" when the tree
-## is ALWAYS paused; only a per-screen fixture can tell them apart, which is what this is now.
-##
-## ⚠ Two vacuity traps live in this shape, both from ASSUMPTIONS.md's pause-model-spike entry:
-## `await some_timer` without `.timeout` resolves IMMEDIATELY, and a GDScript lambda captures an
-## outer local BY VALUE so `func(): fired = true` writes a throwaway copy. `.timeout` is explicit
-## and every flag is a one-element typed Array below.
+# Pacing.wait freezes with ITS OWN SCREEN, not with the tree. Both halves are asserted, because
+# either alone is satisfied by a broken implementation: a timer that never fires passes the frozen
+# half, and a bare `create_timer` passes the live half.
+
+# ⚠ A `SceneTreeTimer` has NO node binding: `process_always = false` keys on the TREE's pause flag,
+# which is held on for the whole session -- so the helper never fired in ANY screen and `game.gd`'s
+# scoring cascade stalled mid-reveal forever, with the old check green.
+
+# "Does not fire while the tree is paused" is indistinguishable from "does not fire" when the tree
+# is ALWAYS paused; only a per-screen fixture can tell them apart, which is what this is now.
+
+# ⚠ Two vacuity traps live in this shape (ASSUMPTIONS.md, the pause-model spike): `await
+# some_timer` without `.timeout` resolves IMMEDIATELY, and a GDScript lambda captures an outer
+# local BY VALUE. `.timeout` is explicit and every flag is a one-element typed Array below.
 func test_pacing_wait_freezes_with_its_own_screen() -> void:
 	_focus_only(_pictures[0])
 	var live : Node = _pictures[0].screen_root
@@ -182,17 +172,19 @@ func test_pacing_wait_freezes_with_its_own_screen() -> void:
 	var frozen_fired : Array[bool] = [false]
 	Pacing.wait(live, 0.1).timeout.connect(func() -> void: live_fired[0] = true)
 	Pacing.wait(frozen, 0.1).timeout.connect(func() -> void: frozen_fired[0] = true)
-	await get_tree().create_timer(0.5, true).timeout   # escape hatch -- bare timer, ticks regardless
+# Escape hatch -- bare timer, ticks regardless.
+	await get_tree().create_timer(0.5, true).timeout
 	check(live_fired[0],
 			"Pacing.wait FIRES inside the live screen even though the tree is paused -- the whole "
 			+ "show depends on this and it did not happen with a SceneTreeTimer")
 	check(not frozen_fired[0], "...and does NOT fire inside a frozen screen (D6's own half)")
 
-## U6 (D6): the trap this whole design defends against, kept green ON PURPOSE -- a BARE
-## create_timer ticks straight through the pause (process_always defaults true), exactly why every
-## game-code call site was swept onto Pacing in S6. If this ever goes red, a future Godot changed
-## process_always's default and Pacing can be retired (TEST_PLAN.md §4's own note on this row).
-## Same boxed-Array closure fix as U5 above -- see its comment.
+# The trap this whole design defends against, kept green ON PURPOSE: a BARE create_timer ticks
+# straight through the pause (process_always defaults true), which is exactly why every game-code
+# call site was swept onto Pacing.
+
+# If this ever goes red, a future Godot changed process_always's default and Pacing can be retired.
+# Same boxed-Array closure fix as the test above -- see its comment.
 func test_bare_create_timer_ticks_while_paused() -> void:
 	var fired : Array[bool] = [false]
 	get_tree().create_timer(0.1).timeout.connect(func() -> void: fired[0] = true)
@@ -201,33 +193,35 @@ func test_bare_create_timer_ticks_while_paused() -> void:
 
 # ------------------------------------------------------------------ U8
 
-## U8 (§1.6, PICTURE_WALL.md C5): the shipped pause model end to end -- a REAL `Main`, driven
-## through the moves a player makes, with the tree LEFT PAUSED exactly as the game runs it.
-##
-## ⚠ THIS TEST MUST NEVER UNPAUSE, and that is the whole point of it. Every other Main-based suite
-## writes `get_tree().paused = false` straight after `add_child()` as a concurrency workaround; the
-## game never does. That one habit hid a TOTAL SOFT-LOCK for the whole run: `Main` has no
-## `process_mode`, so it is PAUSABLE, and a Tween bound to a PAUSABLE node under a paused tree never
-## advances -- so `_animate_camera()`'s `await tween.finished` never returned, `_move_in_flight` and
-## `input_locked` stuck true, every handler dead-ended on its own guard, and only Alt+F4 got out.
-## The suite stayed green throughout. This suite is the one place the assertion can live, because it
-## already runs dead last and alone (see the header) and already leaves the tree paused.
-##
-## Each move is driven WITHOUT `await` and polled under a BOUNDED escape, so a move that never
-## completes fails this check instead of hanging the whole run with no banner.
+# The shipped pause model end to end -- a REAL `Main`, driven through the moves a player makes,
+# with the tree LEFT PAUSED exactly as the game runs it.
+
+# ⚠ THIS TEST MUST NEVER UNPAUSE, and that is the whole point of it. Every other Main-based suite
+# writes `get_tree().paused = false` straight after `add_child()` as a concurrency workaround; the
+# game never does.
+
+# That one habit hid a TOTAL SOFT-LOCK for a whole run: `Main` has no `process_mode`, so it is
+# PAUSABLE, and a Tween bound to a PAUSABLE node under a paused tree never advances -- so
+# `_animate_camera()`'s `await tween.finished` never returned and every handler dead-ended.
+
+# This suite is the one place the assertion can live, because it already runs dead last and alone
+# (see the header) and already leaves the tree paused.
+
+# Each move is driven WITHOUT `await` and polled under a BOUNDED escape, so a move that never
+# completes fails this check instead of hanging the whole run with no banner.
 func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	backup_real_settings()
 	var snap := snapshot_settings("wall_")
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	# NO `get_tree().paused = false` here, deliberately -- see this function's doc comment.
+# NO `get_tree().paused = false` here, deliberately -- see this function's doc comment.
 	check(get_tree().paused, "sanity: the tree is paused, as the real game holds it all session")
 	check(main._current_focus == &"start_menu", "sanity: cold launch focused start_menu",
 			str(main._current_focus))
 
-	# GAP-002 at COLD LAUNCH: every picture is built at full `_design_size`, and nothing sized the
-	# unfocused ones down until the first resize -- five oversized SubViewports rendering ~7x the
-	# pixels they are shown at, for the whole opening of the game.
+# AT COLD LAUNCH: every picture is built at full `_design_size`, and nothing sized the unfocused
+# ones down until the first resize -- five oversized SubViewports rendering ~7x the pixels they
+# are shown at, for the whole opening of the game.
 	var floor_px : int = SettingsManager.settings.wall_view_min_texture_px
 	var sized := 0
 	for id : StringName in main._pictures:
@@ -242,7 +236,7 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(sized > 0, "sanity: unfocused pictures existed to check", str(sized))
 
 
-	# The first Wall press: focused picture -> wall view, the move that soft-locked the app.
+# The first Wall press: focused picture -> wall view, the move that soft-locked the app.
 	var wall_view_done := await _drive_move(func() -> void: await main._go_to_wall_view())
 	check(wall_view_done,
 			"the first Wall press COMPLETES under the paused tree (a tween bound to a PAUSABLE "
@@ -251,23 +245,24 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(not main.wall.input_locked, "...and input is answered again")
 	check(main._current_focus == &"", "...and the wall is actually in wall view",
 			str(main._current_focus))
-	# C4/I7 (Q104=a): the number keys mean the Nth picture AS PLACED, and only `apply_layout()`
-	# records that order. `_build_pictures()` builds each picture at its final rect directly, so
-	# nothing recorded it and all nine keys were inert from cold launch until an unlock or a resize
-	# happened to call `apply_layout()` for an unrelated reason. Asserted on a COLD `Main` -- in wall
-	# view, where no focused screen can consume the action first, and with nothing having called
-	# `apply_layout()` for any other reason yet.
-	var jumped : Array[StringName] = [&""]   # boxed -- lambdas capture locals BY VALUE
+# The number keys mean the Nth picture AS PLACED, and only `apply_layout()` records that order.
+# `_build_pictures()` builds each picture at its final rect directly, so nothing recorded it and
+# all nine keys were inert from cold launch until something else called `apply_layout()`.
+
+# Asserted on a COLD `Main`, in wall view, where no focused screen can consume the action first
+# and nothing has called `apply_layout()` for any other reason yet.
+# Boxed -- lambdas capture locals BY VALUE.
+	var jumped : Array[StringName] = [&""]
 	main.wall.picture_enter_requested.connect(func(id: StringName) -> void: jumped[0] = id)
 	var placed_ids : Array[StringName] = []
-	placed_ids.assign(main._pictures.keys())   # typed: keys() is untyped Variant under -Werror
+# Typed: keys() is untyped Variant under -Werror.
+	placed_ids.assign(main._pictures.keys())
 	var jump := InputEventAction.new()
 	jump.action = &"wall_jump_2"
 	jump.pressed = true
-	# ⚠ This starts a REAL navigation -- `picture_enter_requested` is wired straight to
-	# `Main._focus_picture()`. Driven and awaited like any other move, or it leaves
-	# `_move_in_flight` true and every later step in this test refuses on its own guard (measured:
-	# it did, and took 9 checks down with it).
+# ⚠ This starts a REAL navigation -- `picture_enter_requested` is wired straight to
+# `Main._focus_picture()`. Driven and awaited like any other move, or it leaves `_move_in_flight`
+# true and every later step refuses on its own guard (measured: it took 9 checks down with it).
 	var jump_done := await _drive_move(func() -> void:
 			main.wall._unhandled_input(jump)
 			while main._move_in_flight:
@@ -279,34 +274,35 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 			"...and it is the SECOND picture in placement order", str(jumped[0]))
 	check(jump_done and main._current_focus == placed_ids[1],
 			"...and the wall actually navigated there", str(main._current_focus))
-	# Back to wall view, so the next step starts where it says it does.
+# Back to wall view, so the next step starts where it says it does.
 	var back_to_wall := await _drive_move(func() -> void: await main._go_to_wall_view())
-	# The STATE is the precondition the next step needs; whether this particular move had frames to
-	# run is not (from wall view it is a legitimate no-op, which `_drive_move` reports as false).
+# The STATE is the precondition the next step needs; whether this particular move had frames to
+# run is not (from wall view it is a legitimate no-op, which `_drive_move` reports as false).
 	check(main._current_focus == &"", "sanity: back in wall view for the next step",
 			"focus=%s move_ran=%s" % [main._current_focus, back_to_wall])
 
-	# Wall view -> a picture: the same `_animate_camera()` path in the other direction.
+# Wall view -> a picture: the same `_animate_camera()` path in the other direction.
 	var enter_done := await _drive_move(func() -> void: await main._focus_picture(&"map"))
 	check(enter_done, "entering a picture from wall view completes under the paused tree")
 	check(not main._move_in_flight, "...and _move_in_flight cleared")
 	check(main._current_focus == &"map", "...and the picture is focused", str(main._current_focus))
 
-	# D6/Q75=b AT THE PRODUCT LEVEL: `map` is focused, so `map_scene` is the live screen and
-	# `menu_scene` is frozen. This is `Pacing`'s real call-site condition -- game code waiting from
-	# inside the screen the player is looking at, under the tree the game actually runs paused.
+# D6/Q75=b AT THE PRODUCT LEVEL: `map` is focused, so `map_scene` is the live screen and
+# `menu_scene` is frozen. This is `Pacing`'s real call-site condition -- game code waiting from
+# inside the screen the player is looking at, under the tree the game actually runs paused.
 	var live_fired : Array[bool] = [false]
 	var frozen_fired : Array[bool] = [false]
 	Pacing.wait(main.map_scene, 0.1).timeout.connect(func() -> void: live_fired[0] = true)
 	Pacing.wait(main.menu_scene, 0.1).timeout.connect(func() -> void: frozen_fired[0] = true)
-	await get_tree().create_timer(0.5, true).timeout   # escape hatch -- bare timer, ticks regardless
+# Escape hatch -- bare timer, ticks regardless.
+	await get_tree().create_timer(0.5, true).timeout
 	check(live_fired[0],
 			"a real screen's Pacing.wait fires while that screen is the focused one")
 	check(not frozen_fired[0], "...and an unfocused screen's does not")
 
-	# The postage-stamp defect, at product level: leaving a picture shrinks its render target
-	# (GAP-002), and the sprite that shows it draws `viewport.size * scale`. Every picture on the
-	# wall must still draw exactly its own rect, focused or not.
+# The postage-stamp defect, at product level: leaving a picture shrinks its render target, and the
+# sprite that shows it draws `viewport.size * scale`. Every picture on the wall must still draw
+# exactly its own rect, focused or not.
 	for id : StringName in main._pictures:
 		var wp : WallPicture = main._pictures[id]
 		var scr : Sprite2D = wp.get_node(^"%Screen")
@@ -315,18 +311,19 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 				"%s draws exactly its rect after a real enter-and-leave" % id,
 				"drawn=%s rect=%s viewport=%s" % [drawn, wp.rect.size, wp.viewport.size])
 
-	# Picture -> picture: the `WallTransition` branch, whose own tween is already camera-bound.
+# Picture -> picture: the `WallTransition` branch, whose own tween is already camera-bound.
 	var hop_done := await _drive_move(func() -> void: await main._focus_picture(&"deck"))
 	check(hop_done, "a picture-to-picture move completes under the paused tree")
 	check(not main._move_in_flight, "...and _move_in_flight cleared")
 	check(main._current_focus == &"deck", "...and the destination is focused",
 			str(main._current_focus))
 
-	# H3/Q27/S37 under REDUCED MOTION (K8/Q172=a). `sample_at()`'s reduced branch holds `_wide_zoom`
-	# for every elapsed INCLUDING THE LAST, so before `_focus_picture()` settled the camera every
-	# destination came to rest at wall zoom with its own frame showing -- the one state H3 forbids,
-	# on every transition. T12 pins the zoom DURING the transition; this pins where it ENDS, and
-	# neither half is visible from the other.
+# REDUCED MOTION: `sample_at()`'s reduced branch holds `_wide_zoom` for every elapsed INCLUDING
+# THE LAST, so before `_focus_picture()` settled the camera every destination came to rest at wall
+# zoom with its own frame showing -- the one state the framing rule forbids, on every transition.
+
+# The transition suite pins the zoom DURING the transition; this pins where it ENDS, and neither
+# half is visible from the other.
 	SettingsManager.settings.wall_reduced_motion = true
 	var reduced_done := await _drive_move(func() -> void: await main._focus_picture(&"map"))
 	check(reduced_done, "a reduced-motion move completes under the paused tree")
@@ -337,20 +334,20 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(absf(camera.zoom.x - expected) < 0.001,
 			"reduced motion RESTS at the destination's focused zoom, frame off-screen",
 			"zoom=%.4f expected=%.4f" % [camera.zoom.x, expected])
-	# GAP-019 = (c): the camera never moves DURING a reduced-motion cross-fade, so the only thing
-	# that ever brings it to the destination is the cut on landing. T12 pins the not-moving half and
-	# cannot see this one.
+# The camera never moves DURING a reduced-motion cross-fade, so the only thing that ever brings it
+# to the destination is the cut on landing. The transition suite pins the not-moving half and
+# cannot see this one.
 	check(camera.position.distance_to(main._rects[&"map"].centre) < 0.5,
 			"...and at the destination's own centre -- the cut on landing is what gets it there",
 			"camera=%s dest=%s" % [camera.position, main._rects[&"map"].centre])
-	# Without this the check above could pass on a layout where the two happen to coincide.
+# Without this the check above could pass on a layout where the two happen to coincide.
 	check(expected - wide > 0.1,
 			"sanity: the focused zoom and the wall zoom are far apart in this fixture, so the "
 			+ "check above can actually fail", "focused=%.4f wall=%.4f" % [expected, wide])
 
-	# Back FROM WALL VIEW (GAP-020, option a). The stack's top is still `map` -- wall view is never
-	# an entry (Q66=b) -- so one Back returns THERE. `back()` would step past it and file it under
-	# Forward as a picture never revisited, which is what used to happen on a single unraced press.
+# Back FROM WALL VIEW. The stack's top is still `map` -- wall view is never an entry -- so one
+# Back returns THERE. `back()` would step past it and file it under Forward as a picture never
+# revisited, which is what used to happen on a single unraced press.
 	await _drive_move(func() -> void: await main._go_to_wall_view())
 	check(main._current_focus == &"" and main._focus_stack.current() == &"map",
 			"sanity: in wall view, with the stack still sitting on map",
@@ -366,30 +363,31 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	restore_settings_snapshot(snap)
 	restore_real_settings()
 
-## Q56=b: a second Back pressed DURING a move is IGNORED, not half-applied.
-##
-## ⚠ `_focus_stack.back()` mutates the history BEFORE `_focus_picture()`'s own `if _move_in_flight:
-## return` guard is ever reached, so the second press used to POP an entry and then refuse to
-## navigate to it -- the picture was gone from the stack for good and Back greyed out while it was
-## still behind you. The guard belongs on the HANDLER, because the handler is what mutates.
+# A second Back pressed DURING a move is IGNORED, not half-applied.
+
+# ⚠ `_focus_stack.back()` mutates the history BEFORE `_focus_picture()`'s own `if _move_in_flight:
+# return` guard is ever reached, so the second press used to POP an entry and then refuse to
+# navigate to it. The guard belongs on the HANDLER, because the handler is what mutates.
 func test_a_second_back_during_a_move_does_not_eat_a_history_entry() -> void:
 	backup_real_settings()
 	var snap := snapshot_settings("wall_")
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	# NO unpause.
+# NO unpause.
 
-	# Three real ids on the stack: start_menu (cold launch) -> map -> deck.
+# Three real ids on the stack: start_menu (cold launch) -> map -> deck.
 	await _drive_move(func() -> void: await main._focus_picture(&"map"))
 	await _drive_move(func() -> void: await main._focus_picture(&"deck"))
 	check(main._current_focus == &"deck" and main._focus_stack.can_back(),
 			"sanity: three real ids of history to lose", str(main._current_focus))
 
-	# TWO Backs, the second while the first is still in flight -- a double-tap.
-	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+# TWO Backs, the second while the first is still in flight -- a double-tap.
+# Boxed -- lambdas capture locals BY VALUE.
+	var done : Array[bool] = [false]
 	_drive(func() -> void: await main._on_back_pressed(), done)
 	check(main._move_in_flight, "sanity: the first Back really is mid-move when the second lands")
-	await main._on_back_pressed()   # the ignored one
+# The ignored one.
+	await main._on_back_pressed()
 	var started := Time.get_ticks_msec()
 	while not done[0] and Time.get_ticks_msec() - started < 8000:
 		await get_tree().process_frame
@@ -397,7 +395,7 @@ func test_a_second_back_during_a_move_does_not_eat_a_history_entry() -> void:
 	check(main._current_focus == &"map",
 			"the double-tap lands on map -- one step, not two, and not nowhere",
 			str(main._current_focus))
-	# The entry the second press used to eat: start_menu must still be behind us.
+# The entry the second press used to eat: start_menu must still be behind us.
 	check(main._focus_stack.can_back(),
 			"...and Back is still available, because no history entry was swallowed")
 	await _drive_move(func() -> void: await main._on_back_pressed())
@@ -408,42 +406,40 @@ func test_a_second_back_during_a_move_does_not_eat_a_history_entry() -> void:
 	restore_settings_snapshot(snap)
 	restore_real_settings()
 
-## Pins the transition clock so a move is guaranteed to outlive the two-frame wait the
-## "is it still in flight?" preconditions below do.
-##
-## ⚠ Without this the test reads its DURATION off the machine's saved `settings.tres`. A dev box
-## tuned for speed (`base_delay = 0.1`, `wall_transition_delay = 0.001`) makes a move last 0.0001 s
-## — one frame — so the precondition fails and the real assertions after it never get to run. The
-## failure looks like a product bug and is entirely a property of whoever last used the game.
-##
-## Both keys are restored by `restore_settings_snapshot()`, so the caller must snapshot with NO
-## prefix: `base_delay` is not a `wall_` key.
+# Pins the transition clock so a move is guaranteed to outlive the two-frame wait the "is it still
+# in flight?" preconditions below do.
+
+# ⚠ Without this the test reads its DURATION off the machine's saved `settings.tres`. A dev box
+# tuned for speed (`base_delay = 0.1`, `wall_transition_delay = 0.001`) makes a move last 0.0001 s
+# — one frame — so the precondition fails and the real assertions after it never get to run.
+
+# Both keys are restored by `restore_settings_snapshot()`, so the caller must snapshot with NO
+# prefix: `base_delay` is not a `wall_` key.
 func _pin_transition_clock() -> void:
 	SettingsManager.settings.base_delay = 1.0
 	SettingsManager.settings.wall_transition_delay = 0.6
 
-## The opening reveal runs LONGER than an ordinary Wall press, by `wall_reveal_delay_scale`, and ends in the map.
-##
-## ⚠ Driven through `_on_new_run()`, the REAL call site, not through `_go_to_wall_view()` directly.
-## Calling the helper would prove the parameter is plumbed and say nothing about whether the launch
-## path passes the knob at all — which is exactly the gap that left this knob with no reader for a
-## whole run.
-##
-## ⚠ Compared as a RATIO of two measured durations, for the same reason the info-zoom test is:
-## "still running after N frames" passes with the knob ignored, because the unscaled clock is
-## already longer than any small frame count.
+# The opening reveal runs LONGER than an ordinary Wall press, by `wall_reveal_delay_scale`, and
+# ends in the map.
+
+# ⚠ Driven through `_on_new_run()`, the REAL call site, not through `_go_to_wall_view()` directly.
+# Calling the helper would prove the parameter is plumbed and say nothing about whether the launch
+# path passes the knob at all.
+
+# ⚠ Compared as a RATIO of two measured durations: "still running after N frames" passes with the
+# knob ignored, because the unscaled clock is already longer than any small frame count.
 func test_the_opening_reveal_reads_wall_reveal_delay_scale() -> void:
 	backup_real_settings()
 	backup_real_save(suite_tag())
 	var snap := snapshot_settings()
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	# NO unpause.
+# NO unpause.
 	SettingsManager.settings.wall_reduced_motion = false
 	_pin_transition_clock()
 
 	var slow_ms := await _time_opening_reveal(main, 4.0)
-	# Back onto a picture: the reveal is a zoom OUT, and from wall view there is nothing to animate.
+# Back onto a picture: the reveal is a zoom OUT, and from wall view there is nothing to animate.
 	await _drive_move(func() -> void: await main._focus_picture(&"start_menu"))
 	check(main._current_focus == &"start_menu",
 			"sanity: re-focused before the second reveal, or it would measure nothing",
@@ -462,10 +458,11 @@ func test_the_opening_reveal_reads_wall_reveal_delay_scale() -> void:
 	restore_real_save(suite_tag())
 	restore_real_settings()
 
-## Runs one opening reveal at `scale` through `_on_new_run()` and returns its length in ms.
+#Runs one opening reveal at `scale` through `_on_new_run()` and returns its length in ms.
 func _time_opening_reveal(main: Main, scale: float) -> int:
 	SettingsManager.settings.wall_reveal_delay_scale = scale
-	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+# Boxed -- lambdas capture locals BY VALUE.
+	var done : Array[bool] = [false]
 #THE REVEAL ENDS IN THE MAP, AND THE MAP GENERATES WHILE IT IS FOCUSED: a generation still running
 #when the next reveal starts one, or when `main` is freed, lands a step on a freed object -- an
 #exit-time access violation no check can see. Latched before the call, waited out after it.
@@ -486,26 +483,27 @@ func _time_opening_reveal(main: Main, scale: float) -> int:
 		await get_tree().process_frame
 	return took
 
-## H3/Q27/S37 on the KEYBOARD/CONTROLLER path: a picture selected in wall view and then entered
-## does not stay lifted.
-##
-## ⚠ `set_selected(true)` offsets `position` by `wall_selected_lift` (default (0, -14)) and only
-## `_render_selection()` clears it -- which runs from `enter_wall_view()`/`move_selection()`, never
-## on the way in. `focus()` reset every other piece of state and not this one, so every picture
-## entered with the keyboard sat 14 units high with a strip of frame and bare wall along the bottom
-## for as long as the player was inside it. A mouse-only player never saw it, because clicking never
-## selects -- which is why every existing test entered unlifted.
+# On the KEYBOARD/CONTROLLER path: a picture selected in wall view and then entered does not stay
+# lifted.
+
+# ⚠ `set_selected(true)` offsets `position` by `wall_selected_lift` (default (0, -14)) and only
+# `_render_selection()` clears it -- which runs from `enter_wall_view()`/`move_selection()`, never
+# on the way in.
+
+# `focus()` reset every other piece of state and not this one, so every picture entered with the
+# keyboard sat 14 units high with a strip of frame and bare wall along the bottom. A mouse-only
+# player never saw it, because clicking never selects.
 func test_a_picture_entered_from_the_keyboard_does_not_stay_lifted() -> void:
 	backup_real_settings()
 	var snap := snapshot_settings("wall_")
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	# NO unpause.
+# NO unpause.
 	await _drive_move(func() -> void: await main._go_to_wall_view())
 	check(main._current_focus == &"", "sanity: in wall view, where selection exists at all",
 			str(main._current_focus))
 
-	# The controller journey: a directional input selects, and selecting LIFTS.
+# The controller journey: a directional input selects, and selecting LIFTS.
 	main.wall.move_selection(Vector2.RIGHT)
 	var picked := main.wall.selected_id
 	check(picked != &"", "sanity: a directional input actually selected something", str(picked))
@@ -516,7 +514,7 @@ func test_a_picture_entered_from_the_keyboard_does_not_stay_lifted() -> void:
 			"sanity: the selected picture really is lifted off the wall",
 			"pos=%s centre=%s" % [wp.position, wp.rect.centre])
 
-	# ui_accept on that selection is exactly this call (Wall emits picture_enter_requested).
+# ui_accept on that selection is exactly this call (Wall emits picture_enter_requested).
 	await _drive_move(func() -> void: await main._focus_picture(picked))
 	check(main._current_focus == picked, "sanity: the selected picture is the one entered",
 			str(main._current_focus))
@@ -528,28 +526,31 @@ func test_a_picture_entered_from_the_keyboard_does_not_stay_lifted() -> void:
 	restore_settings_snapshot(snap)
 	restore_real_settings()
 
-## M2/M3 (Q61=a, Q62=a, GAP-014): continuing a run that was quit MID-SHOW still reveals wall view.
-##
-## ⚠ The END STATE is identical whether this works or not -- `game` ends up focused either way --
-## so this samples `_current_focus` THROUGHOUT the call and asserts wall view was actually passed
-## through. `_on_continue()` used to call `enter_game()` un-awaited: that coroutine ran as far as
-## its first await, leaving `_move_in_flight` true, so the reveal below it returned on its own guard
-## and never happened. A test asserting only "game is focused at the end" would pass on the defect.
+# Continuing a run that was quit MID-SHOW still reveals wall view.
+
+# ⚠ The END STATE is identical whether this works or not -- `game` ends up focused either way --
+# so this samples `_current_focus` THROUGHOUT the call and asserts wall view was actually passed
+# through.
+
+# `_on_continue()` must AWAIT `enter_game()`: un-awaited, that coroutine runs only as far as its
+# first await, leaving `_move_in_flight` true, so the reveal below it returns on its own guard. A
+# test asserting only "game is focused at the end" would pass on that.
 func test_continue_after_a_mid_show_quit_still_reveals_wall_view() -> void:
 	backup_real_settings()
 	backup_real_save(suite_tag())
 	var snap := snapshot_settings("wall_")
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	# NO unpause. As ever.
+# NO unpause. As ever.
 
-	# A save that says "quit mid-show" -- the one branch that skipped the reveal.
+# A save that says "quit mid-show" -- the one branch that skipped the reveal.
 	RunManager.new_run([] as Array[CardData], [] as Array[CardData])
 	RunManager.run.pending_node_id = 5
 	RunManager.save_run()
 
 	var seen : Array[StringName] = []
-	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+# Boxed -- lambdas capture locals BY VALUE.
+	var done : Array[bool] = [false]
 	_drive(func() -> void: await main._on_continue(), done)
 	var started := Time.get_ticks_msec()
 	while not done[0] and Time.get_ticks_msec() - started < 20000:
@@ -558,7 +559,7 @@ func test_continue_after_a_mid_show_quit_still_reveals_wall_view() -> void:
 	if seen.is_empty() or seen[-1] != main._current_focus: seen.append(main._current_focus)
 
 	check(done[0], "_on_continue() completes under the paused tree", str(seen))
-	# Trap 5: a sampler whose body never ran would make the next check vacuous.
+# Trap 5: a sampler whose body never ran would make the next check vacuous.
 	check(seen.size() >= 2, "sanity: the sampler saw the focus actually change", str(seen))
 	check(seen.has(&""),
 			"the wall-view reveal happens even when the run was quit mid-show (M3: EVERY launch)",
@@ -573,23 +574,25 @@ func test_continue_after_a_mid_show_quit_still_reveals_wall_view() -> void:
 	restore_real_settings()
 	restore_real_save(suite_tag())
 
-## Starts `body` as a coroutine and polls for its return under a bounded wall-clock escape, so a
-## move that never completes reports FALSE instead of hanging the run. `process_frame` is the one
-## signal that still fires while the tree is paused, which is what makes the poll possible at all.
+#Starts `body` as a coroutine and polls for its return under a bounded wall-clock escape, so a
+#move that never completes reports FALSE instead of hanging the run. `process_frame` is the one
+#signal that still fires while the tree is paused, which is what makes the poll possible at all.
 func _drive_move(body: Callable, budget_ms: int = 8000) -> bool:
-	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+# Boxed -- lambdas capture locals BY VALUE.
+	var done : Array[bool] = [false]
 	_drive(body, done)
 	var started := Time.get_ticks_msec()
 	var polls := 0
 	while not done[0] and Time.get_ticks_msec() - started < budget_ms:
 		await get_tree().process_frame
 		polls += 1
-	# Trap 5 ([[tests-that-prove-nothing]]): `polls == 0` means the coroutine returned before a
-	# single frame passed, which no real move can do -- every one of them takes tens of frames. It
-	# is what `if _move_in_flight: return` does when an EARLIER move is stuck, so without this a
-	# soft-locked wall reports every LATER move as "completed instantly" and the check goes green
-	# on the strength of the very defect it exists to catch. Measured: with the soft-lock restored,
-	# moves 2 and 3 polled 0 frames and claimed success until this clause was added.
+# Trap 5 ([[tests-that-prove-nothing]]): `polls == 0` means the coroutine returned before a single
+# frame passed, which no real move can do. It is what `if _move_in_flight: return` does when an
+# EARLIER move is stuck.
+
+# Without this a soft-locked wall reports every LATER move as "completed instantly" and the check
+# goes green on the strength of the very defect it exists to catch. Measured: with the soft-lock
+# restored, moves 2 and 3 polled 0 frames and claimed success until this clause was added.
 	return done[0] and polls > 0
 
 func _drive(body: Callable, done: Array[bool]) -> void:

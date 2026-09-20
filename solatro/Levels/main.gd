@@ -1,15 +1,15 @@
 class_name Main
 extends Node
 
-## Scene orchestrator, and the owner of the ONE `Wall` the whole app lives inside. Holds the
-## pre-instantiated menu/map scenes and exposes the current run as the static `save_info` alias,
-## which always mirrors `RunManager.run`.
-##
-## Navigation shape: cold launch focuses `start_menu` directly with no wall-view flash; choosing a
-## save reveals wall view, slowed by `wall_reveal_delay_scale` so it reads as distinct from an
-## ordinary Wall press; entering map/deck/game focuses that picture through a real
-## `WallTransition`; leaving mid-act unfocuses and FREEZES the show rather than freeing it. Wall
-## state never survives a quit — nothing here persists `_focus_stack` or `_current_focus`.
+# Scene orchestrator and owner of the ONE `Wall` the app lives inside. Holds the pre-instantiated
+# menu/map scenes and exposes the current run as the static `save_info` alias, which always mirrors
+# `RunManager.run`.
+
+# Cold launch focuses `start_menu` with no wall-view flash; choosing a save reveals wall view,
+# slowed by `wall_reveal_delay_scale`; entering map/deck/game focuses through a real
+# `WallTransition`; leaving mid-act unfocuses and FREEZES the show rather than freeing it.
+
+# Wall state never survives a quit — nothing here persists `_focus_stack` or `_current_focus`.
 
 const MENU = preload("res://Levels/menu.tscn")
 const MAP = preload("res://Levels/map.tscn")
@@ -27,13 +27,13 @@ var wall : Wall = null
 var hud_container : HudContainer = null
 var _pictures : Dictionary[StringName, WallPicture] = {}
 var _rects : Dictionary[StringName, PictureRect] = {}
-## Every picture's authored entry, kept so the movers can read `.music` for whichever id they are
-## moving to or from. `WallPicture.build()` takes an entry but does not keep one.
+# Every picture's authored entry, kept so the movers can read `.music` for the id they are moving
+# to or from. `WallPicture.build()` takes an entry but does not keep one.
 var _entries : Dictionary[StringName, PictureEntry] = {}
 var _focus_stack : FocusStack = null
-## `&""` while in wall view; otherwise the id of whichever picture is currently focused. Tracked
-## here (not read back off `wall`) because `Main` is the one that knows what "focused" means for
-## each id (a live GameView vs. a persistent menu/map screen).
+# `&""` while in wall view; otherwise the id of the focused picture. Tracked here, not read back
+# off `wall`, because `Main` is the one that knows what "focused" means for each id (a live
+# GameView vs. a persistent menu/map screen).
 var _current_focus : StringName = &""
 var _window_size : Vector2
 
@@ -57,17 +57,17 @@ func _ready() -> void:
 	overlay.forward_pressed.connect(_on_forward_pressed)
 	overlay.wall_pressed.connect(_on_wall_pressed)
 	wall.wall_view_entered.connect(_on_wall_view_entered)
-	# ⚠ Every keyboard/joypad wall action reuses the SAME handler its overlay control drives, so
-	# the key and the button cannot diverge. `wall_overview`/`wall_back` need no line of their own:
-	# they emit `wall_view_entered`/`back_requested`, connected above.
+# ⚠ Every keyboard/joypad wall action reuses the SAME handler its overlay control drives, so
+# the key and the button cannot diverge. `wall_overview`/`wall_back` need no line of their own:
+# they emit `wall_view_entered`/`back_requested`, connected above.
 	wall.back_requested.connect(_on_back_pressed)
 	wall.forward_requested.connect(_on_forward_pressed)
 	wall.picture_enter_requested.connect(_on_picture_enter_requested)
 	ProfileManager.picture_unlocked.connect(_repack_wall)
 
 	_focus_stack = Wall.cold_launch_focus_stack()
-	# The camera starts already zoomed into the start-menu picture: no wall-view flash, no
-	# transition, straight to focused.
+# The camera starts already zoomed into the start-menu picture: no wall-view flash, no
+# transition, straight to focused.
 	var start_wp : WallPicture = _pictures[&"start_menu"]
 	var start_rect : PictureRect = _rects[&"start_menu"]
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
@@ -77,21 +77,20 @@ func _ready() -> void:
 			SettingsManager.settings.wall_overfill_margin)
 	_current_focus = &"start_menu"
 	hud_container.set_active_screen(HudContainer.MENU_SCREEN)
-	# No ceremony, matching the camera above: start_menu's music begins immediately at full
-	# volume, with nothing to fade FROM.
+# No ceremony, matching the camera above: start_menu's music begins immediately at full
+# volume, with nothing to fade FROM.
 	wall.start_music(_entries[&"start_menu"])
 	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 
 	get_viewport().size_changed.connect(_on_window_resized)
 
-## Packs `Wall.load_layout()` and builds every UNLOCKED picture, reparenting the already-
-## instantiated `menu_scene`/`map_scene` as their `screen_root` rather than instantiating fresh
-## copies. `deck` and `game` start with no live screen: `deck` has no persistent screen yet, and
-## `game` gets one per show in `enter_game()`.
-##
-## ⚠ Filter by `ProfileManager.is_unlocked()`/`unlocked_by_default`, the same filter
-## `_repack_wall()` uses. Building every id in `layout.pictures` puts a LOCKED picture on the wall
-## from cold launch.
+# Packs `Wall.load_layout()` and builds every UNLOCKED picture, reparenting the already-
+# instantiated `menu_scene`/`map_scene` as their `screen_root`. `deck` and `game` start with no
+# live screen; `game` gets one per show in `enter_game()`.
+
+# ⚠ Filter by `ProfileManager.is_unlocked()`/`unlocked_by_default`, the same filter
+# `_repack_wall()` uses. Building every id in `layout.pictures` puts a LOCKED picture on the wall
+# from cold launch.
 func _build_pictures() -> void:
 	var layout := Wall.load_layout()
 	var ids : Array[StringName] = []
@@ -118,25 +117,22 @@ func _build_pictures() -> void:
 			map_scene.wall_picture = wp
 		wp.build(rect, by_id[rect.id], viewports, live_screen)
 		_pictures[rect.id] = wp
-	# ⚠ Needed for `_placement_order`, which `apply_layout()` alone records and which `wall_jump_N`
-	# reads. The geometry half is a no-op here — every picture was just built at exactly this rect
-	# — but without this call the number keys are inert until some other path re-packs.
+# ⚠ Needed for `_placement_order`, which `apply_layout()` alone records and which `wall_jump_N`
+# reads. The geometry half is a no-op here — every picture was just built at exactly this rect
+# — but without this call the number keys are inert until some other path re-packs.
 	wall.apply_layout(rects_by_id, false)
-	# A picture's render target is its wall-view footprint — the same rule `_repack_wall()` and
-	# `_on_window_resized()` follow. `build()` leaves every picture at full `_design_size`, which
-	# is ~7x the pixels each. Nothing is focused yet; `_ready()` focuses start_menu straight after
-	# and `focus()` restores its full size.
+# A picture's render target is its wall-view footprint — the same rule `_repack_wall()` and
+# `_on_window_resized()` follow. `build()` leaves every picture at full `_design_size`, ~7x the
+# pixels; `_ready()` focuses start_menu straight after and `focus()` restores its full size.
 	for id : StringName in _pictures:
 		_pictures[id].update_wall_view_size(_footprint(_rects[id]))
 
-## Reacts to `ProfileManager.picture_unlocked`: recomputes the unlocked id set (`is_unlocked()`
-## already honours `wall_unlock_all`), packs fresh rects, BUILDS any picture never built before
-## straight at its final rect — no reveal ceremony, it is simply there the next time the wall is
-## seen — and repositions the rest through `Wall.apply_layout()`, animated while the player is in
-## wall view and silent otherwise.
-##
-## The `FocusStack` is never touched: it holds ids, not positions, so Back/Forward keep resolving
-## however a picture's geometry just changed.
+# Reacts to `ProfileManager.picture_unlocked`: packs fresh rects, BUILDS any picture never built
+# before straight at its final rect — no reveal ceremony — and repositions the rest through
+# `Wall.apply_layout()`, animated while the player is in wall view and silent otherwise.
+
+# The `FocusStack` is never touched: it holds ids, not positions, so Back/Forward keep resolving
+# however a picture's geometry just changed.
 func _repack_wall(_unlocked_id: StringName) -> void:
 	var layout := Wall.load_layout()
 	var by_id : Dictionary[StringName, PictureEntry] = {}
@@ -159,14 +155,14 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 			wp.build(rect, by_id[rect.id], viewports)
 			_pictures[rect.id] = wp
 	wall.apply_layout(rects_by_id, _current_focus == &"")
-	# A re-pack changes every unfocused picture's wall-view footprint just as a resize does, so
-	# each render target follows. The focused picture is skipped: it renders at full `_design_size`
-	# and `focus()` owns that.
+# A re-pack changes every unfocused picture's wall-view footprint just as a resize does, so
+# each render target follows. The focused picture is skipped: it renders at full `_design_size`
+# and `focus()` owns that.
 	for id : StringName in _pictures:
 		var wp : WallPicture = _pictures[id]
 		if not wp.is_focused: wp.update_wall_view_size(_footprint(_rects[id]))
-	# Same as a resize: a transition in flight is RETARGETED to the new geometry and CONTINUES.
-	# Without this an unlock landing mid-move animates toward rects that no longer exist.
+# Same as a resize: a transition in flight is RETARGETED to the new geometry and CONTINUES.
+# Without this an unlock landing mid-move animates toward rects that no longer exist.
 	if _active_transition and _active_transition.is_active:
 		_active_transition.retarget(_rects[_current_focus], _rects[_transition_dest_id],
 				_window_size)
@@ -174,20 +170,19 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 	_print_wall_debug_readout()
 
-## The window changed shape. The wall is RE-PACKED at the new aspect, so the ellipse and every
-## picture's aspect follow the window, and it SNAPS. A fullscreen toggle is an ordinary resize,
-## with no separate branch.
-##
-## A transition in flight is RETARGETED and CONTINUES, and the camera is deliberately left alone in
-## that case — the transition's tween owns it until it lands, and re-fitting here would be a snap
-## mid-move. At rest nothing else drives the camera, so this re-fits it through `_settle_camera()`.
+# The window changed shape. The wall is RE-PACKED at the new aspect, so the ellipse and every
+# picture's aspect follow the window, and it SNAPS. A fullscreen toggle is an ordinary resize.
+
+# A transition in flight is RETARGETED and CONTINUES, and the camera is left alone in that case —
+# the transition's tween owns it until it lands. At rest nothing else drives the camera, so this
+# re-fits it through `_settle_camera()`.
 func _on_window_resized() -> void:
 	var new_size := get_viewport().get_visible_rect().size
 	if new_size.x <= 0.0 or new_size.y <= 0.0: return
 	if new_size.is_equal_approx(_window_size): return
 	_window_size = new_size
-	# Exactly the pictures that currently EXIST: a resize never unlocks anything, so re-deriving the
-	# unlocked set here could only ever disagree with what is actually on the wall.
+# Exactly the pictures that currently EXIST: a resize never unlocks anything, so re-deriving the
+# unlocked set here could only ever disagree with what is actually on the wall.
 	var layout := Wall.load_layout()
 	var ids : Array[StringName] = []
 	for e : PictureEntry in layout.pictures:
@@ -197,8 +192,8 @@ func _on_window_resized() -> void:
 		rects_by_id[rect.id] = rect
 		_rects[rect.id] = rect
 	wall.apply_layout(rects_by_id, false)
-	# The re-pack just changed every unfocused picture's footprint, so each render target follows.
-	# The focused picture is skipped: `focus()` owns its full-`_design_size` render.
+# The re-pack just changed every unfocused picture's footprint, so each render target follows.
+# The focused picture is skipped: `focus()` owns its full-`_design_size` render.
 	for id : StringName in _pictures:
 		var wp : WallPicture = _pictures[id]
 		if not wp.is_focused: wp.update_wall_view_size(_footprint(_rects[id]))
@@ -206,18 +201,18 @@ func _on_window_resized() -> void:
 		_active_transition.retarget(_rects[_current_focus], _rects[_transition_dest_id],
 				_window_size)
 		return
-	# A wall-view <-> picture move is a plain `_animate_camera()` tween toward a target computed
-	# before the resize, so there is nothing on it to retarget and settling now would simply be
-	# overwritten by its next frame. Deferred to the moment that move finishes instead.
+# A wall-view <-> picture move is a plain `_animate_camera()` tween toward a target computed
+# before the resize, so there is nothing on it to retarget and settling now would simply be
+# overwritten by its next frame. Deferred to the moment that move finishes instead.
 	if _move_in_flight:
 		_resize_pending = true
 		return
 	_resnap_saved_pan()
 	_settle_camera()
 
-## The camera's RESTING pose for whatever the wall currently shows: the info-mode pose while Info
-## is on, otherwise the ordinary focused or wall-view pose. Snaps — every caller wants a snap.
-## The ONE home for this arithmetic; a second copy would drift.
+# The camera's RESTING pose for whatever the wall currently shows: the info-mode pose while Info is
+# on, otherwise the ordinary focused or wall-view pose. Snaps — every caller wants a snap. The ONE
+# home for this arithmetic; a second copy would drift.
 func _settle_camera() -> void:
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
 	var settings := SettingsManager.settings
@@ -230,14 +225,14 @@ func _settle_camera() -> void:
 	camera.position = state["position"] as Vector2
 	camera.zoom = Vector2.ONE * (state["zoom"] as float)
 
-## The camera's resting pose for the focused picture: `WallPicture.resting_state()` shifted along
-## the picture's width by that picture's OWN SAVED PAN, never the picture's bare centre.
-##
-## ⚠ **THE SAVED PAN IS THE ANSWER, AND THE LIVE BOARD ONLY REFRESHES IT.** A live `PlayArea` is
-## the sole source of a new pan, so it is read back into `saved_pan_x` whenever there is one — but
-## it is absent for every frame of a transition, a detached show and every picture that never pans,
-## and those are exactly the frames a bare centre used to throw the camera back to grid 0. A
-## picture that has never panned rests at 0, which IS its centre.
+# The camera's resting pose for the focused picture: `WallPicture.resting_state()` shifted along
+# the picture's width by that picture's OWN SAVED PAN, never the picture's bare centre.
+
+# ⚠ **THE SAVED PAN IS THE ANSWER, AND THE LIVE BOARD ONLY REFRESHES IT.** A live `PlayArea` is the
+# sole source of a new pan, so it is read back into `saved_pan_x` whenever there is one; it is
+# absent during a transition, a detached show, and every picture that never pans.
+
+# A picture that has never panned rests at 0, which IS its centre.
 func _camera_resting_state(id: StringName, rect: PictureRect,
 		settings: PlayerSettings) -> Dictionary:
 	var wp : WallPicture = _pictures.get(id)
@@ -248,17 +243,16 @@ func _camera_resting_state(id: StringName, rect: PictureRect,
 		wp.saved_pan_x = _live_pan_offset_px(area)
 	return WallPicture.panned_state(rect, _window_size, settings, wp.saved_pan_x)
 
-## The pan the live board is showing, in the picture's own units: the OVERVIEW's step off its
-## resting grid, and 0 in FOCUSED, where the scroller pans inside a camera that does not move.
+# The pan the live board is showing, in the picture's own units: the OVERVIEW's step off its
+# resting grid, and 0 in FOCUSED, where the scroller pans inside a camera that does not move.
 func _live_pan_offset_px(area: PlayArea) -> float:
 	if area.view_mode != PlayArea.ViewMode.OVERVIEW: return 0.0
 	if area.grid_container.get_child_count() == 0: return 0.0
 	return area.grid_pitch_px() * float(area.pan_grid - area.resting_grid())
 
-## Re-snap the game picture's saved pan to the nearest grid the board has NOW, and return the grid
-## index it lands on -- `PlayArea.NO_GRID` when there is no board to snap against. The stored offset
-## was measured against the grid count and pitch of the moment it was saved; a resize or a removed
-## grid can have moved either since, so it is re-derived rather than replayed.
+# Re-snap the game picture's saved pan to the nearest grid the board has NOW, returning that grid
+# index -- `PlayArea.NO_GRID` when there is no board to snap against. The stored offset was
+# measured against the grid count and pitch of its moment, so it is re-derived, never replayed.
 func _resnap_saved_pan() -> int:
 	var area := _game_play_area()
 	if area == null: return PlayArea.NO_GRID
@@ -270,33 +264,29 @@ func _resnap_saved_pan() -> int:
 	wp.saved_pan_x = WallPicture.snap_pan_to_grid(wp.saved_pan_x, pitch, resting, count)
 	return resting + int(roundf(wp.saved_pan_x / pitch))
 
-## The return half of the saved pan: the board is aimed back at the grid the snapped pan names, so
-## re-entering a show resumes the view it was left on instead of whatever grid a fresh layout
-## rested on. `pan_to_grid()` is the SAME entry a key press uses, so a restore and a step move the
-## board by one mechanism rather than two.
+# The return half of the saved pan: the board is aimed back at the grid the snapped pan names, so
+# re-entering a show resumes the view it was left on. `pan_to_grid()` is the SAME entry a key press
+# uses, so a restore and a step move the board by one mechanism rather than two.
 func _restore_saved_pan() -> void:
 	var gi := _resnap_saved_pan()
 	if gi == PlayArea.NO_GRID: return
 	_game_play_area().pan_to_grid(gi)
 
-## The live game's `PlayArea`, or null while no `GameView` is mounted -- the OVERVIEW's camera
-## step has nothing to read `pan_grid` off until the show is actually attached.
+# The live game's `PlayArea`, or null while no `GameView` is mounted -- the OVERVIEW's camera step
+# has nothing to read `pan_grid` off until the show is actually attached.
 func _game_play_area() -> PlayArea:
 	var game_wp : WallPicture = _pictures.get(&"game")
 	if not game_wp or not game_wp.screen_root: return null
 	var view := game_wp.screen_root as GameView
 	return view.play_area if view else null
 
-## OVERVIEW grid-stepping's live move: `PlayArea.overview_pan_requested` crosses from inside the
-## game's `SubViewport` and this is where the wall camera answers it, on the SAME clock
-## (`grid_pan_duration`) and curve the wall's own travel uses, so a step reads like the rest of the
-## wall's motion rather than a second mechanism.
-##
-## ⚠ **SEQUENCED AGAINST `WallTransition`/`_animate_camera` BY `_move_in_flight`.** Both already
-## write `camera.position`/`camera.zoom` unconditionally while a move is in flight; a step that
-## lands mid-move would fight them for the same property. Dropped rather than queued -- `pan_grid`
-## already moved on `PlayArea`'s side, so the eventual `_settle_camera()` this move ends with lands
-## on the right grid regardless.
+# OVERVIEW grid-stepping's live move: `PlayArea.overview_pan_requested` crosses from inside the
+# game's `SubViewport` and the wall camera answers it here, on the SAME clock
+# (`grid_pan_duration`) and curve the wall's own travel uses.
+
+# ⚠ **SEQUENCED AGAINST `WallTransition`/`_animate_camera` BY `_move_in_flight`.** Both write
+# `camera.position`/`camera.zoom` unconditionally while a move is in flight. Dropped rather than
+# queued -- `pan_grid` already moved, so the eventual `_settle_camera()` lands on the right grid.
 func _on_overview_pan_requested(grid_index: int) -> void:
 	if _current_focus != &"game" or _move_in_flight: return
 	var area := _game_play_area()
@@ -312,20 +302,18 @@ func _on_overview_pan_requested(grid_index: int) -> void:
 			settings.grid_pan_duration).set_trans(settings.wall_travel_trans) \
 			.set_ease(settings.wall_travel_ease)
 
-## The edge bounce, OVERVIEW's half: the camera overshoots past its resting grid
-## and springs back, through the SAME writer and clock `_on_overview_pan_requested()` above uses.
-## `pan_grid` never moved for a bounce, so the rest pose is `grid_state()` at the grid the view is
-## already on -- no second source of truth for where "home" is.
+# The edge bounce, OVERVIEW's half: the camera overshoots past its resting grid and springs back,
+# through the SAME writer and clock `_on_overview_pan_requested()` uses. `pan_grid` never moved for
+# a bounce, so the rest pose is `grid_state()` at the grid the view is already on.
 func _on_overview_bounce_requested(step: int) -> void:
 	if _current_focus != &"game" or _move_in_flight: return
 	var area := _game_play_area()
 	if not area: return
 	var settings := SettingsManager.settings
 	var rect : PictureRect = _rects[&"game"]
-	# ⚠ **BOTH POSES ARE MEASURED FROM THE SAVED PAN, WHICH IS WHERE THE CAMERA ACTUALLY IS.** A
-	# bounce only ever fires at the board's EDGE, which on any board wider than one grid is never
-	# the grid the camera rests on — so an overshoot measured from the picture's centre throws the
-	# camera a whole grid inward before springing it back.
+# ⚠ **BOTH POSES ARE MEASURED FROM THE SAVED PAN, WHICH IS WHERE THE CAMERA ACTUALLY IS.** A bounce
+# only fires at the board's EDGE, which on any board wider than one grid is never the grid the
+# camera rests on — an overshoot from the picture's centre throws the camera a whole grid inward.
 	var rest := _camera_resting_state(&"game", rect, settings)
 	var pan_x : float = _pictures[&"game"].saved_pan_x
 	var smooth := area.scroll_container as SmoothScrollContainer
@@ -342,27 +330,27 @@ func _on_overview_bounce_requested(step: int) -> void:
 			settings.grid_pan_duration).set_trans(settings.wall_travel_trans) \
 			.set_ease(settings.wall_travel_ease)
 
-## Set by `_on_window_resized()` when a move was already in flight with no retargetable transition;
-## cleared by whichever move was in flight, which settles the camera itself once it lands.
+# Set by `_on_window_resized()` when a move was already in flight with no retargetable transition;
+# cleared by whichever move was in flight, which settles the camera itself once it lands.
 var _resize_pending : bool = false
 
-## Called by every move as it releases `_move_in_flight`: if a resize arrived while that move owned
-## the camera, its tween has just landed on a target computed for the OLD window, so the resting
-## pose is re-applied now that `_current_focus` is finally correct.
+# Called by every move as it releases `_move_in_flight`: if a resize arrived while that move owned
+# the camera, its tween has just landed on a target computed for the OLD window, so the resting
+# pose is re-applied now that `_current_focus` is finally correct.
 func _settle_after_deferred_resize() -> void:
 	if not _resize_pending: return
 	_resize_pending = false
 	_settle_camera()
 
-## `wall.debug_memory_readout()` when the readout should be visible — a debug build AND the
-## `wall_debug_readout` flag, the same gate the leak sentinel uses — or `""`. Split from
-## `_print_wall_debug_readout()` so the gate is testable without capturing stdout.
+# `wall.debug_memory_readout()` when the readout should be visible — a debug build AND the
+# `wall_debug_readout` flag, the same gate the leak sentinel uses — or `""`. Split from
+# `_print_wall_debug_readout()` so the gate is testable without capturing stdout.
 func _wall_debug_readout_text() -> String:
 	if not OS.is_debug_build() or not SettingsManager.settings.wall_debug_readout: return ""
 	return wall.debug_memory_readout()
 
-## Called from the same QUIESCENT moments `LeakSentinel.request_check()` marks — a show ending, a
-## run lost, a re-pack — never on a per-frame timer.
+# Called from the same QUIESCENT moments `LeakSentinel.request_check()` marks — a show ending, a
+# run lost, a re-pack — never on a per-frame timer.
 func _print_wall_debug_readout() -> void:
 	var text := _wall_debug_readout_text()
 	if text != "": print(text)
@@ -371,23 +359,24 @@ func _print_wall_debug_readout() -> void:
 # CAMERA / FOCUS ORCHESTRATION
 # ==============================================================================
 
-## The on-screen pixel footprint a picture gets while NOT focused, at the current wall-view zoom —
-## `WallPicture.unfocus()`'s `footprint_px` parameter.
+# The on-screen pixel footprint a picture gets while NOT focused, at the current wall-view zoom —
+# `WallPicture.unfocus()`'s `footprint_px` parameter.
 func _footprint(rect: PictureRect) -> Vector2:
 	return rect.size * wall.wall_view_zoom(_window_size)
 
-## A plain camera tween to an arbitrary target, over the same duration `WallTransition` uses. For
-## the two moves `WallTransition` cannot express, since it only runs picture-to-picture:
-## wall view <-> a picture.
-## ⚠ NEVER use this between two pictures. `WallTransition` latches the pause/unpause boundaries;
-## this helper does not.
-##
-## Also drives the music cross-fade, through the same distance-driven blend the transition branch
-## uses. A null `audio_dest_entry` fades the current track out with nothing to fade in, which is
-## what entering wall view needs.
-##
-## `duration_scale` multiplies the transition clock: 1.0 for every ordinary move, and
-## `wall_reveal_delay_scale` only for the one-off opening reveal.
+# A plain camera tween to an arbitrary target, over the same duration `WallTransition` uses, for
+# the two moves `WallTransition` cannot express, since it only runs picture-to-picture: wall view
+# <-> a picture.
+
+# ⚠ NEVER use this between two pictures. `WallTransition` latches the pause/unpause boundaries;
+# this helper does not.
+
+# Also drives the music cross-fade, through the same distance-driven blend the transition branch
+# uses. A null `audio_dest_entry` fades the current track out with nothing to fade in, which is
+# what entering wall view needs.
+
+# `duration_scale` multiplies the transition clock: 1.0 for every ordinary move, and
+# `wall_reveal_delay_scale` only for the one-off opening reveal.
 func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centre: Vector2,
 		audio_dest_centre: Vector2, audio_dest_entry: PictureEntry,
 		duration_scale: float = 1.0) -> void:
@@ -395,13 +384,13 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 	var settings := SettingsManager.settings
 	var duration := WallTransition.total_duration(settings) * duration_scale
 	wall.begin_music_crossfade(audio_dest_entry)
-	# The AUTHORED travel curve, never a typed-in literal: this move is travel with no zoom leg.
-	#
-	# ⚠ BOUND TO THE CAMERA, NOT TO `Main`. A bare `create_tween()` binds to this node, and `Main`
-	# is PAUSABLE while the wall holds `get_tree().paused = true` for the whole session — a tween
-	# bound to a PAUSABLE node under a paused tree NEVER ADVANCES, so `await tween.finished` never
-	# returns and the app soft-locks with `_move_in_flight` and `input_locked` stuck true.
-	# `%Camera2D` is `PROCESS_MODE_ALWAYS`.
+# The AUTHORED travel curve, never a typed-in literal: this move is travel with no zoom leg.
+
+# ⚠ BOUND TO THE CAMERA, NOT TO `Main`. A bare `create_tween()` binds to this node, and `Main` is
+# PAUSABLE while the wall holds `get_tree().paused = true` — a tween bound to a PAUSABLE node under
+# a paused tree NEVER ADVANCES, so `await tween.finished` never returns and the app soft-locks.
+
+# `%Camera2D` is `PROCESS_MODE_ALWAYS`.
 	var tween := camera.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(camera, "position", target_pos, duration) \
@@ -414,29 +403,30 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 	await tween.finished
 	wall.finish_music_crossfade()
 
-## Focuses `id`, `record_visit` controlling whether this is a NEW navigation (visit()) or a
-## replay of history already mutated by back()/forward() themselves (which must not visit() again
-## -- that would clear the very forward list back() just populated).
-## ⚠ The re-entrancy guard: a new destination is IGNORED until the in-flight move finishes.
-## `WallTransition.request()` has its own `is_active` check, but `_focus_picture()` constructs a
-## FRESH transition per call, so that guard never sees the other one — two clicks in wall view run
-## two tweens on one Camera2D, both land, and both call `focus()`, leaving two
-## `PROCESS_MODE_ALWAYS` screen roots. The flag lives here because `Main`, not the transition, owns
-## "a move is happening".
+# Focuses `id`. `record_visit` controls whether this is a NEW navigation (`visit()`) or a replay of
+# history back()/forward() already mutated, which must not visit() again -- that would clear the
+# very forward list back() just populated.
+
+# ⚠ The re-entrancy guard: a new destination is IGNORED until the in-flight move finishes.
+# `_focus_picture()` constructs a FRESH transition per call, so `WallTransition.request()`'s own
+# `is_active` check never sees the other one -- two tweens on one Camera2D, both landing.
+
+# The flag lives here because `Main`, not the transition, owns "a move is happening".
 var _move_in_flight : bool = false
 
-## The in-flight `WallTransition`, or null at rest — needed only so a resize or unlock can
-## `retarget()` it. The destination id is kept alongside because `_current_focus` still names the
-## SOURCE until the transition lands.
+# The in-flight `WallTransition`, or null at rest — needed only so a resize or unlock can
+# `retarget()` it. The destination id is kept alongside because `_current_focus` still names the
+# SOURCE until the transition lands.
 var _active_transition : WallTransition = null
 var _transition_dest_id : StringName = &""
 
 func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	if _move_in_flight: return
-	if id == _current_focus: return   # requesting the current picture does nothing
+# Requesting the current picture does nothing.
+	if id == _current_focus: return
 	_move_in_flight = true
-	# Input goes inert for the length of the move. The transition's `input_unlocked` lifts it
-	# EARLY below; this is the only thing that ever sets it.
+# Input goes inert for the length of the move. The transition's `input_unlocked` lifts it
+# EARLY below; this is the only thing that ever sets it.
 	wall.lock_input()
 	var dest_wp : WallPicture = _pictures[id]
 	var dest_rect : PictureRect = _rects[id]
@@ -445,21 +435,22 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]
-		# A REAL picture-to-picture move -- the only case `transition_started`/`transition_landed`
-		# cover, since both take real picture ids and wall view is never one.
+# A REAL picture-to-picture move -- the only case `transition_started`/`transition_landed`
+# cover, since both take real picture ids and wall view is never one.
 		wall.transition_started.emit(_current_focus, id)
 		var transition := WallTransition.new()
-		var landed : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+# Boxed -- lambdas capture locals BY VALUE.
+		var landed : Array[bool] = [false]
 		transition.landed.connect(func(_lid: StringName) -> void: landed[0] = true)
 		transition.request(camera, source_wp, source_rect, dest_wp, dest_rect, _window_size,
 				settings)
 		_active_transition = transition
 		_transition_dest_id = id
-		# The wall answers input again the instant the destination and its frame are fully in
-		# view, which is strictly BEFORE landing.
+# The wall answers input again the instant the destination and its frame are fully in
+# view, which is strictly BEFORE landing.
 		transition.input_unlocked.connect(wall.unlock_input)
-		# Cross-fades from the source's music toward the destination's over the SAME real camera
-		# motion the transition is driving -- see `Wall.update_travel_music()`.
+# Cross-fades from the source's music toward the destination's over the SAME real camera
+# motion the transition is driving -- see `Wall.update_travel_music()`.
 		wall.begin_music_crossfade(_entries[id])
 		while not landed[0]:
 			wall.update_travel_music(source_rect.centre, dest_rect.centre, camera.position)
@@ -467,9 +458,9 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 		wall.finish_music_crossfade()
 		_active_transition = null
 		_transition_dest_id = &""
-		# The LANDED source rect, not the one captured before the loop: a mid-flight resize re-packs
-		# the wall (and skips the focused picture's own footprint, which `focus()` owns), so `_rects`
-		# is the only current truth about the footprint this picture is about to shrink to.
+# The LANDED source rect, not the one captured before the loop: a mid-flight resize re-packs
+# the wall (and skips the focused picture's own footprint, which `focus()` owns), so `_rects`
+# is the only current truth about the footprint this picture is about to shrink to.
 		source_rect = _rects[_current_focus]
 		source_wp.unfocus(_footprint(source_rect))
 		wall.transition_landed.emit(id)
@@ -480,7 +471,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	dest_wp.focus()
 	_current_focus = id
 	hud_container.set_active_screen(id)
-	# Fires for EVERY focus change, both branches above -- unlike `transition_landed`.
+# Fires for EVERY focus change, both branches above -- unlike `transition_landed`.
 	wall.focus_changed.emit(id)
 	if record_visit:
 		_focus_stack.visit(id)
@@ -488,29 +479,30 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 	_settle_camera()
 	_move_in_flight = false
-	wall.unlock_input()   # backstop: the early unlock above may never have had a frame to fire in
+# Backstop: the early unlock above may never have had a frame to fire in.
+	wall.unlock_input()
 	_settle_after_deferred_resize()
 
-## Unfocuses whatever is focused — FREEZING it in place, never freeing it — and animates the
-## camera out to wall view. A no-op if already in wall view. `duration_scale` defaults to an
-## ordinary move; only the opening reveal passes anything else.
+# Unfocuses whatever is focused — FREEZING it in place, never freeing it — and animates the camera
+# out to wall view. A no-op if already in wall view. `duration_scale` defaults to an ordinary move;
+# only the opening reveal passes anything else.
 func _go_to_wall_view(duration_scale: float = 1.0) -> void:
-	# Same re-entrancy guard as `_focus_picture()`: this is the OTHER path animating the shared
-	# Camera2D, so a Wall press racing an in-flight enter would fight it for position and zoom.
+# Same re-entrancy guard as `_focus_picture()`: this is the OTHER path animating the shared
+# Camera2D, so a Wall press racing an in-flight enter would fight it for position and zoom.
 	if _move_in_flight: return
 	_move_in_flight = true
-	# Just as much a transition to the player. No `WallTransition`, so no early unlock -- input
-	# clears on landing.
+# Just as much a transition to the player. No `WallTransition`, so no early unlock -- input
+# clears on landing.
 	wall.lock_input()
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]
-		# Wall view has no picture of its own, so there is nothing to fade music IN to -- a null
-		# dest entry fades the current track out over the same move.
+# Wall view has no picture of its own, so there is nothing to fade music IN to -- a null
+# dest entry fades the current track out over the same move.
 		await _animate_camera(wall.wall_view_centre(), wall.wall_view_zoom(_window_size),
 				source_rect.centre, wall.wall_view_centre(), null, duration_scale)
-		# The LANDED rect: a resize mid-move re-packs the wall, so the rect captured before the
-		# await no longer says where this picture is or how big its footprint should be.
+# The LANDED rect: a resize mid-move re-packs the wall, so the rect captured before the
+# await no longer says where this picture is or how big its footprint should be.
 		source_wp.unfocus(_footprint(_rects[_current_focus]))
 		wall.enter_wall_view(_current_focus)
 	_current_focus = &""
@@ -532,16 +524,16 @@ func _on_wall_pressed() -> void:
 func _on_screen_info_hovered(entry: InfoEntry) -> void:
 	hud_container.show_description(entry)
 
-## Back retraces the `FocusStack` one step at a time, falling through to wall view only once the
-## stack reports nothing behind the current picture.
+# Back retraces the `FocusStack` one step at a time, falling through to wall view only once the
+# stack reports nothing behind the current picture.
 func _on_back_pressed() -> void:
-	# ⚠ The guard has to be on the HANDLER, because the handler is what MUTATES. The movers carry
-	# their own, but they only see it after `back()` has already popped an entry — so a second
-	# press mid-move pops and then refuses to navigate, losing a picture from the stack for good.
+# ⚠ The guard has to be on the HANDLER, because the handler is what MUTATES. The movers carry
+# their own, but they only see it after `back()` has already popped an entry — so a second
+# press mid-move pops and then refuses to navigate, losing a picture from the stack for good.
 	if _move_in_flight: return
-	# In WALL VIEW the stack's top is still the picture the player just left, since wall view is
-	# never an entry — so one step back from here is THAT picture. `back()` would step PAST it and
-	# push it onto the forward list, leaving it "ahead of you" having never been revisited.
+# In WALL VIEW the stack's top is still the picture the player just left, since wall view is
+# never an entry — so one step back from here is THAT picture. `back()` would step PAST it and
+# push it onto the forward list, leaving it "ahead of you" having never been revisited.
 	if _current_focus == &"":
 		var top := _focus_stack.current()
 		if top != &"":
@@ -554,7 +546,8 @@ func _on_back_pressed() -> void:
 		await _focus_picture(target, false)
 
 func _on_forward_pressed() -> void:
-	if _move_in_flight: return   # same reason as Back above -- forward() mutates too
+# Same reason as Back above -- forward() mutates too.
+	if _move_in_flight: return
 	var target := _focus_stack.forward()
 	if target != &"":
 		await _focus_picture(target, false)
@@ -569,15 +562,16 @@ func _on_picture_enter_requested(id: StringName) -> void:
 
 func _on_new_run(cards: Array[CardData], rules: Array[CardData]) -> void:
 	save_info = RunManager.new_run(cards, rules)
-	# ⚠ A GameView left over from a LOST run is kept alive so re-entering `game` shows the
-	# game-over screen; a new run is where it is finally replaced. Without this, `enter_game()`'s
-	# "resume if already attached" check resumes the last run's lose screen instead of building a
-	# fresh board. A no-op after a WON run, which detaches its own GameView in `game_ended()`.
+# ⚠ A GameView left over from a LOST run is kept alive so re-entering `game` shows the game-over
+# screen; a new run is where it is finally replaced. Without this, `enter_game()`'s "resume if
+# already attached" check resumes the lose screen instead of building a fresh board.
+
+# A no-op after a WON run, which detaches its own GameView in `game_ended()`.
 	var game_wp : WallPicture = _pictures[&"game"]
 	game_wp.detach_screen()
 	map_scene.start_run(save_info)
-	# Choosing a save reveals WALL VIEW, longer and slower than an ordinary move. Only this call
-	# and `_on_continue()` pass a scale; every other `_go_to_wall_view()` uses the plain clock.
+# Choosing a save reveals WALL VIEW, longer and slower than an ordinary move. Only this call
+# and `_on_continue()` pass a scale; every other `_go_to_wall_view()` uses the plain clock.
 	await _go_to_wall_view(SettingsManager.settings.wall_reveal_delay_scale)
 #The reveal is a look at the wall, not a stop on it: the camera carries on into the map the same way
 #a click on that picture would, so the player reaches the run without a press.
@@ -586,21 +580,22 @@ func _on_new_run(cards: Array[CardData], rules: Array[CardData]) -> void:
 func _on_continue() -> void:
 	save_info = RunManager.load_run()
 	map_scene.start_run(save_info)
-	# A `pending_node_id` means the player quit mid-show: the pause model does not survive a
-	# process exit, so the show restarts fresh. The reveal happens on EVERY launch, resume
-	# included, so it runs FIRST and the show is re-entered after it lands.
-	# ⚠ ORDER AND `await` BOTH MATTER. `enter_game()` is a coroutine: calling it un-awaited runs it
-	# as far as its first await — inside `_focus_picture()`, AFTER `_move_in_flight = true` — and
-	# returns, so the reveal below hits its own `if _move_in_flight: return` and does nothing.
+# A `pending_node_id` means the player quit mid-show: the pause model does not survive a process
+# exit, so the show restarts fresh. The reveal happens on EVERY launch, resume included, so it runs
+# FIRST and the show is re-entered after it lands.
+
+# ⚠ ORDER AND `await` BOTH MATTER. `enter_game()` is a coroutine: calling it un-awaited runs it as
+# far as its first await — inside `_focus_picture()`, AFTER `_move_in_flight = true` — and returns,
+# so the reveal below hits its own `if _move_in_flight: return` and does nothing.
 	await _go_to_wall_view(SettingsManager.settings.wall_reveal_delay_scale)
 	if save_info.pending_node_id >= 0:
 		await enter_game()
 	else:
 		await _on_picture_enter_requested(&"map")
 
-## Entering a show. If the `game` picture already holds a LIVE screen — a previous mid-act freeze,
-## where the player left via Back or Wall rather than winning or losing — this RESUMES it: focus
-## alone, no rebuild. Otherwise it builds a fresh GameView.
+# Entering a show. If the `game` picture already holds a LIVE screen — a previous mid-act freeze,
+# where the player left via Back or Wall rather than winning or losing — this RESUMES it: focus
+# alone, no rebuild. Otherwise it builds a fresh GameView.
 func enter_game() -> void:
 	var game_wp : WallPicture = _pictures[&"game"]
 	if not game_wp.screen_root:
@@ -615,31 +610,33 @@ func enter_game() -> void:
 		new_view.bind_wall_camera(wall.get_node(^"%Camera2D") as Camera2D,
 				func() -> float: return _rects[&"game"].centre.x)
 		game_wp.attach_screen(new_view)
-	# ⚠ **BEFORE THE FOCUS, NOT AFTER IT.** `_focus_picture()` settles the camera, and that settle
-	# reads the LIVE board back into `saved_pan_x` -- a restore run afterwards would be overwriting
-	# the board with a value the board had just overwritten.
+# ⚠ **BEFORE THE FOCUS, NOT AFTER IT.** `_focus_picture()` settles the camera, and that settle
+# reads the LIVE board back into `saved_pan_x` -- a restore run afterwards would be overwriting
+# the board with a value the board had just overwritten.
 	_restore_saved_pan()
 	await _focus_picture(&"game")
 
-## Won game handing back: the show is genuinely OVER, not frozen — detach and free the GameView,
-## return to the map and let it resolve the node (fame HUD, lap completion, save).
+# Won game handing back: the show is genuinely OVER, not frozen — detach and free the GameView,
+# return to the map and let it resolve the node (fame HUD, lap completion, save).
 func game_ended() -> void:
 	var game_wp : WallPicture = _pictures[&"game"]
 	game_wp.detach_screen()
 	await _focus_picture(&"map")
 	map_scene.returned_from_game()
-	LeakSentinel.request_check()  # quiescent moment: the finished show just dropped
+# Quiescent moment: the finished show just dropped.
+	LeakSentinel.request_check()
 	_print_wall_debug_readout()
 
-## The run save is cleared, but NEITHER picture is torn down. The map picture stays on the wall
-## exactly as it last rendered — `map_scene` is not rebuilt and its `run` is not reset — because
-## removing it would re-pack the wall for a reason unrelated to unlocks. The game picture's
-## GameView is likewise left attached, frozen on its game-over screen, so re-entering `game` shows
-## exactly that. The camera is not moved: the player is already looking at what they triggered.
-## Both are replaced only when the next run starts, in `_on_new_run()`.
+# The run save is cleared, but NEITHER picture is torn down. The map picture stays exactly as it
+# last rendered -- removing it would re-pack the wall for a reason unrelated to unlocks -- and the
+# GameView is left attached, frozen on its game-over screen, so re-entering `game` shows that.
+
+# The camera is not moved: the player is already looking at what they triggered. Both are replaced
+# only when the next run starts, in `_on_new_run()`.
 func _on_run_lost() -> void:
 	RunManager.clear_save()
 	save_info = RunState.new()
 	menu_scene.refresh_continue()
-	LeakSentinel.request_check()  # quiescent moment: the lost run's board state just settled
+# Quiescent moment: the lost run's board state just settled.
+	LeakSentinel.request_check()
 	_print_wall_debug_readout()

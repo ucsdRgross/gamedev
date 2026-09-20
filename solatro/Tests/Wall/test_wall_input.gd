@@ -1,20 +1,14 @@
 extends TestSuite
 # res://Tests/Wall/test_wall_input.gd
-# ==============================================================================
-# WALL INPUT (S36, S19, S20, S21, S22, S23): TEST_PLAN.md §6 rows I1-I14, all of them.
-# NAMES.md already fixes this suite's name/script/suite_name().
-#
-# ⚠ S22's own done-when (PLAN.md) ALSO requires "the controller driven by hand through one full
-# navigate-enter-back-wall cycle" -- that is NOT done here and cannot be, headless. I10 below is
-# AUTOMATED COVERAGE ONLY, per the owner's explicit ruling ("automated coverage for now"); the
-# hand-driven pass is still owed (design/picture-wall/ASSUMPTIONS.md).
-#
-# Also covers two clauses of S36's done-when that have no TEST_PLAN row of their own (the plan's
-# own hole, closed per the overseer's phase3-close instruction -- extra coverage is welcome):
-#   - the Wall button hides itself while only one picture exists (G9/G10 are otherwise untested).
-#   - G9 fill-and-crop wall-view framing, and G10 clamped pan (never past the outermost frames,
-#     and effectively a no-op once nothing falls outside the view).
-# ==============================================================================
+
+# WALL INPUT: every routing, keyboard, mouse, controller and touch row of the wall's input plan.
+
+# ⚠ The controller is AUTOMATED COVERAGE ONLY -- a hand-driven navigate-enter-back-wall cycle
+# cannot run headless and is still owed (design/picture-wall/ASSUMPTIONS.md).
+
+# Also covered, with no plan row of their own: the Wall button hiding itself while only one picture
+# exists, fill-and-crop wall-view framing, and clamped pan (never past the outermost frames, and a
+# no-op once nothing falls outside the view).
 
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
@@ -80,31 +74,28 @@ func _ready() -> void:
 
 # ------------------------------------------------------------------ fixtures
 
-## ⚠ `wall` is parented under an ISOLATED SubViewport, not this suite's own root directly.
-## `Wall._unhandled_input()` (S19-S21) calls `get_viewport().set_input_as_handled()`; if `wall`
-## lived straight in the shared root viewport (as every earlier S36 fixture did, when nothing here
-## called `_unhandled_input()` yet), that call would mark the SAME viewport ~38 OTHER concurrently-
-## running suites dispatch REAL input through -- measured directly: it broke INTERACTION's own
-## real Escape/click tests, which silently found their events already "handled" by a stale flag
-## this suite's I3/I4/I7/I14 tests left set outside the engine's own per-event dispatch/reset
-## cycle. `_teardown()` frees the wrapper viewport (which takes `wall` with it), not `wall` alone.
+# ⚠ `wall` is parented under an ISOLATED SubViewport, not this suite's own root directly.
+# `Wall._unhandled_input()` calls `get_viewport().set_input_as_handled()`; from the shared root
+# viewport that marks the SAME viewport ~38 other concurrent suites dispatch REAL input through.
+
+# Measured: it broke INTERACTION's own Escape/click tests, which found their events already
+# "handled". `_teardown()` frees the wrapper viewport (which takes `wall` with it), not `wall`
+# alone.
 func _build_wall() -> Wall:
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(1280, 720)
 	add_child(viewport)
 	var wall : Wall = WALL_SCENE.instantiate()
 	viewport.add_child(wall)
-	# ⚠ Wall._ready() sets get_tree().paused = true GLOBALLY -- undo immediately, same reasoning
-	# TestWallRender/TestWallPause already document (ASSUMPTIONS.md): add_child() above already ran
-	# Wall._ready() SYNCHRONOUSLY, and GDScript only yields at an explicit await, so nothing else
-	# can run in the gap.
+# ⚠ Wall._ready() sets get_tree().paused = true GLOBALLY -- undo it immediately. add_child() above
+# already ran Wall._ready() SYNCHRONOUSLY, and GDScript only yields at an explicit await, so
+# nothing else can run in the gap.
 	get_tree().paused = false
 	return wall
 
-## Builds one real WallPicture directly at `centre` (no WallPacker -- these tests need EXACT known
-## positions, not a packed layout) and parents it under `wall`'s own %Pictures/%Viewports. `size`/
-## `frame_px` default to the values every I5/I6/I9/wall-button fixture already used before G9/G10
-## needed to control them precisely.
+# Builds one real WallPicture directly at `centre` -- no WallPacker, because these tests need EXACT
+# known positions -- parented under `wall`'s own %Pictures/%Viewports. `size`/`frame_px` default to
+# the values the selection and wall-button fixtures use.
 func _add_picture(wall: Wall, id: StringName, centre: Vector2,
 		size: Vector2 = Vector2(200, 150), frame_px: Vector4 = Vector4(10, 10, 10, 10)) -> WallPicture:
 	var rect := PictureRect.new(id, centre, size, frame_px)
@@ -117,19 +108,17 @@ func _add_picture(wall: Wall, id: StringName, centre: Vector2,
 	wp.build(rect, entry, viewports)
 	return wp
 
-## Frees every constructed picture (teardown()'s own reason to exist -- the SubViewport lives under
-## %Viewports, not under the picture, so a plain queue_free() on the picture alone would leak it),
-## then `wall`'s own ISOLATING SubViewport wrapper (see `_build_wall()`) -- freeing the wrapper
-## takes `wall` itself with it, in one deferred call.
+# Frees every constructed picture -- the SubViewport lives under %Viewports, not under the picture,
+# so a plain queue_free() on the picture alone would leak it -- then `wall`'s own ISOLATING
+# SubViewport wrapper (see `_build_wall()`), whose freeing takes `wall` itself with it.
 func _teardown(wall: Wall, pictures: Array) -> void:
 	for wp : WallPicture in pictures:
 		if is_instance_valid(wp): wp.teardown()
 	if wall and is_instance_valid(wall): wall.get_parent().queue_free()
 
-## Six pictures at known positions around a centre point, sized so pressing Down from "top" has
-## exactly ONE unambiguous nearest candidate ("below1", distance ~316) rather than a symmetric tie,
-## and "bottom" is the unique extreme on the far side (distance 800 from "top", the largest of all
-## six) -- both I5 and I6 read off this same fixture.
+# Six pictures at known positions around a centre point, sized so pressing Down from "top" has
+# exactly ONE unambiguous nearest candidate ("below1", distance ~316) rather than a symmetric tie,
+# and "bottom" is the unique extreme on the far side (distance 800 from "top", the largest of all).
 func _six_pictures(wall: Wall) -> Array[WallPicture]:
 	return [
 		_add_picture(wall, &"top", Vector2(0, -400)),
@@ -142,8 +131,8 @@ func _six_pictures(wall: Wall) -> Array[WallPicture]:
 
 # ------------------------------------------------------------------ I5, I6 (spatial selection)
 
-## I5 (I4, Q98=a): selection starts at the TOP picture; pressing Down selects the geometrically
-## NEAREST picture that lies below it -- not just any picture in that half-plane.
+# Selection starts at the TOP picture; pressing Down selects the geometrically NEAREST picture that
+# lies below it -- not just any picture in that half-plane.
 func _test_arrow_selection_is_spatial() -> void:
 	var wall := _build_wall()
 	var pictures := _six_pictures(wall)
@@ -154,9 +143,8 @@ func _test_arrow_selection_is_spatial() -> void:
 			str(wall.selected_id))
 	_teardown(wall, pictures)
 
-## I6 (I4, Q106=a): stepping past the extreme end wraps to the picture furthest in the OPPOSITE
-## direction -- from the bottom-most picture, pressing Down again (nothing lies further below)
-## wraps to the top-most one, "the first."
+# Stepping past the extreme end wraps to the picture furthest in the OPPOSITE direction -- from the
+# bottom-most picture, pressing Down again (nothing lies further below) wraps to the top-most one.
 func _test_selection_wraps() -> void:
 	var wall := _build_wall()
 	var pictures := _six_pictures(wall)
@@ -169,8 +157,8 @@ func _test_selection_wraps() -> void:
 
 # ------------------------------------------------------------------ I9 (cursor visibility)
 
-## I9 (I10, Q105=b): a fresh wall (mouse-only session, no directional input yet) shows NO selection
-## indicator; the first arrow press makes one appear.
+# A fresh wall (mouse-only session, no directional input yet) shows NO selection indicator; the
+# first arrow press makes one appear.
 func _test_cursor_appears_only_after_a_key_press() -> void:
 	var wall := _build_wall()
 	check(not wall.selection_visible,
@@ -181,14 +169,12 @@ func _test_cursor_appears_only_after_a_key_press() -> void:
 
 # ------------------------------------------------------------------ wall button visibility
 
-## S36's own done-when: the Wall button hides itself while only one picture exists (nothing to
-## overview), and reappears once a second picture is packed.
-##
-## ⚠ Driven through `overlay.refresh()` -- the call `Main` actually makes -- not through
-## `Wall.refresh_overlay()`, which was this test's only caller anywhere and has been deleted.
-## A component whose sole consumer is the test that covers it is the built-but-not-wired shape
-## wearing a green tick: production passed `_pictures.size()` straight to the overlay in all four
-## of its call sites and never went near the wall's own accessor.
+# The Wall button hides itself while only one picture exists (nothing to overview), and reappears
+# once a second picture is packed.
+
+# ⚠ Driven through `overlay.refresh()` -- the call `Main` actually makes. A component whose sole
+# consumer is the test that covers it is the built-but-not-wired shape wearing a green tick:
+# production passes `_pictures.size()` straight to the overlay in all four of its call sites.
 func _test_wall_button_hidden_with_one_picture() -> void:
 	var wall := _build_wall()
 	var pictures : Array[WallPicture] = [_add_picture(wall, &"only", Vector2.ZERO)]
@@ -206,26 +192,21 @@ func _test_wall_button_hidden_with_one_picture() -> void:
 
 # ------------------------------------------------------------------ G9 (fill-and-crop framing)
 
-## G9 (Q5=b): wall_view_zoom() FILLS the window with the packed extent and crops whichever axis
-## has the smaller window/extent ratio -- exercised at three real window aspects (1.33, 1.78, 2.33)
-## against one FIXED extent (1000x550, aspect 1.818 -- deliberately between 1.78 and 2.33 so the
-## filled/cropped axis actually FLIPS within these three points, proving the axis choice responds
-## to the real aspect comparison rather than always favouring one hardcoded axis). At every aspect:
-## (1) no letterbox -- the visible rect never shows anything outside the wall's own extent, on
-## EITHER axis, which is what FILL (never FIT) guarantees by construction; (2) the axis with the
-## larger window/extent ratio is FILLED (visible size close to the full extent); (3) the other axis
-## is genuinely CROPPED (visible size strictly less than the extent's own size there).
+# wall_view_zoom() FILLS the window with the packed extent and crops whichever axis has the smaller
+# window/extent ratio, at three window aspects (1.33, 1.78, 2.33) against one FIXED extent
+# (1000x550, aspect 1.818) so the filled/cropped axis actually FLIPS within those three points.
+
+# At every aspect: no letterbox on EITHER axis, which is what FILL (never FIT) guarantees by
+# construction; the axis with the larger window/extent ratio is FILLED; the other is strictly
+# CROPPED, its visible size less than the extent's own size there.
 func _test_wall_view_zoom_fills_and_crops_the_correct_axis() -> void:
 	var wall := _build_wall()
-	# One picture whose frame OUTER rect is exactly (1000, 550), centred at the origin.
+# One picture whose frame OUTER rect is exactly (1000, 550), centred at the origin.
 	var wp := _add_picture(wall, &"a", Vector2.ZERO, Vector2(900, 450), Vector4(50, 50, 50, 50))
 	var extent := WallPacker.frame_outer_rect(wp.rect)
-	# M9: the FILLED axis is not flush with the extent -- it is the extent divided by the layout's
-	# own crop bias (GAP-008/GAP-018). This used a hand-picked "within 5% of the extent" tolerance
-	# because "the actual overfill margin constant is private to WallPicture" (its own words); that
-	# tolerance was sized for the 2% picture knob it used to read and went red the moment the wall
-	# read its own 6% one. The margin is no longer private, so the exact relationship is asserted
-	# instead of a percentage -- strictly stronger, and it cannot be silently recalibrated again.
+# The FILLED axis is not flush with the extent -- it is the extent divided by the layout's own crop
+# bias, asserted as that exact relationship rather than a percentage. A hand-picked "within 5% of
+# the extent" tolerance went red the moment the wall read its own 6% margin instead of a 2% one.
 	var filled_span := 1.0 / (1.0 + Wall.load_layout().view_margin)
 
 	for aspect : float in [1.33, 1.78, 2.33]:
@@ -256,16 +237,16 @@ func _test_wall_view_zoom_fills_and_crops_the_correct_axis() -> void:
 					"visible.x=%.2f extent.x=%.2f" % [visible.x, extent.size.x])
 	_teardown(wall, [wp])
 
-## `is_equal_approx` only accepts a fixed built-in tolerance; a few comparisons here need a
-## caller-chosen one.
+# `is_equal_approx` only accepts a fixed built-in tolerance; a few comparisons here need a
+# caller-chosen one.
 func _close_enough(a: float, b: float, tolerance: float) -> bool:
 	return absf(a - b) <= tolerance
 
 # ------------------------------------------------------------------ G10 (clamped pan)
 
-## G10 (Q1 note, Q3 note): free pan is clamped so the visible window never shows past the wall's
-## own extent ("never pans into void"). Panning HARD toward all four extremes still leaves the
-## visible rect fully CONTAINED in the packed bounding box, on every axis, every time.
+# Free pan is clamped so the visible window never shows past the wall's own extent ("never pans
+# into void"). Panning HARD toward all four extremes still leaves the visible rect fully CONTAINED
+# in the packed bounding box, on every axis, every time.
 func _test_clamp_pan_never_shows_past_the_outermost_frames() -> void:
 	var wall := _build_wall()
 	var wp := _add_picture(wall, &"a", Vector2.ZERO, Vector2(2600, 2600),
@@ -284,24 +265,21 @@ func _test_clamp_pan_never_shows_past_the_outermost_frames() -> void:
 				"visible=%s extent=%s" % [visible, extent])
 	_teardown(wall, [wp])
 
-## G10's other half ("free pan is allowed ONLY when pictures fall outside the view... on a large
-## screen everything is visible and panning is off"): when the packed extent's aspect matches the
-## window's exactly, pan has EXACTLY zero room to move -- not merely "almost none". Measured update
-## (DEFECT 1, wall_picture.gd `focused_scale()`): before that fix, `wall_overfill_margin` applied
-## UNCONDITIONALLY, so a matching-aspect extent still got a stray 2% of overfill room to pan into --
-## the same "crop/slack on real UI even though nothing needed hiding" defect DEFECT 1 fixed at the
-## picture level, just visible here as a nonzero pan range instead of a clipped button. Now that the
-## margin is CONDITIONAL (H3: applied only when the aspect ratios differ), fill and fit coincide
-## exactly at matching aspect and `clamp_pan()`'s own min/max collapse to the same point -- contrasted
-## against the SAME extreme request against a genuinely oversized wall (the previous test's fixture
-## shape), whose real pan range stays unambiguously large. clamp_pan(extreme) IS the clamped boundary
-## itself, so the difference between the two extreme requests IS the pan range -- no private state
-## needs reading.
+# Free pan is allowed ONLY when pictures fall outside the view: when the packed extent's aspect
+# matches the window's exactly, pan has EXACTLY zero room to move -- not merely "almost none".
+
+# `wall_overfill_margin` is CONDITIONAL, applied only when the aspect ratios differ, so fill and
+# fit coincide at matching aspect and `clamp_pan()`'s own min/max collapse to the same point.
+# Applied unconditionally it left a stray 2% of overfill room to pan into.
+
+# Contrasted against the SAME extreme request against a genuinely oversized wall, whose pan range
+# stays unambiguously large. clamp_pan(extreme) IS the clamped boundary itself, so the difference
+# between the two extreme requests IS the pan range -- no private state needs reading.
 func _test_clamp_pan_is_effectively_a_no_op_when_everything_already_fits() -> void:
 	var window := Vector2(1280, 720)
 
 	var matching_wall := _build_wall()
-	# Outer frame rect is EXACTLY the window's own size/aspect (16:9) -- fill-and-crop crops nothing.
+# Outer frame rect is EXACTLY the window's own size/aspect (16:9) -- fill-and-crop crops nothing.
 	var matching_wp := _add_picture(matching_wall, &"a", Vector2.ZERO, Vector2(1080, 540),
 			Vector4(100, 90, 100, 90))
 	var range_matching := matching_wall.clamp_pan(Vector2(999999, 999999), window) \
@@ -325,38 +303,34 @@ func _test_clamp_pan_is_effectively_a_no_op_when_everything_already_fits() -> vo
 
 # ------------------------------------------------------------------ S19 fixtures (I1, I2)
 
-## A throwaway PackedScene: a Control sized exactly `design_size`, with ONE Button (60x40) CENTRED
-## in it (a "known spot") named "TheButton". `action_mode` fires `pressed` immediately on press
-## (ACTION_MODE_BUTTON_PRESS) so a single synthetic press event is enough -- real press+release
-## button semantics are not what I1/I2 are testing.
+# A throwaway PackedScene: a Control sized exactly `design_size`, with ONE Button (60x40) CENTRED
+# in it, named "TheButton". `action_mode` fires `pressed` immediately on press, so a single
+# synthetic press event is enough.
 func _button_screen(design_size: Vector2i) -> PackedScene:
 	var root := Control.new()
 	root.size = Vector2(design_size)
 	var button := Button.new()
 	button.name = "TheButton"
-	# ⚠ SMALL and OFF-CENTRE, both deliberately. A button filling the middle of the screen is
-	# pressed by any routing transform that is even roughly right, and the exact centre is the ONE
-	# point every wrong scale factor maps correctly (it is the fixed point of a scale about the
-	# centre). I1 used to be exactly that shape and could not fail; see its own comment.
+# ⚠ SMALL and OFF-CENTRE, both deliberately. A button filling the middle of the screen is pressed
+# by any routing transform that is even roughly right, and the exact centre is the ONE point every
+# wrong scale factor maps correctly -- it is the fixed point of a scale about the centre.
 	button.size = Vector2(24, 24)
 	button.position = Vector2(design_size) * Vector2(0.85, 0.25) - button.size * 0.5
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	root.add_child(button)
-	# ⚠ PackedScene.pack() silently DROPS any child whose `.owner` is not the root being packed --
-	# without this, "TheButton" compiles fine but is simply ABSENT from the packed scene, and every
-	# later get_node() for it fails at runtime. Caught only via the engine-error scan, not a check()
-	# failure -- the exact "silently proves nothing" shape this whole run keeps finding new forms of.
+# ⚠ PackedScene.pack() silently DROPS any child whose `.owner` is not the root being packed --
+# without this, "TheButton" compiles fine but is simply ABSENT from the packed scene and every
+# later get_node() for it fails at runtime, with no check() failure to show for it.
 	button.owner = root
 	var packed := PackedScene.new()
 	packed.pack(root)
-	root.free()   # the template Node is NOT RefCounted and never added to a tree -- needs .free()
+# The template Node is NOT RefCounted and never added to a tree.
+	root.free()
 	return packed
 
-## An isolated SubViewport + Camera2D so `%Screen.get_global_transform_with_canvas()` resolves
-## against ONLY this test's own camera -- immune to "current" camera contention from whatever OTHER
-## concurrently-running suite's own ad-hoc Camera2D nodes exist on the shared root viewport (none
-## of them read a live transform back, so it has never mattered before; I1 is the first test in
-## this run that does).
+# An isolated SubViewport + Camera2D so `%Screen.get_global_transform_with_canvas()` resolves
+# against ONLY this test's own camera -- immune to "current" camera contention from whatever OTHER
+# concurrently-running suite's ad-hoc Camera2D nodes exist on the shared root viewport.
 class CameraRig:
 	var viewport : SubViewport
 	var camera : Camera2D
@@ -380,24 +354,22 @@ func _teardown_camera_rig(rig: CameraRig) -> void:
 
 # ------------------------------------------------------------------ I1, I2 (S19 routing)
 
-## I1 (GAP-001 -- the risk that caused it): a click aimed at a known viewport pixel of a focused
-## picture lands on THAT pixel, at three camera zoom levels (0.5, 1.0, 2.0) -- and presses a small,
-## off-centre Button placed there.
-##
-## ⚠ THIS TEST WAS VACUOUS AND FOUND NOTHING FOR A WHOLE RUN. It used `rect.size == design_size`,
-## which makes `%Screen.scale` exactly (1, 1), and it clicked the sprite's exact CENTRE, whose local
-## coordinate is (0, 0) -- and `f * (0, 0) == (0, 0)` for every factor `f`. Both halves had to be
-## wrong for it to pass; either one alone would have caught `route()` dividing by the sprite's scale
-## twice. `TEST_PLAN.md` §10's I1 row literally specifies "click its wall-space centre", so the
-## vacuity was authored, not accidental. The rect below is now a NON-square multiple of the design
-## size, so the scale is (0.8, 1.0) -- the shape a non-16:9 window actually produces -- and every
-## probe point is off-centre.
+# A click aimed at a known viewport pixel of a focused picture lands on THAT pixel, at three camera
+# zoom levels (0.5, 1.0, 2.0) -- and presses a small, off-centre Button placed there.
+
+# ⚠ THE RECT MUST NOT EQUAL THE DESIGN SIZE AND THE PROBE MUST NOT BE THE CENTRE, or the test is
+# vacuous. A rect equal to the design size makes `%Screen.scale` exactly (1, 1), and the sprite's
+# centre is local (0, 0), where `f * (0, 0) == (0, 0)` for every factor `f`.
+
+# Both halves had to be wrong for it to pass; either one alone would have caught `route()` dividing
+# by the sprite's scale twice. The rect below is a NON-square multiple of the design size, so the
+# scale is (0.8, 1.0) -- the shape a non-16:9 window produces -- and every probe point is off-centre.
 func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() -> void:
 	var rig := _camera_rig()
 	var design_size := Vector2i(200, 150)
-	# NOT Vector2(design_size): a rect equal to the design size makes %Screen.scale exactly 1 and
-	# hides every scale-dependent routing error. WallPacker produces this shape at any window
-	# aspect other than 16:9.
+# NOT Vector2(design_size): a rect equal to the design size makes %Screen.scale exactly 1 and
+# hides every scale-dependent routing error. WallPacker produces this shape at any window
+# aspect other than 16:9.
 	var rect := PictureRect.new(&"a", Vector2(300, -150), Vector2(design_size) * Vector2(0.8, 1.0),
 			Vector4(10, 10, 10, 10))
 	var entry := PictureEntry.new()
@@ -413,24 +385,27 @@ func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() ->
 	check(not screen.scale.is_equal_approx(Vector2.ONE),
 			"sanity: %Screen.scale is NOT 1 in this fixture, so a scale error can actually show",
 			str(screen.scale))
-	# The screen root is a Control at (0, 0) sized to the design, so its own gui_input position IS
-	# the viewport pixel the event landed on -- read directly rather than inferred from whether a
-	# widget happened to react.
-	var landed : Array[Vector2] = [Vector2.INF]   # boxed -- lambdas capture locals BY VALUE
+# The screen root is a Control at (0, 0) sized to the design, so its own gui_input position IS
+# the viewport pixel the event landed on -- read directly rather than inferred from whether a
+# widget happened to react.
+
+# Boxed -- lambdas capture locals BY VALUE.
+	var landed : Array[Vector2] = [Vector2.INF]
 	(wp.screen_root as Control).gui_input.connect(func(e: InputEvent) -> void:
 			if e is InputEventMouseButton: landed[0] = (e as InputEventMouseButton).position)
 
 	for zoom : float in [0.5, 1.0, 2.0]:
 		rig.camera.zoom = Vector2(zoom, zoom)
-		# Measured (Tests/Visual/wall_input_route_spike.gd): ONE process_frame is not reliably
-		# enough for the camera's new canvas transform to actually land -- two, plus a render frame,
-		# is what made get_global_transform_with_canvas() stop returning a stale/repeated value.
+# Measured (Tests/Visual/wall_input_route_spike.gd): ONE process_frame is not reliably
+# enough for the camera's new canvas transform to actually land -- two, plus a render frame,
+# is what made get_global_transform_with_canvas() stop returning a stale/repeated value.
 		await get_tree().process_frame
 		await get_tree().process_frame
 		await await_drawn_frames(1)
-		var pressed : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
-		# Signal.connect() returns an Error code (int), not a handle -- keep the Callable itself so
-		# disconnect() below has something it actually accepts.
+# Boxed -- lambdas capture locals BY VALUE.
+		var pressed : Array[bool] = [false]
+# Signal.connect() returns an Error code (int), not a handle -- keep the Callable itself so
+# disconnect() below has something it actually accepts.
 		var handler := func() -> void: pressed[0] = true
 		button.pressed.connect(handler)
 		var target := button.position + button.size * 0.5
@@ -446,8 +421,8 @@ func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() ->
 				"event.position=%s" % event.position)
 		button.pressed.disconnect(handler)
 
-		# Three points spread across the screen, none of them the centre, checked as COORDINATES.
-		# A scale error is zero at the centre and grows outward, so a corner is where it shows.
+# Three points spread across the screen, none of them the centre, checked as COORDINATES.
+# A scale error is zero at the centre and grows outward, so a corner is where it shows.
 		for probe : Vector2 in [Vector2(12, 12), Vector2(design_size) - Vector2(12, 12),
 				Vector2(design_size.x - 12, 12)]:
 			landed[0] = Vector2.INF
@@ -456,11 +431,12 @@ func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() ->
 			probe_event.pressed = true
 			probe_event.position = screen.get_global_transform_with_canvas() * (probe - half_vp)
 			WallInput.route(probe_event, wp)
-			# HALF A PIXEL, not is_equal_approx(): a round trip through the canvas transform at
-			# zoom 0.5/2.0 lands ~1e-4 off, which is inside is_equal_approx's RELATIVE epsilon at
-			# small coordinates and outside it at large ones -- measured, it flaked at (12, 12).
-			# ⚠ This is a float-precision bound, NOT a tolerance fitted to a defect: the routing
-			# error this test exists to catch displaced clicks by 38-57 PIXELS.
+# HALF A PIXEL, not is_equal_approx(): a round trip through the canvas transform at zoom 0.5/2.0
+# lands ~1e-4 off, which is inside is_equal_approx's RELATIVE epsilon at small coordinates and
+# outside it at large ones -- measured, it flaked at (12, 12).
+
+# ⚠ This is a float-precision bound, NOT a tolerance fitted to a defect: the routing error this
+# test exists to catch displaced clicks by 38-57 PIXELS.
 			check(landed[0].distance_to(probe) < 0.5,
 					"zoom %.1f: a click aimed at viewport pixel %s lands there" % [zoom, probe],
 					"landed=%s off by %.4f" % [landed[0], landed[0].distance_to(probe)])
@@ -468,8 +444,8 @@ func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() ->
 	wp.teardown()
 	await _teardown_camera_rig(rig)
 
-## I2 (Q95=a): a click over a NON-focused (background) picture never reaches its viewport at all --
-## its Button never reports pressed, and route() itself refuses before touching the viewport.
+# A click over a NON-focused (background) picture never reaches its viewport at all -- its Button
+# never reports pressed, and route() itself refuses before touching the viewport.
 func _test_non_focused_picture_never_receives_input() -> void:
 	var rig := _camera_rig()
 	var design_size := Vector2i(200, 150)
@@ -482,7 +458,7 @@ func _test_non_focused_picture_never_receives_input() -> void:
 	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 	rig.viewport.add_child(wp)
 	wp.build(rect, entry, rig.pictures_viewports)
-	# Deliberately never focus()'d -- is_focused stays false, matching a background picture.
+# Deliberately never focus()'d -- is_focused stays false, matching a background picture.
 	var button : Button = wp.screen_root.get_node(^"TheButton")
 	var pressed : Array[bool] = [false]
 	button.pressed.connect(func() -> void: pressed[0] = true)
@@ -502,10 +478,9 @@ func _test_non_focused_picture_never_receives_input() -> void:
 
 # ------------------------------------------------------------------ S20/S21 scripted fixtures
 
-## A minimal throwaway screen script, compiled at runtime (GDScript.new()+source_code+reload()) --
-## no `.gd` file for logic that belongs nowhere else, same reasoning as the earlier throwaway
-## PackedScene()+pack(Node.new()) screen_root fixtures (S12/T13, ASSUMPTIONS.md), just with actual
-## behaviour attached since these fixtures need to OBSERVE a state change, not merely exist.
+# A minimal throwaway screen script, compiled at runtime (GDScript.new()+source_code+reload()) --
+# no `.gd` file for logic that belongs nowhere else. These fixtures need to OBSERVE a state change,
+# not merely exist.
 func _scripted_node(source: String) -> Node:
 	var script := GDScript.new()
 	script.source_code = source
@@ -514,18 +489,18 @@ func _scripted_node(source: String) -> Node:
 	node.set_script(script)
 	return node
 
-## A "map" stand-in: tracks its own zoom_level and responds to the mouse wheel -- I8's own fixture
-## ("wheel over a focused MAP picture, assert the map zoomed"). ⚠ An `is` check does NOT narrow a
-## GDScript variable's STATIC type for later property access -- `event` stays typed `InputEvent`
-## even after `event is InputEventMouseButton`, so an explicit `as` cast is required or `.pressed`/
-## `.button_index` fail to compile.
+# A "map" stand-in: tracks its own zoom_level and responds to the mouse wheel.
+
+# ⚠ An `is` check does NOT narrow a GDScript variable's STATIC type for later property access --
+# `event` stays typed `InputEvent` even after `event is InputEventMouseButton`, so an explicit `as`
+# cast is required or `.pressed`/`.button_index` fail to compile.
 const _MAP_SOURCE := "extends Node\nvar zoom_level := 1.0\nfunc _unhandled_input(event: InputEvent) -> void:\n\tif event is InputEventMouseButton:\n\t\tvar mb := event as InputEventMouseButton\n\t\tif mb.pressed:\n\t\t\tif mb.button_index == MOUSE_BUTTON_WHEEL_UP:\n\t\t\t\tzoom_level *= 1.1\n\t\t\t\tget_viewport().set_input_as_handled()\n\t\t\telif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:\n\t\t\t\tzoom_level *= 0.9\n\t\t\t\tget_viewport().set_input_as_handled()\n"
 
-## A screen that consumes ui_cancel outright -- I3's own fixture ("a screen that consumes Escape").
+# A screen that consumes ui_cancel outright -- the "a screen consumes Escape" fixture.
 const _CONSUMES_CANCEL_SOURCE := "extends Node\nfunc _unhandled_input(event: InputEvent) -> void:\n\tif event.is_action_pressed(&\"ui_cancel\"):\n\t\tget_viewport().set_input_as_handled()\n"
 
-## Builds a picture whose `entry.scene` is a scripted throwaway Node (see `_scripted_node()`
-## above), parented under `wall`'s own %Pictures/%Viewports like `_add_picture()`.
+# Builds a picture whose `entry.scene` is a scripted throwaway Node (see `_scripted_node()` above),
+# parented under `wall`'s own %Pictures/%Viewports like `_add_picture()`.
 func _add_scripted_picture(wall: Wall, id: StringName, centre: Vector2, source: String) -> WallPicture:
 	var rect := PictureRect.new(id, centre, Vector2(200, 150), Vector4(10, 10, 10, 10))
 	var entry := PictureEntry.new()
@@ -533,7 +508,8 @@ func _add_scripted_picture(wall: Wall, id: StringName, centre: Vector2, source: 
 	var template := _scripted_node(source)
 	var packed := PackedScene.new()
 	packed.pack(template)
-	template.free()   # the template Node is NOT RefCounted and never added to a tree -- .free() it
+# The template Node is NOT RefCounted and never added to a tree.
+	template.free()
 	entry.scene = packed
 	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 	var pictures_root : Node = wall.get_node(^"%Pictures")
@@ -544,10 +520,9 @@ func _add_scripted_picture(wall: Wall, id: StringName, centre: Vector2, source: 
 
 # ------------------------------------------------------------------ I8 (S20 mouse wheel)
 
-## I8 (Q89=a): the wheel always belongs to the focused screen. Routed via WallInput.route() (S19,
-## generic over any InputEvent), it reaches the focused "map" picture's own zoom state -- and the
-## WALL's own camera zoom is untouched (G11: "no free zoom in wall view" becomes a REAL assertion
-## here, not the vacuous one S36 could only report before S20 wired anything to the wheel at all).
+# The wheel always belongs to the focused screen. Routed via WallInput.route(), generic over any
+# InputEvent, it reaches the focused "map" picture's own zoom state -- and the WALL's own camera
+# zoom is untouched, which makes "no free zoom in wall view" a REAL assertion here.
 func _test_wheel_reaches_the_focused_screen_but_never_the_wall() -> void:
 	var wall := _build_wall()
 	var wp := _add_scripted_picture(wall, &"map", Vector2.ZERO, _MAP_SOURCE)
@@ -587,7 +562,7 @@ func _escape_past(wall: Wall, wp: WallPicture) -> Array[bool]:
 	wall._unhandled_input(event)
 	return announced
 
-## I3 (Q100=a): a screen that consumes Escape gets FIRST REFUSAL -- the wall announces nothing.
+# A screen that consumes Escape gets FIRST REFUSAL -- the wall announces nothing.
 func _test_screen_that_consumes_escape_leaves_the_wall_alone() -> void:
 	var wall := _build_wall()
 	var wp := _add_scripted_picture(wall, &"consumer", Vector2.ZERO, _CONSUMES_CANCEL_SOURCE)
@@ -597,10 +572,10 @@ func _test_screen_that_consumes_escape_leaves_the_wall_alone() -> void:
 			"wall view %s, back %s" % [str(announced[0]), str(announced[1])])
 	_teardown(wall, [wp])
 
-#A screen that ignores Escape (no scene at all) lets it through, and the owner reversed Q100 for the
-#keyboard: it zooms out to WALL VIEW, never to the previous picture, which is `wall_back`'s alone.
+#A screen that ignores Escape (no scene at all) lets it through, and the owner's ruling for the
+#keyboard is that it zooms out to WALL VIEW, never to the previous picture -- `wall_back`'s alone.
 
-## I4 (Q100=a, owner ruling): Escape past a screen that ignores it reaches wall view.
+# Escape past a screen that ignores it reaches wall view.
 func _test_screen_that_ignores_escape_reaches_wall_view() -> void:
 	var wall := _build_wall()
 	var wp := _add_picture(wall, &"ignorer", Vector2.ZERO)
@@ -611,9 +586,9 @@ func _test_screen_that_ignores_escape_reaches_wall_view() -> void:
 			"...and never asks for Back, which keeps its own key in `wall_back`", str(announced[1]))
 	_teardown(wall, [wp])
 
-## I7 (Q104=a): wall_jump_3 enters the THIRD picture in PLACEMENT order -- GAP-009 deleted "ring",
-## so "placement order" is WallPacker.pack()'s own output order, read here directly from %Pictures'
-## child order (pictures are added in that same order below).
+# wall_jump_3 enters the THIRD picture in PLACEMENT order, which is WallPacker.pack()'s own output
+# order, read here directly from %Pictures' child order (pictures are added in that same order
+# below).
 func _test_wall_jump_3_enters_the_third_picture_in_placement_order() -> void:
 	var wall := _build_wall()
 	var layout := WallLayout.new()
@@ -642,15 +617,15 @@ func _test_wall_jump_3_enters_the_third_picture_in_placement_order() -> void:
 	check(pictures.size() >= 3, "at least 3 pictures were packed for this fixture",
 			str(pictures.size()))
 
-	# apply_layout() is what records placement order (PICTURE_WALL.md C4) -- without it the wall
-	# has no idea what "the third picture" means, so drive the real path rather than assuming.
+# apply_layout() is what records placement order -- without it the wall has no idea what "the third
+# picture" means, so drive the real path rather than assuming.
 	var rects_by_id : Dictionary[StringName, PictureRect] = {}
 	for rect : PictureRect in rects: rects_by_id[rect.id] = rect
 	wall.apply_layout(rects_by_id, false)
 
-	# ⚠ ONE PICTURE IS ALREADY FOCUSED. The original fixture focused nothing, so it could not see
-	# that _jump_to_index() called focus() directly without unfocusing anything -- leaving TWO
-	# screen roots at PROCESS_MODE_ALWAYS and breaking §1.6's "exactly one" (Q74=a).
+# ⚠ ONE PICTURE IS ALREADY FOCUSED. A fixture that focuses nothing cannot see _jump_to_index()
+# calling focus() directly without unfocusing anything -- which leaves TWO screen roots at
+# PROCESS_MODE_ALWAYS and breaks "exactly one picture is focused".
 	var already : WallPicture = pictures[0]
 	already.focus()
 
@@ -674,8 +649,8 @@ func _test_wall_jump_3_enters_the_third_picture_in_placement_order() -> void:
 			+ "the first", "focused=%d" % focused_count)
 	_teardown(wall, pictures)
 
-## I14 (Q103=a, Q115=a): the wall is DEAF to its own arrow-key selection while a screen is focused
-## -- "the wall never listens while a screen is focused."
+# The wall is DEAF to its own arrow-key selection while a screen is focused -- the wall never
+# listens while a screen is focused.
 func _test_wall_is_deaf_to_arrows_while_a_screen_is_focused() -> void:
 	var wall := _build_wall()
 	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
@@ -695,11 +670,12 @@ func _test_wall_is_deaf_to_arrows_while_a_screen_is_focused() -> void:
 
 # ------------------------------------------------------------------ Q88, Q99 (S31 wire-up: enter)
 
-## Q99=a: `ui_accept` enters the CURRENTLY SELECTED picture -- fires `picture_enter_requested` with
-## `selected_id`, and nothing else (the wall never focuses a picture itself; the caller decides what
-## "enter" means, same "wall announces intent, caller decides" shape `wall_view_entered` already
-## uses). Reuses I5's own `_six_pictures()`/Down-from-top fixture so the expected selected id
-## ("below1") is already independently proven correct by that test, not re-derived here.
+# `ui_accept` enters the CURRENTLY SELECTED picture: fires `picture_enter_requested` with
+# `selected_id` and nothing else. The wall never focuses a picture itself; the caller decides what
+# "enter" means, the same shape `wall_view_entered` already uses.
+
+# Reuses the Down-from-top fixture, so the expected selected id ("below1") is already independently
+# proven by the spatial-selection test rather than re-derived here.
 func _test_ui_accept_enters_the_selected_picture() -> void:
 	var wall := _build_wall()
 	var pictures := _six_pictures(wall)
@@ -708,7 +684,8 @@ func _test_ui_accept_enters_the_selected_picture() -> void:
 	check(wall.selected_id == &"below1", "sanity: selection landed where I5 already proved it does",
 			str(wall.selected_id))
 
-	var requested : Array[StringName] = [&""]   # boxed -- lambdas capture locals BY VALUE
+# Boxed -- lambdas capture locals BY VALUE.
+	var requested : Array[StringName] = [&""]
 	wall.picture_enter_requested.connect(func(id: StringName) -> void: requested[0] = id)
 
 	var event := InputEventAction.new()
@@ -720,24 +697,26 @@ func _test_ui_accept_enters_the_selected_picture() -> void:
 			"ui_accept enters the currently SELECTED picture (Q99=a)", "requested=%s" % requested[0])
 	_teardown(wall, pictures)
 
-## Q88=a: a click landing inside an UNFOCUSED picture's own frame-outer rect enters it immediately --
-## fires `picture_enter_requested` with that picture's id. Hit-tested in WALL SPACE via the event's
-## own `position`, transformed through the wall's own viewport `canvas_transform` -- the exact
-## inverse of what `_unhandled_input()` itself applies to the event, so this test is immune to
-## whatever the camera's own authored position/zoom actually are; it never assumes a 1:1 mapping.
-## The click lands at the target picture's own CENTRE, well inside its frame-outer rect.
+# A click landing inside an UNFOCUSED picture's own frame-outer rect enters it immediately, firing
+# `picture_enter_requested` with that picture's id. The click lands at the target picture's own
+# CENTRE, well inside its frame-outer rect.
+
+# Hit-tested in WALL SPACE via the event's own `position` through the wall viewport's
+# `canvas_transform` -- the exact inverse of what `_unhandled_input()` applies to the event -- so
+# the test never assumes a 1:1 mapping, whatever the camera's authored position and zoom are.
 func _test_click_enters_an_unfocused_picture_immediately() -> void:
 	var wall := _build_wall()
 	var pictures := _six_pictures(wall)
-	# The camera's canvas_transform is driven by %Camera2D's own _process; give it a couple of
-	# frames to settle before reading it back, same reasoning I1's zoom-level loop already documents.
+# The camera's canvas_transform is driven by %Camera2D's own _process; give it a couple of
+# frames to settle before reading it back, same reasoning the zoom-level loop above documents.
 	await get_tree().process_frame
 	await get_tree().process_frame
 
 	var requested : Array[StringName] = [&""]
 	wall.picture_enter_requested.connect(func(id: StringName) -> void: requested[0] = id)
 
-	var target : WallPicture = pictures[1]   # "below1" -- deliberately NOT focus()'d
+# "below1" -- deliberately NOT focus()'d.
+	var target : WallPicture = pictures[1]
 	check(not target.is_focused, "sanity: the target picture is unfocused, matching wall view")
 	var canvas_transform := wall.get_viewport().canvas_transform
 	var event := InputEventMouseButton.new()
@@ -755,13 +734,12 @@ func _test_click_enters_an_unfocused_picture_immediately() -> void:
 # ------------------------------------------------------------------ I10 (S22 controller, AUTOMATED
 # COVERAGE ONLY)
 
-## I10 (Q124=a): MOST-RECENT-DEVICE-WINS -- a mouse move alone shows no keyboard/controller
-## indicator (same shape as I9's fresh-wall case), then a REAL synthetic `InputEventJoypadButton`
-## for `ui_down` (Godot's built-in default UI actions already bind the d-pad/left-stick -- nothing
-## in this project's `project.godot` overrides `ui_down`, so this exercises the actual default
-## binding, not a stand-in) shows it. This is the one piece of I10 that CAN run headless; it does
-## NOT drive a real controller by hand, so it does not meet S22's own done-when -- see the header
-## comment and ASSUMPTIONS.md.
+# MOST-RECENT-DEVICE-WINS: a mouse move alone shows no keyboard/controller indicator, then a REAL
+# synthetic `InputEventJoypadButton` for `ui_down` shows it. Godot's default UI actions bind the
+# d-pad/left stick and nothing here overrides `ui_down`, so this exercises the actual binding.
+
+# This is the one piece that CAN run headless; it does NOT drive a real controller by hand, so the
+# hand-driven pass is still owed -- see the header comment and ASSUMPTIONS.md.
 func _test_most_recent_device_wins_controller_after_mouse() -> void:
 	var wall := _build_wall()
 	var pictures := _six_pictures(wall)
@@ -784,11 +762,12 @@ func _test_most_recent_device_wins_controller_after_mouse() -> void:
 
 # ------------------------------------------------------------------ I11, I12, I13 (S23 touch)
 
-## I11 (GAP-003=a): pinch is DERIVED from two tracked touch ids, not any gesture event -- a touch
-## DOWN for id 0 and id 1 six px apart on X, then three `InputEventScreenDrag` events for id 1
-## moving it a further +40px on X in total (distance grows past `wall_pinch_threshold_px`=24
-## partway through), asserts EXACTLY ONE `PINCH_OUT` across the whole sequence -- the later drag
-## events, still past threshold, must NOT re-fire (Q119=a: pinch is one-shot, like a button press).
+# Pinch is DERIVED from two tracked touch ids, not any gesture event: a touch DOWN for id 0 and id
+# 1 six px apart on X, then three `InputEventScreenDrag` events moving id 1 a further +40px on X in
+# total, asserting EXACTLY ONE `PINCH_OUT` across the whole sequence.
+
+# The later drag events, still past `wall_pinch_threshold_px` (24), must NOT re-fire: pinch is
+# one-shot, like a button press.
 func _test_pinch_is_derived_from_two_touches() -> void:
 	var tracker := WallInput.PinchTracker.new()
 	const THRESHOLD := 24.0
@@ -803,13 +782,14 @@ func _test_pinch_is_derived_from_two_touches() -> void:
 	var down1 := InputEventScreenTouch.new()
 	down1.index = 1
 	down1.pressed = true
-	down1.position = Vector2(106, 100)   # base distance 6px
+# Base distance 6px.
+	down1.position = Vector2(106, 100)
 	check(tracker.feed(down1, THRESHOLD) == WallInput.PinchTracker.Gesture.NONE,
 			"second touch-down (base distance established) never fires a gesture by itself")
 
-	# Base distance 6px (id0 at x=100, id1 at x=106). Three drags move id1 by +40px total on X, in
-	# steps of 14/13/13 -- absolute id1.x after each: 120 (distance 20, still under the 24px
-	# threshold), 133 (distance 33, CROSSES threshold here), 146 (distance 46, stays crossed).
+# Base distance 6px (id0 at x=100, id1 at x=106). Three drags move id1 by +40px total on X, in
+# steps of 14/13/13 -- absolute id1.x after each: 120 (distance 20, still under the 24px
+# threshold), 133 (distance 33, CROSSES threshold here), 146 (distance 46, stays crossed).
 	var fired_count := 0
 	var last_gesture := WallInput.PinchTracker.Gesture.NONE
 	for id1_x : float in [120.0, 133.0, 146.0]:
@@ -826,11 +806,9 @@ func _test_pinch_is_derived_from_two_touches() -> void:
 	check(last_gesture == WallInput.PinchTracker.Gesture.PINCH_OUT,
 			"the fired gesture is PINCH_OUT (fingers moved apart)", str(last_gesture))
 
-## I12 (GAP-003=a): `InputEventMagnifyGesture` is NEVER listened for -- it does not fire on
-## Windows and must not be relied on. Push one straight into a tracker that already has two
-## fingers down (the state most likely to accidentally match something) and assert NOTHING
-## happens: no gesture returned, no internal state disturbed (a follow-up real drag still behaves
-## exactly as it would have without the magnify event ever having been fed).
+# `InputEventMagnifyGesture` is NEVER listened for -- it does not fire on Windows and must not be
+# relied on. Pushed straight into a tracker that already has two fingers down (the state most
+# likely to accidentally match something), it must return no gesture and disturb no state.
 func _test_magnify_gesture_is_never_listened_for() -> void:
 	var tracker := WallInput.PinchTracker.new()
 	const THRESHOLD := 24.0
@@ -852,11 +830,12 @@ func _test_magnify_gesture_is_never_listened_for() -> void:
 			"an InputEventMagnifyGesture produces NO gesture -- it is never listened for",
 			str(g))
 
-	# Prove the tracker's real state is untouched: the SAME drag that fired PINCH_OUT in the test
-	# above still fires it here, unaffected by the magnify event in between.
+# Prove the tracker's real state is untouched: the SAME drag that fired PINCH_OUT in the test
+# above still fires it here, unaffected by the magnify event in between.
 	var drag := InputEventScreenDrag.new()
 	drag.index = 1
-	drag.position = Vector2(140, 100)   # distance now 40px, well past the 24px threshold
+# Distance now 40px, well past the 24px threshold.
+	drag.position = Vector2(140, 100)
 	var after := tracker.feed(drag, THRESHOLD)
 	check(after == WallInput.PinchTracker.Gesture.PINCH_OUT,
 			"a real drag past threshold still fires normally after the magnify event was ignored",
@@ -864,12 +843,12 @@ func _test_magnify_gesture_is_never_listened_for() -> void:
 
 # ------------------------------------------------------------------ A3 (PICTURE_WALL.md wiring)
 
-## A3 (PICTURE_WALL.md, Q119=a): `WallInput.PinchTracker` was built and tested in isolation
-## (I11-I13 above) but never wired into `Wall`'s own input path -- touch pinch did NOTHING in the
-## app. Drives REAL `InputEventScreenTouch`/`InputEventScreenDrag` events through
-## `wall._unhandled_input()` (never `WallInput.PinchTracker` directly, which would only re-prove
-## I11's own isolated arithmetic a second time) and asserts the WALL-LEVEL consequence Q119=a
-## names: pinch-out commits to the current selection, same as `ui_accept` (wall view only).
+# `WallInput.PinchTracker` was built and tested in isolation above but never wired into `Wall`'s
+# own input path, so touch pinch did NOTHING in the app. This drives REAL touch and drag events
+# through `wall._unhandled_input()`, never the tracker directly.
+
+# The WALL-LEVEL consequence: pinch-out commits to the current selection, same as `ui_accept`, in
+# wall view only.
 func _test_pinch_out_enters_the_selected_picture() -> void:
 	var wall := _build_wall()
 	var pictures := _six_pictures(wall)
@@ -878,7 +857,8 @@ func _test_pinch_out_enters_the_selected_picture() -> void:
 	check(wall.selected_id == &"below1", "sanity: selection landed where I5 already proved it does",
 			str(wall.selected_id))
 
-	var requested : Array[StringName] = [&""]   # boxed -- lambdas capture locals BY VALUE
+# Boxed -- lambdas capture locals BY VALUE.
+	var requested : Array[StringName] = [&""]
 	wall.picture_enter_requested.connect(func(id: StringName) -> void: requested[0] = id)
 	_feed_pinch_out(wall)
 
@@ -887,8 +867,8 @@ func _test_pinch_out_enters_the_selected_picture() -> void:
 			"requested=%s" % requested[0])
 	_teardown(wall, pictures)
 
-## A3 (Q119=a): pinch-in, from a FOCUSED picture, returns to wall view -- the same consequence
-## Escape already produces (I4 above), reached through the touch path instead of the keyboard one.
+# Pinch-in, from a FOCUSED picture, returns to wall view -- the same consequence Escape produces,
+# reached through the touch path instead of the keyboard one.
 func _test_pinch_in_returns_to_wall_view() -> void:
 	var wall := _build_wall()
 	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
@@ -901,9 +881,9 @@ func _test_pinch_in_returns_to_wall_view() -> void:
 	check(went_back[0], "pinch-in on a focused picture returns to wall view (Q119=a)")
 	_teardown(wall, [wp])
 
-## Feeds a real two-touch pinch-OUT gesture (fingers spreading, distance growing past
-## `wall_pinch_threshold_px`) through `wall._unhandled_input()` -- the same event shapes I11 already
-## proves `WallInput.PinchTracker` itself detects correctly, routed through the wall this time.
+# Feeds a real two-touch pinch-OUT gesture (fingers spreading past `wall_pinch_threshold_px`)
+# through `wall._unhandled_input()` -- the same event shapes the isolated tracker test already
+# proves, routed through the wall this time.
 func _feed_pinch_out(wall: Wall) -> void:
 	var down0 := InputEventScreenTouch.new()
 	down0.index = 0
@@ -913,14 +893,16 @@ func _feed_pinch_out(wall: Wall) -> void:
 	var down1 := InputEventScreenTouch.new()
 	down1.index = 1
 	down1.pressed = true
-	down1.position = Vector2(106, 100)   # base distance 6px
+# Base distance 6px.
+	down1.position = Vector2(106, 100)
 	wall._unhandled_input(down1)
 	var drag := InputEventScreenDrag.new()
 	drag.index = 1
-	drag.position = Vector2(146, 100)   # distance 46px, past the 24px default threshold
+# Distance 46px, past the 24px default threshold.
+	drag.position = Vector2(146, 100)
 	wall._unhandled_input(drag)
 
-## The pinch-IN mirror of `_feed_pinch_out()` -- fingers start FAR apart and close in past threshold.
+# The pinch-IN mirror of `_feed_pinch_out()` -- fingers start FAR apart and close in past threshold.
 func _feed_pinch_in(wall: Wall) -> void:
 	var down0 := InputEventScreenTouch.new()
 	down0.index = 0
@@ -930,14 +912,16 @@ func _feed_pinch_in(wall: Wall) -> void:
 	var down1 := InputEventScreenTouch.new()
 	down1.index = 1
 	down1.pressed = true
-	down1.position = Vector2(160, 100)   # base distance 60px
+# Base distance 60px.
+	down1.position = Vector2(160, 100)
 	wall._unhandled_input(down1)
 	var drag := InputEventScreenDrag.new()
 	drag.index = 1
-	drag.position = Vector2(120, 100)   # distance now 20px, delta -40, past the -24px threshold
+# Distance now 20px, delta -40, past the -24px threshold.
+	drag.position = Vector2(120, 100)
 	wall._unhandled_input(drag)
 
-# I13: the touch target is a fraction of the window's SMALLER dimension, and nothing clamps it.
+# The touch target is a fraction of the window's SMALLER dimension, and nothing clamps it.
 func _test_touch_target_size_is_a_window_fraction() -> void:
 	var settings := PlayerSettings.new()
 	var fraction := settings.touch_target_fraction
@@ -959,14 +943,14 @@ func _test_touch_target_size_is_a_window_fraction() -> void:
 
 # ------------------------------------------------------------------ M3 (PICTURE_WALL.md)
 
-## Fed by action NAME, so these stay true through any rebinding.
+# Fed by action NAME, so these stay true through any rebinding.
 func _feed_action(wall: Wall, action: StringName) -> void:
 	var event := InputEventAction.new()
 	event.action = action
 	event.pressed = true
 	wall._unhandled_input(event)
 
-## Q101=a/Q110=b: Tab, and the controller's Select/View button, ask for the overview.
+# Tab, and the controller's Select/View button, ask for the overview.
 func _test_wall_overview_asks_for_wall_view() -> void:
 	var wall := _build_wall()
 	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
@@ -979,7 +963,7 @@ func _test_wall_overview_asks_for_wall_view() -> void:
 	check(asked[0], "wall_overview asks for wall view -- Tab and Select/View had no reader at all")
 	_teardown(wall, [wp])
 
-## Q109=b: the shoulder button is Back, and Back means Back (M2), never wall view.
+# The shoulder button is Back, and Back means Back, never wall view.
 func _test_wall_back_asks_for_back() -> void:
 	var wall := _build_wall()
 	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
@@ -996,8 +980,8 @@ func _test_wall_back_asks_for_back() -> void:
 			"and asks for Back, not the overview -- same Q65=a retrace the keyboard gets (M2)")
 	_teardown(wall, [wp])
 
-## The mirror of Back on the other shoulder. Nothing read `wall_forward`, and it had no binding
-## either, so Forward existed only as an overlay button.
+# The mirror of Back on the other shoulder. Nothing read `wall_forward`, and it had no binding
+# either, so Forward existed only as an overlay button.
 func _test_wall_forward_asks_for_forward() -> void:
 	var wall := _build_wall()
 	var wp := _add_picture(wall, &"focused_one", Vector2.ZERO)
@@ -1010,15 +994,13 @@ func _test_wall_forward_asks_for_forward() -> void:
 	check(asked[0], "wall_forward asks for Forward -- the controller had no Forward at all")
 	_teardown(wall, [wp])
 
-## A reader is only half of it: `wall_back` and `wall_forward` were registered with an EMPTY event
-## list, so even a wired reader could never fire from a real controller. Asserts that the bindings
-## exist and that BOTH input families reach all four navigation actions -- never which button or
-## keycode, since Q102=a makes them rebindable and pinning one would turn a rebind into a failure.
-## I1's claim for TOUCH. `InputEventScreenTouch`/`ScreenDrag` carry a `position` but do NOT descend
-## from `InputEventMouse`, so route()'s half-viewport shift skipped them and a raw touch landed half
-## a viewport away. Every other routing test feeds mouse events, which is why nothing saw it;
-## `emulate_mouse_from_touch` hides it on desktop, but `Wall`'s own pinch tracker reads real
-## `InputEventScreenTouch`, so raw ones do reach this path on a touch device.
+# The routing claim for TOUCH. `InputEventScreenTouch`/`ScreenDrag` carry a `position` but do NOT
+# descend from `InputEventMouse`, so route()'s half-viewport shift skipped them and a raw touch
+# landed half a viewport away.
+
+# Every other routing test feeds mouse events, which is why nothing saw it.
+# `emulate_mouse_from_touch` hides it on desktop, but `Wall`'s own pinch tracker reads real
+# `InputEventScreenTouch`, so raw ones do reach this path on a touch device.
 func _test_touch_events_route_to_the_same_place_a_click_does() -> void:
 	var rig := _camera_rig()
 	var design_size := Vector2i(200, 150)
@@ -1037,7 +1019,8 @@ func _test_touch_events_route_to_the_same_place_a_click_does() -> void:
 	await get_tree().process_frame
 	await await_drawn_frames(1)
 
-	var landed : Array[Vector2] = [Vector2.INF]   # boxed -- lambdas capture locals BY VALUE
+# Boxed -- lambdas capture locals BY VALUE.
+	var landed : Array[Vector2] = [Vector2.INF]
 	(wp.screen_root as Control).gui_input.connect(func(e: InputEvent) -> void:
 			if e is InputEventScreenTouch: landed[0] = (e as InputEventScreenTouch).position)
 
@@ -1054,13 +1037,15 @@ func _test_touch_events_route_to_the_same_place_a_click_does() -> void:
 	wp.teardown()
 	await _teardown_camera_rig(rig)
 
-## The layout is read from disk ONCE per wall, not on every framing call.
-##
-## ⚠ `wall_view_zoom()` sits on the pointer hot path -- `pan_by()` -> `clamp_pan()` calls it for
-## every mouse-motion event of a drag -- and `Wall.load_layout()` does a `ResourceLoader.exists()`
-## file-system stat before its cached load. Asserted by CHANGING THE CACHE and watching the answer
-## follow it: if the margin were re-read per call the poisoned value would be ignored and the two
-## results would match. Reading the field back instead would only re-state the assignment.
+# The layout is read from disk ONCE per wall, not on every framing call.
+
+# ⚠ `wall_view_zoom()` sits on the pointer hot path -- `pan_by()` -> `clamp_pan()` calls it for
+# every mouse-motion event of a drag -- and `Wall.load_layout()` does a `ResourceLoader.exists()`
+# file-system stat before its cached load.
+
+# Asserted by CHANGING THE CACHE and watching the answer follow it: if the margin were re-read per
+# call the poisoned value would be ignored and the two results would match. Reading the field back
+# instead would only re-state the assignment.
 func _test_view_margin_is_read_once_not_per_call() -> void:
 	var wall := _build_wall()
 	var pictures : Array[WallPicture] = [_add_picture(wall, &"a", Vector2.ZERO),
@@ -1071,7 +1056,7 @@ func _test_view_margin_is_read_once_not_per_call() -> void:
 	check(is_equal_approx(wall.view_margin(), Wall.load_layout().view_margin),
 			"the cached margin is the layout's own value", str(wall.view_margin()))
 
-	# Poison the cache with a margin nothing on disk has.
+# Poison the cache with a margin nothing on disk has.
 	wall._view_margin_cache = 3.0
 	var second := wall.wall_view_zoom(window)
 	check(not is_equal_approx(first, second),
@@ -1079,6 +1064,12 @@ func _test_view_margin_is_read_once_not_per_call() -> void:
 			"first=%.4f second=%.4f" % [first, second])
 	_teardown(wall, pictures)
 
+# A reader is only half of it: `wall_back` and `wall_forward` were registered with an EMPTY event
+# list, so even a wired reader could never fire from a real controller. Asserts that the bindings
+# exist and that BOTH input families reach all four navigation actions.
+
+# Never WHICH button or keycode: they are rebindable, and pinning one would turn a rebind into a
+# failure.
 func _test_every_wall_action_has_at_least_one_binding() -> void:
 	var actions : Array[StringName] = [&"wall_overview", &"wall_back", &"wall_forward"]
 	for action : StringName in actions:
@@ -1098,16 +1089,16 @@ func _test_every_wall_action_has_at_least_one_binding() -> void:
 
 # ------------------------------------------------------------------ M4 (PICTURE_WALL.md)
 
-## M4 (PICTURE_WALL.md): `clamp_pan()` had NO CALLER, so free pan did not exist and the two
-## tests above guarded maths nothing ever ran. These drive the REAL pointer path -- press, move,
-## release through `Wall._unhandled_input()` -- and go red if `pan_by()`'s branch there is removed.
-##
-## Both fixtures put the pressed point on BARE WALL, addressed through the viewport's own
-## `canvas_transform` rather than a guessed screen coordinate: that is the exact inverse of the
-## transform `_unhandled_input()` applies, so the press lands where the test says it does whether or
-## not the fixture camera is driving the canvas. `_picture_at()` is asserted empty there first --
-## a press INSIDE a picture enters it (Q88=a) and never arms a pan, so a fixture that quietly
-## drifted onto a picture would prove nothing.
+# `clamp_pan()` had NO CALLER, so free pan did not exist and the two tests above guarded maths
+# nothing ever ran. These drive the REAL pointer path -- press, move, release through
+# `Wall._unhandled_input()` -- and go red if `pan_by()`'s branch there is removed.
+
+# Both fixtures put the pressed point on BARE WALL, addressed through the viewport's own
+# `canvas_transform`: the exact inverse of the transform `_unhandled_input()` applies, so the press
+# lands where the test says whether or not the fixture camera is driving the canvas.
+
+# `_picture_at()` is asserted empty there first -- a press INSIDE a picture enters it and never
+# arms a pan, so a fixture that quietly drifted onto a picture would prove nothing.
 func _screen_pos_of(wall: Wall, wall_pos: Vector2) -> Vector2:
 	return wall.get_viewport().canvas_transform * wall_pos
 
@@ -1123,13 +1114,13 @@ func _drag_mouse(wall: Wall, relative: Vector2) -> void:
 	event.relative = relative
 	wall._unhandled_input(event)
 
-## G10 (Q1 note, Q3 note): on a wall too big for the window, dragging bare wall moves the camera by
-## the pointer's own movement -- and never past the wall's own extent, however hard it is dragged.
+# On a wall too big for the window, dragging bare wall moves the camera by the pointer's own
+# movement -- and never past the wall's own extent, however hard it is dragged.
 func _test_dragging_bare_wall_pans_the_clamped_camera() -> void:
 	var wall := _build_wall()
 	var window := Vector2(1280, 720)
-	# Two small pictures FAR apart: the extent is much wider than the window (so G10 allows pan at
-	# all) and the origin between them is genuinely bare wall (so a press there can arm one).
+# Two small pictures FAR apart: the extent is much wider than the window (so G10 allows pan at
+# all) and the origin between them is genuinely bare wall (so a press there can arm one).
 	var left := _add_picture(wall, &"left", Vector2(-1400, 0))
 	var right := _add_picture(wall, &"right", Vector2(1400, 0))
 	check(wall._picture_at(Vector2.ZERO) == &"",
@@ -1152,7 +1143,7 @@ func _test_dragging_bare_wall_pans_the_clamped_camera() -> void:
 			+ "live zoom, so the wall tracks the pointer 1:1 on screen",
 			"expected=%.4f got=%.4f" % [start.x + 100.0 / zoom, camera.position.x])
 
-	# Drag far past the edge: the clamp, not the drag, is what stops the camera.
+# Drag far past the edge: the clamp, not the drag, is what stops the camera.
 	for _i : int in range(20):
 		_drag_mouse(wall, Vector2(-500.0, 0.0))
 	var limit := wall.clamp_pan(Vector2(999999.0, 0.0), window)
@@ -1171,14 +1162,13 @@ func _test_dragging_bare_wall_pans_the_clamped_camera() -> void:
 			"after_release=%s now=%s" % [after_release, camera.position])
 	_teardown(wall, [left, right])
 
-## G10's other half, now that something actually pans: "on a large screen everything is visible and
-## panning is off." Two pictures whose combined frame-outer extent is EXACTLY the window's own
-## 1280x720, with bare wall between them -- fill and fit coincide, `clamp_pan()` collapses both
-## axes, and a real drag therefore moves the camera by nothing at all.
+# The other half, now that something actually pans: on a large screen everything is visible and
+# panning is off. Two pictures whose combined frame-outer extent is EXACTLY the window's own
+# 1280x720, with bare wall between them -- fill and fit coincide and a real drag moves nothing.
 func _test_dragging_pans_nothing_when_the_whole_wall_already_fits() -> void:
 	var wall := _build_wall()
-	# Each picture is 600x700 with a 10 px frame -> 620x720 outer; centred at +-330 the pair spans
-	# exactly x -640..640 and y -360..360.
+# Each picture is 600x700 with a 10 px frame -> 620x720 outer; centred at +-330 the pair spans
+# exactly x -640..640 and y -360..360.
 	var left := _add_picture(wall, &"left", Vector2(-330, 0), Vector2(600, 700),
 			Vector4(10, 10, 10, 10))
 	var right := _add_picture(wall, &"right", Vector2(330, 0), Vector2(600, 700),
@@ -1204,9 +1194,9 @@ func _test_dragging_pans_nothing_when_the_whole_wall_already_fits() -> void:
 
 # ------------------------------------------------------------------ M6 (PICTURE_WALL.md)
 
-# M6: `WallInput.touch_target_px()` had NO CALLER -- the overlay's buttons were whatever size the
-# scene authored (80x32). The fraction is raised past every authored dimension, and the target is
-# read off the MODEL, so a `_ready()` that stopped delegating cannot satisfy these.
+# `WallInput.touch_target_px()` had NO CALLER -- the overlay's buttons were whatever size the scene
+# authored (80x32). The fraction is raised past every authored dimension, and the target is read
+# off the MODEL, so a `_ready()` that stopped delegating cannot satisfy these.
 func _test_every_overlay_control_meets_the_touch_target() -> void:
 	backup_real_settings()
 	var settings := SettingsManager.settings
@@ -1228,7 +1218,7 @@ func _test_every_overlay_control_meets_the_touch_target() -> void:
 		check(button.size.x >= target and button.size.y >= target,
 				"%s is at least the touch target on BOTH axes" % path,
 				"size=%s target=%.1f" % [button.size, target])
-	# The three left-hand buttons grew; they must not have grown INTO each other.
+# The three left-hand buttons grew; they must not have grown INTO each other.
 	for path : StringName in [&"%BackButton", &"%ForwardButton", &"%WallButton"]:
 		var button : Button = overlay.get_node(NodePath(path))
 		check(button.position.x >= previous_right,
@@ -1243,18 +1233,16 @@ func _test_every_overlay_control_meets_the_touch_target() -> void:
 
 # ------------------------------------------------------------------ M9 (PICTURE_WALL.md)
 
-## M9 (PICTURE_WALL.md, GAP-008=a, G9/Q5=b): `WallLayout.view_margin` -- the crop bias
-## GAP-008 deliberately homed on the LAYOUT -- had no reader; `wall_view_zoom()` used
-## `wall_overfill_margin`, which is a PICTURE knob (H3/GAP-011) about the focused picture's own
-## overfill, not the wall's framing.
-##
-## Proven by CHANGING the knob on disk and watching the zoom follow, which is the only assertion a
-## knob-nothing-reads cannot satisfy. The layout is written to a temp path and loaded through the
-## real `Wall.load_layout()` seam that `test_wall_render.gd`'s own disk test already uses.
-##
-## A MISMATCHED aspect on purpose: `focused_scale()` applies the margin only when the ratios differ
-## (H3/DEFECT 1), so a matching-aspect fixture would read identically at every margin and prove
-## nothing.
+# `WallLayout.view_margin` -- the crop bias deliberately homed on the LAYOUT -- had no reader;
+# `wall_view_zoom()` used `wall_overfill_margin`, a PICTURE knob about the focused picture's own
+# overfill, not the wall's framing.
+
+# Proven by CHANGING the knob on disk and watching the zoom follow, the only assertion a
+# knob-nothing-reads cannot satisfy. The layout is written to a temp path and loaded through the
+# real `Wall.load_layout()` seam.
+
+# A MISMATCHED aspect on purpose: `focused_scale()` applies the margin only when the ratios differ,
+# so a matching-aspect fixture would read identically at every margin and prove nothing.
 func _test_wall_view_zoom_reads_the_layouts_own_crop_bias() -> void:
 	var window := Vector2(1280, 720)
 	var wall := _build_wall()
@@ -1281,17 +1269,15 @@ func _test_wall_view_zoom_reads_the_layouts_own_crop_bias() -> void:
 
 # ------------------------------------------------------------------ M9 (PICTURE_WALL.md)
 
-## M9 (PICTURE_WALL.md, I7/Q116=a: "one step per press with a repeat after a hold delay"):
-## `wall_selection_repeat_delay` had NO READER, which is what "held-stick repeat does not exist"
-## means in practice -- a held arrow or stick moved the selection once and then sat there.
-##
-## Three pictures in a COLUMN so a repeated Down has somewhere new to land each time, and the
-## repeat delay is set SHORT for the run: that keeps the test to a few frames AND proves the knob
-## is genuinely read, which a test using the 0.4 s default could not distinguish from a hardcoded
-## constant.
-##
-## The release half matters as much as the repeat: an implementation that never disarmed would sail
-## through the repeat assertion and then move the selection forever.
+# `wall_selection_repeat_delay` had NO READER, which is what "held-stick repeat does not exist"
+# means in practice -- a held arrow or stick moved the selection once and then sat there.
+
+# Three pictures in a COLUMN so a repeated Down has somewhere new to land each time, and the repeat
+# delay is set SHORT for the run: that keeps the test to a few frames AND proves the knob is read,
+# which the 0.4 s default could not distinguish from a hardcoded constant.
+
+# The release half matters as much as the repeat: an implementation that never disarmed would sail
+# through the repeat assertion and then move the selection forever.
 func _test_a_held_direction_repeats_after_the_configured_delay() -> void:
 	backup_real_settings()
 	var settings := SettingsManager.settings
@@ -1312,8 +1298,8 @@ func _test_a_held_direction_repeats_after_the_configured_delay() -> void:
 			"the PRESS itself still moves exactly one step (Q116=a's first half)",
 			str(wall.selected_id))
 
-	# Long enough for the 0.05 s delay to elapse over real frames, bounded so a broken repeat fails
-	# rather than hangs.
+# Long enough for the 0.05 s delay to elapse over real frames, bounded so a broken repeat fails
+# rather than hangs.
 	for _i : int in range(60):
 		if wall.selected_id == &"bottom": break
 		await get_tree().process_frame
@@ -1325,7 +1311,7 @@ func _test_a_held_direction_repeats_after_the_configured_delay() -> void:
 	release.action = &"ui_down"
 	release.pressed = false
 	wall._unhandled_input(release)
-	# Deliberately back at the TOP, so a still-armed repeat would visibly move it again.
+# Deliberately back at the TOP, so a still-armed repeat would visibly move it again.
 	wall.enter_wall_view(&"top")
 	for _i : int in range(30):
 		await get_tree().process_frame
@@ -1339,16 +1325,13 @@ func _test_a_held_direction_repeats_after_the_configured_delay() -> void:
 
 # ------------------------------------------------------------------ MINOR (PICTURE_WALL.md)
 
-## MINOR (PICTURE_WALL.md): two findings, one cause -- nothing turned (`selected_id`,
-## `selection_visible`) into what is actually DRAWN. Entering wall view set the id and lifted
-## nothing, so arriving showed no cursor at all (F11/Q69=a: "exactly one picture is selected in wall
-## view, always"); and `selection_visible` had no renderer, so the lift was applied whether or not
-## Q105=b said the cursor had been earned yet.
-##
-## Asserted on the LIFT ITSELF -- `WallPicture.position` against `rect.centre` -- not on the two
-## flags, which is the whole point: the flags were already right, and reading them back would
-## re-prove a variable assignment while being unable to fail for the bug ([[tests-that-prove-nothing]]
-## trap 6).
+# Two findings, one cause: nothing turned `selected_id`/`selection_visible` into what is actually
+# DRAWN. Entering wall view set the id and lifted nothing, so arriving showed no cursor at all; and
+# `selection_visible` had no renderer, so the lift applied whether or not the cursor was earned.
+
+# Asserted on the LIFT ITSELF -- `WallPicture.position` against `rect.centre` -- not on the two
+# flags, which were already right: reading them back would re-prove a variable assignment while
+# being unable to fail for the bug ([[tests-that-prove-nothing]] trap 6).
 func _test_the_selected_picture_is_the_one_visibly_lifted() -> void:
 	var wall := _build_wall()
 	var top := _add_picture(wall, &"top", Vector2(0, -300))
@@ -1373,8 +1356,8 @@ func _test_the_selected_picture_is_the_one_visibly_lifted() -> void:
 	check(top.position.is_equal_approx(top.rect.centre),
 			"...and puts the one it left back down -- exactly one picture is lifted (F11/Q69=a)")
 
-	# Re-entering wall view now that the cursor IS earned must show it, which is the half that was
-	# missing outright.
+# Re-entering wall view now that the cursor IS earned must show it, which is the half that was
+# missing outright.
 	wall.enter_wall_view(&"top")
 	check(top.position.is_equal_approx(top.rect.centre + lift),
 			"entering wall view shows the selection on the picture you came FROM (F10/F11)",

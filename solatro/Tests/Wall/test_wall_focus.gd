@@ -1,22 +1,17 @@
 extends TestSuite
 # res://Tests/Wall/test_wall_focus.gd
-# ==============================================================================
-# WALL FOCUS (S5): FocusStack -- the Back/Forward history for the picture wall, ids only.
-# PLAN.md §1.4; TEST_PLAN.md §2, F1-F7. Plus §6b's overlay group (S35): F8, F9 -- they live here,
-# not in a new suite, because they are stack semantics (FocusStack.can_back/can_forward) wearing UI
-# (WallOverlay.refresh). Plus F13 (S30): wall state does not survive a quit, and F12 (S38): an
-# unlock reaction leaves a REAL Main's REAL, live stack valid. NOT F10/F11: those need popups
-# (S35's own scope note elsewhere already covers F10/F11's other halves), still out of scope here.
-#
-# CATEGORY MAP: every row here is BEHAVIOR -- a player-visible navigation contract (Q63-Q66), not
-# an internal storage detail.
-#
-# FocusStack's API is exactly visit/back/forward/can_back/can_forward (§1.4) -- there is no depth
-# or contents accessor, on purpose. Every test that needs to read the stack's SHAPE (not just one
-# call's return value) walks it through that fixed API alone: the test already knows what it last
-# visited (it just called visit() with it), and repeated back() calls read everything below that,
-# in order, until &"" -- see _walk_stack.
-# ==============================================================================
+
+# WALL FOCUS: FocusStack -- the Back/Forward history for the picture wall, ids only -- plus the
+# overlay's Back/Forward enablement, which is stack semantics wearing UI, and the wiring tests
+# that prove a REAL Main's live stack survives an unlock, a resize and a quit.
+
+# Rows that need popups are out of scope for this suite.
+
+# Every row here is BEHAVIOR: a player-visible navigation contract, not an internal storage detail.
+
+# FocusStack's API is exactly visit/back/forward/can_back/can_forward -- there is no depth or
+# contents accessor, on purpose. A test that needs the stack's SHAPE walks it through that API:
+# it knows what it last visited, and repeated back() reads everything below, in order, until &"".
 
 const WALL_OVERLAY_SCENE := preload("res://UI/Wall/wall_overlay.tscn")
 const MAIN_SCENE := preload("res://Levels/main.tscn")
@@ -27,7 +22,8 @@ func suite_name() -> String:
 func _ready() -> void:
 	TestLog.line("============ WALL FOCUS TEST PASS ============")
 	backup_real_settings()
-	use_own_settings()   # navigation timing checks must not depend on the player's tuning
+# Navigation timing checks must not depend on the player's tuning.
+	use_own_settings()
 	behavior_section("BACK / FORWARD RETRACE VISIT ORDER")
 	test_back_retraces_visit_order()
 	test_revisit_moves_to_top()
@@ -66,7 +62,7 @@ func _ready() -> void:
 	restore_real_settings()
 	finish()
 
-## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
+# Visit a, b, c -> back() retraces to b, the picture visited just before c.
 func test_back_retraces_visit_order() -> void:
 	var fs := FocusStack.new()
 	fs.visit(&"a")
@@ -75,26 +71,26 @@ func test_back_retraces_visit_order() -> void:
 	var result := fs.back()
 	check(result == &"b", "back() after visiting a, b, c returns b", str(result))
 
-## F2 (Q64): visiting an id already in the stack MOVES it to the top instead of appending a
-## second entry. Read the resulting stack back out through the fixed API, since no inspection
-## method exists.
+# Visiting an id already in the stack MOVES it to the top instead of appending a second entry. The
+# resulting stack is read back out through the fixed API, since no inspection method exists.
 func test_revisit_moves_to_top() -> void:
 	var fs := FocusStack.new()
 	fs.visit(&"a")
 	fs.visit(&"b")
 	fs.visit(&"c")
-	fs.visit(&"b")   # b is already in the stack -> moves, does not duplicate
+# b is already in the stack -> moves, does not duplicate.
+	fs.visit(&"b")
 	var order := _walk_stack(fs, &"b")
 	var expected : Array[StringName] = [&"a", &"c", &"b"]
 	check(order == expected, "stack reads a, c, b bottom to top after the revisit", str(order))
 	check(order.size() == 3, "depth is 3 -- the revisit moved, it did not append",
 			str(order.size()))
 
-## F3 (Q64): depth never exceeds the number of DISTINCT pictures visited, however many times any
-## one of them is revisited. This is a structural consequence of "revisit moves" (F2): an id can
-## never occupy two slots, so re-visiting an already-seen id cannot grow the stack. That makes the
-## invariant order-independent, so one shuffled pass covering every id several times is a full
-## check of it, not a sample.
+# Depth never exceeds the number of DISTINCT pictures visited, however many times any one is
+# revisited: a structural consequence of "revisit moves" -- an id can never occupy two slots.
+
+# That makes the invariant order-independent, so one shuffled pass covering every id several times
+# is a full check of it, not a sample.
 func test_depth_bounded_by_distinct_ids() -> void:
 	var fs := FocusStack.new()
 	var ids : Array[StringName] = [&"p1", &"p2", &"p3", &"p4", &"p5", &"p6"]
@@ -111,7 +107,7 @@ func test_depth_bounded_by_distinct_ids() -> void:
 	check(order.size() <= 6, "depth never exceeds the 6 distinct pictures visited",
 			str(order.size()))
 
-## F4 (Q64): back() then forward() returns to the picture that was just left.
+# back() then forward() returns to the picture that was just left.
 func test_forward_returns_the_picture_just_left() -> void:
 	var fs := FocusStack.new()
 	fs.visit(&"a")
@@ -120,7 +116,7 @@ func test_forward_returns_the_picture_just_left() -> void:
 	var result := fs.forward()
 	check(result == &"b", "forward() after back() returns the picture just left", str(result))
 
-## F5 (Q64): a new visit clears whatever was available to redo, exactly as a browser does.
+# A new visit clears whatever was available to redo, exactly as a browser does.
 func test_new_visit_clears_forward() -> void:
 	var fs := FocusStack.new()
 	fs.visit(&"a")
@@ -130,30 +126,30 @@ func test_new_visit_clears_forward() -> void:
 	fs.visit(&"c")
 	check(not fs.can_forward(), "a new visit clears the forward list")
 
-## F6 (Q65=a): back() on a stack nothing has ever been visited on returns &"". The CALLER's
-## contract (not FocusStack's) is to treat that as "go to wall view" -- see F7 for why FocusStack
-## itself never represents wall view as an entry at all.
+# back() on a stack nothing has ever been visited on returns &"". The CALLER's contract, not
+# FocusStack's, is to treat that as "go to wall view" -- FocusStack itself never represents wall
+# view as an entry at all.
 func test_back_on_empty_stack() -> void:
 	var fs := FocusStack.new()
 	check(not fs.can_back(), "can_back() is false on a fresh stack")
 	var result := fs.back()
 	check(result == &"", "back() on an empty stack returns &\"\"", str(result))
 
-## F7 (Q66=b): wall view is never a stack entry. "Enter wall view" is deliberately NOT a call on
-## FocusStack anywhere in this test -- the caller just stops calling visit() while it is shown, and
-## the stack is unaffected, so a later back() skips straight over where wall view would have been.
+# Wall view is never a stack entry. "Enter wall view" is deliberately NOT a call on FocusStack --
+# the caller just stops calling visit() while it is shown, so a later back() skips straight over
+# where wall view would have been.
 func test_wall_view_is_never_an_entry() -> void:
 	var fs := FocusStack.new()
 	fs.visit(&"a")
-	# ... wall view is shown here, by the caller, off FocusStack entirely ...
+# ... wall view is shown here, by the caller, off FocusStack entirely ...
 	fs.visit(&"b")
 	var result := fs.back()
 	check(result == &"a", "back() after wall view lands on a, not on a wall-view entry",
 			str(result))
 
-## F8 (Q65=c): Back VISIBLY disables itself -- `Button.disabled`, not merely a press that silently
-## does nothing -- with an empty stack (nothing behind the current picture), and re-enables once
-## there is something to go back to, proving refresh() actually recomputes rather than being stuck.
+# Back VISIBLY disables itself -- `Button.disabled`, not merely a press that silently does nothing
+# -- with an empty stack, and re-enables once there is something to go back to, proving refresh()
+# actually recomputes rather than being stuck.
 func test_back_visibly_disabled_at_bottom_of_stack() -> void:
 	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
 	add_child(overlay)
@@ -167,8 +163,8 @@ func test_back_visibly_disabled_at_bottom_of_stack() -> void:
 	check(not back_button.disabled, "Back re-enables once there is something behind the current one")
 	overlay.queue_free()
 
-## F9: Forward is visibly disabled with nothing ahead (fresh visit, no back() taken yet), and
-## re-enables once a back() leaves something to redo.
+# Forward is visibly disabled with nothing ahead (fresh visit, no back() taken yet), and re-enables
+# once a back() leaves something to redo.
 func test_forward_visibly_disabled_with_nothing_ahead() -> void:
 	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
 	add_child(overlay)
@@ -183,11 +179,11 @@ func test_forward_visibly_disabled_with_nothing_ahead() -> void:
 	check(not forward_button.disabled, "Forward re-enables once a back() leaves something to redo")
 	overlay.queue_free()
 
-## Reads a FocusStack's contents, bottom (oldest) to top (current), through the fixed API alone.
-## `known_top` is whatever the caller last passed to visit() -- back() only ever reports the entry
-## BELOW the current one, never the current itself, so the top has to be supplied rather than
-## discovered. Repeated back() then walks everything beneath it down to the bottom, in order,
-## until &"". Consuming: every entry this reads ends up in the stack's forward list.
+# Reads a FocusStack's contents, bottom (oldest) to top (current), through the fixed API alone.
+# `known_top` is whatever the caller last passed to visit(): back() only ever reports the entry
+# BELOW the current one, so the top has to be supplied rather than discovered.
+
+# Consuming: every entry this reads ends up in the stack's forward list.
 func _walk_stack(fs: FocusStack, known_top: StringName) -> Array[StringName]:
 	var order : Array[StringName] = [known_top]
 	var step := fs.back()
@@ -199,21 +195,20 @@ func _walk_stack(fs: FocusStack, known_top: StringName) -> Array[StringName]:
 
 # ------------------------------------------------------------------ F13 (S30)
 
-## F13 (K6, Q145=b, Q149=a): wall state does NOT survive a quit -- every launch opens on the
-## start-menu picture, and nothing about "which picture you were on" is ever written to disk.
-##
-## ⚠ "Assert it did NOT happen" trap (HANDOFF traps section): a relaunch that never wrote
-## anything would ALSO pass a check that only looks for absence. Both halves asserted, each
-## checked so it would actually go red if broken:
-##   1. THE WRITE PATH RAN -- session one visits real pictures and `can_back()` genuinely flips
-##      true, proving this test exercises a stack with real history, not an empty one that
-##      trivially "resets" by having nothing to lose in the first place.
-##   2. A second, INDEPENDENT `Wall.cold_launch_focus_stack()` call starts at start_menu with
-##      nothing to go back to, and further mutating session one afterward still never reaches
-##      it -- genuinely independent objects, not two references to the same stack.
-##   3. NO field on `PlayerProfile` or `PlayerSettings` even NAMES a current-picture/focus
-##      concept -- a structural scan of both resources' own exported property lists, not a guess
-##      about what "wasn't added."
+# Wall state does NOT survive a quit -- every launch opens on the start-menu picture, and nothing
+# about "which picture you were on" is ever written to disk.
+
+# ⚠ "Assert it did NOT happen" trap: a relaunch that never wrote anything would ALSO pass a check
+# that only looks for absence. All three halves below are asserted so each can actually go red.
+
+# 1. THE WRITE PATH RAN -- session one visits real pictures and `can_back()` genuinely flips true,
+# so this exercises a stack with real history, not an empty one that trivially "resets".
+
+# 2. A second, INDEPENDENT `Wall.cold_launch_focus_stack()` starts at start_menu with nothing to go
+# back to, and further mutating session one afterward still never reaches it.
+
+# 3. NO field on `PlayerProfile` or `PlayerSettings` even NAMES a current-picture concept -- a
+# structural scan of both resources' exported property lists, not a guess about what was not added.
 func test_wall_state_does_not_survive_a_quit() -> void:
 	var session_one := Wall.cold_launch_focus_stack()
 	check(not session_one.can_back(),
@@ -230,7 +225,8 @@ func test_wall_state_does_not_survive_a_quit() -> void:
 	check(session_two.back() == &"",
 			"and there is nothing to go back to -- start_menu is the only entry")
 
-	session_one.visit(&"start_menu")   # further mutation of session one...
+# Further mutation of session one...
+	session_one.visit(&"start_menu")
 	check(not session_two.can_back(),
 			"...still never reaches session two -- genuinely independent objects, not aliased")
 
@@ -248,31 +244,26 @@ func test_wall_state_does_not_survive_a_quit() -> void:
 
 # ------------------------------------------------------------------ F12 (S38)
 
-## F12 (K4, Q156=a): an unlock mid-session leaves the FocusStack VALID -- TEST_PLAN's own row is a
-## claim about PRODUCTION WIRING, not about `FocusStack`'s arithmetic (F1-F7 already cover that in
-## isolation). An earlier version of this test built a disconnected `FocusStack.new()` that
-## `Wall.apply_layout()` never touched at all -- so its "Back still lands on b" checks could not
-## have gone red for a wiring bug that corrupted the REAL stack, only for a bug in `FocusStack`
-## itself, which F1-F7 already prove separately. Same shape as the `await`-vs-`.timeout` and
-## lambda-capture traps this run's own HANDOFF names: a test that cannot fail for the thing its own
-## row claims to prove.
-##
-## Rebuilt to exercise the FULL REAL CHAIN end to end, on a REAL `Main`: a real
-## `ProfileManager.unlock(&"book")` call (saves immediately, emits `picture_unlocked`) ->
-## `Main._ready()`'s own `ProfileManager.picture_unlocked.connect(_repack_wall)` -> the real
-## `_repack_wall()` -> the real, live `_focus_stack`. Nothing here is called directly as a
-## substitute for the signal anymore (register-settings-book correction, coordinator): `book` is
-## `unlocked_by_default = false` in `Wall.initial_layout()` (ASSUMPTIONS.md), so it is a picture
-## genuinely never built before this test unlocks it -- the real "starts locked, becomes unlocked"
-## id the four-picture layout could not provide, letting this test finally exercise K2's OTHER
-## half too ("no reveal ceremony -- the picture is simply there next time").
-##
-## `ProfileManager` is a real, shared autoload -- parked/swapped exactly as `test_wall_profile.gd`'s
-## own R-tests do (same file, same idiom), so unlocking `book` here for real cannot leak into, or
-## be polluted by, whichever profile state a concurrently-running suite or the real player has.
-## `ProfileManager.unlock()` and `Main._repack_wall()` are both fully synchronous (no `await`
-## anywhere in either body), so the whole park -> unlock -> repack -> restore sequence runs as one
-## uninterrupted block with no window for another suite's own profile work to interleave.
+# An unlock mid-session leaves the FocusStack VALID. This row is a claim about PRODUCTION WIRING,
+# not about `FocusStack`'s arithmetic, which the isolated tests above already cover.
+
+# ⚠ A disconnected `FocusStack.new()` that `Wall.apply_layout()` never touches cannot go red for a
+# wiring bug that corrupts the REAL stack -- only for a bug in `FocusStack` itself.
+
+# So the FULL REAL CHAIN runs end to end on a REAL `Main`: `ProfileManager.unlock(&"book")` (saves
+# immediately, emits `picture_unlocked`) -> `Main._ready()`'s own connection -> the real
+# `_repack_wall()` -> the real, live `_focus_stack`. Nothing is called directly as a substitute.
+
+# `book` is `unlocked_by_default = false` in `Wall.initial_layout()` (ASSUMPTIONS.md), so it is a
+# picture genuinely never built before this test unlocks it -- which also exercises "no reveal
+# ceremony: the picture is simply there next time".
+
+# `ProfileManager` is a real, shared autoload, parked and swapped exactly as `test_wall_profile.gd`
+# does, so unlocking `book` here for real cannot leak into, or be polluted by, whichever profile
+# state a concurrently-running suite or the real player has.
+
+# `ProfileManager.unlock()` and `Main._repack_wall()` are both fully synchronous, so park ->
+# unlock -> repack -> restore runs as one uninterrupted block with no window to interleave.
 func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 	var real_path := ProfileManagerClass.SAVE_PATH
 	var parked_path := real_path + ".test_wall_focus_f12.testbak"
@@ -288,15 +279,14 @@ func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 	add_child(viewport)
 	var main : Main = MAIN_SCENE.instantiate()
 	viewport.add_child(main)
-	# Wall._ready() (inside Main._ready(), just run by add_child above) sets get_tree().paused =
-	# true GLOBALLY -- undone immediately, same established reason every other Wall-building test
-	# in this suite/TestWallRender/TestWallPause already documents: ~38 OTHER suites run
-	# concurrently and a global pause with nothing to clear it hangs the whole run.
+# Wall._ready() (inside Main._ready(), just run by add_child above) sets get_tree().paused = true
+# GLOBALLY -- undone immediately: ~38 OTHER suites run concurrently, and a global pause with
+# nothing to clear it hangs the whole run.
 	get_tree().paused = false
 
-	# Cold launch already visited start_menu (Wall.cold_launch_focus_stack(), Main._ready()). Two
-	# more REAL navigations, through the REAL Main._focus_picture() path (a real WallTransition,
-	# same as a player pressing into a picture), give Back three real ids to retrace.
+# Cold launch already visited start_menu (Wall.cold_launch_focus_stack(), Main._ready()). Two
+# more REAL navigations, through the REAL Main._focus_picture() path (a real WallTransition,
+# same as a player pressing into a picture), give Back three real ids to retrace.
 	await main._focus_picture(&"map")
 	await main._focus_picture(&"deck")
 	check(main._focus_stack.can_back(),
@@ -305,12 +295,12 @@ func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 			"sanity: book starts LOCKED (unlocked_by_default = false) and was never built -- "
 			+ "K2's own 'no reveal ceremony' half needs a picture genuinely absent before the unlock")
 
-	# Captured BEFORE the unlock so the geometry assertion below can tell a REAL re-pack (a fresh
-	# PictureRect object from a fresh WallPacker.pack() call) apart from a no-op.
+# Captured BEFORE the unlock so the geometry assertion below can tell a REAL re-pack (a fresh
+# PictureRect object from a fresh WallPacker.pack() call) apart from a no-op.
 	var rect_before : PictureRect = main._pictures[&"start_menu"].rect
 
-	# THE REAL UNLOCK -- fires the REAL signal, which Main._ready() already wired straight to the
-	# REAL _repack_wall(). Nothing here re-derives or shortcuts any link in that chain.
+# THE REAL UNLOCK -- fires the REAL signal, which Main._ready() already wired straight to the
+# REAL _repack_wall(). Nothing here re-derives or shortcuts any link in that chain.
 	ProfileManager.unlock(&"book")
 
 	check(main._pictures.has(&"book"),
@@ -319,11 +309,11 @@ func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 			"sanity: the re-pack actually ran -- start_menu's rect is a fresh object, not the "
 			+ "pre-unlock one (a vacuous re-pack would make this check meaningless)")
 
-	# GAP-002: an unlock re-pack changes every unfocused picture's wall-view FOOTPRINT, so its
-	# render target must follow -- exactly as `_on_window_resized()` has always made it. This path
-	# never did, so an unlock left every already-built picture rendering at the resolution its
-	# PREVIOUS footprint asked for. The focused picture is excluded: it renders at full design size
-	# and focus() owns that.
+# An unlock re-pack changes every unfocused picture's wall-view FOOTPRINT, so its render target
+# must follow, exactly as `_on_window_resized()` does. Without it an unlock leaves every
+# already-built picture rendering at the resolution its PREVIOUS footprint asked for.
+
+# The focused picture is excluded: it renders at full design size and focus() owns that.
 	var checked_any := false
 	for id : StringName in main._pictures:
 		var wp : WallPicture = main._pictures[id]
@@ -339,10 +329,9 @@ func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 			"sanity: at least one unfocused picture was actually checked -- an all-focused wall "
 			+ "would make the loop above assert nothing")
 
-	# Back must retrace the SAME three real ids in the SAME order as before the unlock --
-	# COMPLETELY UNAFFECTED by every picture's rect being freshly rebuilt underneath it and a
-	# brand-new picture appearing, because _repack_wall() never touches _focus_stack (it only
-	# READS it, via overlay.refresh()).
+# Back must retrace the SAME three real ids in the SAME order as before the unlock, COMPLETELY
+# UNAFFECTED by every picture's rect being freshly rebuilt underneath it and a brand-new picture
+# appearing, because _repack_wall() never touches _focus_stack -- it only READS it.
 	check(main._focus_stack.back() == &"map",
 			"Back still lands on map after a REAL unlock through the REAL wiring")
 	check(main._focus_stack.back() == &"start_menu", "...then start_menu...")
@@ -360,35 +349,27 @@ func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 
 # ------------------------------------------------------------------ S32 (L12, Q157)
 
-## S32 (L12, Q157=a -- "stays on the wall, shows its own empty state... the map is replaced only
-## when a new run starts"): a lost run leaves BOTH the map picture's screen and the game picture's
-## screen UNCHANGED -- neither rebuilt, freed, nor detached. Previously this rested on code review
-## alone (no test, no ASSUMPTIONS entry -- flagged in this run's own verification pass).
-##
-## `Main._on_run_lost()` is the exact method a real GameView's `run_lost` signal fires
-## (`enter_game()`'s own `new_view.run_lost.connect(_on_run_lost)`); called DIRECTLY here, same
-## reasoning F12 uses for `_repack_wall()` -- it runs the real method against a real Main without
-## needing a full, playable `GameView`/`RunManager` show to reach it. A bare `Node` stands in for
-## the game-over screen `attach_screen()` would hold (same fixture shape
-## `test_build_reparents_a_live_screen_unchanged`/`test_screen_root_survives_repeated_focus_
-## unfocus_cycles` in `test_wall_render.gd` already use for "a live screen", never a mock of
-## GameView's own behaviour -- `_on_run_lost()`'s own logic never reads anything ABOUT the screen,
-## only whether it exists).
-##
-## `backup_real_save(suite_tag())`/`restore_real_save(suite_tag())` (`test_base.gd`, the same pattern
-## `test_run_manager.gd`/`test_leak_canary.gd` already use) park the real
-## `user://run_save/run.tres` for the call's duration -- `_on_run_lost()` calls
-## `RunManager.clear_save()`, which deletes that file. Paired tightly around ONE synchronous call
-## with no `await` anywhere in `_on_run_lost()`'s own body, so no concurrently-running sibling
-## suite's own disk-save work can interleave inside the exposure window.
-##
-## ⚠ Q157's OTHER half ("the map is replaced only when a new run starts") is not exercised here --
-## `_on_new_run()` ends in `await _go_to_wall_view()`, which would hold this test's own exposure
-## window open across a real camera animation while `backup_real_save(suite_tag())`'s park is still shared,
-## global (not per-suite like the settings backup), and genuinely un-scoped against whichever OTHER
-## suite might also be mid-save at that moment. That half remains evidenced by code review alone
-## (ASSUMPTIONS.md): `_on_new_run()`'s own `game_wp.detach_screen()` line is the one place either
-## picture is ever actually replaced.
+# A lost run leaves BOTH the map picture's screen and the game picture's screen UNCHANGED --
+# neither rebuilt, freed, nor detached. It stays on the wall and shows its own empty state.
+
+# `Main._on_run_lost()` is the exact method a real GameView's `run_lost` signal fires, called
+# DIRECTLY here so the real method runs against a real Main without needing a full, playable show
+# to reach it.
+
+# A bare `Node` stands in for the game-over screen `attach_screen()` would hold, never a mock of
+# GameView's own behaviour: `_on_run_lost()` never reads anything ABOUT the screen, only whether
+# it exists.
+
+# `backup_real_save(suite_tag())`/`restore_real_save(suite_tag())` park the real
+# `user://run_save/run.tres` for the call's duration, because `_on_run_lost()` calls
+# `RunManager.clear_save()`, which deletes that file.
+
+# The park is tight around ONE synchronous call, so no concurrently-running sibling suite's own
+# disk-save work can interleave inside the exposure window.
+
+# ⚠ "The map is replaced only when a new run starts" is NOT exercised here: `_on_new_run()` ends in
+# `await _go_to_wall_view()`, which would hold the park open across a real camera animation, and
+# that park is global rather than per-suite. That half rests on code review (ASSUMPTIONS.md).
 func test_lost_run_leaves_map_and_game_pictures_unchanged() -> void:
 	backup_real_save(suite_tag())
 	var main : Main = MAIN_SCENE.instantiate()
@@ -398,7 +379,8 @@ func test_lost_run_leaves_map_and_game_pictures_unchanged() -> void:
 	var game_wp : WallPicture = main._pictures[&"game"]
 	var lose_screen_stand_in := Node.new()
 	lose_screen_stand_in.name = "LoseScreenStandIn"
-	game_wp.attach_screen(lose_screen_stand_in)   # simulates a real GameView's game-over state
+# Simulates a real GameView's game-over state.
+	game_wp.attach_screen(lose_screen_stand_in)
 	var map_before : Map = main.map_scene
 
 	main._on_run_lost()
@@ -417,12 +399,12 @@ func test_lost_run_leaves_map_and_game_pictures_unchanged() -> void:
 
 # ------------------------------------------------------------------ A4 (PICTURE_WALL.md, NAMES.md)
 
-## A4 (PICTURE_WALL.md, NAMES.md): three of NAMES.md's five `Wall` signals -- `focus_changed`,
-## `transition_started`, `transition_landed` -- were named in the registry but never declared or
-## emitted anywhere. Real navigation through a REAL `Main` (start_menu -> map, a genuine
-## picture-to-picture `WallTransition`, the only case `transition_started`/`transition_landed`
-## apply to per NAMES.md's own `(from_id, to_id)`/`(picture_id)` shapes -- wall view is never a
-## picture id, Q66=b) must fire all three, in the right order, with the right ids.
+# Three of `Wall`'s registered signals -- `focus_changed`, `transition_started`,
+# `transition_landed` -- were named in the registry but never declared or emitted anywhere.
+
+# Real navigation through a REAL `Main` (start_menu -> map, a genuine picture-to-picture
+# `WallTransition`, the only case the transition signals apply to, since wall view is never a
+# picture id) must fire all three, in the right order, with the right ids.
 func test_focus_and_transition_signals_fire_during_real_navigation() -> void:
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
@@ -457,34 +439,35 @@ func test_focus_and_transition_signals_fire_during_real_navigation() -> void:
 
 # ------------------------------------------------------------------ M1 (PICTURE_WALL.md, S17)
 
-## M1 (PICTURE_WALL.md): S17's resize path was built and had NO caller -- nothing anywhere
-## connected `size_changed`, so `WallTransition.retarget()` had zero callers and a resize left the
-## whole wall packed for the old aspect. This is the WIRING half of T11 (the pure geometry half
-## lives in `TestWallTransition`); it goes red the moment `Main._ready()`'s
-## `get_viewport().size_changed.connect(_on_window_resized)` is removed.
-##
-## A REAL `Main` inside its OWN `SubViewport` (the F12 idiom above), because `main._window_size` is
-## read straight off `get_viewport()` -- a SubViewport is the only window a test can actually resize
-## without disturbing the ~38 suites sharing the real one.
-##
-## ⚠ ONE `Main`, held for as few frames as possible, and the mid-flight half runs at a
-## deliberately tiny `wall_transition_delay`. A live `Main` puts a real `Map` in the tree, and `Map`
-## is a `CardEnvironment`, so `CardEnvironment.CURRENT` is non-null for as long as it lives -- which
-## a concurrently-running suite can see. Written first as two tests holding a `Main` across a
-## full-length transition, that window was wide enough for `TestOutline` to build a PREVIEW
-## `CardVisual` inside it and take `CardVisual._ready()`'s no-anchor branch, failing a DIFFERENT
-## suite with a Nil `global_position` ([[tests-that-prove-nothing]] trap 8).
+# The resize path was built and had NO caller: nothing connected `size_changed`, so
+# `WallTransition.retarget()` had zero callers and a resize left the whole wall packed for the old
+# aspect. This is the WIRING half; the pure geometry half lives in `TestWallTransition`.
+
+# It goes red the moment `Main._ready()`'s
+# `get_viewport().size_changed.connect(_on_window_resized)` is removed.
+
+# A REAL `Main` inside its OWN `SubViewport`, because `main._window_size` is read straight off
+# `get_viewport()` -- a SubViewport is the only window a test can actually resize without
+# disturbing the ~38 suites sharing the real one.
+
+# ⚠ ONE `Main`, held for as few frames as possible, and the mid-flight half runs at a deliberately
+# tiny `wall_transition_delay`. A live `Main` puts a real `Map` in the tree, so
+# `CardEnvironment.CURRENT` is non-null for as long as it lives, where another suite can see it.
+
+# Held across a full-length transition, that window was wide enough for `TestOutline` to build a
+# PREVIEW `CardVisual` inside it and take `CardVisual._ready()`'s no-anchor branch, failing a
+# DIFFERENT suite with a Nil `global_position` ([[tests-that-prove-nothing]] trap 8).
 func test_a_real_resize_reaches_the_wall() -> void:
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(1280, 720)
 	add_child(viewport)
 	var main : Main = MAIN_SCENE.instantiate()
 	viewport.add_child(main)
-	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+# Undoes Wall._ready()'s GLOBAL pause, for the reason the unlock test above records.
 	get_tree().paused = false
 
-	# ---- at rest: 1280x720 -> 2560x720 is a genuine ASPECT change (16:9 -> 32:9, both inside G13's
-	# supported range), so a wall that failed to re-pack cannot accidentally still fit.
+# ---- at rest: 1280x720 -> 2560x720 is a genuine ASPECT change (16:9 -> 32:9, both inside G13's
+# supported range), so a wall that failed to re-pack cannot accidentally still fit.
 	check(main._current_focus == &"start_menu",
 			"sanity: a cold launch opens focused on start_menu, so there IS a focused picture whose "
 			+ "overfill a resize can break", str(main._current_focus))
@@ -506,23 +489,22 @@ func test_a_real_resize_reaches_the_wall() -> void:
 	check(camera.position.is_equal_approx(focused_rect.centre),
 			"the camera re-centred on the focused picture's NEW centre",
 			"%s vs %s" % [str(camera.position), str(focused_rect.centre)])
-	# Q27/H3: the player-visible claim, asserted directly rather than by re-deriving focused_scale()
-	# -- at rest the focused picture COVERS the window on both axes, so its frame stays off-screen.
+# The player-visible claim, asserted directly rather than by re-deriving focused_scale()
+# -- at rest the focused picture COVERS the window on both axes, so its frame stays off-screen.
 	var covered := focused_rect.size * camera.zoom.x
 	check(covered.x >= wide_window.x and covered.y >= wide_window.y,
 			"Q27: the focused picture still OVERFILLS the resized window on both axes, so its own "
 			+ "frame is still off-screen at rest",
 			"covers %s of window %s" % [str(covered), str(wide_window)])
 
-	# ---- mid-flight (Q26=a): a resize arriving during a transition RETARGETS it and lets it
-	# continue -- never restarts it, never snaps the camera out from under it. `_focus_picture()` is
-	# deliberately NOT awaited at the call: it runs synchronously up to its own first `await`, by
-	# which point the transition is live, which is the only window in which this subject exists.
-	# `wall_transition_delay` is the wall's OWN multiplier and no other suite reads the global copy
-	# (every one builds its own PlayerSettings fixture), so shrinking it here bounds the whole
-	# mid-flight half to a couple of frames.
-	# Every PlayerSettings setter writes user://settings.tres, so the real file is parked first --
-	# the same reason the C3 test above does it.
+# ---- mid-flight: a resize arriving during a transition RETARGETS it and lets it continue -- never
+# restarts it, never snaps the camera out from under it. `_focus_picture()` is deliberately NOT
+# awaited: it runs synchronously up to its own first `await`, by which point the transition is live.
+
+# `wall_transition_delay` is the wall's OWN multiplier and no other suite reads the global copy, so
+# shrinking it here bounds the whole mid-flight half to a couple of frames.
+
+# Every PlayerSettings setter writes user://settings.tres, so the real file is parked first.
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 	main._focus_picture(&"map")
@@ -539,7 +521,8 @@ func test_a_real_resize_reaches_the_wall() -> void:
 			str(retargeted_window))
 
 	await main.wall.transition_landed
-	await get_tree().process_frame   # _focus_picture finishes its own body after that emit
+# _focus_picture finishes its own body after that emit.
+	await get_tree().process_frame
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
 	check(main._current_focus == &"map",
 			"it still landed on the ORIGINAL destination -- the geometry changed, the target did not",
@@ -554,20 +537,20 @@ func test_a_real_resize_reaches_the_wall() -> void:
 #_on_back_pressed)` or its `wall_view_entered` twin is removed.
 
 #Two REAL navigations first, so there is genuine history for Back to retrace INTO -- a stack with
-#nothing behind it bottoms out at wall view legitimately (Q65=a's own fall-through), which is what
-#would make the retrace claim indistinguishable from the Escape one.
+#nothing behind it bottoms out at wall view legitimately (the empty-stack fall-through), which is
+#what would make the retrace claim indistinguishable from the Escape one.
 
 #⚠ One `Main`, held for as few frames as possible, at a tiny `wall_transition_delay` -- see
 #`test_a_real_resize_reaches_the_wall()` above for why that matters.
 
-## M2/Q65=a/I5: `wall_back` retraces the stack one step; Escape zooms out to wall view from any depth.
+# `wall_back` retraces the stack one step; Escape zooms out to wall view from any depth.
 func test_escape_goes_to_wall_view_while_back_retraces_the_stack() -> void:
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-#Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+#Undoes Wall._ready()'s GLOBAL pause, for the reason the unlock test above records.
 	get_tree().paused = false
 #Cold launch already visited start_menu. Two real navigations on top of it.
 	await main._focus_picture(&"map")
@@ -609,24 +592,22 @@ func test_escape_goes_to_wall_view_while_back_retraces_the_stack() -> void:
 
 # ------------------------------------------------------------------ M3 (PICTURE_WALL.md)
 
-## M3 (PICTURE_WALL.md): the four `wall_*` actions had no reader anywhere. `TestWallInput`
-## proves each one now reaches a signal; this proves the signals reach `Main` and actually MOVE the
-## player -- S22's own done-when in prose ("the controller is driven by hand through one full
-## navigate-enter-back-wall cycle"), run as one journey on one real `Main` rather than four
-## disconnected assertions.
-##
-## Goes red if any of `Main._ready()`'s `back_requested` / `forward_requested` /
-## `info_toggle_requested` / `wall_view_entered` connections is removed.
-##
-## ⚠ One `Main`, tiny `wall_transition_delay`, bounded frame waits -- see
-## `test_a_real_resize_reaches_the_wall()` above for why all three matter here.
+# The four `wall_*` actions had no reader anywhere. `TestWallInput` proves each one now reaches a
+# signal; this proves the signals reach `Main` and actually MOVE the player, run as one journey on
+# one real `Main` rather than four disconnected assertions.
+
+# Goes red if any of `Main._ready()`'s `back_requested` / `forward_requested` /
+# `info_toggle_requested` / `wall_view_entered` connections is removed.
+
+# ⚠ One `Main`, tiny `wall_transition_delay`, bounded frame waits -- see
+# `test_a_real_resize_reaches_the_wall()` above for why all three matter here.
 func test_the_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() -> void:
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+# Undoes Wall._ready()'s GLOBAL pause, for the reason the unlock test above records.
 	get_tree().paused = false
 
 	await main._focus_picture(&"map")
@@ -651,10 +632,11 @@ func test_the_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() -> vo
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
 
-## Feeds one action through the REAL `Wall._unhandled_input()` and waits, BOUNDED, for `settled` to
-## report the move finished. Never `await` on a signal: the emit runs Main's handler synchronously
-## up to its own first await, so a signal await here would deadlock outright if a handler ever
-## stopped suspending. 60 frames is far more than the 0.001 s clock above needs.
+# Feeds one action through the REAL `Wall._unhandled_input()` and waits, BOUNDED, for `settled` to
+# report the move finished. Never `await` on a signal: the emit runs Main's handler synchronously
+# up to its own first await, so a signal await here would deadlock if a handler stopped suspending.
+
+# 60 frames is far more than the 0.001 s clock above needs.
 func _feed_wall_action(main: Main, action: StringName, settled: Callable) -> void:
 	var event := InputEventAction.new()
 	event.action = action
@@ -666,44 +648,42 @@ func _feed_wall_action(main: Main, action: StringName, settled: Callable) -> voi
 
 # ------------------------------------------------------------------ C5 (PICTURE_WALL.md)
 
-## C5 (PICTURE_WALL.md, Q56=b, §1.6) -- the regression test this fix has owed since it landed.
-## `Main._focus_picture()` news a `WallTransition` PER CALL, so `request()`'s own `is_active` guard
-## could never see the other one: two clicks in wall view ran two tweens on one `Camera2D`, both
-## landed, and both called `focus()`, leaving TWO `PROCESS_MODE_ALWAYS` screen roots. §1.6's "exactly
-## one" is the invariant the whole Phase-3 gate exists to protect, and Q56=b is its input rule: "a
-## new destination is ignored until" the in-flight move finishes.
-##
-## Both paths that drive the shared camera are pressed mid-move, because `_go_to_wall_view()` racing
-## an enter fights it for position and zoom exactly as two enters did.
-##
-## ⚠ WHY THIS TOOK SO LONG TO WRITE, recorded so the next reader does not rediscover it: every
-## earlier attempt held a real `Main` across a transition, and a real `Main` puts a real `Map` in the
-## tree, which is a `CardEnvironment`. While `CardEnvironment.CURRENT` was set, any preview
-## `CardVisual` another suite built took `card_visual.gd`'s no-anchor branch and died on a Nil
-## `global_position` -- failing a DIFFERENT suite, which no wall check could see
-## ([[tests-that-prove-nothing]] trap 8). That was a real latent crash in `card_visual.gd`, not a
-## test problem, and it is now guarded, so this fixture is finally safe to write.
-##
-## The strongest assertion here is the ALWAYS count, not `_current_focus`: the manual red-proof of
-## this fix reported `focused=[&"deck", &"game"]`, i.e. TWO focused pictures at once, which a
-## single-id check would have missed entirely.
+# `Main._focus_picture()` news a `WallTransition` PER CALL, so `request()`'s own `is_active` guard
+# could never see the other one: two clicks in wall view ran two tweens on one `Camera2D`, both
+# landed, and both called `focus()`, leaving TWO `PROCESS_MODE_ALWAYS` screen roots.
+
+# "Exactly one focused picture" is the invariant this gate exists to protect, and its input rule is
+# that a new destination is ignored until the in-flight move finishes.
+
+# Both paths that drive the shared camera are pressed mid-move, because `_go_to_wall_view()` racing
+# an enter fights it for position and zoom exactly as two enters did.
+
+# ⚠ Every earlier attempt held a real `Main` across a transition, and a real `Main` puts a real
+# `Map` in the tree, which is a `CardEnvironment`. While `CardEnvironment.CURRENT` was set, another
+# suite's preview `CardVisual` died on a Nil `global_position` (trap 8); that crash is now guarded.
+
+# The strongest assertion here is the ALWAYS count, not `_current_focus`: the manual red-proof
+# reported `focused=[&"deck", &"game"]`, TWO focused pictures at once, which a single-id check
+# would have missed entirely.
 func test_a_second_destination_mid_move_is_ignored() -> void:
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+# Undoes Wall._ready()'s GLOBAL pause, for the reason the unlock test above records.
 	get_tree().paused = false
 
-	# One REAL move, deliberately not awaited: it runs to its own first await, by which point the
-	# transition is live -- the only window in which a second request can race it.
+# One REAL move, deliberately not awaited: it runs to its own first await, by which point the
+# transition is live -- the only window in which a second request can race it.
 	main._focus_picture(&"map")
 	check(main._active_transition != null and main._active_transition.is_active,
 			"sanity: a real transition is in flight, so there is a move to interrupt")
 
-	main._focus_picture(&"deck")          # a second click on a different picture
-	main._go_to_wall_view()               # ...and the OTHER camera-driving path, for good measure
+# A second click on a different picture.
+	main._focus_picture(&"deck")
+# ...and the OTHER camera-driving path, for good measure.
+	main._go_to_wall_view()
 	check(main._transition_dest_id == &"map",
 			"Q56=b: the in-flight transition still targets its ORIGINAL destination -- the second "
 			+ "request was ignored, not queued and not retargeted", str(main._transition_dest_id))
@@ -733,23 +713,23 @@ func test_a_second_destination_mid_move_is_ignored() -> void:
 
 # ------------------------------------------------------------------ C5's other half (S16, C13)
 
-## PICTURE_WALL.md C5's own row ends "`input_unlocked` -- the signal S16 exists for -- has no
-## consumer", and I12/Q96=a ("during a transition input is inert") had no implementation either. The
-## two are one defect: with nothing making input inert, there was nothing for an early unlock to
-## unlock, so C13/Q58's whole contract -- "allow input once picture is unpaused, which should not be
-## at end of transition, but right before end" -- had no effect at all.
-##
-## The load-bearing assertion is the THIRD one. That input is locked, and unlocked afterwards, would
-## both be satisfied by a lock that simply cleared on landing; only "it was still active when the
-## unlock fired" distinguishes C13 from an ordinary unlock-at-the-end, and that is the entire point
-## of S16.
+# `input_unlocked` -- the signal the early unlock exists for -- had no consumer, and "during a
+# transition input is inert" had no implementation either. The two are one defect: with nothing
+# making input inert, there was nothing for an early unlock to unlock.
+
+# The contract that killed: allow input once the picture is unpaused, which should be right before
+# the end of the transition, not at the end.
+
+# The load-bearing assertion is the THIRD one. "Locked, then unlocked afterwards" would also be
+# satisfied by a lock that simply cleared on landing; only "it was still active when the unlock
+# fired" distinguishes an early unlock from an ordinary one.
 func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> void:
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+# Undoes Wall._ready()'s GLOBAL pause, for the reason the unlock test above records.
 	get_tree().paused = false
 	check(not main.wall.input_locked, "sanity: the wall answers input at rest")
 
@@ -759,20 +739,20 @@ func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> vo
 	check(main.wall.input_locked,
 			"I12/Q96=a: input goes INERT the moment a move starts -- nothing made it inert before")
 
-	# Boxed -- GDScript lambdas capture locals BY VALUE.
+# Boxed -- GDScript lambdas capture locals BY VALUE.
 	var unlocked_mid_flight : Array[bool] = [false]
 	var unlock_fired : Array[bool] = [false]
-	# ⚠ The lambda must NOT capture `transition`. The connection is stored ON the transition, so a
-	# captured reference back to it is a RefCounted CYCLE that never frees -- the first version of
-	# this test took the suite from its standing 4 leaked ObjectDB instances at exit to 17, which no
-	# check can see and only the run wrapper reports ([[tests-that-prove-nothing]] trap 4). Read back
-	# off `main` instead: `Main` is a Node, so the reference runs transition -> Callable -> Main and
-	# never returns.
+# ⚠ The lambda must NOT capture `transition`. The connection is stored ON the transition, so a
+# captured reference back to it is a RefCounted CYCLE that never frees -- it took this suite from
+# 4 leaked ObjectDB instances at exit to 17 ([[tests-that-prove-nothing]] trap 4).
+
+# Read back off `main` instead: `Main` is a Node, so the reference runs transition -> Callable ->
+# Main and never returns.
 	transition.input_unlocked.connect(func() -> void:
 			unlock_fired[0] = true
 			unlocked_mid_flight[0] = main._active_transition != null 					and main._active_transition.is_active)
 
-	# A wall-level action fed while locked must reach nothing at all.
+# A wall-level action fed while locked must reach nothing at all.
 	var reached : Array[bool] = [false]
 	main.wall.wall_view_entered.connect(func() -> void: reached[0] = true)
 	var escape := InputEventAction.new()
@@ -798,16 +778,18 @@ func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> vo
 
 # ------------------------------------------------------------------ overlay focus
 
-## I9/Q103=a/Q115=a: the WALL owns arrow selection and `ui_accept`, read in its own
-## `_unhandled_input`. A `Control` that holds GUI focus consumes `ui_up/down/left/right` (focus
-## neighbour navigation) and `ui_accept` (press the focused button) BEFORE `_unhandled_input` ever
-## runs -- so with Godot's default `FOCUS_ALL` on these Buttons, clicking any one of them with
-## the mouse silently killed wall-view arrow selection and Enter-to-enter for the rest of the
-## session. The overlay's controls are mouse/touch affordances; every one of them also has its own
-## `wall_*` InputMap action for the keyboard, so none of them needs focus.
-##
-## Asserted BEHAVIOURALLY -- grab_focus() is called and must not take -- rather than by reading the
-## property back, which would only re-state the scene file at itself.
+# The WALL owns arrow selection and `ui_accept`, read in its own `_unhandled_input`. A `Control`
+# that holds GUI focus consumes `ui_up/down/left/right` and `ui_accept` BEFORE `_unhandled_input`
+# ever runs.
+
+# So with Godot's default `FOCUS_ALL` on these Buttons, clicking any one of them with the mouse
+# silently killed wall-view arrow selection and Enter-to-enter for the rest of the session.
+
+# The overlay's controls are mouse/touch affordances and every one also has its own `wall_*`
+# InputMap action for the keyboard, so none of them needs focus.
+
+# Asserted BEHAVIOURALLY -- grab_focus() is called and must not take -- rather than by reading the
+# property back, which would only re-state the scene file at itself.
 func test_overlay_buttons_cannot_take_focus() -> void:
 	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
 	add_child(overlay)
@@ -815,8 +797,8 @@ func test_overlay_buttons_cannot_take_focus() -> void:
 	check(names.size() == 3, "sanity: all three overlay controls are covered", str(names.size()))
 	for path : StringName in names:
 		var button : Button = overlay.get_node(NodePath(path))
-		# `disabled` alone would refuse focus, so clear it first: this must hold for a button the
-		# player can actually click, which is the only way the defect was reachable.
+# `disabled` alone would refuse focus, so clear it first: this must hold for a button the
+# player can actually click, which is the only way the defect was reachable.
 		button.disabled = false
 		button.grab_focus()
 		check(not button.has_focus(),
@@ -825,21 +807,23 @@ func test_overlay_buttons_cannot_take_focus() -> void:
 
 # ------------------------------------------------------------------ GAP-020 = (a)
 
-## GAP-020 = (a): in wall view Back returns to the picture just left, so the BUTTON must be enabled
-## exactly when the KEY does something.
-##
-## ⚠ `can_back()` asks "is there something BELOW the current picture" and needs two entries. That is
-## the right question only while a picture is focused. In wall view the stack's top IS the
-## destination, so one entry is enough -- and the commonest first-minute journey produces exactly
-## one: cold launch visits start_menu, Escape goes to wall view. The button was greyed out there
-## while Escape and joypad Back both worked, against `Main._ready()`'s own promise that the key and
-## the button cannot diverge because they are deliberately the same handler.
+# In wall view Back returns to the picture just left, so the BUTTON must be enabled exactly when
+# the KEY does something.
+
+# ⚠ `can_back()` asks "is there something BELOW the current picture" and needs two entries. That is
+# the right question only while a picture is focused: in wall view the stack's top IS the
+# destination, so one entry is enough.
+
+# The commonest first-minute journey produces exactly one -- cold launch visits start_menu, Escape
+# goes to wall view -- and the button was greyed out there while Escape and joypad Back both
+# worked, against `Main._ready()`'s promise that the key and the button cannot diverge.
 func test_back_button_is_enabled_in_wall_view_whenever_the_key_works() -> void:
 	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
 	add_child(overlay)
 	var back_button : Button = overlay.get_node(^"%BackButton")
 	var fs := FocusStack.new()
-	fs.visit(&"start_menu")   # exactly the cold-launch stack
+# Exactly the cold-launch stack.
+	fs.visit(&"start_menu")
 
 	check(not fs.can_back(),
 			"sanity: one entry, so the FOCUSED-picture predicate says Back is unavailable")
@@ -854,8 +838,8 @@ func test_back_button_is_enabled_in_wall_view_whenever_the_key_works() -> void:
 	check(not back_button.disabled,
 			"in WALL VIEW the same stack enables Back, because the key would return to start_menu")
 
-	# And an empty stack disables it in wall view too -- "enabled in wall view" must not be
-	# unconditional, or this test would pass for a button that is simply always on.
+# And an empty stack disables it in wall view too -- "enabled in wall view" must not be
+# unconditional, or this test would pass for a button that is simply always on.
 	var empty := FocusStack.new()
 	overlay.refresh(empty, 4, true)
 	check(back_button.disabled,
@@ -870,7 +854,8 @@ func test_back_button_is_enabled_in_wall_view_whenever_the_key_works() -> void:
 func test_a_published_info_entry_is_owned_by_whatever_shows_it() -> void:
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	get_tree().paused = false   # concurrency workaround, same as every other Main fixture here
+# Concurrency workaround, same as every other Main fixture here.
+	get_tree().paused = false
 
 	var visual := Node2D.new()
 	var entry := InfoEntry.new()
