@@ -5,7 +5,7 @@ and gated, each against the ruling below, on this branch, ready for the owner to
 **State:** P1-P12, P14, P16-P22 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6203 CHECKS PASSED` (three in a row), 21 placeholder
 warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P23, P13,
-P15, P24, a map.gd sweep; each carries its site map in `notes:`. Gate at the stream's start:
+P15, P24, P25, P26, a map.gd sweep; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -86,6 +86,11 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - **The two glow clarifications (verbatim).** Which value - "same value should be whatever
   original was. if unknown go with lower value." Focus outline vs the match outline - "no
   difference between focus card outline and mark outline. both should show both outlined."
+- **Third round (verbatim).** The worldgen fix for the quit-mid-generation crash - "yes you can
+  make fixes." Picture frames - "i want picture frames to be invisible once zoom in has happened,
+  so picture frame is never visible while focused on a picture, until switching out to wall view.
+  I mention this because i see a test that seems to test swiping on edge of picture and it shows
+  frame near the middle."
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -247,6 +252,22 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   status: pending
   evidence: ''
   notes: 'RULED, both. The original highlight value is KNOWN: CardVisual.FOCUS_GLOW := Color(1.825) at 19ace1be (the legal cell was a green tint then, not a multiplier), so highlight_glow = 1.825. A focused card takes the SAME outline the match rim draws (set_rim) - no difference; a card that is both is simply outlined. So: focus stops brightening the face and asks for the rim; legal brightens the face only. Run AFTER P12 lands (both touch play_area.gd / game_view.gd). The clarifications that were asked: (1) "use same value" - which value is the legal-cell brightening: the earlier 1.825 or the ruled 1.45; (2) the match rim ALREADY glows the outline (set_rim) - how a focused card outline differs from a matching mark outline (a colour, a width, a pulse), and what a card that is both shows. With focus on the outline the squared glow disappears by construction. The drop/place half is unblocked: the drop and the placement both end in ungrab_cards; add clear_lock/dismiss and release the focus there, one route, and invert P22 rows that pinned "exactly what a cancel leaves".'
+- id: P25
+  description: The quit-mid-generation crash, fixed at its cause in worldgen - the generator stops stepping once its owner is leaving the tree (a cancel the stage loop checks between stages, set on exit, or stepping on its own node instead of the tree process_frame); fixed in worldgen/ and re-vendored into solatro/addons/worldgen.
+  files_touched: [worldgen/, solatro/addons/worldgen/world_map_2d.gd, solatro/Tests/Wall/test_wall_pause.gd]
+  verification_command: 'worldgen gate scenes (worldgen/START_HERE.md); run_tests.py --filter WallPause; --logic; overseer full gate x3'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Owner: "yes you can make fixes." Evidence and call chain under Open bugs. Read worldgen/START_HERE.md and how the addon is vendored first (architecture-map.md). Red: a row that frees Main (or quits) mid-generation WITHOUT TestMainHost.await_world_settled and exits 0xC0000005 (3 of 3 on the un-fixed addon, ~2 s); green 0 of 5. Keep the fixture gate - it also keeps suites from racing a bake.'
+- id: P26
+  description: Picture frames are invisible while a picture is focused - hidden once the zoom-in has landed, shown again only when switching out to wall view; never visible mid-screen while focused (the owner saw one near the middle in an edge-swipe test).
+  files_touched: [solatro/UI/Wall/wall_picture.gd, solatro/UI/Wall/wall.gd, solatro/Tests/Wall/test_wall_render.gd, solatro/Tests/UI/test_grid_view.gd]
+  verification_command: 'run_tests.py --filter WallRender WallTransition WallFocus GridView; by eye'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'Owner ruling, third round. MEASURE FIRST: where a frame can be seen while focused - an overview pan across a multi-grid game picture (the camera steps grid_pitch_px inside the wide picture; the edge of the picture and its frame come into view at the end stops and the bounce), the P12 slide frames (a white rectangle around the board window is visible mid-slide - establish whether that is the picture frame or the board own rules), window aspects other than 16:9. Then: the frame fades/hides on transition_landed and returns on the leave, before the camera moves; a row asserting no frame pixel/visible frame node at every sampled focused frame including end-stop pans.'
 - id: P24
   description: Re-entering a picture from wall view draws its content about 2x for a frame or two - the SubViewport is still at its wall-view render size when the picture is first shown focused (WallPicture.focus / update_wall_view_size).
   files_touched: [solatro/UI/Wall/wall_picture.gd, solatro/Tests/Wall/test_wall_render.gd]
@@ -302,7 +323,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   file:line cited in their reports; not re-read by the overseer.
 
 ## Open bugs
-- OWNER DECISION, a product crash at quit: quitting (or freeing Main) while the world map is still generating lets the vendored generator resume one more stage on a dying tree - 0xC0000005 at process exit, no backtrace. Isolated: Main._on_continue calls map_scene.start_run un-awaited -> Map.start_run -> WorldMapController.start_run `await map.generate()` -> addons/worldgen/world_map_2d.gd ~169 `await gen.generate_world_map()`, whose stage loop steps on get_tree().process_frame; the last line logged after the banner was the Rivers stage at 0.857, Painting never reached. `test_continue_after_a_mid_show_quit_still_reveals_wall_view` alone crashes 3 of 3 (~2 s), 0 of 3 when it waits 243 ms for generation's true end. Map cannot settle or cancel from _exit_tree and the addon exposes no cancel. Minimal addon-side change (NOT made; worldgen is vendored from worldgen/): a cancel flag the stage loop checks between stages, set on exit, or stepping on its own node instead of the tree's process_frame. P12 only exposes it: its slide adds ~0.5 s per focus move, moving the fixture's free from before the generator spawns to inside its stage loop. The fixture now latches on generation's end, as the reveal test already did.
+- RULED (owner: "yes you can make fixes") -> P25. A product crash at quit: quitting (or freeing Main) while the world map is still generating lets the vendored generator resume one more stage on a dying tree - 0xC0000005 at process exit, no backtrace. Isolated: Main._on_continue calls map_scene.start_run un-awaited -> Map.start_run -> WorldMapController.start_run `await map.generate()` -> addons/worldgen/world_map_2d.gd ~169 `await gen.generate_world_map()`, whose stage loop steps on get_tree().process_frame; the last line logged after the banner was the Rivers stage at 0.857, Painting never reached. `test_continue_after_a_mid_show_quit_still_reveals_wall_view` alone crashes 3 of 3 (~2 s), 0 of 3 when it waits 243 ms for generation's true end. Map cannot settle or cancel from _exit_tree and the addon exposes no cancel. Minimal addon-side change (NOT made; worldgen is vendored from worldgen/): a cancel flag the stage loop checks between stages, set on exit, or stepping on its own node instead of the tree's process_frame. P12 only exposes it: its slide adds ~0.5 s per focus move, moving the fixture's free from before the generator spawns to inside its stage loop. The fixture now latches on generation's end, as the reveal test already did.
 - The SIDEBAR map Deck-button click flake (HEADLESS_TESTING.md section 4) failed twice after P6 landed - 1 of the overseer's 3 full gates since, and 1 of an implementer's filtered Sidebar runs (its total not counted) - each green on the single rerun; 0 of the 3 overseer gates before P6. Not yet measured whether the rate moved - run `--filter Sidebar` N times at 30143594 and at HEAD before naming a cause.
 - A worldgen teardown abort (0xC000001D in addons/worldgen/core/steps/rivers.gd, a river step reading a freed object while a Main is torn down mid-generation - the un-awaited map_scene.start_run path P4 notes) hit 1 abort plus 1 post-banner SCRIPT ERROR in an implementer's 5 Sidebar-including runs during P22; 0 of the overseer's gates.
 - `PIXELS: fire brightens when its host is highlighted` failed once (0.272 plain vs 0.250 highlighted) in 1 of 5 overseer gates on the P12 tree, never before; nothing in P12 reaches that suite. Measure before naming a cause.

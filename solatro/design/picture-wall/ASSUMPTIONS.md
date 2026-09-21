@@ -1165,3 +1165,7 @@ The remaining two of the five were WIRED, not struck: `WallLayout.view_margin` (
   still opens the wall too.
 - Playtest ruling, extends `Q61`/`Q62`: after the slow wall reveal the camera enters the map
   without a press, on a new run and on Continue when no show is pending.
+- Playtest follow-up ruling on picture frames - owner: "i want picture frames to be invisible
+  once zoom in has happened, so picture frame is never visible while focused on a picture, until
+  switching out to wall view. I mention this because i see a test that seems to test swiping on
+  edge of picture and it shows frame near the middle."
