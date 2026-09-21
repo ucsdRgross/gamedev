@@ -100,7 +100,29 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   scroller pans inside a camera that does not move.
 - **`focused_scale()` applies its margin only when the aspects DIFFER.** That conditionality is what
   makes G10's "panning is off when everything fits" an exact zero rather than a few per cent of
-  slack. Do not make it unconditional.
+  slack. Do not make it unconditional: applied unconditionally it crops REAL UI in the ordinary
+  16:9-in-16:9 case, where the start menu's bottom button row loses a slice at both edges.
+- **A `SubViewport` defaults to LINEAR and inherits no project texture-filter setting**, so
+  `WallPicture.build()` writes `canvas_item_default_texture_filter` explicitly. `%Screen` needs the
+  opposite write for the opposite reason: `CanvasItem.texture_filter` DOES inherit the project
+  default of NEAREST, and everything non-focused samples LINEAR unconditionally — `update_filter()`'s
+  zoom branching applies only to the FOCUSED picture.
+- ⚠ **`SubViewport.size` CANNOT BE READ BACK TO CHECK A CLAMP.** Past the GPU's maximum texture size
+  the Compatibility renderer destroys the framebuffer and sets the size to 0 internally while `size`
+  still reports the oversized value — the failure is invisible from script and the picture is simply
+  black. Older GPUs cap at 4096. `WallPicture.clamped_render_size()` never writing one is the only
+  defence.
+- ⚠ **`size_2d_override` IS WHAT MAKES A SHRUNK SCREEN SHRINK RATHER THAN CROP.** `size` alone is the
+  render RESOLUTION, and a screen laid out for its `design_size` does not re-flow into a smaller one:
+  it keeps its own metrics and the viewport shows the top-left corner of it. Measured: at a 385x216
+  target a 1152x648 start menu rendered as a giant "S". The override holds the CANVAS at
+  `design_size` while `size` stays the render target, and `size_2d_override_stretch` maps the two
+  onto each other. ⚠ **At 1:1 it must be CLEARED, not left at an identity** — `WallInput.route()`
+  maps into a plain viewport and a stale override displaces every click inside a focused screen.
+- ⚠ **Forcing `UPDATE_ONCE` on the FOCUSED picture kills it.** It renders one more frame and then
+  stops forever, nothing calling `focus()` again until the player leaves and re-enters — a live game
+  turned into a still image for the rest of the session. `WallPicture.mark_for_rerender()` guards
+  that there rather than at its call site, so a second caller cannot lose the guard.
 - **A live `Main` puts a real `Map` in the tree, and `Map` is a `CardEnvironment`,** so
   `CardEnvironment.CURRENT` is non-null for as long as it lives. Any test holding one is visible to
   every concurrently-running suite.
@@ -138,8 +160,8 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
 - **Gate on a PROPERTY, never on object identity.** The game loads `layout_default.tres` (C6), and a
   resource deserialises to a DIFFERENT instance than the one code generates — so
   `entry.frame_texture == shared_frame_texture()` was never true in the product while every fixture
-  that assigns the shared texture directly kept passing. `WallPicture._frame_corner_px()` asks the
-  texture how big it is instead.
+  that assigns the shared texture directly kept passing, and the 40x40 bevel smeared across the
+  whole `NinePatchRect`. `WallPicture._frame_corner_px()` asks the texture how big it is instead.
 - **The one-move flag goes on the HANDLER that mutates, not only on the mover.** `FocusStack.back()`
   and `forward()` change history BEFORE `_focus_picture()`/`_go_to_wall_view()` reach their own
   `if _move_in_flight: return`, so a second press popped an entry and then refused to navigate to

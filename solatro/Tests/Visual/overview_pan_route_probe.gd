@@ -1,21 +1,11 @@
 extends Node2D
-# res://Tests/Visual/overview_pan_route_probe.gd
-# ==============================================================================
-# THROWAWAY MEASUREMENT PROBE (not part of the suite). Stands up a REAL `Main` (res://Levels/main.tscn)
-# and drives it through the REAL enter-game path (`Main.enter_game()` -> `Main._focus_picture()`),
-# then fires REAL `InputEventKey` events matching the `grid_pan_left`/`grid_pan_right` InputMap
-# bindings via `Input.parse_input_event()` -- the same route a physical key press takes through
-# `PlayArea._unhandled_input()` -- rather than calling the board's pan entry directly.
-# Samples `%Camera2D.position`/`zoom` and `PlayArea.pan_grid` every frame across the tween, and
-# screenshots at rest before/after a step.
-#
-# Godot docs (godotengine.org/... InputEvent / Input.parse_input_event): "parse_input_event" feeds
-# an event into the engine's input pipeline "as if it came from a device", the same pipeline real
-# hardware events take -- the standard way to simulate input in an automated run.
-#
-# Run windowed, WITH AN EXTERNAL KILLING TIMEOUT:
-#     OUT_PATH=<path> <console exe> --path solatro res://Tests/Visual/overview_pan_route_probe.tscn
-# ==============================================================================
+# THROWAWAY MEASUREMENT PROBE, not part of the suite. It drives a REAL `Main` through the REAL
+# enter-game path and fires REAL `InputEventKey` events through `Input.parse_input_event()`, the
+# route a physical press takes, sampling the camera and `pan_grid` every frame across the tween.
+
+# `get_tree().paused` is reset because `Wall._ready()` sets it globally, as the Wall tests do, and
+# step 4 does not await `_focus_picture()`, which is what leaves `_move_in_flight` true.
+# Run windowed, WITH A KILLING TIMEOUT: OUT_PATH=<path> <console exe> --path solatro <this .tscn>
 
 const MAIN_SCENE := preload("res://Levels/main.tscn")
 const FALLBACK_OUT_DIR := "user://overview_pan_route_probe"
@@ -46,7 +36,7 @@ func _ready() -> void:
 
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	get_tree().paused = false   # Wall._ready() sets this globally; undone same as other Wall tests.
+	get_tree().paused = false
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -84,29 +74,25 @@ func _ready() -> void:
 	_log_state(camera, pa, "rest before any pan (grid %d of %d)" % [pa.pan_grid, GRID_COUNT])
 	await _shoot(camera, "grid%d_rest" % pa.pan_grid)
 
-	# ===== 1) A real pan LEFT input, driven the way a player would press it. =====
 	print("[overview_pan_route_probe] ===== STEP 1: grid_pan_left via real key event =====")
 	await _sample_across_key(camera, pa, KEY_COMMA, "step1_left")
 	await _shoot(camera, "grid%d_after_left" % pa.pan_grid)
 
-	# ===== 2) A real pan RIGHT input (back toward the middle / other direction). =====
 	print("[overview_pan_route_probe] ===== STEP 2: grid_pan_right via real key event =====")
 	await _sample_across_key(camera, pa, KEY_PERIOD, "step2_right")
 	await _shoot(camera, "grid%d_after_right" % pa.pan_grid)
 
-	# ===== 3) Walk to the edge (repeat RIGHT until bounce), then one more (must bounce, not move). =====
 	print("[overview_pan_route_probe] ===== STEP 3: walk to the right edge =====")
 	for i : int in GRID_COUNT:
 		await _sample_across_key(camera, pa, KEY_PERIOD, "step3_right_%d" % i)
 	await _shoot(camera, "grid%d_at_edge" % pa.pan_grid)
 
-	# ===== 4) _move_in_flight gating: fire a pan the instant a fresh navigation starts. =====
 	print("[overview_pan_route_probe] ===== STEP 4: pan issued mid-transition (_move_in_flight) =====")
 	pa.open_zoomed_out()
 	await get_tree().process_frame
 	var pre_grid := pa.pan_grid
 	var pre_cam := camera.position
-	main._focus_picture(&"map")   # NOT awaited -- leaves _move_in_flight true mid-transition.
+	main._focus_picture(&"map")
 	print("[overview_pan_route_probe] mid-flight: _move_in_flight=%s _current_focus=%s"
 			% [main._move_in_flight, main._current_focus])
 	_fire_key(KEY_COMMA)
@@ -114,7 +100,6 @@ func _ready() -> void:
 	_fire_key_release(KEY_COMMA)
 	print("[overview_pan_route_probe] pan_grid right after mid-flight key: %d (was %d)"
 			% [pa.pan_grid, pre_grid])
-	# Let the navigation to map finish, then navigate back to game to settle the app.
 	var waited := 0.0
 	while main._move_in_flight and waited < 5.0:
 		await get_tree().process_frame
@@ -127,11 +112,9 @@ func _ready() -> void:
 	print("[overview_pan_route_probe] back on game: pan_grid=%d camera.position=%s (pre-flight was pan_grid=%d camera=%s)"
 			% [pa.pan_grid, camera.position, pre_grid, pre_cam])
 
-	# Now issue the SAME pan once settled, for comparison -- does it take effect now?
 	print("[overview_pan_route_probe] ===== STEP 4b: same pan, issued once settled =====")
 	await _sample_across_key(camera, pa, KEY_COMMA, "step4b_left_settled")
 
-	# ===== 5) Focused mode still crisp/unchanged (H20 sprite scale, board sharp). =====
 	print("[overview_pan_route_probe] ===== STEP 5: focused mode check =====")
 	pa.focus_grid(1)
 	await get_tree().process_frame
@@ -162,8 +145,7 @@ func _fire_key(keycode: int) -> void:
 	ev.pressed = true
 	Input.parse_input_event(ev)
 
-## Fires the matching release -- `is_action_pressed` only fires on the press edge, but a real key
-## press is press-then-release and leaving it held could confuse the next simulated key.
+## Fires the matching release: `is_action_pressed` fires on the press edge, but a held key could confuse the next simulated one.
 func _fire_key_release(keycode: int) -> void:
 	var ev := InputEventKey.new()
 	ev.keycode = keycode
@@ -171,8 +153,7 @@ func _fire_key_release(keycode: int) -> void:
 	ev.pressed = false
 	Input.parse_input_event(ev)
 
-## Presses+releases `keycode` (a real InputMap-bound key) and samples camera position/zoom and
-## `pan_grid` every frame until the tween settles (position stops changing), up to a 2s cap.
+## Presses and releases `keycode`, sampling camera and `pan_grid` every frame until the position stops changing, up to a 2 s cap.
 func _sample_across_key(camera: Camera2D, pa: PlayArea, keycode: int, tag: String) -> void:
 	var pos_before := camera.position
 	var zoom_before := camera.zoom

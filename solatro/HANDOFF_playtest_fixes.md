@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P14, P16-P23, P25-P28 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6328 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P30-P32 (the sweeps), then the close; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P32, then the close; P30 and P31 are in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -325,17 +325,17 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/Levels/map.gd, solatro/Scripts/Map/world_map_controller.gd, solatro/Tests/Map/test_map_traversal.gd]
   verification_command: 'py .claude/tools/sweep_check.py <each file>; doc_check --changed silent; run_tests.py --filter MapTraversal Sidebar; overseer full gate'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Findings when queued: 5 / 22 / 1. Keep every gotcha and measured number; quote dropped restatements in the commit message.'
+  status: done
+  evidence: 'Findings 6/21/1 -> 0/0/0; sweep_check CODE IDENTICAL x3 (177, 292, 132 code lines), re-run by the overseer; doc_check --changed silent; dup_check 82. FILTERED 5 of 51: 1784 CHECKS PASSED; --logic 3012. Overseer gate: ALL 51 SUITES: 6278 CHECKS PASSED, 21 placeholder warnings, the exit profile.'
+  notes: 'Dropped text is quoted in the P30 commit message. Findings when queued: 5 / 22 / 1. Keep every gotcha and measured number; quote dropped restatements in the commit message.'
 - id: P31
   description: The comment sweep P26/P29/P24 owe - UI/Wall/wall_picture.gd and Tests/Visual/overview_pan_route_probe.gd leave compliant, code byte-identical.
   files_touched: [solatro/UI/Wall/wall_picture.gd, solatro/Tests/Visual/overview_pan_route_probe.gd]
   verification_command: 'py .claude/tools/sweep_check.py <each file>; doc_check --changed silent; run_tests.py --filter WallRender WallFocus WallTransition; overseer full gate'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Findings when queued: 76 / 12.'
+  status: done
+  evidence: 'Findings 78/12 -> 0/0; no comment line over 140 chars; sweep_check CODE IDENTICAL x2 (211, 167 code lines), re-run by the overseer; doc_check --changed silent (PICTURE_WALL.md included); dup_check 82. The probe scene quit by itself, 0 SCRIPT ERROR. Overseer gate: ALL 51 SUITES: 6278 CHECKS PASSED, 21 placeholder warnings, the exit profile.'
+  notes: 'A first pass met the line-count rule with 34 lines over 160 chars (longest 577) and was sent back: facts too big for a comment now live in PICTURE_WALL.md Landmines (four new bullets: the SubViewport LINEAR filter default, SubViewport.size unreadable past the GPU cap, size_2d_override cleared at 1:1, UPDATE_ONCE killing a focused picture) and the comments point there. Dropped text is quoted in the P31 commit message.'
 - id: P32
   description: PlayArea.rest_focus_on_board() fallback for a held card with no control - its one named producer (the auto-arm) is deleted; replace with assert, run the suites, back out if a fixture fires it. Then the P20 /simplify item (collapse _lock_by_screen onto _locked_entry_by_screen; lock_to loses its dead target parameter).
   files_touched: [solatro/UI/play_area.gd, solatro/UI/hud_container.gd, solatro/Levels/game_view.gd, solatro/Tools/wall_editor.gd, solatro/Tests/Wall/test_sidebar.gd, solatro/design/sidebar/NAMES.md]
@@ -400,7 +400,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P30, P31, P32, then the close. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P32, then the close. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
