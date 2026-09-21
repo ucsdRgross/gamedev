@@ -984,3 +984,7 @@
   container shows only while it has a description). The Back/Forward/Wall band floating over the
   picture while the sidebar is slid out - owner: "back forward wall not being part of sidebar is
   fine."
+- Playtest follow-up rulings, the two clarifications on the glow. Which value "same value" means -
+  owner: "same value should be whatever original was. if unknown go with lower value." How a
+  focused card's outline differs from a matching mark's - owner: "no difference between focus
+  card outline and mark outline. both should show both outlined."

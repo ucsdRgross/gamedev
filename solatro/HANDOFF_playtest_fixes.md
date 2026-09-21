@@ -5,7 +5,7 @@ and gated, each against the ruling below, on this branch, ready for the owner to
 **State:** P1-P11, P14, P16-P22 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6131 CHECKS PASSED`, 21 placeholder
 warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P12, P13,
-P15, P23 (blocked on two clarifications); each carries its site map in `notes:`. Gate at the stream's start:
+P15, P23; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -83,6 +83,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   and focus glow, since player should have finished reading it before they took action with the
   card." R1 on the menu - "ii hidden while nothing to show"; the overlay band - "back forward wall
   not being part of sidebar is fine."
+- **The two glow clarifications (verbatim).** Which value - "same value should be whatever
+  original was. if unknown go with lower value." Focus outline vs the match outline - "no
+  difference between focus card outline and mark outline. both should show both outlined."
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -241,9 +244,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/Cards/card_visual.gd, solatro/Cards/card_outline.gd, solatro/Shaders/outline.gdshader, solatro/UI/play_area.gd, solatro/Levels/game_view.gd, solatro/Tests/Visual/test_pixels.gd, solatro/Tests/Wall/test_sidebar.gd, solatro/Tests/Interaction/test_drag_place.gd]
   verification_command: 'run_tests.py --filter Pixels PlanVisuals Sidebar DragPlace Interaction; by eye'
   verification_kind: snapshot
-  status: blocked
+  status: pending
   evidence: ''
-  notes: 'BLOCKED on two owner clarifications, asked: (1) "use same value" - which value is the legal-cell brightening: the earlier 1.825 or the ruled 1.45; (2) the match rim ALREADY glows the outline (set_rim) - how a focused card outline differs from a matching mark outline (a colour, a width, a pulse), and what a card that is both shows. With focus on the outline the squared glow disappears by construction. The drop/place half is unblocked: the drop and the placement both end in ungrab_cards; add clear_lock/dismiss and release the focus there, one route, and invert P22 rows that pinned "exactly what a cancel leaves".'
+  notes: 'RULED, both. The original highlight value is KNOWN: CardVisual.FOCUS_GLOW := Color(1.825) at 19ace1be (the legal cell was a green tint then, not a multiplier), so highlight_glow = 1.825. A focused card takes the SAME outline the match rim draws (set_rim) - no difference; a card that is both is simply outlined. So: focus stops brightening the face and asks for the rim; legal brightens the face only. Run AFTER P12 lands (both touch play_area.gd / game_view.gd). The clarifications that were asked: (1) "use same value" - which value is the legal-cell brightening: the earlier 1.825 or the ruled 1.45; (2) the match rim ALREADY glows the outline (set_rim) - how a focused card outline differs from a matching mark outline (a colour, a width, a pulse), and what a card that is both shows. With focus on the outline the squared glow disappears by construction. The drop/place half is unblocked: the drop and the placement both end in ungrab_cards; add clear_lock/dismiss and release the focus there, one route, and invert P22 rows that pinned "exactly what a cancel leaves".'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
