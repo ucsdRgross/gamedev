@@ -1,15 +1,7 @@
 extends TestSuite
-# res://Tests/Map/test_map_traversal.gd
-# ==============================================================================
-# WORLD MAP TRAVERSAL — WorldMapController over a synthetic diamond graph:
-#   0 (start) -> 1,2 -> 3 (end)
-# Verifies direction-aware next/reachable sets, traveled history orientation, the
-# four edge visual states (history / highlighted / normal / hidden), token movement
-# along (reversed) edge curves, and the endless-lap flip.
-# The controller subtree is built in code (no WorldMap2D generation — the overlay is
-# populated from a hand-written export dict; expect one harmless "baked composite not
-# found" warning from the stub WorldMap2D).
-# ==============================================================================
+# WORLD MAP TRAVERSAL — WorldMapController over a synthetic diamond graph, 0 (start) -> 1,2 -> 3
+# (end). The controller subtree is built in code and the overlay is populated from a hand-written
+# export dict, so the stub WorldMap2D emits one harmless "baked composite not found" warning.
 
 # CATEGORY MAP: all BEHAVIOR — token movement, reachability, edge visuals, lap
 # flips, and keyboard selection are what the player sees on the map. The traveled-

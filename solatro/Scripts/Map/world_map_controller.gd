@@ -21,14 +21,19 @@ signal selection_cleared
 ## Accept was pressed with a node picked. A map node is not a Control, so the pad is handed to the Travel button by the screen that owns it.
 signal travel_focus_requested
 
-const HISTORY_COLOR := Color("#b8860b")    ## traveled path (dim gold), kept across laps
-const HIGHLIGHT_COLOR := Color("#ffe066")  ## edges to directly reachable nodes
-const BOOSTER_COLOR := Color("#9f7aea")    ## booster node markers
-const GAME_COLOR := Color("#f7fafc")       ## game node markers
+## Traveled path, dim gold, kept across laps.
+const HISTORY_COLOR := Color("#b8860b")
+## Edges to directly reachable nodes.
+const HIGHLIGHT_COLOR := Color("#ffe066")
+## Booster node markers.
+const BOOSTER_COLOR := Color("#9f7aea")
+## Game node markers.
+const GAME_COLOR := Color("#f7fafc")
 const HIGHLIGHT_WIDTH_BONUS := 3.0
 const ZOOM_MIN := 0.5
 const ZOOM_MAX := 4.0
-const DRAG_THRESHOLD := 8.0                ## px of motion before a press becomes a pan
+## Px of motion before a press becomes a pan.
+const DRAG_THRESHOLD := 8.0
 
 @onready var camera: Camera2D = %Camera2D
 @onready var token: MapPlayerToken = %Token
@@ -38,7 +43,8 @@ var map : WorldMap2D = null
 
 var _current : WorldGraphNode = null
 var _hovered : WorldGraphNode = null
-var _reverse_adj : Dictionary[int, Array] = {}     # node id -> Array[int] of forward-edge sources
+## Node id -> Array[int] of forward-edge sources.
+var _reverse_adj : Dictionary[int, Array] = {}
 var _accepting_input : bool = false
 var _moving : bool = false
 var _follow_token : bool = true
@@ -61,9 +67,9 @@ func apply_container_shift(shift: Vector2) -> void:
 func _apply_camera_offset() -> void:
 	camera.offset = _container_shift / camera.zoom
 
-## Build (or rebind) the WorldMap2D for this run: reload the bake when one exists, else
-## generate from the pinned seed and bake exactly once (graph_export is only valid right
-## after a generation this session — never re-bake after a reload).
+# Fetching the overlay before add_child creates it BEFORE the map Sprite2D, so z_index must raise
+# it over the map image. generate_on_ready=false auto-loads an existing bake on add_child, and
+# graph_export is valid only right after a generation, so a reloaded bake is never re-baked.
 func start_run(new_run: RunState) -> void:
 	run = new_run
 	if map == null:
@@ -73,21 +79,15 @@ func start_run(new_run: RunState) -> void:
 		map.show_loading_screen = true
 		map.world_seed = run.world_seed
 		map.bake_directory = RunManager.MAP_BAKE_DIR
-		# Fetching the overlay early (to connect before any populate) also creates it
-		# BEFORE the map Sprite2D — raise it so nodes/edges draw over the map image.
 		map.overlay().z_index = 1
 		map.overlay().graph_populated.connect(_on_graph_populated)
 		add_child(map)
-		move_child(map, 0)  # render under camera/token
+		move_child(map, 0)
 	else:
 		map.world_seed = run.world_seed
-	# WorldMap2D._ready (generate_on_ready=false) auto-loads an existing bake on
-	# add_child; only a fresh run needs a generation here.
 	if not FileAccess.file_exists(RunManager.MAP_BAKE_DIR.path_join("composite.png")):
 		await map.generate()
 		map.bake_to_files()
-		# Drop the generation worker (SubViewports) + loading overlay: this session only
-		# reloads the bake from here on.
 		map.release_generator()
 
 ## The clickable player position follows the camera each frame while travelling.
@@ -109,9 +109,7 @@ func _on_graph_populated() -> void:
 	_accepting_input = true
 	map_ready.emit()
 
-## Advance the run to the next lap: direction flips (RunState.is_reversed), roles and
-## goals re-derive for the new lap, and every edge becomes usable again (edge state is
-## fully derived from reachability, so the reset is implicit). History coloring stays.
+## Advance the run to the next lap: edge state is derived wholly from reachability, so every edge becoming usable again needs no reset; history coloring stays.
 func on_lap_completed() -> void:
 	run.lap += 1
 	MapNodeRoles.assign(map.overlay(), run.world_seed, run)
@@ -150,8 +148,7 @@ func next_nodes_of(n: WorldGraphNode) -> Array[WorldGraphNode]:
 			out.append(src)
 	return out
 
-## Every node id still reachable from the token in the current lap direction
-## (Dictionary as a set: id -> true; includes the current node).
+## Every node id still reachable from the token in the current lap direction, as a set id -> true, the current node included.
 func reachable_ids() -> Dictionary:
 	var seen := {}
 	var frontier: Array[WorldGraphNode] = [_current]
@@ -168,14 +165,10 @@ func reachable_ids() -> Dictionary:
 # VISUAL STATE
 # =============================================================================
 
-## Reassign every edge Line2D and node marker to one of the explicit states (never
-## deltas, so lap resets and re-populates are always consistent):
-## traveled -> history color; from-current -> highlight; still-usable -> normal;
-## unusable & untraveled -> hidden. All node markers stay visible.
+## Reassigns every edge Line2D and node marker to an explicit state rather than a delta, so lap resets and re-populates stay consistent; an unusable untraveled edge hides, a node marker never does.
 func refresh_visuals() -> void:
 	var overlay := map.overlay()
 	var reachable := reachable_ids()
-	#traveled set built once: the edge loop below is O(edges), not O(edges x history)
 	var traveled_set : Dictionary[Vector2i, bool] = {}
 	for t in run.traveled:
 		traveled_set[Vector2i(t.x, t.y)] = true
@@ -220,13 +213,14 @@ func _style_marker(n: WorldGraphNode) -> void:
 		n.marker_color = GAME_COLOR
 	n.queue_redraw()
 
-# Directly reachable node markers pulse so the clickable choices read at a glance.
+# Directly reachable node markers pulse so the clickable choices read at a glance; _style_marker
+# re-derives the base color each frame so the pulse never compounds.
 func _pulse_next_markers() -> void:
 	if _current == null or _moving or not _accepting_input:
 		return
 	var t := 0.6 + 0.4 * (0.5 + 0.5 * sin(Time.get_ticks_msec() / 180.0))
 	for n in next_nodes_of(_current):
-		_style_marker(n)  # re-derive the base color so the pulse never compounds
+		_style_marker(n)
 		n.marker_color = n.marker_color.lerp(Color.WHITE, 0.8 if n == _selected else 0.4)
 		n.marker_color.a = t
 		n.queue_redraw()
@@ -379,20 +373,20 @@ func clear_selection() -> void:
 	_style_marker(was)
 	selection_cleared.emit()
 
-# Travel to a directly reachable node: walk the routed edge curve (reversed point order
-# on odd laps), record the history entry in forward-edge orientation, then re-derive
-# visuals and announce the arrival so Map can resolve the node's role.
+# Travel to a directly reachable node: the routed edge curve is walked with its point order
+# reversed on odd laps while the history entry is always recorded in forward-edge orientation, and
+# _style_marker drops the pulse tint from the node being left.
 func move_to(next: WorldGraphNode) -> void:
 	_moving = true
 	var pts: PackedVector2Array
 	if run.is_reversed():
-		pts = next.edge_to(_current)  # forward edge next -> current, walked backwards
+		pts = next.edge_to(_current)
 		pts.reverse()
 		run.traveled.append(Vector3i(next.id, _current.id, run.lap))
 	else:
 		pts = _current.edge_to(next)
 		run.traveled.append(Vector3i(_current.id, next.id, run.lap))
-	_style_marker(_current)  # drop any pulse tint on the node we leave
+	_style_marker(_current)
 	clear_selection()
 	_follow_token = true
 	await token.travel_along(pts)

@@ -1,10 +1,7 @@
 extends CardEnvironment
 class_name Map
 
-## The world-map screen: hosts the WorldMapController (worldgen addon + token traversal),
-## resolves node arrivals into games / booster packs, names the hovered node on the map, and is
-## the CardEnvironment the booster generation mods run against (collections = the run
-## deck in Main.save_info).
+## The world-map screen: it is the CardEnvironment the booster generation mods run against, its collections being the run deck in Main.save_info.
 
 signal enter_game
 
@@ -36,6 +33,8 @@ func get_card_collections() -> Array:
 func get_rules_collections() -> Array[CardData]:
 	return Main.save_info.rule_datas
 
+# No node_unhovered connection on purpose: the card keeps showing its last entry across empty
+# hover rather than blinking out.
 func _ready() -> void:
 	_bind_hud_container()
 	controller.node_entered.connect(_on_node_entered)
@@ -43,8 +42,6 @@ func _ready() -> void:
 	controller.node_selected.connect(_on_node_selected)
 	controller.selection_cleared.connect(_on_selection_cleared)
 	controller.travel_focus_requested.connect(travel_button.grab_focus)
-	# Deliberately NO node_unhovered connection: the card keeps showing its last entry across
-	# empty hover rather than blinking out, the same persistence contract Info mode's card uses.
 	controller.map_ready.connect(_update_hud)
 	controller.map_ready.connect(_publish_map_inset)
 	if _pending_run:
@@ -131,8 +128,7 @@ func start_run(new_run: RunState) -> void:
 	hud_container.release_screen(HudContainer.MAP_SCREEN)
 	controller.start_run(new_run)
 
-## Node arrival dispatch: games (incl. the lap-target boss) launch a show, boosters open
-## a take-all pack, the lap-origin anchor is just a rest stop.
+## Node arrival dispatch: a game or the lap-target boss launches a show, a booster opens a take-all pack, the lap-origin anchor is just a rest stop.
 func _on_node_entered(node: WorldGraphNode) -> void:
 	name_popup.hide_name()
 	_packs_shown.clear()
@@ -165,13 +161,11 @@ func _open_booster(node: WorldGraphNode) -> void:
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
 	for card in cards:
 		Main.save_info.card_datas.append(card)
-	RunManager.mark_deck_dirty()  # run deck grew
+	RunManager.mark_deck_dirty()
 	RunManager.save_run()
 	_update_hud()
 
-## Called by Main when a won game hands back to the map: clear the pending show, complete
-## the lap if the resolved node was the lap-target boss, persist. Boss-ness is derived
-## from the persisted pending_node_id (not a transient flag), so it survives quit/resume.
+## Called by Main when a won game hands back to the map; boss-ness is derived from the persisted pending_node_id, not a transient flag, so it survives quit/resume.
 func returned_from_game() -> void:
 	var was_boss := run.pending_node_id == controller.lap_target().id
 	run.pending_goal = 0
