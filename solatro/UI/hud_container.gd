@@ -11,7 +11,6 @@ extends PanelContainer
 @onready var _piles : HBoxContainer = %GameHud/Piles
 @onready var _exit_button : Button = %ExitX
 @onready var _exit_column : Control = _description_panel.get_node(^"%ExitColumn")
-@onready var _back_button : Button = _description_panel.get_node(^"%Back")
 
 @onready var submit_button : Button = %Submit
 @onready var undo_button : Button = %Undo
@@ -87,9 +86,6 @@ func _ready() -> void:
 	_exit_button.tooltip_text = TRANSLATION.find('SIDEBAR_CLOSE')
 	_exit_button.pressed.connect(dismiss_description)
 	_exit_button.gui_input.connect(_on_exit_gui_input)
-	_back_button.tooltip_text = TRANSLATION.find('SIDEBAR_BACK')
-	_back_button.pressed.connect(return_to_pack)
-	_description_panel.preview_card_picked.connect(_show_preview_card)
 	_place_panel_controls()
 	show_hud()
 	var overlay := get_parent() as WallOverlay
@@ -117,8 +113,8 @@ func _position_below_overlay_buttons() -> void:
 	_fit_content()
 
 # EVERY CONTROL THAT CHANGES WHAT THE SIDEBAR SHOWS IS ONE TOUCH TARGET. The exit X means go back
-# to the HUD, parked in the container's top-right BELOW the overlay's button band with its column
-# kept clear of the name; the way back means go back to the pack, at the head of the name's row.
+# to the HUD, parked in the container's top-right BELOW the overlay's button band, with its column
+# keeping the name clear of it.
 func _place_panel_controls() -> void:
 	var target := WallInput.touch_target_px(get_viewport().get_visible_rect().size,
 			PlayArea.settings())
@@ -126,7 +122,6 @@ func _place_panel_controls() -> void:
 	_exit_button.offset_top = _band_top
 	_exit_button.offset_bottom = _band_top + target
 	_exit_column.custom_minimum_size.x = target
-	_back_button.custom_minimum_size = Vector2(target, target)
 
 ## The container's own rect at the current window size -- what `PlayArea.board_inset_left`/`board_inset_top` are derived from.
 func container_rect() -> Rect2:
@@ -317,7 +312,6 @@ var _active_screen : StringName = &""
 # so coming back re-shows exactly what was being read.
 func set_active_screen(screen: StringName) -> void:
 	if screen != _active_screen:
-		if _pack_entry: return_to_pack()
 		_description_panel.detach_entry()
 		_active_screen = screen
 		var remembered : InfoEntry = _entry_by_screen.get(_active_screen)
@@ -367,9 +361,6 @@ func _swap_to_hud() -> void:
 	_hud_stack.visible = true
 	_description_panel.visible = false
 	_join_focus_while_shown(_exit_button, false)
-	_pack_entry = null
-	_picked_card = null
-	_join_focus_while_shown(_back_button, false)
 	_aim_scroll_stick(0.0)
 
 # The locked entry is what a lost highlight comes BACK to, so a hover that displaces it takes its
@@ -379,7 +370,6 @@ func show_description(entry: InfoEntry) -> void:
 	if _screen_is_processing():
 		_free_detached_visual(entry)
 		return
-	if _pack_entry: return_to_pack()
 	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
 	if locked and locked != entry and _description_panel.current_entry == locked:
 		_description_panel.detach_entry()
@@ -390,46 +380,13 @@ func show_description(entry: InfoEntry) -> void:
 	_description_panel.show_entry(entry, _content_size())
 	_follow_the_menus_own_content()
 
+## Hangs a screen's own row of buttons above the description body. The screen builds the row, decides when it shows and owns the node.
+func mount_description_buttons(row: Control) -> void:
+	_description_panel.mount_buttons(row)
+
 ## Whether the description is what shows -- `GameView` asks before spending a cancel on dismissing it.
 func showing_description() -> bool:
 	return _description_panel.visible
-
-## The pack a shown preview card was picked OUT of -- `null` whenever what shows is not such a card.
-var _pack_entry : InfoEntry = null
-
-## How far into the pack its reader had got, so the way back returns it where they left it.
-var _pack_scroll : int = 0
-
-## The card picked out of that pack, which the way back rests a pad player's focus on -- `null` whenever `_pack_entry` is.
-var _picked_card : CardData = null
-
-# ⚠ A PICKED CARD IS A THING INSIDE WHAT IS BEING READ, so the pack is KEPT rather than replaced:
-# its grid comes out of the panel whole and goes back in on the way back. Only a pick that HELD the
-# focus hands it to the way back: a grab clears every viewport in the window, a pointer's pick none.
-func _show_preview_card(data: CardData, card_px: Vector2) -> void:
-	var focused := get_viewport().gui_get_focus_owner()
-	if _pack_entry == null:
-		_pack_entry = _description_panel.current_entry
-		_pack_scroll = _description_panel.scroll_position
-		_description_panel.detach_entry()
-	var pick_took_the_focus := focused != null and _pack_entry.visual.is_ancestor_of(focused)
-	_picked_card = data
-	_join_focus_while_shown(_back_button, true)
-	_description_panel.show_entry(PlayArea.card_info(data, card_px), _content_size())
-	if pick_took_the_focus: _back_button.grab_focus()
-
-## Takes the panel back to the pack the shown card was picked out of: the same grid, scrolled where its reader left it, and a pad player left on the way back rested on the very card they picked.
-func return_to_pack() -> void:
-	var pack := _pack_entry
-	var scroll := _pack_scroll
-	var picked := _picked_card
-	var pad_is_on_the_way_back := _back_button.has_focus()
-	_pack_entry = null
-	_picked_card = null
-	_join_focus_while_shown(_back_button, false)
-	_description_panel.show_entry(pack, _content_size())
-	_description_panel.scroll_position = scroll
-	if pad_is_on_the_way_back: _description_panel.rest_focus_on(picked)
 
 # ⚠ A PANEL CONTROL JOINS KEYBOARD/PAD NAVIGATION FOR EXACTLY AS LONG AS IT IS UP: a pad player
 # must always be able to dismiss what is shown, since a viewer's own opening highlight can hide the

@@ -39,7 +39,7 @@ static func _describe_node(node: WorldGraphNode, run: RunState,
 	var booster : BoosterTemplate = null
 	if role == MapNodeRoles.ROLE_BOOSTER:
 		title = "Talent pack"
-		lines.append("Take all %d cards into your deck.\nPossible contents:" % 5)
+		lines.append("Take all %d cards into your deck." % 5)
 		booster = node.meta.get(MapNodeRoles.BOOSTER_KEY)
 	elif role == MapNodeRoles.ROLE_ANCHOR and node != lap_target:
 		title = "Rest stop"
@@ -50,26 +50,14 @@ static func _describe_node(node: WorldGraphNode, run: RunState,
 		lines.append("3 acts to reach it — or the tour ends.")
 	return {"title": title, "body": "\n".join(lines), "booster": booster}
 
-## A map node's `InfoEntry`. Lives here rather than on `WorldGraphNode`, which is vendored and so not edited. ⚠ For a booster node `entry.visual` is a FRESH `FlowContainer`, never a live reference into this panel's own `%Cards`: the caller takes ownership of it and frees it. Every other node gets `visual = null`.
+## A map node's `InfoEntry`. Lives here rather than on `WorldGraphNode`, which is vendored and so not edited. ⚠ TEXT ONLY: a pack's possible contents are listed in a viewer of their own, the sidebar being too narrow to read a grid of them in.
 static func get_info(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode) -> InfoEntry:
 	var described := _describe_node(node, run, lap_target)
 	var entry := InfoEntry.new()
 	entry.title = described["title"]
 	entry.body = described["body"]
-	var booster : BoosterTemplate = described["booster"]
-	if booster:
-		var flow := FlowContainer.new()
-		entry.visual = flow
-		_populate_preview_visual(flow, booster)
-	else:
-		entry.visual = null
+	entry.visual = null
 	return entry
-
-## The same preview-card listing `_populate_cards()` uses, aimed at `container` rather than this panel's `%Cards`. ⚠ Deliberately NOT awaited by `get_info()`, whose signature is synchronous. Safe because `get_possible_preview_cards()` never actually suspends today — no mod implements a hook that would make it — so this coroutine runs to completion before the caller regains control. If a mod ever makes it genuinely async, `entry.visual` starts EMPTY and fills a frame late rather than being wrong.
-static func _populate_preview_visual(container: Node, booster: BoosterTemplate) -> void:
-	var viewer := CardsViewer.new(container)
-	var cards := await booster.get_possible_preview_cards()
-	viewer.populate(cards)
 
 ## Populate and place the panel for `node` beside `anchor_screen_pos` (the node's screen position — correct for both mouse hover and keyboard selection). `lap_target` marks the boss anchor.
 func show_for_node(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode,

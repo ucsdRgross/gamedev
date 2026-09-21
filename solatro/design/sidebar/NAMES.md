@@ -94,13 +94,21 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `signal active_screen_changed` | A different screen is showing |
 | `HudContainer` | `signal exit_accepted` | The X was accepted from keyboard or pad |
 | `HudContainer` | `signal slide_settled` | The slide reached its aim, or the container is leaving the tree, which releases `slide_to()`'s waiters too |
-| `HudContainer` | `func return_to_pack() -> void` | What `%Back` is wired to: re-shows the pack a preview card was picked out of, its own grid and its own scroll with it (K9, `GAP-010`=c) |
-| `DescriptionPanel` | `signal preview_card_picked(data: CardData, card_px: Vector2)` | A card listed in the mounted grid was pointed at, focused or tapped (K9, `Q135`=b, `Q137`=a) |
-| `DescriptionPanel` | `var scroll_position : int` | How far the panel is scrolled — the seam `return_to_pack()` restores the pack's own reading through |
-| `DescriptionPanel` | `func rest_focus_on(data: CardData) -> void` | Focuses the listed card that shows `data` as a REST, not a pick: `_focus_is_resting` makes `_pick_preview_card` ignore that one `focus_entered`, the way `PlayArea._rest_focus_on` rests without highlighting (K9, `GAP-010`=c) |
-| `HudContainer` | `var _picked_card : CardData` | The card a shown preview was picked for; lives exactly as long as `_pack_entry` and is where the way back rests the focus when `%Back` held it (K9, `GAP-010`=c) |
-| `HudContainer` | `func _join_focus_while_shown(button: Button, shown: bool) -> void` | The one rule for the X and `%Back`: a panel control is visible and in the focus chain for exactly the same span (C16, K9) |
+| `HudContainer` | `func _join_focus_while_shown(button: Button, shown: bool) -> void` | The one rule for the X: a panel control is visible and in the focus chain for exactly the same span (C16) |
 | `HudContainer` | `func _hosting_a_viewer() -> bool` | Whether a Deck/Choice viewer is up, read off `host_viewer`'s own connections: the map's up-into-the-panel route yields to a viewer's focus chain (K10, `GAP-012`=a) |
+| `HudContainer` | `func mount_description_buttons(row: Control) -> void` | Hangs a screen's own row of buttons above the description body; the screen builds the row, decides when it shows and owns the node |
+| `DescriptionPanel` | `func mount_buttons(row: Control) -> void` | The `%ButtonRow` slot: the panel never learns what the buttons do |
+| `WorldMapController` | `func select_node(node: WorldGraphNode) -> void` | A pointer, finger or pad PICKS a reachable node; travelling is the map screen's Travel button |
+| `WorldMapController` | `func clear_selection() -> void` | Back to the basic view: nothing picked, nothing marked |
+| `WorldMapController` | `func selected() -> WorldGraphNode` | The standing pick, or null at rest |
+| `WorldMapController` | `signal node_selected(node: WorldGraphNode)`, `signal selection_cleared` | The pick changed, or went |
+| `WorldMapController` | `signal travel_focus_requested` | Accept on the map, a map node being no Control: the screen hands the pad to its Travel button |
+| `Map` | `var travel_button`, `var selection_deck_button`, `var possible_cards_button` | The picked node's own buttons on the DESCRIPTION side, the HUD's Deck button being gone with the HUD |
+| `Map` | `var _packs_shown : Dictionary[int, bool]` | The pack nodes already listed where the token stands; cleared by an arrival and by a new run |
+| `Map` | `func _host_map_viewer(viewer: DeckViewer) -> void` | Every viewer this screen opens comes back to the picked node's description |
+| `ChoiceViewer` | `var selected_card : CardData`, `func select(card: CardData) -> void` | The card the player picked out of a pack; Take adds the whole pack either way |
+| `CardVisual` | `var selected : bool` | Drawn as the outer rim in `PaletteRoles.selected_rim`; the moving focus overrides it |
+| `PaletteRoles` | `var selected_rim : int` | The ink a picked pack card's rim wears while the focus is elsewhere |
 | `HudContainer` | `func host_viewer(viewer: Node, picture: WallPicture, relay: Signal) -> void` | Wires a `DeckViewer`/`ChoiceViewer` on any screen: relay, return to the lock, focus fallback, fit and re-fit (republishing only while a description shows) |
 | `GameView` | `func pile_center(pile: Control) -> Vector2` | Where a card leaving the board aims: the window pile's centre, in the game picture |
 | `PlayArea` | `func return_focus_to_board() -> void` | After a key/pad accept on the X: focus on the described card, or a board rest when that control is gone |

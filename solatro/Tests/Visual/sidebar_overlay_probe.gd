@@ -38,6 +38,7 @@ func _ready() -> void:
 	await _main._focus_picture(&"map")
 	await _await_still()
 	await _shoot("map_at_rest", &"map")
+	await _shoot_the_map_picking_nodes()
 
 	await _shoot_the_slide_into_the_game()
 	await _shoot_the_slide_out_of_the_game()
@@ -142,6 +143,101 @@ func _shoot_the_pickers_description() -> void:
 	_main.hud_container.dismiss_description()
 	picker.queue_free()
 	await _await_still()
+
+# WHAT THE MAP SIDEBAR CARRIES AT EACH STEP OF A PICK. The container shows the HUD or the
+# description and never both, so a pick's Deck button is a second one on the description side: these
+# frames are what says whether all three buttons are actually on screen when they should be.
+func _shoot_the_map_picking_nodes() -> void:
+	var map := _main.map_scene
+	await _pick(_a_node_with_role(MapNodeRoles.ROLE_GAME))
+	await _shoot("map_node_picked", &"map")
+	_report_buttons("a show node picked")
+	map.controller.clear_selection()
+	await _await_still()
+	await _pick(_a_node_with_role(MapNodeRoles.ROLE_GAME))
+	map.selection_deck_button.pressed.emit()
+	await _await_still()
+	await _shoot("map_deck_over_a_pick", &"map")
+	DeckViewer._open._close()
+	await _await_still()
+	await _shoot("map_deck_closed_back_to_the_pick", &"map")
+	_report_buttons("the deck viewer closed")
+	map.controller.clear_selection()
+	await _await_still()
+	await _shoot_the_pack_node()
+
+# A talent pack lists its contents on the FIRST pick and no later one, the sidebar being too narrow
+# to read them in; the button beside the description is how they are asked for again.
+func _shoot_the_pack_node() -> void:
+	var map := _main.map_scene
+	var pack := _a_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	await _pick(pack)
+	await _shoot("pack_first_pick_lists_its_cards", &"map")
+	print("PROBE   viewer open=", is_instance_valid(DeckViewer._open))
+	DeckViewer._open._close()
+	await _await_still()
+	await _shoot("pack_picked_after_closing", &"map")
+	_report_buttons("a pack node picked")
+	map.controller.clear_selection()
+	await _await_still()
+	await _pick(pack)
+	await _shoot("pack_second_pick_opens_nothing", &"map")
+	print("PROBE   viewer open=", is_instance_valid(DeckViewer._open))
+	map.possible_cards_button.pressed.emit()
+	await _await_still()
+	await _shoot("pack_button_reopens_the_list", &"map")
+	print("PROBE   viewer open=", is_instance_valid(DeckViewer._open))
+	DeckViewer._open._close()
+	map.controller.clear_selection()
+	await _await_still()
+	await _shoot_the_pack_chooser(pack)
+
+# The pack the player actually keeps: a click picks one card, in an ink of its own, and the moving
+# focus takes the rim back for as long as it is on that card. Take is live either way.
+func _shoot_the_pack_chooser(pack: WorldGraphNode) -> void:
+	var booster : BoosterTemplate = pack.meta.get(MapNodeRoles.BOOSTER_KEY)
+	var viewer : ChoiceViewer = await booster.on_map_picked(_main.map_scene.ui_layer)
+	_main.hud_container.host_viewer(viewer, _main.map_scene.wall_picture,
+			_main.map_scene.info_hovered)
+	await _await_still()
+	await _shoot("chooser_nothing_picked", &"map")
+	print("PROBE   take disabled=", viewer.confirm_button.disabled)
+	var card : ControlCard = viewer._cards.controls[1]
+	viewer.select(card.child.data)
+	viewer.confirm_button.grab_focus()
+	await _await_still()
+	await _shoot("chooser_card_picked", &"map")
+	card.grab_focus()
+	await _await_still()
+	await _shoot("chooser_focus_over_the_pick", &"map")
+	print("PROBE   take disabled=", viewer.confirm_button.disabled,
+			" picked=", viewer.selected_card != null)
+	viewer.queue_free()
+	await get_tree().process_frame
+
+## Stands the token beside `node` when the map would refuse the pick, then picks it the way a player does.
+func _pick(node: WorldGraphNode) -> void:
+	var controller := _main.map_scene.controller
+	if node not in controller.next_nodes_of(controller._current):
+		for n : WorldGraphNode in controller.map.overlay().nodes():
+			if node in controller.next_nodes_of(n):
+				controller._current = n
+				break
+		controller.refresh_visuals()
+	controller.select_node(node)
+	await _await_still()
+
+func _a_node_with_role(role: String) -> WorldGraphNode:
+	for node : WorldGraphNode in _main.map_scene.controller.map.overlay().nodes():
+		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == role: return node
+	return null
+
+func _report_buttons(what: String) -> void:
+	var map := _main.map_scene
+	print("PROBE   ", what, ": hud deck=", _main.hud_container.map_deck_button.is_visible_in_tree(),
+			" travel=", map.travel_button.is_visible_in_tree(),
+			" pick deck=", map.selection_deck_button.is_visible_in_tree(),
+			" possible cards=", map.possible_cards_button.is_visible_in_tree())
 
 # THREE FRAMES OF A MOVING SIDEBAR, DELIBERATELY NOT STILL: a still of a slide that never started
 # looks exactly like a still of one that did, so these carry no stillness guard and print the x.

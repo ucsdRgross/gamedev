@@ -14,3 +14,4 @@ status_ball = 6
 ball_gloss = 31
 match_rim = 31
 match_rim_active = 6
+selected_rim = 11

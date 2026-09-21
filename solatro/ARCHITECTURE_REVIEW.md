@@ -280,7 +280,9 @@ Map (Levels/map.gd, extends CardEnvironment) — map screen + booster CardEnviro
 **Flow:** Menu → new_run/continue → Map. Game/boss node → stash `pending_goal` → `Game`
 (one show, ended by meeting the goal or pressing End — there is no act budget); win → `record_win`
 (fame) at **Continue** → map; loss → run over → menu
-(save cleared). Booster node → take-all `ChoiceViewer`. End node = boss; winning flips to
+(save cleared). Booster node → take-all `ChoiceViewer`, in which a click PICKS a card (its outer
+rim in `PaletteRoles.selected_rim`, overridden by the moving focus) without changing what Take
+adds — the whole pack either way. End node = boss; winning flips to
 an endless reverse lap on the same graph (even lap forward, odd lap reversed; traveled
 history stored in forward orientation).
 
@@ -395,16 +397,17 @@ history stored in forward orientation).
   pad player somewhere to start and what heals a rebuild that freed the focused control. The HUD's
   Undo is a root-viewport press and rests nothing.
   - ⚠ **`Control.grab_focus()` clears the focus owner of EVERY viewport in the window** (measured:
-    a grab in the root viewport nulled the map SubViewport's owner). So `HudContainer` grabs
-    `%Back` only when the pick took the focus — the root owner is read BEFORE `detach_entry()`
-    and must have sat inside the pack's grid. A pointer pick leaves the focus where it was.
-- **A preview card and the way back.** Picking a card listed in a pack's grid keeps the pack
-  (`_pack_entry`, `_pack_scroll`, `_picked_card` — one lifetime, cleared in `return_to_pack` and
-  `_swap_to_hud`) and hands its grid out detached rather than freed. `%Back` is shown BEFORE the
-  card is laid out, so the top row's height counts it. The way back re-mounts the grid, restores
-  the scroll and, when Back held the focus, rests it on the picked card through
-  `DescriptionPanel.rest_focus_on` — a rest `_pick_preview_card` ignores, since a listed card's
-  `focus_entered` is otherwise a pick. On the map, which never locks, `ui_up` at the top of ANY
+    a grab in the root viewport nulled the map SubViewport's owner). A map node is no Control at
+    all, so accept on the map cannot focus anything itself: `WorldMapController` emits
+    `travel_focus_requested` and the map screen grabs its own Travel button on the pad's behalf.
+- **The map's picked node and its buttons.** A click, tap or arrow PICKS a reachable node
+  (`WorldMapController.select_node`, one `_selected` for pointer, finger and pad alike) and
+  travels nowhere; `Map.travel_button` is the one way there. The container shows the HUD or the
+  description and never both, so the pick's Deck button is a second button on the DESCRIPTION
+  side: `Map` builds an `HFlowContainer` of Travel / Deck / Possible cards, hands it to
+  `HudContainer.mount_description_buttons` and owns it, and hides it whenever nothing is picked.
+  `active_screen_changed` and `description_dismissed` both clear the pick, which is what keeps the
+  row off every other screen. On the map, which never locks, `ui_up` at the top of ANY
   shown description carries the pad onto the X (`_navigates_to_exit`); `ui_left` keeps the map's
   backward node cycle, and after the X's accept the wall routes the next press to the map again.
 - **The legal-cell drop map.** `Game.legal_cells_for(held, grids)` is the ONE legality walk — the
@@ -968,8 +971,8 @@ are PlayerSettings fractions of `get_delay()` — never wall-clock literals.
 re-calls the SAME generator (`create_one_choice`, awaited — it is a coroutine), replaces
 `current_choices[i]`, spends one charge, swaps that slot's `ControlCard` in place and grays
 every button out at zero. Generation is global-RNG, so a reroll needs no seed handling, and
-shown cards persist nothing until Confirm — no save wiring. Multi-modal: the buttons are focus
-stops and focus is restored after a swap (to the same slot, or Confirm once the pool empties).
+shown cards persist nothing until Take — no save wiring. Multi-modal: the buttons are focus
+stops and focus is restored after a swap (to the same slot, or Take once the pool empties).
 Covered by `Tests/UI/test_ui_viewers.gd`.
 
 ---

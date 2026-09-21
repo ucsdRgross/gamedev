@@ -126,15 +126,26 @@ var on_drop_map : bool = false:
 		on_drop_map = value
 		_apply_marks()
 
-# ⚠ THE ONE PLACE THE TWO BOARD MARKS ARE WRITTEN, AND THEY LAND ON DIFFERENT THINGS. The drop map
-# brightens the FACE alone, the rank, suit, stamp and art keeping their own colours; the focus takes
-# the card's OUTER rim, in the ink a matching mark wears, so a card that is both is outlined once.
+## The player has picked this card out of the pack it is listed in -- its own rim ink, which the moving focus overrides while it is here.
+var selected : bool = false:
+	set(value):
+		selected = value
+		_apply_marks()
+
+# ⚠ THE ONE PLACE THE BOARD MARKS ARE WRITTEN, AND THEY LAND ON DIFFERENT THINGS. The drop map
+# brightens the FACE alone, rank, suit, stamp and art keeping their colours; the rim carries the
+# rest, in ONE ink, so a card that is several things at once is still outlined once.
 func _apply_marks() -> void:
 	if not is_node_ready():
 		await ready
 	CardOutline.set_brightness(type, settings().highlight_glow if on_drop_map else 1.0)
-	CardOutline.set_rim(type, _match_style(PaletteDB.ROLES.match_rim) if focused
-			else outline_style(), CARD_SIZE)
+	CardOutline.set_rim(type, _rim_style(), CARD_SIZE)
+
+## The ink this card's outer rim is drawn in: the focus ink, else the selection ink, else its own type's.
+func _rim_style() -> OutlineStyle:
+	if focused: return _match_style(PaletteDB.ROLES.match_rim)
+	if selected: return _match_style(PaletteDB.ROLES.selected_rim)
+	return outline_style()
 
 @export var data : CardData:
 	set(value):

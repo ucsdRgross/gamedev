@@ -395,12 +395,13 @@ describes a popup that has already been removed — the map today has **no** nod
 notecard, and only in Info mode.
 
 `MapHoverPanel._describe_node()` produces: a title (`Talent pack` / `Rest stop` / `Show` /
-`Final show`), a biome line, and a body. Booster nodes additionally get a `FlowContainer` of live
-preview cards as `entry.visual`. The map's own HUD is three labels — `%FameLabel`, `%LapLabel`,
+`Final show`), a biome line, and a body. Booster nodes used to get a `FlowContainer` of live
+preview cards as `entry.visual`; the first playtest ruling replaced that with a viewer, so every
+node's entry is now text only. The map's own HUD is three labels — `%FameLabel`, `%LapLabel`,
 `%LuckLabel` — on its `$UI` CanvasLayer.
 
-`todo.md`: the map still **builds** the full preview-card `InfoEntry` on every booster hover even
-with Info mode off, and `Main` frees it immediately — deliberate waste, left in place.
+That waste — building a full preview-card `InfoEntry` on every booster hover and freeing it at
+once — is gone with the grid.
 
 ### 1h. The overlay's own geometry — the collision nobody has looked at
 
@@ -744,12 +745,12 @@ tell me.**
 - **Q130** `[QR7=a]` ⚑contract — What does the small popup at a map node contain? · **(a)** the node's name only — `Show`, `Final show`, `Talent pack`, `Rest stop` · **(b)** the name and one number: the fame required, or the pack size · **(c)** the name and the biome · *default* (a) · notes — the braindump says *"small popup of name of node"*, and everything else is what the sidebar is for
 - **Q131** `[QR7=a]` — Where does the small popup sit? · **(a)** beside the node, offset like the old `MapHoverPanel`'s `MOUSE_OFFSET` of (24, 12), clamped away from the screen edges · **(b)** directly above the node, centred · **(c)** following the cursor · *default* (b) · notes — (a) and (c) both mean the label moves while you are reading it; (b) is anchored to the thing it names
 - **Q132** `[QR7=a]` — Does the small popup follow the cursor within a node, or stay put once shown? · **(a)** stays put · **(b)** follows · *default* (a)
-- **Q133** `[QR7=a]` ⚑gate — **On the map, what opens the SIDEBAR?** Clicking a map node currently ENTERS it, which starts a show or opens a pack. · **(a)** hover opens the sidebar and the small popup together; clicking still enters the node — **→ next:** whether there is any way to lock a node's description, given click is taken · **(b)** hover shows only the small popup; a click opens the sidebar, and a SECOND click enters the node — **→ next:** how entering is confirmed, and whether that slows down every map move · **(c)** hover shows the small popup and opens the sidebar; a click enters; and the description is locked by a separate gesture — **→ next:** which gesture · *default* (a) · notes — (b) doubles the clicks needed to travel, which is the map's main verb
+- **Q133** `[QR7=a]` ⚑gate — **On the map, what opens the SIDEBAR?** Clicking a map node currently ENTERS it, which starts a show or opens a pack. · **(a)** hover opens the sidebar and the small popup together; clicking still enters the node — **→ next:** whether there is any way to lock a node's description, given click is taken · **(b)** hover shows only the small popup; a click opens the sidebar, and a SECOND click enters the node — **→ next:** how entering is confirmed, and whether that slows down every map move · **(c)** hover shows the small popup and opens the sidebar; a click enters; and the description is locked by a separate gesture — **→ next:** which gesture · *default* (a) · notes — (b) doubles the clicks needed to travel, which is the map's main verb · ⚠ the owner OVERTURNED this at the first playtest and chose neither: a click PICKS and never travels, and a dedicated Travel button beside the description is the only way there, so every node can be previewed before it is chosen
 - **Q133a** `[QR7=a & Q133=a]` — Hover opens the sidebar and clicking enters the node, so click is taken and a node's description can never be LOCKED the way a card's is. Is that a problem? · **(a)** no — map nodes are few and stationary, so the pointer can rest on one while you read · **(b)** yes — a separate gesture locks a node's description, so the sidebar can be scrolled without the pointer staying on the node · **(c)** no, and the sidebar simply keeps the last node's description after the pointer leaves, exactly as `Q32`=(a) does on the board · *default* (c)
 - **Q133b** `[QR7=a & Q133=b]` — A click opens the sidebar and a second click enters, so travelling costs two clicks. How is the second one made unambiguous? · **(a)** the sidebar carries an explicit "travel here" button, and clicking the node again also works · **(b)** the second click on the same node enters; a click on a different node just re-describes · *default* (a)
 - **Q133c** `[QR7=a & Q133=c]` — Which gesture locks a node's description, given click enters and hover already opens it? · **(a)** the same double-click that taps a card · **(b)** the second mouse button, which is otherwise cancel-only · **(c)** a click on the sidebar itself · *default* (a) · notes — (b) collides with `Q99`, which made the second button purely a cancel
 - **Q134** `[QR7=a]` — Booster nodes list their possible contents as live preview cards. In a tall sidebar, how are they laid out? · **(a)** a flowing grid that wraps to the sidebar's width, scrolled with the rest of the content · **(b)** a single column, one card per row, larger · **(c)** a horizontal strip that scrolls sideways, as `MapHoverPanel` used to do · *default* (a)
-- **Q135** `[QR7=a]` — Can those preview cards themselves be hovered to describe THEM in the sidebar that is showing them? · **(a)** no — that would replace the panel's own content with a card from inside it · **(b)** yes, and the sidebar switches to the card, with a way back to the pack · *default* (a) · notes — the old panel did exactly (b) with a `%CardInfo` label inside itself, which a single-surface sidebar cannot copy
+- **Q135** `[QR7=a]` — Can those preview cards themselves be hovered to describe THEM in the sidebar that is showing them? · **(a)** no — that would replace the panel's own content with a card from inside it · **(b)** yes, and the sidebar switches to the card, with a way back to the pack · *default* (a) · notes — the old panel did exactly (b) with a `%CardInfo` label inside itself, which a single-surface sidebar cannot copy · ⚠ the owner OVERTURNED this at the first playtest: the sidebar carries no grid to pick out of at all — a pack lists its possible cards in a viewer, opened on the first pick of that node and reopened from a button beside the description
 - **Q136** `[QR7=a]` — Does the map's sidebar sit on the same side as the game's? · **(a)** yes, always the same side · **(b)** whichever side the hovered node is NOT on · *default* (a)
 - **Q137** `[QR7=a]` — Keyboard and controller on the map: is there a node cursor that opens the sidebar? · **(a)** yes — the same rule as the board; whatever is selected is described · **(b)** the map's navigation is unchanged and the sidebar is mouse-only there · *default* (a) · notes — multi-modal input is a hard project rule, so (b) needs a reason
 - **Q138** `[QR7=a]` — The map currently builds a full preview-card `InfoEntry` on EVERY booster hover and throws it away when the mode is off. With no mode to be off, does that waste go? · **(a)** yes — the sidebar is always listening, so the entry is always used · **(b)** the entry is built lazily, only when the sidebar actually opens · *default* (a)
@@ -1458,13 +1459,13 @@ flowchart TD
 flowchart TD
   K1["WorldMapController.node_hovered — unchanged"]
   K2["NEW — a small popup appears with the node's NAME ONLY, directly above the node, centred, and it stays put"]
-  K3["NEW — the same hover ALSO fills the sidebar with everything else — chart B"]
-  K4["Map._on_node_entered — a click still ENTERS the node, exactly as today. Travelling never costs a second click"]
-  K5["NEW — on a touchscreen the first tap is the same as a hover, so it describes rather than travels"]
+  K3["OVERTURNED by the first playtest ruling — a hover NAMES only; a CLICK picks the node and fills the sidebar, so the description and the Travel button can never aim at different nodes — chart B"]
+  K4["OVERTURNED by the first playtest ruling — a click PICKS and travels nowhere; a Travel button beside the description is the one way there, so a node can be previewed before it is chosen"]
+  K5["OVERTURNED by the first playtest ruling — a tap picks, and no tap count travels: a finger uses the Travel button too"]
   K6["NEW — after the pointer leaves, the sidebar keeps the last node's description, the same persistence the board has"]
   K7["MapHoverPanel.get_info — the entry is now ALWAYS used, so the old build-and-throw-away waste is gone"]
-  K8["NEW — a booster's preview cards are a flowing grid that wraps to the sidebar's width and scrolls with the rest"]
-  K9["NEW — hovering one of those preview cards switches the sidebar to that CARD, with a way back to the pack"]
+  K8["OVERTURNED by the first playtest ruling — the sidebar is too narrow to read a pack in: the first pick of a pack node lists its possible cards in a viewer instead, and a button beside the description asks for that list again"]
+  K9["RETIRED with K8 — there is no grid inside the sidebar to pick out of, so there is no way back either"]
   K10["NEW — keyboard and pad: a node cursor, and whatever is selected is described. Same rule as the board"]
   K11["NEW — no small popup on the board. It is a map affordance, for nodes that are just dots"]
   K12["NEW — the sidebar is on the same side as the game's, always — chart D"]

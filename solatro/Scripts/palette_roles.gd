@@ -45,6 +45,10 @@ extends Resource
 ## The outline a matching element takes once the card has landed on that mark.
 @export_range(0, 255, 1) var match_rim_active : int = 6
 
+@export_group("Choosing")
+## The outline a card the player has picked out of a pack wears while the moving focus is elsewhere.
+@export_range(0, 255, 1) var selected_rim : int = 11
+
 ## The Goal number once the running total has reached it, one beat before the show resolves.
 @export_range(0, 255, 1) var goal_met : int = 9
 
@@ -63,6 +67,7 @@ const ROLE_NAMES : Array[StringName] = [
 	&"ball_gloss",
 	&"hud_background", &"goal_met",
 	&"match_rim", &"match_rim_active",
+	&"selected_rim",
 ]
 
 #Named access, roles.suit_hoop, is the normal path; this is for the tests and the previews, which

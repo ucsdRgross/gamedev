@@ -59,6 +59,7 @@ static func add_choices_to_scene(parent:Node, data:Data) -> ChoiceViewer:
 
 func _ready() -> void:
 # ui_accept confirms immediately; arrow keys walk the (focusable) cards.
+	confirm_button.text = TRANSLATION.find('CHOICE_TAKE')
 	confirm_button.grab_focus()
 	_populate()
 
@@ -66,8 +67,30 @@ func _populate() -> void:
 	_cards = CardsViewer.new(flex_container)
 	_cards.populate(data.current_choices, _publish_info)
 	for i in _cards.controls.size():
+		_select_on_click(_cards.controls[i])
 		_reroll_buttons.append(_add_reroll_button(_cards.controls[i], i))
 	_refresh_rerolls()
+
+## The card the player has picked out of this pack, or `null` while none is picked. What Take adds is the WHOLE pack either way -- this is what the player is pointing at, nothing more.
+var selected_card : CardData = null
+
+## Makes one listed control pick its own card when it is clicked -- also how a control REPLACING one keeps that behaviour.
+func _select_on_click(control: ControlCard) -> void:
+	control.gui_input.connect(_on_card_gui_input.bind(control))
+
+# A SECOND CLICK ON THE PICKED CARD CHANGES NOTHING: a click names the card it landed on, and only
+# naming another one moves the pick. The event is taken so the click stops at the card it picked.
+func _on_card_gui_input(event: InputEvent, control: ControlCard) -> void:
+	var button := event as InputEventMouseButton
+	if button == null or button.button_index != MOUSE_BUTTON_LEFT or not button.pressed: return
+	control.accept_event()
+	select(control.child.data)
+
+## Picks `card` out of this pack: exactly one listed card wears the selection ink at a time.
+func select(card: CardData) -> void:
+	selected_card = card
+	for control : ControlCard in _cards.controls:
+		control.child.selected = control.child.data == card
 
 # ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
 # so its WHOLE layout -- pack and chrome -- lives in the space left beside it, on ALL FOUR EDGES.
@@ -123,6 +146,8 @@ func _swap_card_control(index: int, card: CardData) -> void:
 	_cards.inspect_on_highlight(control, card)
 	_cards.controls[index] = control
 	_cards.rehighlight(replaced, card)
+	_select_on_click(control)
+	if selected_card == replaced: select(card)
 	_reroll_buttons[index] = _add_reroll_button(control, index)
 # Keyboard/controller: the pressed button was just freed — put focus back on its replacement
 # (or on Confirm if this reroll emptied the pool and disabled every button).
@@ -138,8 +163,8 @@ func _refresh_rerolls() -> void:
 		if is_instance_valid(button):
 			button.disabled = data.rerolls <= 0
 
-# A HOVER OR A KEY/PAD FOCUS, NEVER A CLICK: a click in this viewer takes the pack, and the lock
-# belongs to the board.
+# A HOVER OR A KEY/PAD FOCUS, NEVER A CLICK: a click in this viewer picks the card it landed on,
+# and the lock belongs to the board.
 func _publish_info(card: CardData) -> void:
 	PlayArea.card_info(card,
 			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)

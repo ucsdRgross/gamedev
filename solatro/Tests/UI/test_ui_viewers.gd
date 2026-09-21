@@ -27,6 +27,8 @@ func _ready() -> void:
 	await test_partial_card_rendering()
 	await test_booster_rerolls()
 	await test_booster_pool_comes_from_settings()
+	await test_pack_click_selects()
+	await test_take_ignores_the_selection()
 	finish()
 
 ## A dummy pack. It overrides create_one_choice so a roll needs no RunManager.run (the real one goes through luck(), which dereferences a null run in a bare test), while still driving the REAL on_map_picked -> ChoiceViewer path — which is where booster_reroll_pool is read.
@@ -201,6 +203,71 @@ func test_booster_pool_comes_from_settings() -> void:
 	await get_tree().process_frame
 	restore_settings_snapshot(snap)
 	restore_real_settings()
+
+## The palette index a card's outer rim is ACTUALLY drawn in, read back off the polygon's own material rather than from the decision that wrote it.
+func _rim_index(control: ControlCard) -> int:
+	return CardOutline.material_of(control.child.type).get_shader_parameter(&"u_outline_index")
+
+## A real left press on the control, through the signal Godot's own GUI pass fires -- not the handler by name.
+func _click(control: ControlCard) -> void:
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	control.gui_input.emit(press)
+
+## Clicking a listed card picks it, in its own ink; one at a time; and the moving focus takes the rim back for as long as it is there.
+func test_pack_click_selects() -> void:
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var first : ControlCard = viewer._cards.controls[0]
+	var second : ControlCard = viewer._cards.controls[1]
+	var resting := _rim_index(first)
+	check(viewer.selected_card == null, "a pack opens with nothing picked")
+	_click(first)
+	await get_tree().process_frame
+	check(viewer.selected_card == first.child.data, "a click picks the card it landed on")
+	check(first.child.selected and not second.child.selected,
+			"exactly one listed card is picked at a time")
+	check(_rim_index(first) == PaletteDB.ROLES.selected_rim,
+			"the picked card's rim is drawn in the selection ink", str(_rim_index(first)))
+	check(_rim_index(first) != resting and PaletteDB.ROLES.selected_rim != PaletteDB.ROLES.match_rim,
+			"the selection ink is neither the resting ink nor the focus ink")
+	first.grab_focus()
+	await get_tree().process_frame
+	check(_rim_index(first) == PaletteDB.ROLES.match_rim,
+			"the moving focus takes the rim while it is on the picked card", str(_rim_index(first)))
+	second.grab_focus()
+	await get_tree().process_frame
+	check(_rim_index(first) == PaletteDB.ROLES.selected_rim,
+			"the selection ink returns once the focus moves off", str(_rim_index(first)))
+	_click(first)
+	await get_tree().process_frame
+	check(viewer.selected_card == first.child.data, "a second click on the picked card keeps it")
+	_click(second)
+	await get_tree().process_frame
+	check(viewer.selected_card == second.child.data and not first.child.selected,
+			"clicking another card moves the pick")
+	check(_rim_index(first) == resting, "the card that lost the pick goes back to its own ink")
+	viewer.queue_free()
+	await get_tree().process_frame
+
+## Take adds the WHOLE pack whatever is picked: the pick is what the player is pointing at, never what they get.
+func test_take_ignores_the_selection() -> void:
+	for pick : int in [-1, 1]:
+		var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 5, 0)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		if pick >= 0: _click(viewer._cards.controls[pick])
+		await get_tree().process_frame
+		check(not viewer.confirm_button.disabled,
+				"Take is live with %s picked" % ("a card" if pick >= 0 else "nothing"))
+		var got : Array[CardData] = []
+		viewer.confirmed.connect(func(taken: Array[CardData]) -> void: got.assign(taken))
+		viewer.confirm_button.pressed.emit()
+		check(got.size() == 5, "Take adds all 5 cards with %s picked"
+				% ("a card" if pick >= 0 else "nothing"), str(got.size()))
+		await get_tree().process_frame
 
 func test_partial_card_rendering() -> void:
 # Rank-only (suitless) preview cards must render uncolored; suit-only (rankless)

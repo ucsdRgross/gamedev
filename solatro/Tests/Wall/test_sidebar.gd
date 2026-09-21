@@ -215,19 +215,23 @@ func _ready() -> void:
 	await test_the_outcomes_undo_is_reachable_from_continue_by_pad()
 	await test_undo_from_an_end_reached_outcome_with_an_empty_entrance()
 	behavior_section("S23: THE MAP NAMES THE NODE AND DESCRIBES IT IN THE SIDEBAR")
-	await test_hovering_a_map_node_names_the_dot_and_fills_the_sidebar()
+	await test_hovering_a_map_node_names_the_dot_and_leaves_the_sidebar_alone()
 	await test_the_name_stays_put_while_the_pointer_moves_inside_the_node()
-	await test_one_click_travels_and_leaving_keeps_the_last_nodes_description()
-	await test_the_first_tap_names_the_node_and_the_second_enters_it()
+	await test_one_click_picks_the_node_and_only_travel_goes_there()
+	await test_a_tap_picks_the_node_and_no_second_tap_enters_it()
 	await test_a_finger_drag_pans_the_map()
-	await test_a_packs_preview_cards_wrap_below_the_body_and_switch_the_sidebar()
-	await test_a_pack_preview_card_is_reachable_by_pad_and_by_finger()
-	await test_the_way_back_returns_the_pack_with_its_grid_and_its_scroll()
-	await test_a_pads_pick_lands_on_the_way_back_and_the_way_back_on_the_picked_card()
 	await test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x()
 	await test_up_inside_a_hosted_viewer_walks_the_viewer_not_the_x()
-	await test_a_replaced_preview_grid_takes_its_height_with_it()
 	await test_selecting_a_node_by_key_describes_it()
+	behavior_section("THE MAP SIDEBAR: A BASIC VIEW, THEN A PICK WITH ITS OWN BUTTONS")
+	await test_the_map_rests_with_nothing_picked_and_no_pick_buttons()
+	await test_a_pick_brings_up_travel_and_a_deck_button_of_its_own()
+	await test_the_decks_viewer_comes_back_to_the_same_pick()
+	await test_the_picks_buttons_never_show_on_another_screen()
+	await test_cancel_drops_the_pick_before_it_leaves_the_picture()
+	await test_every_new_button_is_written_in_the_locale()
+	await test_a_pack_lists_its_possible_cards_on_the_first_pick_only()
+	await test_travelling_lets_a_pack_list_itself_again()
 	await test_no_name_popup_shows_on_the_board()
 	behavior_section("THE NAME IS ANCHORED TO THE DOT IT NAMES")
 	await test_the_name_follows_its_node_when_the_camera_pans()
@@ -3115,19 +3119,19 @@ func test_the_maps_container_does_not_swap_on_the_games_processing() -> void:
 	await _start_game_fixture()
 	await _main._focus_picture(&"map")
 	check((_container.get_node(^"%MapHud") as Control).visible, "the map is the focused screen")
-	var node := await _hover_a_map_node()
-	check(_container.showing_description(), "a map hover fills the sidebar")
+	var node := _map.controller._sorted_next()[0]
+	await _select_map_node_and_settle(node)
+	check(_container.showing_description(), "a map pick fills the sidebar")
 	var game := CardEnvironment.get_current_game()
 	game.processing = true
 	check(_container.showing_description(),
 			"the game's processing leaves the map's description up (C10, Q260b=b)")
 	var described : InfoEntry = _panel.current_entry
-	_hover_in(_map_viewport, Vector2(_map_viewport.size) * 0.5 - Vector2(4000.0, 4000.0))
+	_map.controller.clear_selection()
 	await get_tree().process_frame
-	_hover_in(_map_viewport, WorldMapController.node_screen_rect(node).get_center())
-	await get_tree().process_frame
+	await _select_map_node_and_settle(node)
 	check(_container.showing_description() and _panel.current_entry != described,
-			"...and a real hover's publication still reaches it mid-cascade (1.12)")
+			"...and a real pick's publication still reaches it mid-cascade (1.12)")
 	game.processing = false
 	await _end_main_fixture()
 
@@ -3510,8 +3514,8 @@ func test_a_new_run_does_not_inherit_the_last_shows_lock() -> void:
 ## The map persists across runs, so its remembered description is the RUN's: a new run's map opens on its own HUD, not the last run's pack.
 func test_a_new_run_does_not_inherit_the_maps_last_description() -> void:
 	await _start_map_fixture()
-	_map._on_node_hovered(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
-	await get_tree().process_frame
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	await _close_the_open_viewer()
 	check(_container.showing_description(), "sanity: the map is left describing a pack node")
 	await _main._on_new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	await _main._focus_picture(&"map")
@@ -5806,16 +5810,17 @@ func _suit_rank_log(cards: Array[CardData]) -> String:
 
 # ------------------------------------------ S23: THE MAP'S NAME POPUP AND ITS SIDEBAR
 
-## A hovered map node is a bare dot, so it is named AT the dot while the sidebar carries the rest.
-func test_hovering_a_map_node_names_the_dot_and_fills_the_sidebar() -> void:
+## A hovered map node is a bare dot, so a hover NAMES it at the dot -- and names it only: the sidebar describes what the player PICKED, so passing the cursor over a neighbour cannot displace it.
+func test_hovering_a_map_node_names_the_dot_and_leaves_the_sidebar_alone() -> void:
 	await _start_map_fixture()
 	var node := await _hover_a_map_node()
 	var popup := _map.name_popup
-	check(_container.showing_description(), "S23.1: hovering a map node fills the sidebar")
+	check(not _container.showing_description(),
+			"S23.1: hovering a map node does not fill the sidebar")
 	check(popup.visible, "S23.1: the name popup shows above the node")
-	check(_popup_text(popup) == _panel.current_entry.title,
+	check(_popup_text(popup) == _map._info_for(node).title,
 			"S23.1: the popup says the node's name and nothing else",
-			"%s vs %s" % [_popup_text(popup), _panel.current_entry.title])
+			"%s vs %s" % [_popup_text(popup), _map._info_for(node).title])
 	var dot := WorldMapController.node_screen_rect(node)
 	check(absf(popup.get_rect().get_center().x - dot.get_center().x) <= 1.0,
 			"S23.1: the popup centres on the node",
@@ -5838,26 +5843,34 @@ func test_the_name_stays_put_while_the_pointer_moves_inside_the_node() -> void:
 			"%s vs %s" % [_map.name_popup.position, placed])
 	await _end_main_fixture()
 
-## Travelling never costs a second click, and the sidebar keeps the last node once the dot is left.
-func test_one_click_travels_and_leaving_keeps_the_last_nodes_description() -> void:
+## A CLICK PICKS AND TRAVELS NOWHERE, so the player can look before they go; the pick's description stays up once the dot is left, and the Travel button is the only way there.
+func test_one_click_picks_the_node_and_only_travel_goes_there() -> void:
 	await _start_map_fixture()
-	var node := await _hover_a_map_node()
-	var described : InfoEntry = _panel.current_entry
-	_hover_in(_map_viewport, Vector2(_map_viewport.size) * 0.5 - Vector2(4000.0, 4000.0))
-	await get_tree().process_frame
-	check(_container.showing_description() and _panel.current_entry == described,
-			"S23.3: the pointer leaving the node keeps that node's description up")
+	var node := _map.controller._sorted_next()[0]
 	var entered := _count_arrivals()
 	var at := WorldMapController.node_screen_rect(node).get_center()
 	_push_mouse_button(at, _map_viewport, true)
 	_push_mouse_button(at, _map_viewport, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(entered.is_empty(), "S23.3: one click on a reachable node enters nothing",
+			str(entered.size()))
+	check(_map.controller.selected() == node, "S23.3: ...it picks that node instead")
+	var described : InfoEntry = _panel.current_entry
+	check(_container.showing_description(), "S23.3: ...and the sidebar describes it")
+	_hover_in(_map_viewport, Vector2(_map_viewport.size) * 0.5 - Vector2(4000.0, 4000.0))
+	await get_tree().process_frame
+	check(_container.showing_description() and _panel.current_entry == described,
+			"S23.3: the pointer leaving the dot keeps the PICK's description up")
+	check(await _click_button(_map.travel_button, _booted_viewport),
+			"S23.3: the Travel button is a real button a real click can press")
 	await _await_map_arrival()
 	check(entered.size() == 1 and entered[0] == node,
-			"S23.3: one click enters the node, with no second click", str(entered.size()))
+			"S23.3: ...and pressing it is what enters the node", str(entered.size()))
 	await _end_main_fixture()
 
-## A finger has no hover, so the first tap has to be able to ask what a dot is without going there.
-func test_the_first_tap_names_the_node_and_the_second_enters_it() -> void:
+## A finger has no hover, so a tap has to be able to ask what a dot is without going there -- and now no tap count takes it there either, the Travel button being the one way.
+func test_a_tap_picks_the_node_and_no_second_tap_enters_it() -> void:
 	await _start_map_fixture()
 	var node := _map.controller._sorted_next()[0]
 	var at := WorldMapController.node_screen_rect(node).get_center()
@@ -5865,16 +5878,19 @@ func test_the_first_tap_names_the_node_and_the_second_enters_it() -> void:
 	_push_finger(at)
 	await get_tree().process_frame
 	check(_container.showing_description() and _map.name_popup.visible,
-			"S23.4: the first tap names the node and describes it")
-	check(entered.is_empty(), "S23.4: the first tap does not enter the node", str(entered.size()))
+			"S23.4: a tap names the node and describes it")
+	check(_map.controller.selected() == node, "S23.4: ...and picks it")
+	check(entered.is_empty(), "S23.4: a tap does not enter the node", str(entered.size()))
 	_push_synthesised_mouse_press(at)
 	await get_tree().process_frame
 	check(entered.is_empty(),
 			"S23.4: the mouse press the engine synthesises from that finger enters nothing")
 	_push_finger(at)
-	await _await_map_arrival()
-	check(entered.size() == 1 and entered[0] == node,
-			"S23.4: a second tap on the same node enters it", str(entered.size()))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(entered.is_empty(),
+			"S23.4: a second tap on the same node still enters nothing", str(entered.size()))
+	check(_map.controller.selected() == node, "S23.4: ...the pick simply stands")
 	await _end_main_fixture()
 
 ## A map is panned with one finger, so the rule that lets a tap NAME a dot must not eat the drag.
@@ -5897,171 +5913,33 @@ func test_a_finger_drag_pans_the_map() -> void:
 			"Fix 14.1: a finger dragged across a node names nothing")
 	await _end_main_fixture()
 
-# A pack's possible contents are a LIST, so they wrap to the sidebar's width under the body rather
-# than squeezing into the name's row -- and each listed card is a thing to point at in its own right.
-# A pointer's pick took no focus, so it grants none: a grab would clear every viewport in the window.
-func test_a_packs_preview_cards_wrap_below_the_body_and_switch_the_sidebar() -> void:
-	await _start_map_fixture()
-	_map._on_node_hovered(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var flow := _panel.current_entry.visual as FlowContainer
-	check(flow != null and flow.get_parent() == _panel.get_node(^"%GridSlot"),
-			"S23.5: the pack's preview grid mounts below the body, not beside the name")
-	var cards := flow.find_children("*", "ControlCard", true, false)
-	var rows : Dictionary[float, bool] = {}
-	var inside := true
-	for card : Control in cards:
-		rows[card.position.y] = true
-		inside = inside and card.position.x >= 0.0
-		inside = inside and card.position.x + card.size.x <= flow.size.x + 1.0
-	check(cards.size() > 1 and rows.size() > 1,
-			"S23.5: the preview cards wrap onto more than one row",
-			"%d cards on %d rows" % [cards.size(), rows.size()])
-	check(inside, "S23.5: every preview card lies inside the grid's own width",
-			"grid width %s" % flow.size.x)
-	check(flow.size.x >= _panel.size.x - 1.0,
-			"S23.5: the grid wraps at the sidebar's own width",
-			"%s vs %s" % [flow.size.x, _panel.size.x])
-	var described : InfoEntry = _panel.current_entry
-	var pointed_at : ControlCard = cards[0] as ControlCard
-	var map_focused : Control = _map.name_popup
-	map_focused.focus_mode = Control.FOCUS_ALL
-	map_focused.grab_focus()
-	check(_map_viewport.gui_get_focus_owner() == map_focused,
-			"sanity: a control in the map picture's own viewport holds that viewport's focus")
-	var root_owner_before := _booted_viewport.gui_get_focus_owner()
-	_hover_in(_booted_viewport, pointed_at.get_global_rect().get_center())
-	await get_tree().process_frame
-	check(_panel.current_entry != described and _previewed_card() == pointed_at.child.data,
-			"S23.5: pointing at a preview card switches the sidebar to that card")
-	check(_back_controls().size() == 1 and not _back_controls()[0].has_focus(),
-			"1.16a: a pointer pick leaves the way back unfocused")
-	check(_booted_viewport.gui_get_focus_owner() == root_owner_before,
-			"1.16a: a pointer pick leaves the root viewport's focus where it was",
-			"%s vs %s" % [_booted_viewport.gui_get_focus_owner(), root_owner_before])
-	check(_map_viewport.gui_get_focus_owner() == map_focused,
-			"1.16a: a pointer pick leaves the map picture's own focus where it was",
-			str(_map_viewport.gui_get_focus_owner()))
-	await _end_main_fixture()
-
-# Every way in reaches a listed preview card, not the pointer alone: a pad focuses one and a finger
-# taps one, and each switches the sidebar to the card it landed on.
-func test_a_pack_preview_card_is_reachable_by_pad_and_by_finger() -> void:
-	await _start_map_fixture()
-	await _hover_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
-	var pack : InfoEntry = _panel.current_entry
-	var listed := _preview_cards()
-	check(listed.size() > 1, "K9: the pack listed more than one preview card", str(listed.size()))
-	listed[0].grab_focus()
-	await get_tree().process_frame
-	check(_previewed_card() == listed[0].child.data,
-			"K9: focusing a preview card by pad switches the sidebar to that card")
-	check(await _press_back(), "K9: the way back is a real button a real click can press")
-	await get_tree().process_frame
-	check(_panel.current_entry == pack, "K9: ...and it returns the pack")
-	var tapped := _preview_cards()[1]
-	_push_finger_in(_booted_viewport, tapped.get_global_rect().get_center())
-	await get_tree().process_frame
-	check(_previewed_card() == tapped.child.data,
-			"K9: tapping a preview card with a finger switches the sidebar to that card")
-	await _end_main_fixture()
-
-# A pack's grid and how far into it you had read are the player's PLACE, so the way back out of a
-# picked card returns all three: the pack itself, the very grid it was showing, and the scroll.
-func test_the_way_back_returns_the_pack_with_its_grid_and_its_scroll() -> void:
-	await _start_map_fixture()
-	await _hover_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
-	var pack : InfoEntry = _panel.current_entry
-	var grid := pack.visual
-	_panel.scroll_by_pages(1.0)
-	await get_tree().process_frame
-	var left_at := _panel_scroll(_panel).scroll_vertical
-	check(left_at > 0, "K9: the pack's own reading was scrolled off its top", str(left_at))
-	_preview_cards()[0].grab_focus()
-	await get_tree().process_frame
-	check(_panel.current_entry != pack, "K9: the picked card replaced the pack on the panel")
-	check(_back_controls().size() == 1,
-			"K9: exactly one way back is up while a picked card shows",
-			str(_back_controls().size()))
-	check(await _press_back(), "K9: the way back pressed")
-	await get_tree().process_frame
-	check(_panel.current_entry == pack, "K9: the way back returns the pack itself")
-	check(grid.get_parent() == _panel.get_node(^"%GridSlot"),
-			"K9: ...carrying the very grid it was showing, never a rebuilt one")
-	check(_panel_scroll(_panel).scroll_vertical == left_at,
-			"K9: ...scrolled where its reader left it",
-			"%d vs %d" % [_panel_scroll(_panel).scroll_vertical, left_at])
-	check(_back_controls().is_empty(), "K9: ...and the way back goes away with the card")
-	await _end_main_fixture()
-
-# A PAD'S PICK TAKES THE FOCUS OUT OF THE TREE WITH THE GRID, so nothing would own the next press:
-# the pick lands the focus on the way back, and the way back lands it on the very card picked --
-# a rest, not a pick, or the card would open again. The picked card's layout counts the way back.
-func test_a_pads_pick_lands_on_the_way_back_and_the_way_back_on_the_picked_card() -> void:
-	await _start_map_fixture()
-	await _hover_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
-	var pack : InfoEntry = _panel.current_entry
-	var picked := _preview_cards()[0]
-	picked.grab_focus()
-	await get_tree().process_frame
-	check(_previewed_card() == picked.child.data,
-			"sanity: the pad's pick switched the sidebar to that card")
-	var owner := _booted_viewport.gui_get_focus_owner()
-	check(_back_controls().size() == 1 and owner == _back_controls()[0],
-			"1.19: a pad's pick lands the focus on the way back", str(owner))
-	var first_layout := _content_height()
-	_panel.resize_to(_panel.size)
-	check(absf(_content_height() - first_layout) <= 0.5,
-			"1.19: the picked card's first layout already counted the way back's row",
-			"%.1f at the pick vs %.1f laid out again" % [first_layout, _content_height()])
-	await _tap_key(KEY_ENTER)
-	check(_panel.current_entry == pack, "1.19: accept on the way back returns the pack")
-	owner = _booted_viewport.gui_get_focus_owner()
-	check(owner == picked, "1.19: ...and lands the focus on the very card that was picked",
-			str(owner))
-	check(_container._picked_card == null,
-			"1.19: the picked card is forgotten with the return, as the pack is")
-	await _end_main_fixture()
-
 # THE MAP NEVER LOCKS, so up at the top of any description it shows is the press that enters the
-# panel: onto the X, from which the neighbour search reaches the listed cards. The X's accept is
-# the way out -- the description gone, no focus owner, and the next arrow cycles the map again.
+# panel: onto the X. The X's accept is the way out -- the description gone, the pick dropped, no
+# focus owner, and the next arrow picks a node again.
 func test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x() -> void:
 	await _start_map_fixture()
-	await _hover_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_GAME))
 	var pack : InfoEntry = _panel.current_entry
-	var selection_before : int = _map.controller._kb_index
+	var picked_before := _map.controller.selected()
 	check(not _container.is_locked(), "sanity: the map's description is shown, not locked")
 	await _tap_key(KEY_UP)
 	var owner := _booted_viewport.gui_get_focus_owner()
 	check(owner == _exit_button(), "1.20: up at the top of the map's description focuses the X",
 			str(owner))
-	check(_map.controller._kb_index == selection_before and _panel.current_entry == pack,
-			"1.20: ...and the map's node selection did not cycle",
-			"%d vs %d" % [_map.controller._kb_index, selection_before])
-	var listed : Array[CardData] = []
-	for card : ControlCard in _preview_cards(): listed.append(card.child.data)
-	owner = await _tap_until(KEY_DOWN, func() -> bool:
-			return _container._picked_card != null, listed.size())
-	check(listed.has(_container._picked_card),
-			"1.20: the neighbour walk down from the X lands the focus on a listed card, which picks it",
-			"%s picked, %s focused" % [_container._picked_card, owner])
-	await _tap_key(KEY_ENTER)
-	check(_panel.current_entry == pack, "sanity: the way back returned the pack")
-	owner = await _tap_until(KEY_UP, func() -> bool:
-			return _booted_viewport.gui_get_focus_owner() == _exit_button(), listed.size())
-	check(owner == _exit_button(), "1.20: up from the returned card walks back to the X",
-			str(owner))
+	check(_map.controller.selected() == picked_before and _panel.current_entry == pack,
+			"1.20: ...and the map's own pick did not move",
+			"%s vs %s" % [_map.controller.selected(), picked_before])
 	await _tap_key(KEY_ENTER)
 	check(not _container.showing_description() and _hud_is_up(),
 			"1.20: accept on the X takes the description down and puts the HUD up")
+	check(_map.controller.selected() == null,
+			"1.20: ...dropping the pick with it, so the map is back to its basic view")
 	check(_booted_viewport.gui_get_focus_owner() == null,
 			"1.20: ...leaving no root control focused", str(_booted_viewport.gui_get_focus_owner()))
 	await _tap_key(KEY_RIGHT)
-	check(_map.controller._kb_index != selection_before,
-			"1.20: ...and the next right cycles the map's node again",
-			str(_map.controller._kb_index))
+	check(_map.controller.selected() != null,
+			"1.20: ...and the next right picks a map node again",
+			str(_map.controller.selected()))
 	await _end_main_fixture()
 
 # A HOSTED VIEWER HAS A FOCUS CHAIN OF ITS OWN -- the pack's cards, their Rerolls, Take all -- so an
@@ -6110,57 +5988,6 @@ func _previewed_card() -> CardData:
 		return card.child.data
 	return null
 
-## The preview cards a pack's grid lists, in order -- empty while what shows is not a pack.
-func _preview_cards() -> Array[ControlCard]:
-	var out : Array[ControlCard] = []
-	for card : ControlCard in (_panel.get_node(^"%GridSlot") as Control).find_children(
-			"*", "ControlCard", true, false):
-		out.append(card)
-	return out
-
-## Every way back the panel is SHOWING, found the way a player finds one: by looking at the panel for it.
-func _back_controls() -> Array[Button]:
-	var out : Array[Button] = []
-	for button : Button in _panel.find_children("*", "Button", true, false):
-		if button.is_visible_in_tree() and button.tooltip_text == TRANSLATION.find(&"SIDEBAR_BACK"):
-			out.append(button)
-	return out
-
-# A REAL CLICK on whatever way back is up, looped over what the panel shows so a run with no way
-# back at all clicks nothing rather than dereferencing a null. Answers whether one pressed.
-func _press_back() -> bool:
-	var pressed := false
-	for back : Button in _back_controls():
-		if await _click_button(back, _booted_viewport): pressed = true
-	return pressed
-
-# The description is as tall as WHAT IT SHOWS NOW: a pack's grid left in the sum would give the
-# short entry after it a grid-sized blank to scroll through, and a pack after a pack two grids.
-func test_a_replaced_preview_grid_takes_its_height_with_it() -> void:
-	await _start_map_fixture()
-	var show_node := _a_map_node_with_role(MapNodeRoles.ROLE_GAME)
-	var pack_node := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
-	await _hover_map_node_and_settle(show_node)
-	var alone := _content_height()
-	await _hover_map_node_and_settle(pack_node)
-	var one_grid := _scroll_overflow()
-	var one_pack := _content_height()
-	check(one_grid > 0.0, "Fix 15.1: a pack's grid is inside what the sidebar scrolls",
-			"%.1f" % one_grid)
-	await _hover_map_node_and_settle(show_node)
-	check(absf(_content_height() - alone) <= 0.5,
-			"Fix 15.1: a short entry after a pack is only as tall as itself",
-			"%.1f after a pack vs %.1f alone" % [_content_height(), alone])
-	check(_scroll_overflow() == 0.0,
-			"Fix 15.1: ...so the sidebar has nothing left to scroll",
-			"%.1f" % _scroll_overflow())
-	await _hover_map_node_and_settle(pack_node)
-	await _hover_map_node_and_settle(pack_node)
-	check(absf(_content_height() - one_pack) <= 0.5,
-			"Fix 15.2: a pack after a pack is laid out to one grid's height, not two",
-			"%.1f vs %.1f" % [_content_height(), one_pack])
-	await _end_main_fixture()
-
 ## Whatever is selected is described, by pad and keyboard as well as by pointer.
 func test_selecting_a_node_by_key_describes_it() -> void:
 	await _start_map_fixture()
@@ -6169,17 +5996,160 @@ func test_selecting_a_node_by_key_describes_it() -> void:
 	key.pressed = true
 	_map_viewport.push_input(key)
 	await get_tree().process_frame
-	var selected := _map.controller._kb_selected()
+	var selected := _map.controller.selected()
 	check(selected != null, "S23.6: an arrow selects a reachable node")
 	check(_container.showing_description(),
 			"S23.6: the selected node is described in the sidebar")
-	check(_popup_text(_map.name_popup) == _panel.current_entry.title,
-			"S23.6: the selected node is named at the dot too")
+	check(_popup_text(_map.name_popup) == _map._info_for(selected).title,
+			"S23.6: the selected node is named at the dot too",
+			"%s vs %s" % [_popup_text(_map.name_popup), _map._info_for(selected).title])
 	var dot := WorldMapController.node_screen_rect(selected)
 	check(absf(_map.name_popup.get_rect().get_center().x - dot.get_center().x) <= 1.0,
 			"S23.6: the name is placed at the node the arrow selected",
 			"%s vs %s" % [_map.name_popup.get_rect().get_center().x, dot.get_center().x])
 	await _end_main_fixture()
+
+## No path is picked for the player, so the map opens on its HUD: Fame, Lap, Luck and the Deck button, and not one control that belongs to a pick.
+func test_the_map_rests_with_nothing_picked_and_no_pick_buttons() -> void:
+	await _start_map_fixture()
+	check(_map.controller.selected() == null, "the map rests with nothing picked")
+	check(_hud_is_up(), "...so the sidebar rests on its basic HUD view")
+	check(_container.map_deck_button.is_visible_in_tree(),
+			"...whose Deck button is there to be pressed")
+	for button : Button in [_map.travel_button, _map.possible_cards_button] as Array[Button]:
+		check(not button.is_visible_in_tree(),
+				"...and %s is not on screen at all with nothing picked" % button.text)
+	await _end_main_fixture()
+
+# THE SIDEBAR CARRIES THE HUD OR THE DESCRIPTION AND NEVER BOTH, so a pick's Deck button is a second
+# button of its own on the description side -- the owner's "just 1 button", not the HUD's kept alive.
+func test_a_pick_brings_up_travel_and_a_deck_button_of_its_own() -> void:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_GAME))
+	check(_container.showing_description(), "a pick puts its description on the sidebar")
+	check(not _container.map_deck_button.is_visible_in_tree(),
+			"the HUD's own Deck button is gone with the HUD, not special-cased to stay")
+	for button : Button in [_map.travel_button, _map.selection_deck_button] as Array[Button]:
+		check(button.is_visible_in_tree(), "a pick shows its own %s button" % button.text)
+	check(not _map.possible_cards_button.is_visible_in_tree(),
+			"a show node has no possible cards to list, so no button for them")
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	check(_map.possible_cards_button.is_visible_in_tree(),
+			"a talent pack picks up the third button, for its possible cards")
+	await _end_main_fixture()
+
+## Comparing the pack against what you already hold must not cost the pick: the deck viewer opens over it and closes back onto it.
+func test_the_decks_viewer_comes_back_to_the_same_pick() -> void:
+	await _start_map_fixture()
+	var node := _a_map_node_with_role(MapNodeRoles.ROLE_GAME)
+	await _select_map_node_and_settle(node)
+	var described := _panel.current_entry.title
+	check(await _click_button(_map.selection_deck_button, _booted_viewport),
+			"the pick's Deck button is a real button a real click can press")
+	await get_tree().process_frame
+	check(is_instance_valid(DeckViewer._open), "...and it opens the run deck over the pick")
+	check(_map.controller.selected() == node, "...without cancelling the pick")
+	await _close_the_open_viewer()
+	check(_map.controller.selected() == node, "closing it leaves the same node picked")
+	check(_container.showing_description() and _panel.current_entry.title == described,
+			"...with the sidebar describing that node again",
+			"%s vs %s" % [_panel.current_entry.title, described])
+	await _end_main_fixture()
+
+## The buttons belong to a picked MAP node, so no other screen's description may carry them.
+func test_the_picks_buttons_never_show_on_another_screen() -> void:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_GAME))
+	check(_map.selection_buttons.is_visible_in_tree(), "sanity: the pick's row is up on the map")
+	await _main.enter_game()
+	await get_tree().process_frame
+	check(not _map.selection_buttons.is_visible_in_tree(),
+			"the pick's row is gone the moment another screen is shown")
+	check(_map.controller.selected() == null, "...and the pick went with it")
+	await _end_main_fixture()
+
+## R2's order: cancel spends itself on the pick before it spends itself on leaving the picture.
+func test_cancel_drops_the_pick_before_it_leaves_the_picture() -> void:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_GAME))
+	_map_viewport.push_input(_cancel_event())
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(_map.controller.selected() == null, "cancel drops the pick")
+	check(_hud_is_up(), "...back to the basic view")
+	check(_main._current_focus == &"map", "...and stays inside the map picture",
+			str(_main._current_focus))
+	await _end_main_fixture()
+
+# A KEY THAT IS NOT IN THE CSV COMES BACK AS ITSELF, so a button showing its own key looks like a
+# label until someone reads it. Every button this screen and the pack chooser added is checked
+# against the locale, and against the key it was asked for.
+func test_every_new_button_is_written_in_the_locale() -> void:
+	await _start_map_fixture()
+	var by_key : Dictionary[StringName, Button] = {
+		&"MAP_TRAVEL": _map.travel_button,
+		&"MAP_DECK": _map.selection_deck_button,
+		&"MAP_POSSIBLE_CARDS": _map.possible_cards_button,
+	}
+	for key : StringName in by_key:
+		var button : Button = by_key[key]
+		check(button.text == TRANSLATION.find(key) and button.text != String(key),
+				"%s is written through its locale key, not as a literal" % key, button.text)
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(_map, _card_for_a_pack, 2, 0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(viewer.confirm_button.text == TRANSLATION.find(&"CHOICE_TAKE") \
+			and viewer.confirm_button.text != "CHOICE_TAKE",
+			"Take is written through its locale key, not as a literal", viewer.confirm_button.text)
+	viewer.queue_free()
+	await get_tree().process_frame
+	await _end_main_fixture()
+
+## One card for a pack the locale row opens -- what it holds does not matter, only that the chooser draws its own button.
+func _card_for_a_pack() -> CardData:
+	return CardData.new().with_rank(PipRankNumeral.new().with_value(5)).with_suit(PipSuitKnife.new())
+
+# THE SIDEBAR IS TOO NARROW TO READ A PACK IN, so the pack lists itself in a viewer on the first
+# pick -- and only the first: a later pick of the same node leaves the player where they are, and
+# the button is how they ask again.
+func test_a_pack_lists_its_possible_cards_on_the_first_pick_only() -> void:
+	await _start_map_fixture()
+	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	var other := _a_map_node_with_role(MapNodeRoles.ROLE_GAME)
+	await _select_map_node_and_settle(pack)
+	check(is_instance_valid(DeckViewer._open),
+			"the first pick of a talent pack lists its possible cards")
+	var listed : int = DeckViewer._open.deck.size()
+	check(listed == (await _booster_of(pack).get_possible_preview_cards()).size() and listed > 0,
+			"...every card the pack could roll, and nothing else", str(listed))
+	await _close_the_open_viewer()
+	await _select_map_node_and_settle(other)
+	await _select_map_node_and_settle(pack)
+	check(not is_instance_valid(DeckViewer._open),
+			"picking the same pack again before travelling opens nothing")
+	check(await _click_button(_map.possible_cards_button, _booted_viewport),
+			"its button in the sidebar is how it is asked for again")
+	await get_tree().process_frame
+	check(is_instance_valid(DeckViewer._open), "...and that opens it")
+	await _close_the_open_viewer()
+	await _end_main_fixture()
+
+## "Before travelling" is what the once is keyed on, so arriving anywhere lets every pack list itself afresh.
+func test_travelling_lets_a_pack_list_itself_again() -> void:
+	await _start_map_fixture()
+	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	await _select_map_node_and_settle(pack)
+	await _close_the_open_viewer()
+	check(_map._packs_shown.has(pack.id), "sanity: that pack is marked as listed")
+	await _map._on_node_entered(_a_map_node_with_role(MapNodeRoles.ROLE_GAME))
+	check(_map._packs_shown.is_empty(), "arriving anywhere forgets every pack that was listed")
+	_map.start_run(RunManager.run)
+	check(_map._packs_shown.is_empty(), "...and so does starting a run over")
+	await _end_main_fixture()
+
+## The pack a node opens, for a test that needs the list it would show.
+func _booster_of(node: WorldGraphNode) -> BoosterTemplate:
+	return node.meta.get(MapNodeRoles.BOOSTER_KEY)
 
 ## The popup is a MAP affordance for nodes that are just dots; a board card is already drawn.
 func test_no_name_popup_shows_on_the_board() -> void:
@@ -6337,10 +6307,27 @@ func _a_map_node_with_role(role: String) -> WorldGraphNode:
 			return node
 	return null
 
-# The description settled on what `node` publishes, through the product's own hover, so a height
-# read straight after is the one the player would scroll.
-func _hover_map_node_and_settle(node: WorldGraphNode) -> void:
-	_map._on_node_hovered(node)
+# The description settled on what picking `node` publishes, through the product's own route, so what
+# is read straight after is what the player would be looking at.
+func _select_map_node_and_settle(node: WorldGraphNode) -> void:
+	var controller := _map.controller
+	if node not in controller.next_nodes_of(controller._current):
+		controller._current = _a_neighbour_leading_to(node)
+		controller.refresh_visuals()
+	controller.select_node(node)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## A node the map's own reachability puts `node` one step beyond, so a pick of `node` goes through the product's own refusal rather than around it.
+func _a_neighbour_leading_to(node: WorldGraphNode) -> WorldGraphNode:
+	for n : WorldGraphNode in _map.controller.map.overlay().nodes():
+		if node in _map.controller.next_nodes_of(n): return n
+	return null
+
+## Closes whatever viewer is open, if one still is -- a viewer freed by the act before is not one.
+func _close_the_open_viewer() -> void:
+	if is_instance_valid(DeckViewer._open) and not DeckViewer._open.is_queued_for_deletion():
+		DeckViewer._open._close()
 	await get_tree().process_frame
 	await get_tree().process_frame
 

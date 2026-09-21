@@ -1,16 +1,25 @@
 class_name WorldMapController
 extends Node2D
 
-## Traversal layer over the worldgen addon: owns the WorldMap2D (created in code), the
-## Camera2D (pan/zoom/follow) and the player token, derives per-lap reachability over the
-## DAG (forward on even laps, reversed on odd laps), restyles the overlay's own Line2Ds
-## for the four edge states (traveled / next / usable / hidden), and turns mouse input
-## into node hover + travel (a finger's first tap names a node, its second travels there).
+## Traversal layer over the worldgen addon: the WorldMap2D, the camera, the token and the pick.
+
+# Reachability is derived per lap over the DAG (forward on even laps, reversed on odd), which also
+# restyles the overlay's own Line2Ds for the four edge states. Pointer, finger and pad all feed ONE
+# standing pick; travelling is the map screen's own Travel button, never an input here.
 
 signal map_ready
 signal node_entered(node: WorldGraphNode)
 signal node_hovered(node: WorldGraphNode)
 signal node_unhovered
+
+## The player picked a reachable node to look at. Travelling is a separate act, on a button of its own.
+signal node_selected(node: WorldGraphNode)
+
+## Nothing is picked any more -- the map screen goes back to its basic view.
+signal selection_cleared
+
+## Accept was pressed with a node picked. A map node is not a Control, so the pad is handed to the Travel button by the screen that owns it.
+signal travel_focus_requested
 
 const HISTORY_COLOR := Color("#b8860b")    ## traveled path (dim gold), kept across laps
 const HIGHLIGHT_COLOR := Color("#ffe066")  ## edges to directly reachable nodes
@@ -36,10 +45,9 @@ var _follow_token : bool = true
 var _press_pos := Vector2.ZERO
 var _pressed : bool = false
 var _dragging : bool = false
-# Keyboard/controller selection: index into _sorted_next(), -1 = nothing selected.
-var _kb_index : int = -1
-# The node the last finger tap named: the next tap on it is the one that travels.
-var _tapped_node : WorldGraphNode = null
+# The reachable node the player has picked, by pointer, finger or pad alike -- null at rest. ONE
+# field for all three, so the Travel button can never aim somewhere other than what the map marks.
+var _selected : WorldGraphNode = null
 
 var _container_shift : Vector2 = Vector2.ZERO
 
@@ -217,10 +225,9 @@ func _pulse_next_markers() -> void:
 	if _current == null or _moving or not _accepting_input:
 		return
 	var t := 0.6 + 0.4 * (0.5 + 0.5 * sin(Time.get_ticks_msec() / 180.0))
-	var kb_sel := _kb_selected()
 	for n in next_nodes_of(_current):
 		_style_marker(n)  # re-derive the base color so the pulse never compounds
-		n.marker_color = n.marker_color.lerp(Color.WHITE, 0.8 if n == kb_sel else 0.4)
+		n.marker_color = n.marker_color.lerp(Color.WHITE, 0.8 if n == _selected else 0.4)
 		n.marker_color.a = t
 		n.queue_redraw()
 
@@ -231,25 +238,22 @@ func _pulse_next_markers() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _accepting_input:
 		return
-	# Keyboard/controller: cycle the reachable next nodes, accept to travel.
 	if event.is_action_pressed(&"ui_right") or event.is_action_pressed(&"ui_down"):
-		_kb_cycle(1)
+		_cycle_selection(1)
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed(&"ui_left") or event.is_action_pressed(&"ui_up"):
-		_kb_cycle(-1)
+		_cycle_selection(-1)
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed(&"ui_accept"):
-		var sel := _kb_selected()
-		if sel != null and not _moving:
+		if _selected != null and not _moving:
 			get_viewport().set_input_as_handled()
-			move_to(sel)
+			travel_focus_requested.emit()
 		return
 	if event.is_action_pressed(&"ui_cancel"):
-		if _kb_index >= 0:
-			_kb_index = -1
-			node_unhovered.emit()
+		if _selected != null:
+			clear_selection()
 			get_viewport().set_input_as_handled()
 		return
 	if _consumed_as_touch(event):
@@ -267,7 +271,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_press_pos = mb.position
 			else:
 				if _pressed and not _dragging:
-					_travel_to(_node_at_mouse())
+					select_node(_node_at_mouse())
 				_pressed = false
 				_dragging = false
 	elif event is InputEventMouseMotion:
@@ -287,20 +291,20 @@ func _sorted_next() -> Array[WorldGraphNode]:
 				else a.position.x < b.position.x)
 	return nexts
 
-func _kb_selected() -> WorldGraphNode:
-	var nexts := _sorted_next()
-	if _kb_index < 0 or nexts.is_empty():
-		return null
-	return nexts[_kb_index % nexts.size()]
+## The reachable node the player has picked, or null while the map is at rest.
+func selected() -> WorldGraphNode:
+	return _selected
 
-func _kb_cycle(dir: int) -> void:
+# Walks the reachable set from wherever the pick already is, so the pad and the pointer share one
+# selection rather than keeping a cursor each.
+func _cycle_selection(dir: int) -> void:
 	if _moving:
 		return
 	var nexts := _sorted_next()
 	if nexts.is_empty():
 		return
-	_kb_index = wrapi((_kb_index if _kb_index >= 0 else (-1 if dir > 0 else 0)) + dir, 0, nexts.size())
-	node_hovered.emit(nexts[_kb_index])
+	var at := nexts.find(_selected)
+	select_node(nexts[wrapi((at if at >= 0 else (-1 if dir > 0 else 0)) + dir, 0, nexts.size())])
 
 func _zoom_at(factor: float) -> void:
 	var z := clampf(camera.zoom.x * factor, ZOOM_MIN, ZOOM_MAX)
@@ -331,8 +335,8 @@ static func node_screen_rect(node: WorldGraphNode) -> Rect2:
 	var radius := node.marker_radius * xform.get_scale()
 	return Rect2(xform.origin - radius, radius * 2.0)
 
-# A MAP NODE IS A BARE DOT, so a finger has to be able to ask what one is without travelling to
-# it: the first tap names and describes the node, only a second tap on that same node enters it.
+# A MAP NODE IS A BARE DOT, so a tap picks it and says what it is; travelling is the Travel button's,
+# for a finger exactly as for a pointer, so no tap count is counted any more.
 # ⚠ ONLY A TAP IS TAKEN -- a finger that travelled is a pan, and pans by the mouse path below.
 func _consumed_as_touch(event: InputEvent) -> bool:
 	var lift := event as InputEventMouseButton
@@ -343,15 +347,7 @@ func _consumed_as_touch(event: InputEvent) -> bool:
 		return false
 	_pressed = false
 	var local := map.overlay().make_input_local(lift) as InputEventMouseButton
-	var node := _node_at(local.position)
-	if node == null:
-		return true
-	if node == _tapped_node:
-		_travel_to(node)
-	else:
-		_tapped_node = node
-		_hovered = node
-		node_hovered.emit(node)
+	select_node(_node_at(local.position))
 	return true
 
 func _update_hover() -> void:
@@ -364,13 +360,24 @@ func _update_hover() -> void:
 	else:
 		node_unhovered.emit()
 
-# Empty space is the ordinary outcome of a click on a map, so nothing there is not a refusal.
-func _travel_to(node: WorldGraphNode) -> void:
-	if node == null or _moving:
+# PICKING IS NOT TRAVELLING: a pick only says which node the sidebar describes and the Travel button
+# aims at. Empty space and an unreachable node are the ordinary outcomes of a click on a map, so
+# neither is a refusal and neither disturbs the pick already standing.
+func select_node(node: WorldGraphNode) -> void:
+	if node == null or _moving or node == _selected:
 		return
-	if node in next_nodes_of(_current):
-		_tapped_node = null
-		move_to(node)
+	if node not in next_nodes_of(_current):
+		return
+	_selected = node
+	node_selected.emit(node)
+
+## Puts the map back to its basic view: nothing picked, nothing marked, and the screen's own buttons gone with it.
+func clear_selection() -> void:
+	if _selected == null: return
+	var was := _selected
+	_selected = null
+	_style_marker(was)
+	selection_cleared.emit()
 
 # Travel to a directly reachable node: walk the routed edge curve (reversed point order
 # on odd laps), record the history entry in forward-edge orientation, then re-derive
@@ -386,7 +393,7 @@ func move_to(next: WorldGraphNode) -> void:
 		pts = _current.edge_to(next)
 		run.traveled.append(Vector3i(_current.id, next.id, run.lap))
 	_style_marker(_current)  # drop any pulse tint on the node we leave
-	_kb_index = -1
+	clear_selection()
 	_follow_token = true
 	await token.travel_along(pts)
 	run.current_node_id = next.id

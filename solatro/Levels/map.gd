@@ -40,6 +40,9 @@ func _ready() -> void:
 	_bind_hud_container()
 	controller.node_entered.connect(_on_node_entered)
 	controller.node_hovered.connect(_on_node_hovered)
+	controller.node_selected.connect(_on_node_selected)
+	controller.selection_cleared.connect(_on_selection_cleared)
+	controller.travel_focus_requested.connect(travel_button.grab_focus)
 	# Deliberately NO node_unhovered connection: the card keeps showing its last entry across
 	# empty hover rather than blinking out, the same persistence contract Info mode's card uses.
 	controller.map_ready.connect(_update_hud)
@@ -58,7 +61,55 @@ func _bind_hud_container() -> void:
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _publish_map_inset)
 	hud_container.connect_for_screen(self, hud_container.active_screen_changed,
 			name_popup.hide_name)
+	hud_container.connect_for_screen(self, hud_container.active_screen_changed,
+			controller.clear_selection)
+	hud_container.connect_for_screen(self, hud_container.description_dismissed,
+			controller.clear_selection)
+	_build_selection_buttons()
 	_publish_map_inset()
+
+## The row of buttons the sidebar shows BESIDE a picked node's description -- this screen's, hung in the panel and hidden whenever nothing is picked. It FLOWS, the sidebar being narrow enough that three buttons do not fit on one line.
+var selection_buttons : HFlowContainer = null
+
+## Travels to the picked node. Also where accept on the map hands the pad, a map node being no Control.
+var travel_button : Button = null
+
+## Opens the run deck from the description side, the MapHud's own Deck button being hidden while a description shows.
+var selection_deck_button : Button = null
+
+## Shows the picked pack's possible contents again -- only a pack node has one.
+var possible_cards_button : Button = null
+
+# THE SIDEBAR CARRIES THE HUD OR THE DESCRIPTION AND NEVER BOTH, so the buttons a picked node needs
+# are the DESCRIPTION's, built here and owned here: the panel is handed a row and never learns what
+# any of it does.
+func _build_selection_buttons() -> void:
+	selection_buttons = HFlowContainer.new()
+	selection_buttons.visible = false
+	selection_buttons.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	travel_button = _add_selection_button('MAP_TRAVEL', _on_travel_pressed)
+	selection_deck_button = _add_selection_button('MAP_DECK', _on_deck_clicked)
+	possible_cards_button = _add_selection_button('MAP_POSSIBLE_CARDS', _on_possible_cards_pressed)
+	hud_container.mount_description_buttons(selection_buttons)
+
+func _add_selection_button(key: StringName, on_pressed: Callable) -> Button:
+	var button := Button.new()
+	button.text = TRANSLATION.find(key)
+	button.pressed.connect(on_pressed)
+	selection_buttons.add_child(button)
+	return button
+
+# The row is the PANEL's child once it is mounted, so a teardown that takes the container first
+# leaves nothing to free -- measured as orphaned nodes everywhere else this container outlives a screen.
+func _exit_tree() -> void:
+	if is_instance_valid(selection_buttons) and selection_buttons.get_parent() == null:
+		selection_buttons.queue_free()
+
+func _on_travel_pressed() -> void:
+	controller.move_to(controller.selected())
+
+func _on_possible_cards_pressed() -> void:
+	await _show_possible_cards(controller.selected())
 
 # The map DOES sit in a `WallPicture`, so the container's window px converts through that picture's
 # own cover scale -- `HudContainer.rect_beside()` is that one conversion, shared with `Menu`. Also
@@ -76,6 +127,7 @@ func start_run(new_run: RunState) -> void:
 		_pending_run = new_run
 		return
 	name_popup.hide_name()
+	_packs_shown.clear()
 	hud_container.release_screen(HudContainer.MAP_SCREEN)
 	controller.start_run(new_run)
 
@@ -83,6 +135,7 @@ func start_run(new_run: RunState) -> void:
 ## a take-all pack, the lap-origin anchor is just a rest stop.
 func _on_node_entered(node: WorldGraphNode) -> void:
 	name_popup.hide_name()
+	_packs_shown.clear()
 	var role :String= node.meta.get(MapNodeRoles.ROLE_KEY, "")
 	if role == MapNodeRoles.ROLE_BOOSTER:
 		await _open_booster(node)
@@ -149,13 +202,64 @@ func _show_lap_summary() -> void:
 		RunManager.save_run()
 		_update_hud())
 
+# A HOVER ONLY NAMES: the sidebar describes what the player PICKED, so passing the cursor over a
+# neighbour can never leave the description and the Travel button aimed at different nodes.
+func _on_node_hovered(node: WorldGraphNode) -> void:
+	name_popup.show_above(_info_for(node).title, node)
+
 # The description goes to the container, which anchors itself and needs no placement from here.
 # The NAME is anchored to the node itself, because a map node is a bare dot: the same entry feeds
 # both, so the two can never disagree about what the node is called.
-func _on_node_hovered(node: WorldGraphNode) -> void:
-	var entry := MapHoverPanel.get_info(node, run, controller.lap_target())
+func _on_node_selected(node: WorldGraphNode) -> void:
+	var entry := _info_for(node)
 	info_hovered.emit(entry)
 	name_popup.show_above(entry.title, node)
+	selection_buttons.visible = true
+	possible_cards_button.visible = _booster_of(node) != null
+	await _open_possible_cards_once(node)
+
+# Back to the basic view: the HUD, with its own Deck button, and no row of the description's buttons
+# left in anyone's focus chain.
+func _on_selection_cleared() -> void:
+	selection_buttons.visible = false
+	name_popup.hide_name()
+	if hud_container.showing_description(): hud_container.show_hud()
+
+## The pack nodes whose contents have already been shown where the token stands -- cleared by travelling and by a new run, which is what "before travelling" means.
+var _packs_shown : Dictionary[int, bool] = {}
+
+# THE FIRST PICK OF A PACK NODE LISTS ITS CONTENTS AND NO LATER ONE DOES: the sidebar is too small
+# to read them in, and re-opening a viewer the player has just closed would fight them. The button
+# stays, so they can ask again whenever they want.
+func _open_possible_cards_once(node: WorldGraphNode) -> void:
+	if _booster_of(node) == null or _packs_shown.has(node.id): return
+	_packs_shown[node.id] = true
+	await _show_possible_cards(node)
+
+# Every card this pack could roll, in the SAME viewer the run deck opens in and hosted the same way,
+# so its cards publish to the sidebar as any viewer's do. Closing it comes back to the node.
+func _show_possible_cards(node: WorldGraphNode) -> void:
+	var cards := await _booster_of(node).get_possible_preview_cards()
+	_host_map_viewer(DeckViewer.show_deck(self, cards, possible_cards_button))
+
+# EVERY VIEWER THIS SCREEN OPENS COMES BACK TO WHAT THE PLAYER WAS LOOKING AT: the picked node's
+# description. Without it the sidebar keeps whichever card the viewer's own highlight last reached.
+func _host_map_viewer(viewer: DeckViewer) -> void:
+	viewer.highlight_cleared.connect(_republish_the_pick)
+	hud_container.host_viewer(viewer, wall_picture, info_hovered)
+
+# Nothing picked is the HUD's own Deck button opening the viewer from the basic view; the container
+# takes itself back to the HUD and there is no description to return to.
+func _republish_the_pick() -> void:
+	var picked := controller.selected()
+	if picked: info_hovered.emit(_info_for(picked))
+
+func _info_for(node: WorldGraphNode) -> InfoEntry:
+	return MapHoverPanel.get_info(node, run, controller.lap_target())
+
+## The pack `node` opens on arrival, or null for every node that is not a talent pack.
+func _booster_of(node: WorldGraphNode) -> BoosterTemplate:
+	return node.meta.get(MapNodeRoles.BOOSTER_KEY)
 
 func _update_hud() -> void:
 	if run == null: return
@@ -163,6 +267,9 @@ func _update_hud() -> void:
 	hud_container.lap_label.text = "Lap: %d %s" % [run.lap + 1, "◀" if run.is_reversed() else "▶"]
 	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
 
+# The run deck is reachable from the basic view AND from beside a pick, so the viewer is handed
+# whichever of the two buttons actually opened it to put a pad player's focus back on.
 func _on_deck_clicked() -> void:
-	hud_container.host_viewer(DeckViewer.show_deck(self, Main.save_info.card_datas,
-			hud_container.map_deck_button), wall_picture, info_hovered)
+	var opener : Button = selection_deck_button if selection_buttons.visible \
+			else hud_container.map_deck_button
+	_host_map_viewer(DeckViewer.show_deck(self, Main.save_info.card_datas, opener))

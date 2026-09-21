@@ -23,14 +23,6 @@ size_flags_horizontal = 3
 [node name="TopRow" type="HBoxContainer" parent="Scroll/Content"]
 layout_mode = 2
 
-[node name="Back" type="Button" parent="Scroll/Content/TopRow"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-size_flags_vertical = 0
-focus_mode = 0
-text = "<"
-
 [node name="VisualSlot" type="HBoxContainer" parent="Scroll/Content/TopRow"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -46,14 +38,14 @@ unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 
+[node name="ButtonRow" type="HBoxContainer" parent="Scroll/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
 [node name="Body" type="RichTextLabel" parent="Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 bbcode_enabled = true
 fit_content = true
 scroll_active = false
-
-[node name="GridSlot" type="VBoxContainer" parent="Scroll/Content"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3

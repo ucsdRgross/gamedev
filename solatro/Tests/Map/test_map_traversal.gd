@@ -153,16 +153,16 @@ func test_lap_flip_and_reverse_move() -> void:
 
 # Runs after test_lap_flip_and_reverse_move: reversed lap, token on node 2, next = [0].
 func test_keyboard_selection() -> void:
-	var hovered: Array[WorldGraphNode] = []
-	controller.node_hovered.connect(func(n: WorldGraphNode) -> void: hovered.append(n))
-	controller._kb_cycle(1)
-	check(controller._kb_selected() == _node(0), "keyboard cycle selects the next node")
-	check(hovered.size() == 1 and hovered[0] == _node(0),
-			"keyboard selection emits node_hovered (drives the info panel)")
-	controller._kb_cycle(1)
-	check(controller._kb_selected() == _node(0), "cycling wraps around the option list")
-	controller._kb_cycle(-1)
-	check(controller._kb_selected() == _node(0), "cycling backwards also wraps")
-	await controller.move_to(controller._kb_selected())
-	check(run.current_node_id == 0, "accepting the keyboard selection travels there")
-	check(controller._kb_index == -1, "keyboard selection resets after travelling")
+	var picked: Array[WorldGraphNode] = []
+	controller.node_selected.connect(func(n: WorldGraphNode) -> void: picked.append(n))
+	controller._cycle_selection(1)
+	check(controller.selected() == _node(0), "keyboard cycle picks the next node")
+	check(picked.size() == 1 and picked[0] == _node(0),
+			"a keyboard pick emits node_selected (drives the info panel)")
+	controller._cycle_selection(1)
+	check(controller.selected() == _node(0), "cycling wraps around the option list")
+	controller._cycle_selection(-1)
+	check(controller.selected() == _node(0), "cycling backwards also wraps")
+	await controller.move_to(controller.selected())
+	check(run.current_node_id == 0, "travelling to the pick lands on it")
+	check(controller.selected() == null, "the pick is dropped after travelling")
