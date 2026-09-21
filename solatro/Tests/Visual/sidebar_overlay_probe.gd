@@ -43,6 +43,10 @@ func _ready() -> void:
 	await _shoot_the_slide_into_the_game()
 	await _shoot_the_slide_out_of_the_game()
 	await _await_still()
+	await _measure_the_re_entry(&"game")
+	await _await_still()
+	await _measure_the_re_entry(&"map")
+	await _go_back_to_wall_view()
 	await _shoot("wall_view", &"")
 	get_tree().quit(1 if _moved else 0)
 
@@ -265,6 +269,41 @@ func _shoot_the_slide_into_the_game() -> void:
 		await get_tree().process_frame
 	await _await_still()
 	await _shoot("game_at_rest", &"game")
+
+# EVERY FRAME of a re-entry from wall view: the picture's render target, its screen sprite's scale
+# and what the texture reports -- the quantities a picture drawn at the wrong size shows up in.
+# Photographs the landing frame and the few after it, where a wrong one is visible.
+func _measure_the_re_entry(id: StringName) -> void:
+	var wp : WallPicture = _main._pictures[id]
+	print("PROBE REENTRY ", id, " design=", wp._design_size, " rect=", wp.rect.size,
+			" wall_view viewport=", wp.viewport.size, " override=", wp.viewport.size_2d_override,
+			" stretch=", wp.viewport.size_2d_override_stretch, " screen scale=", wp._screen.scale)
+	_main._focus_picture(id)
+	var frame := 0
+	var after_focus := 0
+	while _main._move_in_flight or after_focus < 6:
+		await RenderingServer.frame_post_draw
+		frame += 1
+		if wp.is_focused: after_focus += 1
+		var tex : Texture2D = wp._screen.texture
+		var pa := _live_play_area()
+		print("PROBE   f%d focused=%s viewport=%s override=%s stretch=%s scale=%s tex=%s drawn=%s cam_zoom=%.4f%s"
+				% [frame, wp.is_focused, wp.viewport.size, wp.viewport.size_2d_override,
+				wp.viewport.size_2d_override_stretch, wp._screen.scale, tex.get_size(),
+				tex.get_size() * wp._screen.scale,
+				(_main.wall.get_node(^"%Camera2D") as Camera2D).zoom.x,
+				(" board_zoom=%.4f scroll_scale=%.4f scroll_pos=%s slide=%s p2w=%.4f vis=%s" % [
+				pa.board_zoom, pa.scroll_container.scale.x, pa.scroll_container.global_position,
+				pa.board_slide_offset, pa.picture_to_window_scale,
+				wp.viewport.get_visible_rect().size]) if pa else ""])
+		if wp.is_focused and after_focus <= 4:
+			var img := get_viewport().get_texture().get_image()
+			img.save_png(_out_dir.path_join("p24_%s_reentry_%d.png" % [id, after_focus]))
+
+# Leaves whatever is focused, so the next measurement starts from wall view.
+func _go_back_to_wall_view() -> void:
+	await _main._go_to_wall_view()
+	await _await_still()
 
 func _shoot_the_slide_out_of_the_game() -> void:
 	_main._go_to_wall_view()

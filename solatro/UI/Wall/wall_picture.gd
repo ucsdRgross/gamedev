@@ -224,8 +224,7 @@ func focus() -> void:
 	# edge. A mouse-only player never sees it, because a click never selects.
 	_apply_position()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	_apply_design_render_size()
-	_rescale_screen()
+	prepare_to_focus()
 	# The live screen's root is flipped to ALWAYS. `screen_root` may be null when this picture has
 	# no scene, in which case there is nothing to flip.
 	if screen_root:
@@ -235,6 +234,13 @@ func focus() -> void:
 	# A focused picture is always fully opaque: a reduced-motion cross-fade may have left this
 	# alpha mid-fade, and no resting state is ever partially faded.
 	set_screen_alpha(1.0)
+
+# The full-`design_size` render target, restored when a move toward this picture STARTS and again by
+# `focus()`. ⚠ A SubViewport resized on the frame it is first shown focused is drawn from the OLD
+# target's contents read at the new size: magnified by the size ratio, cropped, for one frame.
+func prepare_to_focus() -> void:
+	_apply_design_render_size()
+	_rescale_screen()
 
 ## The render-target size for a picture laid out at `design`: each axis capped at `max_px`.
 ##

@@ -347,6 +347,9 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	_set_frames_visible(true)
 	var dest_wp : WallPicture = _pictures[id]
 	var dest_rect : PictureRect = _rects[id]
+# The destination's render target goes back to full size HERE, at the start of the move, not at the
+# landing -- see `WallPicture.prepare_to_focus()`.
+	dest_wp.prepare_to_focus()
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
 	var settings := SettingsManager.settings
 	if _current_focus != &"":

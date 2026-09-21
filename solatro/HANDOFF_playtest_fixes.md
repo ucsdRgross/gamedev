@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P14, P16-P23, P25-P28 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6328 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P24, the sweeps; P29 and P15 are in; each carries its site map in `notes:`. Gate at the stream's start:
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P30-P32 (the sweeps), then the close; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -317,9 +317,33 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/UI/Wall/wall_picture.gd, solatro/Tests/Wall/test_wall_render.gd]
   verification_command: 'run_tests.py --filter WallRender WallTransition; by eye with Tests/Visual/sidebar_overlay_probe'
   verification_kind: snapshot
+  status: done
+  evidence: 'Measured first (booted Main 1152x648, every drawn frame): the hypothesis was WRONG - on the landing frame the SubViewport size, stretch, board_zoom and visible rect already equal their resting values; the render target is RESIZED on that frame and the frame shows the old target contents at the new size. Exactly 1 frame, game (1576x887 from 527x296) and map (1152x648 from 385x216), on wall view -> picture and picture -> picture; a control that only resized two frames early landed clean. Red (fix parked): FILTERED 1 of 51 [WallFocus]: 122 passed, 1 FAILED - the render target (385, 216) against (1152, 648) on the frame before the picture first drew focused; its two sanity checks passed. Green: FILTERED 6 of 51: 2201 CHECKS PASSED (WALL FOCUS 119 -> 123); --logic 3032. Overseer gate: ALL 51 SUITES: 6263 CHECKS PASSED, 21 placeholder warnings, the exit profile, 0 SCRIPT ERROR. By eye (overseer, game): before - cells ~2.5x, cropped top and left, no board outline or Entrance; after - the whole 5x5, the Entrance and the outline on the first focused frame. Map pair read by the implementer only.'
+  notes: 'WallPicture.prepare_to_focus() restores the design render size; Main._focus_picture calls it at the start of the move and focus() delegates to it. Measured here, no documentation consulted. OPEN: the destination renders full-size for the ~35 travel frames - cost on Box A not measured; _repack_wall / _on_window_resized shrink every unfocused picture, a destination mid-move included, which would re-open this for that landing (not observed, no guard); the reverse one-frame effect on the source picture shrinking mid-travel is unmeasured; the cold-launch first frame is reasoned, not captured. sidebar_overlay_probe keeps the per-frame re-entry measurement. Brief: Found by the P12 probe (p12_game_landed_pre_slide.png: ~12 of 25 cells on screen, cut off top and left, while board_zoom printed its resting value). Predates P12 - focus/unfocus are untouched by it. Measure first: how many frames, on which pictures.'
+- id: P30
+  description: The comment sweep P12/P13 owe - Levels/map.gd, Scripts/Map/world_map_controller.gd and Tests/Map/test_map_traversal.gd leave compliant, code byte-identical.
+  files_touched: [solatro/Levels/map.gd, solatro/Scripts/Map/world_map_controller.gd, solatro/Tests/Map/test_map_traversal.gd]
+  verification_command: 'py .claude/tools/sweep_check.py <each file>; doc_check --changed silent; run_tests.py --filter MapTraversal Sidebar; overseer full gate'
+  verification_kind: suite
   status: pending
   evidence: ''
-  notes: 'Found by the P12 probe (p12_game_landed_pre_slide.png: ~12 of 25 cells on screen, cut off top and left, while board_zoom printed its resting value). Predates P12 - focus/unfocus are untouched by it. Measure first: how many frames, on which pictures.'
+  notes: 'Findings when queued: 5 / 22 / 1. Keep every gotcha and measured number; quote dropped restatements in the commit message.'
+- id: P31
+  description: The comment sweep P26/P29/P24 owe - UI/Wall/wall_picture.gd and Tests/Visual/overview_pan_route_probe.gd leave compliant, code byte-identical.
+  files_touched: [solatro/UI/Wall/wall_picture.gd, solatro/Tests/Visual/overview_pan_route_probe.gd]
+  verification_command: 'py .claude/tools/sweep_check.py <each file>; doc_check --changed silent; run_tests.py --filter WallRender WallFocus WallTransition; overseer full gate'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Findings when queued: 76 / 12.'
+- id: P32
+  description: PlayArea.rest_focus_on_board() fallback for a held card with no control - its one named producer (the auto-arm) is deleted; replace with assert, run the suites, back out if a fixture fires it. Then the P20 /simplify item (collapse _lock_by_screen onto _locked_entry_by_screen; lock_to loses its dead target parameter).
+  files_touched: [solatro/UI/play_area.gd, solatro/UI/hud_container.gd, solatro/Levels/game_view.gd, solatro/Tools/wall_editor.gd, solatro/Tests/Wall/test_sidebar.gd, solatro/design/sidebar/NAMES.md]
+  verification_command: 'run_tests.py --logic; --filter Sidebar DragPlace Interaction WallFocus; overseer full gate'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'See Open bugs (the P9 bloat review) and the P20 notes.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -376,7 +400,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P29, then P15, P24, the sweeps (map.gd, world_map_controller.gd, test_map_traversal.gd, UI/Wall/wall_picture.gd), the close. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P30, P31, P32, then the close. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)

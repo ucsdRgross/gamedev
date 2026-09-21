@@ -62,6 +62,8 @@ func _ready() -> void:
 	behavior_section("A FRAME IS A WALL-VIEW AFFORDANCE, NEVER SEEN WHILE FOCUSED")
 	await test_no_picture_draws_a_frame_while_one_is_focused()
 	await test_a_focused_picture_covers_the_window_at_every_aspect()
+	behavior_section("A RE-ENTERED PICTURE IS NOT RESIZED ON THE FRAME IT LANDS")
+	await test_a_re_entered_picture_is_never_resized_on_the_frame_it_lands()
 	restore_real_settings()
 	finish()
 
@@ -981,6 +983,59 @@ func test_no_picture_draws_a_frame_while_one_is_focused() -> void:
 			"a focus requested mid-leave is ignored, and the leave still ends with every frame "
 			+ "back -- never half of them",
 			"%d of %d drawn" % [_frames_drawn(main), main._pictures.size()])
+
+	main.queue_free()
+	await get_tree().process_frame
+	viewport.queue_free()
+
+# Every frame of a real wall-view -> picture re-entry. The destination's render target must already
+# be at its design size on the frame BEFORE the picture first draws focused -- a resize on that
+# frame draws the picture magnified and cropped once. See `WallPicture.prepare_to_focus()`.
+func test_a_re_entered_picture_is_never_resized_on_the_frame_it_lands() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1152, 648)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	get_tree().paused = false
+	await main._focus_picture(&"map")
+	await main._go_to_wall_view()
+
+	var wp : WallPicture = main._pictures[&"map"]
+	var design := wp._design_size
+	var wall_view_size := wp.viewport.size
+	check(wall_view_size != design,
+			"sanity: in wall view the map's render target really is smaller than its design size, "
+			+ "so there is a resize here for the landing to get wrong",
+			"%s against %s" % [wall_view_size, design])
+
+	var sampled := 0
+	var focused_samples := 0
+	var focused_at_wall_view_size := 0
+	var landing_sample := -1
+	var size_before_landing := Vector2i.ZERO
+	var previous_size := wp.viewport.size
+	main._focus_picture(&"map")
+	while main._move_in_flight or focused_samples < 4:
+		await get_tree().process_frame
+		sampled += 1
+		if wp.is_focused:
+			focused_samples += 1
+			if landing_sample < 0:
+				landing_sample = sampled
+				size_before_landing = previous_size
+			if wp.viewport.size == wall_view_size: focused_at_wall_view_size += 1
+		previous_size = wp.viewport.size
+	check(sampled > 0 and landing_sample > 0,
+			"sanity: the re-entry was sampled every frame and the landing frame is among them",
+			"%d frames sampled, landed on frame %d" % [sampled, landing_sample])
+	check(size_before_landing == design,
+			"the render target was ALREADY at design size on the frame before the picture first "
+			+ "drew focused -- nothing resized on the landing frame",
+			"%s against %s" % [size_before_landing, design])
+	check(focused_at_wall_view_size == 0,
+			"no frame drawn focused carried the wall-view render target",
+			"%d of %d focused frames" % [focused_at_wall_view_size, focused_samples])
 
 	main.queue_free()
 	await get_tree().process_frame
