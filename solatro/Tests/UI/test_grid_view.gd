@@ -64,6 +64,7 @@ func _ready() -> void:
 	await run_the_camera_rests_at_the_saved_pan_test()
 	await run_leaving_and_re_entering_restores_the_pan_test()
 	await run_a_resize_re_derives_the_pose_from_the_saved_pan_test()
+	await run_no_frame_is_drawn_at_an_overview_end_stop_test()
 	finish()
 
 #Three empty 5x5 grids standing in a real GameView. Mirrors test_grid_layout._stand_up -- same
@@ -2722,3 +2723,61 @@ func run_a_resize_re_derives_the_pose_from_the_saved_pan_test() -> void:
 			"...it is the centre plus the saved pan, re-derived after the resize (TP-117)",
 			"offset %.3f vs saved %.3f" % [camera.position.x - after_centre_x, wp.saved_pan_x])
 	await _tear_down_main(main)
+
+#THE END STOPS ARE WHERE A FRAME COULD REACH THE WINDOW: the overview camera steps a whole grid
+#pitch inside a picture that overfills the window by about twelve pixels, so past the resting grid
+#the picture's own edge comes in from the side, and the frame band is drawn just outside it.
+func run_no_frame_is_drawn_at_an_overview_end_stop_test() -> void:
+	behavior_section("NO FRAME IS DRAWN AT AN OVERVIEW END STOP")
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	var camera := _main_camera(main)
+	var frame : NinePatchRect = main._pictures[&"game"].get_node(^"%Frame")
+	pa.open_zoomed_out()
+	await _settle_camera(camera)
+	check(not frame.visible,
+			"the focused picture draws no frame once the show has opened",
+			"visible %s" % frame.visible)
+	for gi : int in [0, 2]:
+		pa.pan_to_grid(gi)
+		await _settle_camera(camera)
+		var intrusion := _picture_edge_intrusion_px(main, camera)
+		check(intrusion > 1.0,
+				("precondition: at end stop %d the picture's own edge is INSIDE the window, so a "
+				% gi) + "drawn frame would be on screen there",
+				"%.1f px inside" % intrusion)
+		check(not frame.visible,
+				"...and no frame is drawn at end stop %d" % gi,
+				"visible %s" % frame.visible)
+		var seen_drawn := 0
+		var samples := 0
+		var deepest := intrusion
+		pa.pan_by_grids(1 if gi == 2 else -1)
+		var waited := 0.0
+		while waited < 1.0:
+			await get_tree().process_frame
+			waited += get_process_delta_time()
+			CardEnvironment.CURRENT = view.game
+			samples += 1
+			deepest = maxf(deepest, _picture_edge_intrusion_px(main, camera))
+			if frame.visible: seen_drawn += 1
+		check(deepest > intrusion + 1.0,
+				("precondition: the bounce past end stop %d carries the picture's edge FURTHER "
+				% gi) + "into the window than the end stop itself does",
+				"%.1f -> %.1f px inside over %d frames" % [intrusion, deepest, samples])
+		check(seen_drawn == 0,
+				"...and the frame is drawn in none of that bounce's frames",
+				"%d of %d frames drew it" % [seen_drawn, samples])
+	await _tear_down_main(main)
+
+#How far the game picture's nearest vertical edge sits INSIDE the window, in WINDOW px -- zero or
+#less while the picture still covers it. The frame band is drawn immediately outside that edge, so
+#this is the number that says whether a drawn frame would be on screen.
+func _picture_edge_intrusion_px(main: Main, camera: Camera2D) -> float:
+	var window := main.get_viewport().get_visible_rect().size
+	var wp : WallPicture = main._pictures[&"game"]
+	var zoom := camera.zoom.x
+	var left := (wp.rect.centre.x - camera.position.x) * zoom + window.x / 2.0 \
+			- wp.rect.size.x * zoom / 2.0
+	return maxf(left, window.x - (left + wp.rect.size.x * zoom))

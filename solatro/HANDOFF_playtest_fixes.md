@@ -2,9 +2,9 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P12, P14, P16-P23, P25, P27 are done, each red-then-green and by eye where it draws,
-one verified step per commit. Last gate: `ALL 51 SUITES: 6219 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P26,
+**State:** P1-P12, P14, P16-P23, P25-P27 are done, each red-then-green and by eye where it draws,
+one verified step per commit. Last gate: `ALL 51 SUITES: 6257 CHECKS PASSED`, 21 placeholder
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P28,
 P13, P15, P24, a map.gd sweep; P23 is in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
@@ -94,6 +94,11 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - **Fourth round (verbatim).** The focus rim ink - "focus outline color should be a. by default
   the outline is black before focus." The legal lift and the cell's rim - "yes exclude focus
   outline rim".
+- **Fifth round (verbatim).** Frames in transit between pictures - "yes frames should show in
+  transit since its through wall view." The wall seen past the picture's edge - "wall stuff
+  should never be visible when inside a picture scene, since idea is that you have entered the
+  picture internally and wall no longer exists, so panning to where wall would be visible is not
+  possible."
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -276,9 +281,17 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/UI/Wall/wall_picture.gd, solatro/UI/Wall/wall.gd, solatro/Tests/Wall/test_wall_render.gd, solatro/Tests/UI/test_grid_view.gd]
   verification_command: 'run_tests.py --filter WallRender WallTransition WallFocus GridView; by eye'
   verification_kind: snapshot
+  status: done
+  evidence: 'Measured first on the booted Main (1152x648, 3 grids): at the last overview end stop the picture edge sits 224.1 px INSIDE the window at rest and the frame band is drawn at x 928-945 - what the owner saw; the bounce reaches 296.3 px; every aspect is clean at the resting grid. Red (the visibility write parked): FILTERED 2 of 51 [WallFocus GridView]: 461 passed, 14 FAILED - 13 named frame rows (5 of 5 frames drawn after a landing; 61 of 61 bounce frames drew it) plus one hit of the GRID VIEW edge-touch flake. Green: FILTERED 7 of 51: 2270 CHECKS PASSED (WALL FOCUS 100 -> 118, GRID VIEW 346 -> 357, others unchanged); --logic 3034, 21 placeholder warnings. Overseer gate: run 1 6259 passed, 1 FAILED - the same GRID VIEW edge-touch row (-393.995 vs -394.0); rerun ALL 51 SUITES: 6257 CHECKS PASSED, 21 placeholder warnings, the exit profile, 0 SCRIPT ERROR. By eye (overseer): before - a tan vertical bar at x~930 of 1152 at the last grid; after - the bar gone in the same pose, a strip of bare wall still visible past the picture edge; wall view - every frame back; a landed game - none.'
+  notes: '%Frame is a NinePatchRect on WallPicture; WallPicture.set_frame_visible is its one writer and Main._set_frames_visible the one decision site (cold launch, every landing, the top of the leave to wall view, _repack_wall). A cut, not a fade - both moments happen while the picture covers the window. ALL frames hide, not only the focused one. The P12 white rectangle is the board window outline, not a frame. RULED SINCE, -> P28: frames SHOW in transit between pictures (this step hid them for the whole travel); the window must never leave the picture. wall_picture.gd owes a sweep (80 legacy findings). Instrument: Tests/Visual/wall_frame_probe. Brief: Owner ruling, third round. MEASURE FIRST: where a frame can be seen while focused - an overview pan across a multi-grid game picture (the camera steps grid_pitch_px inside the wide picture; the edge of the picture and its frame come into view at the end stops and the bounce), the P12 slide frames (a white rectangle around the board window is visible mid-slide - establish whether that is the picture frame or the board own rules), window aspects other than 16:9. Then: the frame fades/hides on transition_landed and returns on the leave, before the camera moves; a row asserting no frame pixel/visible frame node at every sampled focused frame including end-stop pans.'
+- id: P28
+  description: The owner fifth-round rulings, built - (1) frames SHOW during any camera travel between pictures and hide on each landing; (2) the window never leaves the focused picture - the overview pan and its end-stop bounce are clamped so no wall is ever visible inside a picture.
+  files_touched: [solatro/Levels/main.gd, solatro/UI/play_area.gd, solatro/Tests/Wall/test_wall_focus.gd, solatro/Tests/UI/test_grid_view.gd, solatro/PICTURE_WALL.md]
+  verification_command: 'run_tests.py --filter WallFocus GridView WallRender WallInput; by eye with Tests/Visual/wall_frame_probe'
+  verification_kind: snapshot
   status: pending
   evidence: ''
-  notes: 'Owner ruling, third round. MEASURE FIRST: where a frame can be seen while focused - an overview pan across a multi-grid game picture (the camera steps grid_pitch_px inside the wide picture; the edge of the picture and its frame come into view at the end stops and the bounce), the P12 slide frames (a white rectangle around the board window is visible mid-slide - establish whether that is the picture frame or the board own rules), window aspects other than 16:9. Then: the frame fades/hides on transition_landed and returns on the leave, before the camera moves; a row asserting no frame pixel/visible frame node at every sampled focused frame including end-stop pans.'
+  notes: 'Owner: "wall stuff should never be visible when inside a picture scene ... panning to where wall would be visible is not possible." Measured by P26: the game picture overfills a 16:9 window by ~12 px a side while an overview step is a whole grid_pitch_px (316), so the last end stop shows 224 px of wall and the bounce 296. The ruling chooses the clamp: the camera pose is limited to where the window stays inside the picture, the bounce included. MEASURE what that leaves of the overview pan at 2 and 3 grids (at 3 grids the whole set already fits the board window, so the pan may have nothing left to do - say so; saved_pan_x, _resnap_saved_pan, the wall_back/forward pan rows and TP-105 all read the pan). Also fix the GRID VIEW edge-touch row here: a neighbour edge at -393.995 against the view at -394.0 failed 2 of the last 4 full gates - "inside the view" must mean by more than float noise; pick the tolerance from the measured noise, not from taste.'
 - id: P24
   description: Re-entering a picture from wall view draws its content about 2x for a frame or two - the SubViewport is still at its wall-view render size when the picture is first shown focused (WallPicture.focus / update_wall_view_size).
   files_touched: [solatro/UI/Wall/wall_picture.gd, solatro/Tests/Wall/test_wall_render.gd]
@@ -343,7 +356,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P26 (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P28 (the fifth-round rulings) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)

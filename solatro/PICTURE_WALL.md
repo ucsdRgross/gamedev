@@ -83,6 +83,20 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   Both were per-frame checks once; both were wrong.
 - **A focused picture overfills the window** (`Q27`/H3), so its frame is off-screen at rest. Any test
   asserting "the frame is visible" is asserting something only true mid-transition.
+- ⚠ **NO PICTURE DRAWS A FRAME WHILE ONE IS FOCUSED.** `Main._set_frames_visible()` is the only
+  writer, through `WallPicture.set_frame_visible()`; `Main` cuts every frame out at cold launch and
+  at each landing of `_focus_picture()`, and back in at the top of `_go_to_wall_view()`'s leave,
+  before the camera moves. A picture-to-picture move is not wall view, so the frames stay out
+  across it. A cut, not a fade: both moments happen while the focused picture still covers the
+  window, so there is nothing on screen to fade, and a tween here would have to survive §1.6's
+  permanent pause. `_repack_wall()` re-states the answer because a newly unlocked picture is built
+  with its frame drawn.
+- ⚠ **THE OVERVIEW PAN LEAVES THE PICTURE, AND THE CAMERA IS WHAT MOVES.** The game picture
+  overfills the window by ~12 px a side (measured at 1152x648, three grids), while an overview step
+  is a whole `grid_pitch_px`, so at an end stop the picture's own edge sits ~224 px inside the
+  window and the bounce past it reaches ~296 — bare wall beside a focused picture, against the
+  owner's "picture edges match window edges always". The frames no longer show there; the edge
+  itself is an OPEN owner call.
 - **`focused_scale()` applies its margin only when the aspects DIFFER.** That conditionality is what
   makes G10's "panning is off when everything fits" an exact zero rather than a few per cent of
   slack. Do not make it unconditional.

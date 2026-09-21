@@ -72,6 +72,8 @@ func _ready() -> void:
 	var start_rect : PictureRect = _rects[&"start_menu"]
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
 	start_wp.focus()
+# Cold launch IS a landed focus, so it starts where every landing leaves the wall: no frames.
+	_set_frames_visible(false)
 	camera.position = start_rect.centre
 	camera.zoom = Vector2.ONE * WallPicture.focused_scale(start_rect.size, _window_size,
 			SettingsManager.settings.wall_overfill_margin)
@@ -166,6 +168,9 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 	if _active_transition and _active_transition.is_active:
 		_active_transition.retarget(_rects[_current_focus], _rects[_transition_dest_id],
 				_window_size)
+# An unlock builds brand-new pictures, and a fresh `%Frame` is visible. Re-stating the wall's
+# current answer is what keeps one from appearing on top of a focused picture.
+	_set_frames_visible(_frames_visible)
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 	_print_wall_debug_readout()
@@ -420,6 +425,18 @@ var _move_in_flight : bool = false
 var _active_transition : WallTransition = null
 var _transition_dest_id : StringName = &""
 
+# Whether the wall is drawing picture frames at all. FALSE from the moment a zoom-in lands until a
+# leave to wall view starts, so no frame is ever on screen while a picture is focused. Stored
+# because a re-pack builds new pictures that have to join the state the wall is already in.
+var _frames_visible : bool = true
+
+# A CUT, not a fade: both moments happen while the focused picture still covers the window, so
+# nothing is on screen to fade, and a tween here would have to survive the wall's permanent pause.
+func _set_frames_visible(shown: bool) -> void:
+	_frames_visible = shown
+	for id : StringName in _pictures:
+		_pictures[id].set_frame_visible(shown)
+
 func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	if _move_in_flight: return
 # Requesting the current picture does nothing.
@@ -472,6 +489,9 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 		await _animate_camera(rest["position"] as Vector2, rest["zoom"] as float,
 				wall.wall_view_centre(), dest_rect.centre, _entries[id])
 	dest_wp.focus()
+# The zoom-in has landed, so every frame goes out and stays out -- including through a later
+# picture-to-picture move, which is not wall view.
+	_set_frames_visible(false)
 	_current_focus = id
 	hud_container.set_active_screen(id)
 # Fires for EVERY focus change, both branches above -- unlike `transition_landed`.
@@ -506,6 +526,9 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]
+# The frames come back HERE, as the camera starts out: the picture still covers the window, so
+# the wall they belong to is already assembled by the time any of it is on screen.
+		_set_frames_visible(true)
 # Wall view has no picture of its own, so there is nothing to fade music IN to -- a null
 # dest entry fades the current track out over the same move.
 		await _animate_camera(wall.wall_view_centre(), wall.wall_view_zoom(_window_size),

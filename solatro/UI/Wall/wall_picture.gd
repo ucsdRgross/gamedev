@@ -290,6 +290,11 @@ func unfocus(footprint_px: Vector2) -> void:
 func set_screen_alpha(alpha: float) -> void:
 	_screen.modulate.a = alpha
 
+# Whether this picture's frame is drawn. Exposed narrowly, like `set_screen_alpha()` above: the
+# caller decides WHEN no frame may be on screen, and this node stays the only writer of `%Frame`.
+func set_frame_visible(shown: bool) -> void:
+	_frame.visible = shown
+
 ## Sets `SubViewport.size` straight from this picture's on-screen pixel footprint at wall-view
 ## zoom — no resolution manager, one property written when the footprint changes. Each axis is
 ## clamped below by `wall_view_min_texture_px` so a tiny footprint never asks the GPU for a

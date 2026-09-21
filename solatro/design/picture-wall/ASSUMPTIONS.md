@@ -1169,3 +1169,9 @@ The remaining two of the five were WIRED, not struck: `WallLayout.view_margin` (
   once zoom in has happened, so picture frame is never visible while focused on a picture, until
   switching out to wall view. I mention this because i see a test that seems to test swiping on
   edge of picture and it shows frame near the middle."
+- Playtest follow-up rulings after frames were hidden while focused. Whether frames show during
+  a picture-to-picture move - owner: "yes frames should show in transit since its through wall
+  view." The window leaving the picture at an overview end stop (224 px of bare wall at rest,
+  296 at the bounce) - owner: "wall stuff should never be visible when inside a picture scene,
+  since idea is that you have entered the picture internally and wall no longer exists, so
+  panning to where wall would be visible is not possible."

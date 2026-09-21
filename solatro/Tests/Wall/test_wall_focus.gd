@@ -59,6 +59,9 @@ func _ready() -> void:
 	await test_a_second_destination_mid_move_is_ignored()
 	behavior_section("INPUT IS INERT MID-MOVE, AND UNLOCKS EARLY (C5/S16, I12/Q96=a, C13/Q58)")
 	await test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends()
+	behavior_section("A FRAME IS A WALL-VIEW AFFORDANCE, NEVER SEEN WHILE FOCUSED")
+	await test_no_picture_draws_a_frame_while_one_is_focused()
+	await test_a_focused_picture_covers_the_window_at_every_aspect()
 	restore_real_settings()
 	finish()
 
@@ -891,3 +894,129 @@ func test_a_published_info_entry_is_owned_by_whatever_shows_it() -> void:
 	check(is_instance_valid(visual) and visual.get_parent() == panel.get_node(^"%VisualSlot"),
 			"the container's description panel takes the entry's visual")
 	main.queue_free()
+
+# ------------------------------------------------------------------ frames while focused
+
+# A frame belongs to the wall, not to a picture the player is inside. It goes out the moment a
+# zoom-in lands and comes back as a leave to wall view starts -- before the camera has moved, so
+# the wall is whole by the time any of it can be seen.
+func test_no_picture_draws_a_frame_while_one_is_focused() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1152, 648)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	get_tree().paused = false
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+
+	check(main._current_focus == &"start_menu",
+			"sanity: cold launch really is a LANDED focus, not wall view -- everything below is "
+			+ "about a wall with a picture already on it")
+	check(_frames_drawn(main) == 0,
+			"cold launch lands focused, so the wall draws no frame at all",
+			"%d of %d drawn" % [_frames_drawn(main), main._pictures.size()])
+
+	await main._focus_picture(&"map")
+	check(_frames_drawn(main) == 0,
+			"a zoom-in that has landed leaves no frame drawn anywhere on the wall",
+			"%d of %d drawn" % [_frames_drawn(main), main._pictures.size()])
+
+# A picture-to-picture move is not a switch out to wall view, so the frames stay out for the whole
+# travel -- the ONE reading of the rule this suite pins that the words do not spell out.
+	var travel_samples := 0
+	var travel_frames_drawn := 0
+	main._focus_picture(&"deck")
+	while main._move_in_flight:
+		await get_tree().process_frame
+		travel_samples += 1
+		travel_frames_drawn += _frames_drawn(main)
+	check(travel_samples > 0,
+			"sanity: the picture-to-picture move really animated -- a move that never ran would "
+			+ "make the check below vacuous",
+			"%d frames" % travel_samples)
+	check(travel_frames_drawn == 0,
+			"no frame is drawn at any frame of a move BETWEEN two pictures",
+			"%d frame-draws over %d frames" % [travel_frames_drawn, travel_samples])
+
+# The leave: the frames must already be back before the camera has gone anywhere, or the first
+# frames of the zoom-out show a wall with holes in it.
+	var rest_pose := Vector3(camera.position.x, camera.position.y, camera.zoom.x)
+	var moved_samples := 0
+	var moved_without_frames := 0
+	main._go_to_wall_view()
+	while main._move_in_flight:
+		await get_tree().process_frame
+		if Vector3(camera.position.x, camera.position.y, camera.zoom.x) == rest_pose: continue
+		moved_samples += 1
+		if _frames_drawn(main) < main._pictures.size(): moved_without_frames += 1
+	check(moved_samples > 0,
+			"sanity: the camera really moved during the leave",
+			"%d moved frames" % moved_samples)
+	check(moved_without_frames == 0,
+			"every frame of the zoom-out in which the camera had moved already had the whole "
+			+ "wall's frames back",
+			"%d of %d moved frames were short" % [moved_without_frames, moved_samples])
+	check(_frames_drawn(main) == main._pictures.size(),
+			"in wall view every picture draws its frame again",
+			"%d of %d drawn" % [_frames_drawn(main), main._pictures.size()])
+
+# The round trip back in, so nothing is left in a half-applied state by a leave and a re-enter.
+	await main._focus_picture(&"map")
+	check(_frames_drawn(main) == 0,
+			"re-entering a picture from wall view takes the frames out again on landing",
+			"%d of %d drawn" % [_frames_drawn(main), main._pictures.size()])
+	main._go_to_wall_view()
+	main._focus_picture(&"deck")
+	while main._move_in_flight:
+		await get_tree().process_frame
+	check(_frames_drawn(main) == main._pictures.size(),
+			"a focus requested mid-leave is ignored, and the leave still ends with every frame "
+			+ "back -- never half of them",
+			"%d of %d drawn" % [_frames_drawn(main), main._pictures.size()])
+
+	main.queue_free()
+	await get_tree().process_frame
+	viewport.queue_free()
+
+# A focused picture overfills its window on every axis, so no frame band can reach the window at
+# rest whatever shape the window is. The frames being undrawn is the other half of the same answer.
+func test_a_focused_picture_covers_the_window_at_every_aspect() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1152, 648)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	get_tree().paused = false
+	await main._focus_picture(&"map")
+
+	for size : Vector2i in [Vector2i(1152, 864), Vector2i(1512, 648), Vector2i(648, 900),
+			Vector2i(1152, 648)]:
+		viewport.size = size
+		await get_tree().process_frame
+		main._on_window_resized()
+		await get_tree().process_frame
+		var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+		var window := Vector2(size)
+		var zoom := camera.zoom.x
+		var rect : PictureRect = main._rects[&"map"]
+		var drawn := Rect2((rect.centre - camera.position) * zoom + window / 2.0
+				- rect.size * zoom / 2.0, rect.size * zoom)
+		check(drawn.position.x <= 0.5 and drawn.position.y <= 0.5
+				and drawn.end.x >= window.x - 0.5 and drawn.end.y >= window.y - 0.5,
+				"at %dx%d the focused picture still covers the window edge to edge" % [size.x,
+				size.y], "picture %s in window %s" % [drawn, window])
+		check(_frames_drawn(main) == 0,
+				"...and at %dx%d no frame is drawn either" % [size.x, size.y],
+				"%d of %d drawn" % [_frames_drawn(main), main._pictures.size()])
+
+	main.queue_free()
+	await get_tree().process_frame
+	viewport.queue_free()
+
+## How many of `main`'s pictures are drawing their frame right now.
+func _frames_drawn(main: Main) -> int:
+	var drawn := 0
+	for id : StringName in main._pictures:
+		var frame : NinePatchRect = main._pictures[id].get_node(^"%Frame")
+		if frame.visible: drawn += 1
+	return drawn
