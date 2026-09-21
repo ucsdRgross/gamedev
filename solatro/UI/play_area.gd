@@ -1888,11 +1888,14 @@ func return_focus_to_board() -> void:
 # every cell at FOCUS_NONE -- which both of GameView's callers reach, so it is answered once, here.
 func rest_focus_on_board() -> void:
 	flush_rebuild()
-	var held : Control = data_ui.get(selected_cards[0]) if selected_cards else null
-	var target : Control = held if held \
-			else _cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0))
-	if not target: return
-	_rest_focus_on(target)
+	if selected_cards:
+		var held : Control = data_ui.get(selected_cards[0])
+		assert(held, "a held card has a control: grab_cards indexes data_ui for every card it takes")
+		_rest_focus_on(held)
+		return
+	var cell := _cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0))
+	if not cell: return
+	_rest_focus_on(cell)
 
 func _rest_focus_on(control: Control) -> void:
 	assert(control, "a rest needs a control; rest_focus_on_board answers the empty board")

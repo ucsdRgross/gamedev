@@ -98,7 +98,7 @@
 - S5: `test_wall_focus.gd`'s dropped-entry test asserted the pre-S5 rule (Info mode off => the
   visual is freed). Re-aimed at the rule that replaces it: whatever SHOWS the entry owns its visual.
 - S6: the click route is `PlayArea.data_selected` -> `GameView._on_data_selected`, which calls
-  `hud_container.lock_to(PlayArea.card_info(data, board_card_window_px()), data)` BEFORE the game
+  `hud_container.lock_to(PlayArea.card_info(data, board_card_window_px()))` BEFORE the game
   action and pushes `play_area.locked_data = data`; the container's `description_dismissed` comes
   back through `GameView._on_description_dismissed()` to clear it. The board never decides what is
   shown -- it publishes, and the view relays in both directions (B5, Q56=a, PLAN 2).

@@ -68,7 +68,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 |---|---|---|
 | `HudContainer` | `func show_hud() -> void` | Revert to the HUD. The one place that swap happens (C2, B10) |
 | `HudContainer` | `func show_description(entry: InfoEntry) -> void` | Swap to the description (C5) |
-| `HudContainer` | `func lock_to(entry: InfoEntry, target: CardData) -> void` | Click-lock (B5) |
+| `HudContainer` | `func lock_to(entry: InfoEntry) -> void` | Click-lock (B5) |
 | `HudContainer` | `func clear_lock() -> void` | (B10) |
 | `HudContainer` | `func is_locked() -> bool` | |
 | `HudContainer` | `func container_rect() -> Rect2` | Where the container RESTS -- what both contents lay out inside, whatever the slide is doing |

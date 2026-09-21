@@ -392,25 +392,22 @@ func _join_focus_while_shown(button: Button, shown: bool) -> void:
 	button.visible = shown
 	button.focus_mode = Control.FOCUS_ALL if shown else Control.FOCUS_NONE
 
-## The card each screen's description is LOCKED to -- a lock survives leaving and returning, exactly as the remembered entry does.
-var _lock_by_screen : Dictionary[StringName, CardData] = {}
-
-## The entry that lock is showing, so losing the highlight can come back to the locked card itself.
+# A lock survives leaving and returning, exactly as the remembered entry does, and a lost highlight
+# comes back to the entry held here.
+## The entry each screen's description is LOCKED to, and the only record that the screen is locked at all.
 var _locked_entry_by_screen : Dictionary[StringName, InfoEntry] = {}
 
-## Pins the description to `target`: it stays the sidebar's subject until a dismissal takes the container back to the HUD.
-func lock_to(entry: InfoEntry, target: CardData) -> void:
+## Pins the description to `entry`: it stays the sidebar's subject until a dismissal takes the container back to the HUD.
+func lock_to(entry: InfoEntry) -> void:
 	_release_locked_entry(_active_screen)
-	_lock_by_screen[_active_screen] = target
 	_locked_entry_by_screen[_active_screen] = entry
 	show_description(entry)
 
 func clear_lock() -> void:
-	_lock_by_screen.erase(_active_screen)
 	_release_locked_entry(_active_screen)
 
 func is_locked() -> bool:
-	return _lock_by_screen.has(_active_screen)
+	return _locked_entry_by_screen.has(_active_screen)
 
 ## Nothing is highlighted any more: a locked description returns to its own card, an unlocked one keeps the entry it has.
 func return_to_lock() -> void:
@@ -445,7 +442,6 @@ func release_screen(screen: StringName) -> void:
 		_swap_to_hud()
 	_release_remembered_entry(screen, null)
 	_release_locked_entry(screen)
-	_lock_by_screen.erase(screen)
 	if screen == GAME_SCREEN: _game_processing = false
 
 # ⚠ FREED HERE AND NOT LEFT TO THE DICTIONARIES: on a whole-tree teardown this container's own

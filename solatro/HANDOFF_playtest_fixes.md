@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P14, P16-P23, P25-P28 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6328 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P32, then the close; P30 and P31 are in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: the close per /plan-run; every P row is in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -341,9 +341,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/UI/play_area.gd, solatro/UI/hud_container.gd, solatro/Levels/game_view.gd, solatro/Tools/wall_editor.gd, solatro/Tests/Wall/test_sidebar.gd, solatro/design/sidebar/NAMES.md]
   verification_command: 'run_tests.py --logic; --filter Sidebar DragPlace Interaction WallFocus; overseer full gate'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'See Open bugs (the P9 bloat review) and the P20 notes.'
+  status: done
+  evidence: 'A: the assert text appears 0 times in --logic and the 7-suite filter; kept. B: no behaviour row changed. FILTERED 7 of 51: 2415 -> 2404 CHECKS PASSED, SIDEBAR 1414 -> 1403, the 11 accounted: 2 tautologies, the 7 checks of test_no_zoom_out_route_leaves_half_a_lock, its 2 fixture checks; six other suites identical. Overseer gate: ALL 51 SUITES: 6281 CHECKS PASSED (SIDEBAR 1403), 21 placeholder warnings, the exit profile, 0 SCRIPT ERROR. doc_check --changed silent; dup_check 82.'
+  notes: 'A: selected_cards has two writers (grab_cards, ungrab_cards) and grab_cards already indexes data_ui unguarded, so a held card always has a control - asserted. B: HudContainer keeps ONE lock dictionary, _locked_entry_by_screen; lock_to(entry). The one answer that changed: after the container _exit_tree, is_locked() is now false where it was true - the old true led only to a missing key in return_to_lock (argued from call sites, not measured). The agreement helper and the row built wholly on it are deleted: one dictionary cannot disagree with itself.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -396,11 +396,12 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - A worldgen teardown abort (0xC000001D in addons/worldgen/core/steps/rivers.gd, a river step reading a freed object while a Main is torn down mid-generation - the un-awaited map_scene.start_run path P4 notes) hit 1 abort plus 1 post-banner SCRIPT ERROR in an implementer's 5 Sidebar-including runs during P22; 0 of the overseer's gates.
 - `PIXELS: fire brightens when its host is highlighted` failed once (0.272 plain vs 0.250 highlighted) in 1 of 5 overseer gates on the P12 tree, never before; nothing in P12 reaches that suite. Measure before naming a cause.
 - PLAN VISUALS TP-92 (cell k starts k shares of the stagger in) failed once - worst drift 0.084 s against a 0.080 s stagger - in 1 of 3 overseer gates on the P23 tree, green on the rerun and in every filtered run; a wall-clock timing row under full-gate load. Measure before naming a cause.
+- Gate totals move run to run ONLY through BOARD FUZZ (347..376 over six gates, a randomised suite); every other suite count is stable, so compare per-suite tables in logs/test/test_output_all.log, never the banner totals. Unexplained: before P15 SIDEBAR read 1391 on the full gate against 1406 filtered (equal, 1414, after P15) - 15 checks the full gate did not run; fits the leaked-board item below, not measured.
 - A LEAKED LIVE BOARD between suites: a settings write in WALL FOCUS rebuilt a PlayArea another suite left alive (the P23 SCRIPT ERROR surfaced only on the full gate, under no filtered subset). Harmless now, but it is an order-dependence source - find the suite that does not free its Main/GameView.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P32, then the close. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. The close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)

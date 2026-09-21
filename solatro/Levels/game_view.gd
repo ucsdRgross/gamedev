@@ -498,7 +498,7 @@ func _on_data_selected(data: CardData) -> void:
 		play_area.stop_following()
 		return
 	hud_container.lock_to(PlayArea.card_info(data,
-			CardVisual.preview_window_px(play_area.picture_to_window_scale)), data)
+			CardVisual.preview_window_px(play_area.picture_to_window_scale)))
 	play_area.locked_data = data
 	if play_area.selected_cards:
 		if data in play_area.selected_cards: return
