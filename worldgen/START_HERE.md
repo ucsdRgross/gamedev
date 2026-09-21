@@ -15,6 +15,11 @@ world generation + DAG overlay for Godot 4.7; full user docs in
 ([worldgen_native/BUILD.md](worldgen_native/BUILD.md)).
 
 Pipeline: Landmass → Tectonics → Peaks&Valleys → Erosion → Rivers → Graph → Biomes.
+**Cancel on exit:** `WorldMap2D` and `WorldGenerator` stop generating the moment they leave the
+tree — the SceneTree's `process_frame` keeps firing while a node is being freed, so without it the
+stage loop resumes on a dying node. A cancelled run emits no `generation_finished`, writes no bake,
+and blocks in `_exit_tree` until any `WorkerThreadPool` task holding the node is done.
+
 The four heightmap steps run as native CPU code by default
 (`WorldSettings.deterministic_terrain = true`); their old GPU shader paths remain as the
 fallback when the dll is missing.

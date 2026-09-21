@@ -41,6 +41,8 @@ func _ready() -> void:
 	await test_a_picture_entered_from_the_keyboard_does_not_stay_lifted()
 	await test_continue_after_a_mid_show_quit_still_reveals_wall_view()
 	await test_the_opening_reveal_reads_wall_reveal_delay_scale()
+	behavior_section("A MAIN FREED MID-GENERATION")
+	await test_a_main_freed_mid_generation_does_not_outlive_its_tree()
 	finish()
 
 # ------------------------------------------------------------------ fixture
@@ -564,6 +566,60 @@ func test_continue_after_a_mid_show_quit_still_reveals_wall_view() -> void:
 
 	await TestMainHost.await_world_settled(self, main, "the mid-show resume")
 	main.queue_free()
+	restore_settings_snapshot(snap)
+	restore_real_settings()
+	restore_real_save(suite_tag())
+
+# A `Main` freed while its world is still generating.
+
+# ⚠ THE VERDICT IS THE WRAPPER'S, NOT A CHECK: the generator resuming a stage on a dying tree is an
+# access violation at PROCESS EXIT, after the banner. The three checks below only prove the row is
+# not vacuous -- that a generation was really in flight at the moment of the free.
+
+# This is the ONE row here that frees its Main without `TestMainHost.await_world_settled`; that wait
+# is what every other free uses to stay clear of this, so waiting here would erase the row.
+func test_a_main_freed_mid_generation_does_not_outlive_its_tree() -> void:
+	backup_real_settings()
+	backup_real_save(suite_tag())
+	var snap := snapshot_settings("wall_")
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+# NO unpause. As ever.
+
+# new_run clears the bake, so the map screen has no composite to load and must generate.
+	RunManager.new_run([] as Array[CardData], [] as Array[CardData])
+# Boxed -- lambdas capture locals BY VALUE.
+	var done : Array[bool] = [false]
+	_drive(func() -> void: await main._on_continue(), done)
+
+	var started := Time.get_ticks_msec()
+	while main.map_scene.controller.map == null and Time.get_ticks_msec() - started < 20000:
+		await get_tree().process_frame
+	var map : WorldMap2D = main.map_scene.controller.map
+	check(map != null, "the map node exists, so a generation can be in flight")
+	if map == null:
+		main.queue_free()
+		restore_settings_snapshot(snap)
+		restore_real_settings()
+		restore_real_save(suite_tag())
+		return
+
+	var stages : Array[String] = []
+	var finished : Array[bool] = [false]
+	map.generation_progress.connect(func(stage: String, _fraction: float) -> void: stages.append(stage))
+	map.generation_finished.connect(func() -> void: finished[0] = true)
+	while stages.is_empty() and not finished[0] and Time.get_ticks_msec() - started < 20000:
+		await get_tree().process_frame
+
+	check(not stages.is_empty(),
+			"a generation stage reported while the Main was still up", str(stages))
+	check(not finished[0],
+			"...and the generation had NOT finished, so the free below lands inside its stage loop",
+			str(stages))
+
+	main.queue_free()
+	await get_tree().process_frame
+	await get_tree().process_frame
 	restore_settings_snapshot(snap)
 	restore_real_settings()
 	restore_real_save(suite_tag())

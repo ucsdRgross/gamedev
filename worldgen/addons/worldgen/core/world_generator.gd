@@ -61,6 +61,13 @@ const MAX_PLATES := 15
 ## test paths stay exactly synchronous; WorldMap2D flips it on at runtime.
 var thread_cpu_steps: bool = false
 
+# Set once this node leaves the tree: the SceneTree's process_frame is the TREE's signal, so a
+# pending await still resumes the stage loop one more time on a node that is being freed.
+var _cancelled: bool = false
+# The WorkerThreadPool work in flight, so leaving the tree can block until it lets go of `self`.
+var _live_task: int = -1
+var _live_group: int = -1
+
 var _viewports: Dictionary = {}
 # CPU-baked noise maps: name -> { "img": Image, "tex": ImageTexture }. All noise
 # is generated here so shaders only transform it (and the viewer can show it).
@@ -93,6 +100,18 @@ func _ready() -> void:
 	# Viewports are created lazily on first use (see _viewport), so a disabled GPU
 	# step never allocates one. The viewer calls generate_world_map() after it has
 	# connected to generation_step_finished, so we do not kick generation off here.
+
+# Stop the pipeline: every await below returns instead of running the next stage on a node that is
+# leaving. A pool task holds `self`, so block here until it is done rather than let it write into
+# a generator that is about to be freed.
+func _exit_tree() -> void:
+	_cancelled = true
+	if _live_task != -1:
+		WorkerThreadPool.wait_for_task_completion(_live_task)
+		_live_task = -1
+	if _live_group != -1:
+		WorkerThreadPool.wait_for_group_task_completion(_live_group)
+		_live_group = -1
 
 # =================================================================
 # GPU PIPELINE PLUMBING
@@ -255,6 +274,8 @@ func _run_pipeline(stop_index: int, report: bool) -> void:
 	var timings: Array = []
 	var gen_start := Time.get_ticks_msec()
 	for i in range(pipe.size()):
+		if _cancelled:
+			return
 		var s: Dictionary = pipe[i]
 		var on: bool = s.toggle == "" or bool(settings.get(s.toggle))
 		if on:
@@ -282,10 +303,15 @@ func _run_pipeline(stop_index: int, report: bool) -> void:
 ## (no SubViewport/RenderingServer); its snapshot emit is marshalled to the main thread by
 ## _save_snapshot_bridge. Requires being in the tree (WorldMap2D always is when threading).
 func _run_cpu_step_threaded(step: GenerationStep) -> void:
-	var tid := WorkerThreadPool.add_task(step.execute.bind(self, settings), true, "worldgen_cpu_step")
+	_live_task = WorkerThreadPool.add_task(step.execute.bind(self, settings), true, "worldgen_cpu_step")
+	var tid := _live_task
 	while not WorkerThreadPool.is_task_completed(tid):
+		if _cancelled:
+			break
 		await get_tree().process_frame
-	WorkerThreadPool.wait_for_task_completion(tid)
+	if _live_task != -1:
+		WorkerThreadPool.wait_for_task_completion(tid)
+		_live_task = -1
 
 ## Bake the noise maps. When thread_cpu_steps is set, compute the (independent) maps in
 ## PARALLEL across a WorkerThreadPool group task -- one element per map -- while the main
@@ -301,10 +327,17 @@ func _bake_noise() -> void:
 	imgs.resize(recipes.size())
 	# Each group element i computes one map into its own slot -> no shared writes to race.
 	var worker := func(i: int) -> void: imgs[i] = (recipes[i]["fn"] as Callable).call()
-	var gid := WorkerThreadPool.add_group_task(worker, recipes.size(), -1, true, "worldgen_noise")
+	_live_group = WorkerThreadPool.add_group_task(worker, recipes.size(), -1, true, "worldgen_noise")
+	var gid := _live_group
 	while not WorkerThreadPool.is_group_task_completed(gid):
+		if _cancelled:
+			break
 		await get_tree().process_frame
-	WorkerThreadPool.wait_for_group_task_completion(gid)
+	if _live_group != -1:
+		WorkerThreadPool.wait_for_group_task_completion(gid)
+		_live_group = -1
+	if _cancelled:
+		return
 	var by_name := {}
 	for i in range(recipes.size()):
 		by_name[recipes[i]["name"]] = imgs[i]
@@ -316,12 +349,16 @@ func generate_world_map() -> void:
 	# Setup (noise + plates) is timed separately from the step budget.
 	var ts := Time.get_ticks_msec()
 	await _bake_noise()  # all CPU noise, generated once (threaded when thread_cpu_steps)
+	if _cancelled:
+		return
 	print("[WorldGenerator]   setup NoiseBake %d ms" % (Time.get_ticks_msec() - ts))
 	ts = Time.get_ticks_msec()
 	_init_plates()
 	print("[WorldGenerator]   setup Plates    %d ms" % (Time.get_ticks_msec() - ts))
 
 	await _run_pipeline(_pipeline().size() - 1, true)  # run all enabled steps
+	if _cancelled:
+		return
 
 	# The emit (not the stored dict) triggers the viewer's debug-sheet export. Each
 	# step already emitted its own snapshot inside execute(); the viewer ignores all

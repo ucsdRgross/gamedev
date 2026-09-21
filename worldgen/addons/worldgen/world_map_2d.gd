@@ -96,6 +96,10 @@ var _loading_label: Label
 var _loading_spinner: Label
 var _spin_t: float = 0.0
 var _busy: bool = false
+# Set once this node leaves the tree; see _exit_tree.
+var _cancelled: bool = false
+# The paint task in flight, so leaving the tree can block until it lets go of `self`.
+var _live_paint: int = -1
 var _steps_done: int = 0
 # Generated images + the final snapshot (kept out of @export vars: anti-.tscn-bloat).
 var _composite_img: Image
@@ -120,6 +124,15 @@ func _ready() -> void:
 		r.randomize()
 		settings.main_seed = (r.randi() % 999999) + 1
 	generate()
+
+# Abandon the generation this node is driving: the tree's process_frame keeps firing while a node
+# is being freed, so without this the driver resumes one more stage on a dying map. The paint task
+# holds `self`, so block here until it is done rather than let it write into a freed node.
+func _exit_tree() -> void:
+	_cancelled = true
+	if _live_paint != -1:
+		WorkerThreadPool.wait_for_task_completion(_live_paint)
+		_live_paint = -1
 
 ## Keep the loading spinner turning each frame (proves the main thread is free while the
 ## background paint runs). No-op in the editor / when no overlay is visible.
@@ -167,6 +180,9 @@ func _run_generation() -> void:
 
 	var gen := _worker()
 	await gen.generate_world_map()
+	if _cancelled:
+		_busy = false
+		return
 
 	var snap := gen.final_snapshot()
 	_snapshot = gen.snapshots.get(snap, {})
@@ -177,6 +193,9 @@ func _run_generation() -> void:
 	var bset := settings.active_biome_set()
 	await _paint_layers(_snapshot, w, h, settings.ocean_threshold, _active_colorizer(),
 		bset, _deco_ctx(bset, gen.graph_export))
+	if _cancelled:
+		_busy = false
+		return
 	_apply_map_texture()
 
 	if show_graph:
@@ -195,10 +214,15 @@ func _run_generation() -> void:
 func _paint_layers(data: Dictionary, w: int, h: int, oth: float, col: WorldHeightColorizer,
 		bset: WorldBiomeSet = null, deco: Dictionary = {}) -> void:
 	if threaded_paint and not Engine.is_editor_hint():
-		var tid := WorkerThreadPool.add_task(_paint_task.bind(data, w, h, oth, col, bset, deco), true, "worldmap_paint")
+		_live_paint = WorkerThreadPool.add_task(_paint_task.bind(data, w, h, oth, col, bset, deco), true, "worldmap_paint")
+		var tid := _live_paint
 		while not WorkerThreadPool.is_task_completed(tid):
+			if _cancelled:
+				break
 			await get_tree().process_frame
-		WorkerThreadPool.wait_for_task_completion(tid)
+		if _live_paint != -1:
+			WorkerThreadPool.wait_for_task_completion(tid)
+			_live_paint = -1
 	else:
 		_paint_task(data, w, h, oth, col, bset, deco)
 
