@@ -180,7 +180,7 @@ static func set_rim(poly : Polygon2D, style : OutlineStyle, card_extent : Vector
 #A per-element channel rather than the host's modulate, which reaches all five polygons at once: the
 #board lights a card's FACE and the pips printed over it must keep their own colours.
 
-## Light this polygon by an equal-channel multiplier on its drawn colour. 1.0 is unlit.
+## Light this polygon's BODY by an equal-channel multiplier. 1.0 is unlit; its rim is never lifted.
 static func set_brightness(poly : Polygon2D, brightness : float) -> void:
 	material_of(poly).set_shader_parameter(&"u_brighten", brightness)
 

@@ -111,7 +111,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `TestGridFixtures` | `static func leftmost_entrance_slot() -> int` | Test support: the leftmost Entrance slot holding a card, or -1, off the current game's state — the one query `TestSidebar` and `TestDragPlace` share |
 | `TestGridFixtures` | `static func brightness_of(poly: Polygon2D) -> float` | Test support: the `u_brighten` one card polygon is drawn at; an unset uniform reads back as the shader's 1.0 |
 | `PipSuit` | `func get_plural_str() -> String` | The suit's name in the plural, read by the card title alone ("King of Knives", and "Knives" for a card with a suit and no rank); every other surface, the suit's own description block included, names it through `get_str()` |
-| `CardOutline` | `static func set_brightness(poly: Polygon2D, brightness: float) -> void` | The per-element highlight channel: an equal-channel multiplier on this polygon's drawn colour, 1.0 unlit |
+| `CardOutline` | `static func set_brightness(poly: Polygon2D, brightness: float) -> void` | The per-element highlight channel: an equal-channel multiplier on this polygon's drawn BODY, never its rim, 1.0 unlit |
 | `CardVisual` | `var on_drop_map : bool` | This card's cell is one the held card may land in — the one mark `_apply_marks` brightens the face by |
 | `CardVisual` | `var focused : bool` | The board is pointing at this card: `_apply_marks` draws it as the card's OUTER rim in the match ink, never as a brighter face |
 | `PlayArea` | `signal hand_released` | A drag's release landed on nothing that takes the card, so the player dropped it — `GameView._finish_with_the_card` |

@@ -885,14 +885,27 @@ func test_the_legal_cell_lights_the_face_and_the_focus_lights_the_rim() -> void:
 			"the rank, suit, stamp and art drew something of their own to compare against",
 			"no opaque pixel on the stage")
 
+#THE RIM IS FOUND BY ITS INK, NOT ITS GEOMETRY: the card's corners are rounded, so the rim curves
+#back inside any box drawn around the face. The pixels the FOCUS repaints are the product's own
+#answer to which fragments are outline, so every reading below that must exclude the rim uses them.
+	var focused_face := await _shoot_card(false, true, true)
+	var rim : Array[Vector2i] = []
+	for y : int in range(area.position.y, area.end.y):
+		for x : int in range(area.position.x, area.end.x):
+			if plain_face.get_pixel(x, y) != focused_face.get_pixel(x, y):
+				rim.append(Vector2i(x, y))
+	check(rim.size() > 0, "the focus repainted some pixels, so there is a rim to exclude",
+			"the focused render is identical to the plain one")
+
 	var glow : float = PlayArea.settings().highlight_glow
 	var legal_face := await _shoot_card(true, false, true)
-	var legal_mean := _mean_colour(legal_face, area)
-	check(legal_mean.r > plain_mean.r and legal_mean.g > plain_mean.g
-			and legal_mean.b > plain_mean.b,
+	var plain_body := _mean_colour(_without(plain_face, rim), area)
+	var legal_mean := _mean_colour(_without(legal_face, rim), area)
+	check(legal_mean.r > plain_body.r and legal_mean.g > plain_body.g
+			and legal_mean.b > plain_body.b,
 			"the legal-cell highlight lifts the card's face in EVERY channel -- no channel goes down",
-			"plain %s vs lit %s" % [plain_mean, legal_mean])
-	var predicted := _mean_colour(plain_face, area, Color(glow, glow, glow))
+			"plain %s vs lit %s" % [plain_body, legal_mean])
+	var predicted := _mean_colour(_without(plain_face, rim), area, Color(glow, glow, glow))
 	check(_channels_within(legal_mean, predicted, PIXEL_TOLERANCE),
 			"...by an EQUAL-CHANNEL multiplier, channel by channel, so it casts no colour",
 			"lit %s, predicted from plain %s at x%.3f" % [legal_mean, predicted, glow])
@@ -901,11 +914,9 @@ func test_the_legal_cell_lights_the_face_and_the_focus_lights_the_rim() -> void:
 			"...and the rank, suit, stamp and art are byte-identical under it",
 			"%d bytes differ" % _bytes_differing(legal_pips.get_data(), plain_pips.get_data()))
 
-#THE RIM IS FOUND BY ITS INK, NOT ITS GEOMETRY: the card's corners are rounded, so the rim curves
-#back inside any box drawn around the face. Every pixel the focus changes must come out in the ink a
-#matching mark wears -- a face lifted toward white would land on no palette entry at all.
+#EVERY PIXEL THE FOCUS CHANGES MUST COME OUT IN THE INK A MATCHING MARK WEARS -- a face lifted
+#toward white would land on no palette entry at all.
 	var match_ink := PaletteDB.color(PaletteDB.ROLES.match_rim)
-	var focused_face := await _shoot_card(false, true, true)
 	var changed := _pixels_differing(focused_face, plain_face, area)
 	var inked := _repainted(plain_face, focused_face, area, match_ink)
 	check(changed > 0 and inked == changed,
@@ -917,17 +928,29 @@ func test_the_legal_cell_lights_the_face_and_the_focus_lights_the_rim() -> void:
 			"...and the rank, suit, stamp and art are byte-identical under it too",
 			"%d bytes differ" % _bytes_differing(focused_pips.get_data(), plain_pips.get_data()))
 
+	check(_differing_at(plain_face, legal_face, rim) == 0,
+			"the legal-cell highlight leaves the cell's OUTER RIM byte-identical to the unlit render "
+			+ "-- it lifts the face and stops at the outline",
+			"%d of %d rim pixels moved under the glow"
+			% [_differing_at(plain_face, legal_face, rim), rim.size()])
+
 #BOTH MARKS AT ONCE ARE THE TWO MARKS, NOT ONE SQUARED: the face is exactly the legal cell's and the
-#rim is exactly the focus's, so a cell that is legal AND focused shows nothing a third reading would.
-#The inks are read under the glow, the brightening reaching the rim as it reaches everything else.
+#rim is exactly the focus's, at its own ink and its own value, so a cell that is legal AND focused
+#shows nothing a third reading would.
 	var both := await _shoot_card(true, true, true)
 	var changed_lit := _pixels_differing(both, legal_face, area)
-	var lit_ink := (match_ink * Color(glow, glow, glow)).clamp()
-	var inked_lit := _repainted(legal_face, both, area, lit_ink)
+	var inked_lit := _repainted(legal_face, both, area, match_ink)
 	check(changed_lit > 0 and inked_lit == changed_lit,
 			"a cell that is legal AND focused draws the legal cell's face untouched with the "
 			+ "focus's rim over it -- one glow on the face, never its square",
-			"%d of %d changed pixels came out in the lit match ink" % [inked_lit, changed_lit])
+			"%d of %d changed pixels came out in the match ink" % [inked_lit, changed_lit])
+	check(_differing_at(both, focused_face, rim) == 0,
+			"...and that rim is drawn at the focus ink's own value, not the ink brightened",
+			"%d of %d rim pixels differ from the focused-alone render"
+			% [_differing_at(both, focused_face, rim), rim.size()])
+	check(changed_lit == rim.size(),
+			"...over the legal cell's face exactly, nothing off the rim moving with it",
+			"%d changed against a %d-pixel rim" % [changed_lit, rim.size()])
 
 ## Pixels of `area` the two images disagree on that come out `ink` in `after`.
 func _repainted(before: Image, after: Image, area: Rect2i, ink: Color) -> int:
@@ -936,6 +959,21 @@ func _repainted(before: Image, after: Image, area: Rect2i, ink: Color) -> int:
 		for x : int in range(area.position.x, area.end.x):
 			if before.get_pixel(x, y) == after.get_pixel(x, y): continue
 			if _channels_within(after.get_pixel(x, y), ink, PIXEL_TOLERANCE): n += 1
+	return n
+
+## A copy of `img` with `coords` blanked, so the pixel readers below skip them as undrawn.
+func _without(img: Image, coords: Array[Vector2i]) -> Image:
+	var out := Image.new()
+	out.copy_from(img)
+	for p : Vector2i in coords:
+		out.set_pixel(p.x, p.y, Color(0.0, 0.0, 0.0, 0.0))
+	return out
+
+## How many of `coords` the two images disagree on.
+func _differing_at(a: Image, b: Image, coords: Array[Vector2i]) -> int:
+	var n := 0
+	for p : Vector2i in coords:
+		if a.get_pixel(p.x, p.y) != b.get_pixel(p.x, p.y): n += 1
 	return n
 
 ## How many pixels of `area` the two images disagree on.

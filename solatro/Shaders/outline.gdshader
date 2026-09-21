@@ -55,9 +55,11 @@ uniform int u_fill_mode : hint_range(0, 1) = 0;
 uniform int u_fill_index : hint_range(0, 255) = 0;
 
 // ── THE HIGHLIGHT ─────────────────────────────────────────────────────────────────────────────────
-// An EQUAL-CHANNEL multiplier on this element's drawn colour, so a lit element goes toward white and
+// An EQUAL-CHANNEL multiplier on this element's drawn BODY, so a lit element goes toward white and
 // never takes a colour cast. 1.0 is unlit. It is per-element rather than a host modulate because the
 // board lights a card's FACE and leaves the rank, suit, stamp and art printed over it alone.
+// ⚠ THE RIM IS EXCLUDED: the rim is where FOCUS is drawn, and it must show its own ink at its own
+// value over a lit face, so a card that is legal AND focused is outlined once and not brightened twice.
 uniform float u_brighten = 1.0;
 
 // ── CARD SPACE ────────────────────────────────────────────────────────────────────────────────────
@@ -209,7 +211,10 @@ void fragment() {
 	if (src.a > 0.5) {
 		// BODY. The source alpha is authored 1-bit on every sheet here, so a hard cut is exact and
 		// keeps the rim from having to blend against a fringe that does not exist.
-		out_col = vec4((u_fill_mode == 1) ? palette_rgb(u_fill_index) : src.rgb, 1.0);
+		// The highlight lands HERE, in the body branch, because this if/else is already the shader's
+		// one decision about which fragments are body and which are rim.
+		vec3 body = (u_fill_mode == 1) ? palette_rgb(u_fill_index) : src.rgb;
+		out_col = vec4(body * u_brighten, 1.0);
 	} else {
 		// RIM. Eight-directional and exactly `u_outline_width` texels: a diagonal-only contact must
 		// still produce its corner pixel, which is what separates this from a 4-tap version that
@@ -230,5 +235,5 @@ void fragment() {
 		}
 		if (hit > 0.5) out_col = vec4(alert_ink(card_pos), 1.0);
 	}
-	COLOR = vec4(out_col.rgb * u_brighten, out_col.a) * v_modulate;
+	COLOR = out_col * v_modulate;
 }

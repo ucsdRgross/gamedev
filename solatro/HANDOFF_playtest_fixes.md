@@ -2,9 +2,9 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P12, P14, P16-P23, P25 are done, each red-then-green and by eye where it draws,
-one verified step per commit. Last gate: `ALL 51 SUITES: 6230 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P27, P26,
+**State:** P1-P12, P14, P16-P23, P25, P27 are done, each red-then-green and by eye where it draws,
+one verified step per commit. Last gate: `ALL 51 SUITES: 6219 CHECKS PASSED`, 21 placeholder
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P26,
 P13, P15, P24, a map.gd sweep; P23 is in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
@@ -260,9 +260,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/Shaders/outline.gdshader, solatro/Tests/Visual/test_pixels.gd, solatro/Tests/Visual/sidebar_snapshot.gd]
   verification_command: 'run_tests.py --filter Pixels PlanVisuals Sidebar; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
-  notes: 'Owner: "yes exclude focus outline rim". The rim is where FOCUS is drawn (the mark ink, ruled (a): keep), so a legal AND focused cell must show the focus rim at its own ink, unbrightened, over a brightened face. PIXELS row: on a legal cell the rim band is byte-identical to the unlit render while the face lifts by highlight_glow; legal+focused rim == focused-alone rim. Small; the shader already knows which fragments are outline.'
+  status: done
+  evidence: 'Red (the multiply put back on the whole output): FILTERED 2 of 51 [Pixels PlanVisuals]: 245 passed, 3 FAILED (3 behavior) - 2800 of 2800 rim pixels moved under the glow; legal+focused: 0 of 2800 changed pixels in the match ink; 2800 of 2800 rim pixels differ from the focused-alone render. Green: FILTERED 5 of 51 [Pixels PlanVisuals Sidebar DragPlace VisualLayers]: 2120 CHECKS PASSED (PIXELS 55 -> 59, others unchanged but SIDEBAR 1378 against 1377 - unexplained, no sidebar test touched); --logic 3017, 21 placeholder warnings. Overseer gate: ALL 51 SUITES: 6219 CHECKS PASSED, 21 placeholder warnings, the exit profile, 0 SCRIPT ERROR, 0 shader error. By eye (overseer, lifted_focus_elsewhere.png): 25 legal frames lit yellow/pink, pips unchanged, no white anywhere; the resting-focus cell rim in the unbrightened mark ink - 1-2 px and hard to pick out against a lit dashed frame (implementer counted 1328 px at exactly (237,220,192)).'
+  notes: 'The shader one decision (src.a > 0.5: body, else rim) now carries the multiply in its body arm; no new uniform. On a zone cell the dashed frame is all BODY, so an empty legal cell lifts exactly as before; only the rim band (where focus is drawn) stopped lifting. The P6 equal-channel row now reads its means off the face only. OPEN for the owner: the focus rim on a CELL is a 1-2 px cream line - subtle for pad/keyboard play. Owner: "yes exclude focus outline rim". The rim is where FOCUS is drawn (the mark ink, ruled (a): keep), so a legal AND focused cell must show the focus rim at its own ink, unbrightened, over a brightened face. PIXELS row: on a legal cell the rim band is byte-identical to the unlit render while the face lifts by highlight_glow; legal+focused rim == focused-alone rim. Small; the shader already knows which fragments are outline.'
 - id: P25
   description: The quit-mid-generation crash, fixed at its cause in worldgen - the generator stops stepping once its owner is leaving the tree (a cancel the stage loop checks between stages, set on exit, or stepping on its own node instead of the tree process_frame); fixed in worldgen/ and re-vendored into solatro/addons/worldgen.
   files_touched: [worldgen/, solatro/addons/worldgen/world_map_2d.gd, solatro/Tests/Wall/test_wall_pause.gd]
@@ -343,7 +343,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P27 (small), P26 (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P26 (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
