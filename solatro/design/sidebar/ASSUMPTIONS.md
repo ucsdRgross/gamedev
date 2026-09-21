@@ -988,3 +988,8 @@
   owner: "same value should be whatever original was. if unknown go with lower value." How a
   focused card's outline differs from a matching mark's - owner: "no difference between focus
   card outline and mark outline. both should show both outlined."
+- Playtest follow-up rulings after focus moved to the outline. The focus rim's ink being the
+  paper colour, so a focused card reads outline-less: (a) keep, (b) the realized-match gold,
+  (c) a new ink - owner: "focus outline color should be a. by default the outline is black
+  before focus." Whether the legal-cell brightening should leave the cell's own rim alone -
+  owner: "yes exclude focus outline rim".
