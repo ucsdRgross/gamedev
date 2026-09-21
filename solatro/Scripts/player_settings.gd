@@ -619,6 +619,12 @@ enum SeparationMode {
 		sidebar_scroll_pages_per_second = maxf(value, 0.0)
 		settings_changed.emit()
 
+## Seconds the HUD container takes to slide its whole width in from its edge, or back out -- the leave waits for it before the camera moves.
+@export var container_slide_duration : float = 0.25:
+	set(value):
+		container_slide_duration = maxf(value, 0.0)
+		settings_changed.emit()
+
 ## Pixel cap on the HUD container's size once the fraction above would grow past it.
 @export var container_size_max_px : float = 640.0:
 	set(value):

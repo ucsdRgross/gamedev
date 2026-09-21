@@ -55,6 +55,15 @@ func _ready() -> void:
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
 	await test_a_top_case_resize_fits_the_board_under_the_band()
 	await test_the_top_bands_hud_starts_below_the_overlay_buttons()
+	behavior_section("THE OVERLAY SLIDES, IT NEVER INSETS THE PICTURE")
+	await test_the_sidebar_is_hidden_on_the_menu_until_the_picker_describes_something()
+	await test_every_focused_picture_covers_the_window_edge_to_edge()
+	await test_the_sidebar_slides_in_after_the_landing_and_the_board_shifts_with_it()
+	await test_the_sidebar_is_fully_out_before_the_camera_leaves()
+	await test_a_leave_mid_slide_ends_with_the_sidebar_fully_out()
+	await test_the_slide_shifts_the_board_without_re_scaling_it()
+	await test_freeing_main_mid_slide_strands_no_waiter()
+	await test_before_the_slide_each_screen_has_the_whole_picture()
 	behavior_section("S4: THE MAP GETS THE SAME CONTAINER")
 	await test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_them()
 	await test_focus_change_drives_which_hud_stack_child_shows()
@@ -1101,6 +1110,325 @@ func _band_rect_in_picture(picture: WallPicture, window: Vector2, band: Rect2, t
 	if top: return Rect2(visible.position, Vector2(visible.size.x, visible.size.y - remaining.size.y))
 	return Rect2(visible.position, Vector2(visible.size.x - remaining.size.x, visible.size.y))
 
+# ------------------------------------------------------------ the overlay slides, it never insets
+
+# The window rect a picture is actually DRAWN into -- its packed rect through the wall camera's
+# live zoom and position. ROOT WINDOW space (the booted `SubViewport`'s own), the space the
+# container's rects are in; everything read off a board control is in that picture's own space.
+func _drawn_picture_rect(main: Main, id: StringName) -> Rect2:
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+	var rect : PictureRect = main._rects[id]
+	var window : Vector2 = main.hud_container.get_viewport().get_visible_rect().size
+	var zoom := camera.zoom.x
+	var drawn := rect.size * zoom
+	return Rect2((rect.centre - camera.position) * zoom + window / 2.0 - drawn / 2.0, drawn)
+
+## Every edge of `drawn` reaches the window's own or passes it -- no strip of bare wall anywhere, least of all beside the sidebar.
+func _check_covers_the_window(drawn: Rect2, window: Vector2, label: String) -> void:
+	check(drawn.position.x <= 1.0 and drawn.position.y <= 1.0
+				and drawn.end.x >= window.x - 1.0 and drawn.end.y >= window.y - 1.0,
+			label, "%s vs window %s" % [drawn, window])
+
+# The container's own fraction, its drawn x and the camera's position, sampled once a frame while
+# a route nobody awaited runs to its end. A STILL FRAME CANNOT SHOW A SLIDE: only the sequence can
+# say the sidebar passed through the positions between, and that the camera held still while it did.
+func _sample_the_slide(main: Main, settled: Callable) -> Array[Array]:
+	var samples : Array[Array] = []
+	var container := main.hud_container
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+	while samples.size() < 900:
+		samples.append([container.slid_fraction(), container.position.x, camera.position,
+				Time.get_ticks_msec()])
+		if settled.call(): break
+		await get_tree().process_frame
+	return samples
+
+# The samples taken while the container was neither fully in nor fully out -- the slide itself.
+# ⚠ `from` DISCARDS EVERYTHING BEFORE IT: a whole enter carries a slide OUT, a camera travel and
+# then the slide IN, and reading all three as one run says the sidebar reversed and the camera moved.
+func _mid_slide(samples: Array[Array], from: int = 0) -> Array[Array]:
+	var mid : Array[Array] = []
+	for i : int in range(from, samples.size()):
+		var f : float = samples[i][0]
+		if f > 0.001 and f < 0.999: mid.append(samples[i])
+	return mid
+
+## The last sample at which the container was still fully out -- where the way IN begins.
+func _last_fully_out(samples: Array[Array]) -> int:
+	var last := 0
+	for i : int in samples.size():
+		if (samples[i][0] as float) <= 0.001: last = i
+	return last
+
+## The menu carries no HUD, so its sidebar is there only while its picker is describing something.
+func test_the_sidebar_is_hidden_on_the_menu_until_the_picker_describes_something() -> void:
+	backup_real_save(suite_tag())
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	var booted := await _boot_main_at(Vector2i(1280, 720))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var band := container.container_rect()
+	check(not container.visible, "the menu's sidebar is hidden with nothing to show")
+	check(container.published_rect().size.x <= 0.001,
+			"...and it insets the menu by nothing at all",
+			"%.3f" % container.published_rect().size.x)
+	check(not container.get_global_rect().intersects(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0))),
+			"...and it is drawn wholly off the window, so it is not under the pointer either",
+			str(container.get_global_rect()))
+	_push_mouse_button(band.get_center(), viewport, true)
+	_push_mouse_button(band.get_center(), viewport, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(not container.showing_description() and not container.visible,
+			"a click where the sidebar would be is not taken by it")
+
+	main.menu_scene.new_run_button.pressed.emit()
+	await get_tree().process_frame
+	var picker : DeckPicker = main.menu_scene.find_child("DeckPicker", true, false) as DeckPicker
+	var inspect : Button = (picker.rows.get_child(0) as HBoxContainer).get_child(1) as Button
+	inspect.pressed.emit()
+	for _i : int in range(120):
+		if container.visible and is_equal_approx(container.slid_fraction(), 1.0): break
+		await get_tree().process_frame
+	check(container.showing_description(),
+			"the picker's viewer publishes a description onto the menu's sidebar")
+	check(container.visible and is_equal_approx(container.slid_fraction(), 1.0),
+			"...so the sidebar has slid in for it", "%.3f" % container.slid_fraction())
+
+	container.dismiss_description()
+	for _i : int in range(120):
+		if is_zero_approx(container.slid_fraction()): break
+		await get_tree().process_frame
+	check(not container.visible and is_zero_approx(container.slid_fraction()),
+			"dismissing it slides the sidebar back out and hides it",
+			"%.3f" % container.slid_fraction())
+	await _end_booted_fixture(viewport, main)
+
+# R1's first half, and it is about the PICTURE, not the sidebar: whatever the sidebar is doing, the
+# focused picture reaches every window edge, so no bar of bare wall ever shows beside it.
+func test_every_focused_picture_covers_the_window_edge_to_edge() -> void:
+	await _start_map_fixture()
+	var window : Vector2 = _container.get_viewport().get_visible_rect().size
+	_check_covers_the_window(_drawn_picture_rect(_main, &"map"), window,
+			"the map covers the window edge to edge")
+	await _main._focus_picture(&"start_menu")
+	_check_covers_the_window(_drawn_picture_rect(_main, &"start_menu"), window,
+			"the start menu covers the window edge to edge")
+
+	var covered := true
+	var worst := Rect2()
+	var samples := 0
+	_main.enter_game()
+	while _main._move_in_flight and samples < 900:
+		var drawn := _drawn_picture_rect(_main, _main._transition_dest_id if
+				_main._transition_dest_id != &"" else _main._current_focus)
+		if drawn.position.x > 1.0 or drawn.end.x < window.x - 1.0:
+			covered = false
+			worst = drawn
+		samples += 1
+		await get_tree().process_frame
+	check(samples > 0, "sanity: the transition into the game was sampled at all", str(samples))
+	check(covered, "the destination picture covers the window at every sampled transition frame",
+			"worst %s vs window %s" % [worst, window])
+	var view := _main._pictures[&"game"].screen_root as GameView
+	CardEnvironment.CURRENT = view.game
+	_check_covers_the_window(_drawn_picture_rect(_main, &"game"), window,
+			"the game covers the window edge to edge once landed")
+	await _end_main_fixture()
+
+# The slide itself, which no still frame can show: after the picture lands the sidebar travels in
+# from off the window while the camera holds still, and the board's own window opens up with it.
+func test_the_sidebar_slides_in_after_the_landing_and_the_board_shifts_with_it() -> void:
+	await _start_map_fixture()
+	var width := _container.container_rect().size.x
+	_main.enter_game()
+	var samples := await _sample_the_slide(_main, func() -> bool:
+			return not _main._move_in_flight \
+					and is_equal_approx(_main.hud_container.slid_fraction(), 1.0))
+	var begins := _last_fully_out(samples)
+	var rested : Vector2 = samples[begins][2]
+	var mid := _mid_slide(samples, begins)
+	check(mid.size() >= 3, "the sidebar passes through the positions between, frame by frame",
+			"%d mid-slide samples of %d" % [mid.size(), samples.size()])
+	var rising := true
+	var moved := 0.0
+	for i : int in range(1, mid.size()):
+		if (mid[i][0] as float) < (mid[i - 1][0] as float) - 0.001: rising = false
+	check(rising, "...and only ever forward, never back")
+	for s : Array in mid:
+		moved = maxf(moved, ((s[2] as Vector2) - rested).length())
+	check(moved <= 1.0, "...while the camera holds still, the picture already landed",
+			"%.3f px" % moved)
+	var elapsed := float((mid[-1][3] as int) - (mid[0][3] as int)) / 1000.0
+	check(elapsed <= PlayerSettings.new().container_slide_duration + 0.2,
+			"...and it is done inside its own duration", "%.3f s" % elapsed)
+	var view := _main._pictures[&"game"].screen_root as GameView
+	CardEnvironment.CURRENT = view.game
+	_play_area = view.play_area
+	_game_viewport = _main._pictures[&"game"].viewport
+	check(absf(_play_area.board_inset_left - 394.0) <= 0.5,
+			"the board ends inset by the whole sidebar, exactly where it rests today",
+			"%.3f" % _play_area.board_inset_left)
+	check(absf(_container.position.x - _container.container_rect().position.x) <= 0.5,
+			"...and the sidebar ends at its resting rect, not part way",
+			"%.3f vs %.3f" % [_container.position.x, _container.container_rect().position.x])
+	check(width > 0.0, "sanity: the sidebar has a width to have travelled", "%.1f" % width)
+	await _end_main_fixture()
+
+# The exact reverse, and the half that had no hook at all: the wall-view route animated its camera
+# first, so the sidebar had to learn to get out of the way before the picture starts moving.
+func test_the_sidebar_is_fully_out_before_the_camera_leaves() -> void:
+	await _start_game_fixture()
+	var camera : Camera2D = _main.wall.get_node(^"%Camera2D")
+	var parked := camera.position
+	check(is_equal_approx(_container.slid_fraction(), 1.0),
+			"sanity: the sidebar is in before the leave", "%.3f" % _container.slid_fraction())
+	_main._go_to_wall_view()
+	var samples := await _sample_the_slide(_main, func() -> bool:
+			return not _main._move_in_flight)
+	var mid := _mid_slide(samples)
+	check(mid.size() >= 3, "the sidebar travels out frame by frame before the leave",
+			"%d mid-slide samples of %d" % [mid.size(), samples.size()])
+	var falling := true
+	var moved := 0.0
+	for i : int in range(1, mid.size()):
+		if (mid[i][0] as float) > (mid[i - 1][0] as float) + 0.001: falling = false
+	check(falling, "...and only ever outward")
+	for s : Array in mid:
+		moved = maxf(moved, ((s[2] as Vector2) - parked).length())
+	check(moved <= 1.0, "...with the camera still parked on the picture the whole time",
+			"%.3f px" % moved)
+	check(not _container.visible and is_zero_approx(_container.slid_fraction()),
+			"wall view keeps no sidebar at all", "%.3f" % _container.slid_fraction())
+	await _end_main_fixture()
+
+# A leave asked for MID-SLIDE, and then a second one on top: the tween is retargeted from where it
+# actually is, so the sidebar ends fully out rather than stranded. ⚠ Caught on the way IN, the only
+# mid-slide a leave can interrupt -- the way out runs with `_move_in_flight` already true.
+func test_a_leave_mid_slide_ends_with_the_sidebar_fully_out() -> void:
+	await _start_map_fixture()
+	_main.enter_game()
+	for _i : int in range(900):
+		var f := _main.hud_container.slid_fraction()
+		if not _main._move_in_flight and f > 0.05 and f < 0.95: break
+		await get_tree().process_frame
+	var caught := _container.slid_fraction()
+	check(caught > 0.05 and caught < 0.95, "sanity: the leave is asked for MID-slide",
+			"%.3f" % caught)
+	_main._go_to_wall_view()
+	_main._go_to_wall_view()
+	for _i : int in range(900):
+		if not _main._move_in_flight and is_zero_approx(_container.slid_fraction()): break
+		await get_tree().process_frame
+	check(is_zero_approx(_container.slid_fraction()) and not _container.visible,
+			"two leave requests mid-slide still end with the sidebar fully out, never stranded",
+			"%.3f" % _container.slid_fraction())
+	await _end_main_fixture()
+
+# R1 asks for a SHIFT, not a re-scale. Fitting the board against the live reserve re-zoomed it by
+# up to 1.333x as the window went 1576 -> 1182: sampled per frame, in both views, the board's zoom
+# must not move at all while its x travels the sidebar's whole width.
+func test_the_slide_shifts_the_board_without_re_scaling_it() -> void:
+	await _start_game_fixture()
+	await _check_the_slide_only_shifts("focused")
+	await _enter_game_fixture()
+	_play_area.open_zoomed_out()
+	for _i : int in range(120):
+		await get_tree().process_frame
+	await _check_the_slide_only_shifts("overview")
+	await _end_main_fixture()
+
+# Leaves to wall view while sampling, so the whole travel is one direction. Rects are the game
+# PICTURE's own space; `container_rect()` is ROOT WINDOW px, converted through the one owned
+# conversion before the two are compared.
+func _check_the_slide_only_shifts(label: String) -> void:
+	var picture : WallPicture = _main._pictures[&"game"]
+	var window : Vector2 = _container.get_viewport().get_visible_rect().size
+	var top := HudContainer.container_is_top(window, SettingsManager.settings)
+	var band := _band_rect_in_picture(picture, window, _container.container_rect(), top)
+	var pa := _play_area
+	var rest_zoom := pa.board_zoom
+	var rest_x := _board_content_x(pa)
+	var zooms : Array[float] = []
+	var xs : Array[float] = []
+	var fractions : Array[float] = []
+	_main._go_to_wall_view()
+	while _main._move_in_flight and fractions.size() < 900:
+		fractions.append(_container.slid_fraction())
+		zooms.append(pa.board_zoom)
+		xs.append(_board_content_x(pa))
+		await get_tree().process_frame
+	var mid := 0
+	var worst_zoom := rest_zoom
+	for i : int in fractions.size():
+		if fractions[i] <= 0.001 or fractions[i] >= 0.999: continue
+		mid += 1
+		if absf(zooms[i] - rest_zoom) > absf(worst_zoom - rest_zoom): worst_zoom = zooms[i]
+	check(mid >= 3, "%s: the sidebar is sampled part way in" % label,
+			"%d of %d samples" % [mid, fractions.size()])
+	check(is_equal_approx(worst_zoom, rest_zoom),
+			"%s: the board's zoom never moves while the sidebar slides" % label,
+			"rest %.6f worst %.6f" % [rest_zoom, worst_zoom])
+	var travel := absf(xs[-1] - rest_x)
+# ⚠ THE CONTENT'S OWN CENTRE, NEVER THE SCROLLER'S EDGE. A board whose WINDOW grows as the reserve
+# drops re-centres by HALF the sidebar's width; one whose window merely translates moves by the
+# whole of it. The scroller's left edge moves the same amount either way and cannot tell them apart.
+	check(absf(travel - band.size.x) <= 2.0,
+			"%s: ...and its content travels the sidebar's whole width, not half of it" % label,
+			"%.2f vs band %.2f" % [travel, band.size.x])
+	var monotonic := true
+	for i : int in range(1, xs.size()):
+		if xs[i] > xs[i - 1] + 0.001: monotonic = false
+	check(monotonic, "%s: ...one way only, never back" % label)
+
+## The centre of the board's own content, in the game picture's space: where a grid's cells actually sit.
+func _board_content_x(pa: PlayArea) -> float:
+	var cells := pa._cells_root(pa.grid_container.get_child(
+			maxi(pa.pan_grid, 0)) as Control)
+	return cells.global_position.x + cells.size.x * pa.scroll_container.scale.x * 0.5
+
+# ⚠ THE SHAPE THAT CRASHED THE PROCESS AT EXIT: a `Main` freed while the sidebar is part way in and
+# moves nobody awaited are still running. A wait that outlives its container resumes on freed
+# memory, so this drives exactly that and the run's own engine-error gate is the verdict.
+func test_freeing_main_mid_slide_strands_no_waiter() -> void:
+	await _start_map_fixture()
+	var container := _container
+	_main.enter_game()
+	for _i : int in range(900):
+		var f := container.slid_fraction()
+		if f > 0.05 and f < 0.95: break
+		await get_tree().process_frame
+	check(container.slid_fraction() > 0.05 and container.slid_fraction() < 0.95,
+			"the sidebar is caught part way in", "%.3f" % container.slid_fraction())
+	_main._go_to_wall_view()
+	_main._focus_picture(&"map")
+	await _end_main_fixture()
+	check(not is_instance_valid(container),
+			"the container goes with its Main, and nothing is left waiting on it")
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+# The state R1 names first, and the one nothing measured before: with the sidebar out, the screen
+# beside it has the WHOLE picture -- the board's window is the full design width and the map's
+# camera carries no shift. What sits under the sidebar once it rests is the board-region rows above.
+func test_before_the_slide_each_screen_has_the_whole_picture() -> void:
+	await _start_map_fixture()
+	check(is_zero_approx(_container.slid_fraction()) \
+				or is_equal_approx(_container.slid_fraction(), 1.0),
+			"sanity: the map's sidebar is at one end of its travel",
+			"%.3f" % _container.slid_fraction())
+	await _main._go_to_wall_view()
+	check(_map.controller.camera.offset.is_equal_approx(Vector2.ZERO),
+			"with no sidebar the map's camera carries no shift at all",
+			str(_map.controller.camera.offset))
+	await _main._focus_picture(&"map")
+	check(not _map.controller.camera.offset.is_equal_approx(Vector2.ZERO),
+			"...and the shift comes back when the sidebar slides in for the map",
+			str(_map.controller.camera.offset))
+	await _end_main_fixture()
+
 # ------------------------------------------------------------------ S4: the map's own container
 
 # (a) `MapHud` holds exactly Fame, Lap, Luck, Deck, and none of them remain on `map.tscn`'s own
@@ -1135,7 +1463,10 @@ func test_focus_change_drives_which_hud_stack_child_shows() -> void:
 	var game_hud : Control = container.get_node(^"%GameHud")
 	var map_hud : Control = container.get_node(^"%MapHud")
 
-	check(container.visible, "start menu: the container itself is visible (Q22=b)")
+	check(not container.visible,
+			"start menu: the container is hidden -- the menu carries no HUD for it to show")
+	check(is_zero_approx(container.slid_fraction()),
+			"start menu: and it yields no inset at all", "%.3f" % container.slid_fraction())
 	check(not game_hud.visible and not map_hud.visible,
 			"start menu: neither GameHud nor MapHud shows")
 
@@ -1231,6 +1562,17 @@ func _focus_map(main: Main, run: RunState) -> void:
 	if not main.map_scene.controller._accepting_input:
 		await main.map_scene.controller.map_ready
 	await _await_camera_transform_settled()
+#⚠ THE TOKEN IS STILL TRAVELLING, and a fixed number of frames is a frame-rate-dependent clock:
+#the map's camera eases toward the offset the container publishes, so the measured centre drifted
+#run to run. Waited on the value itself, bounded so a map that never settles surfaces as a failure.
+	var wp : WallPicture = main._pictures[&"map"]
+	var last := Vector2(INF, INF)
+	for _i : int in range(180):
+		var now : Vector2 = wp.viewport.get_canvas_transform() \
+				* main.map_scene.controller.token.position
+		if now.is_equal_approx(last): break
+		last = now
+		await get_tree().process_frame
 
 # The map's token renders at the centre of the space left over beside the container, measured in
 # the map's OWN `WallPicture` local space -- `local_rect_beside()` converts the container's window
@@ -1278,9 +1620,9 @@ func _boot_main_at(size: Vector2i) -> Array:
 func _free_booted_main(viewport: SubViewport, node: Node) -> void:
 	await TestMainHost.free_booted(self, viewport, node)
 
-# (e) The start menu's buttons lie outside the reserved container band and inside the window, at
-# every window shape -- compared in ONE space (this menu's own picture space) via the single owned
-# conversion, `WallPicture.local_rect_beside()`, rather than mixing picture px with window px.
+# (e) The start menu's buttons lie outside whatever band the container has actually SLID IN -- at
+# rest that band is empty and the whole picture is the menu's -- and inside the window, at every
+# window shape, compared in ONE space via `WallPicture.local_rect_beside()`.
 func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -1292,7 +1634,7 @@ func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> voi
 		var wp : WallPicture = main._pictures[&"start_menu"]
 		var container : HudContainer = main.wall.get_node(^"%HudContainer")
 		var window : Vector2 = container.get_viewport().get_visible_rect().size
-		var band_screen : Rect2 = container.container_rect()
+		var band_screen : Rect2 = container.published_rect()
 		var top := HudContainer.container_is_top(window, SettingsManager.settings)
 		var window_local := wp.local_rect_beside(window, Rect2(), top)
 		var band_local := _band_rect_in_picture(wp, window, band_screen, top)
@@ -1301,7 +1643,7 @@ func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> voi
 			check(not button_rect.intersects(band_local),
 					"%s lies outside the reserved container band at %s" % [button.name, size],
 					str(button_rect))
-			check(window_local.encloses(button_rect),
+			check(window_local.grow(1.0).encloses(button_rect),
 					"%s lies inside the window at %s" % [button.name, size], str(button_rect))
 		await _free_booted_main(viewport, main)
 	RunManager._shutdown_saver()
@@ -1352,7 +1694,7 @@ func test_menus_title_and_button_row_centre_on_the_remaining_space() -> void:
 		var wp : WallPicture = main._pictures[&"start_menu"]
 		var container : HudContainer = main.wall.get_node(^"%HudContainer")
 		var window : Vector2 = container.get_viewport().get_visible_rect().size
-		var band : Rect2 = container.container_rect()
+		var band : Rect2 = container.published_rect()
 		var top := HudContainer.container_is_top(window, SettingsManager.settings)
 		var remaining := wp.local_rect_beside(window, band, top)
 		var remaining_centre := remaining.get_center()

@@ -71,7 +71,11 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `func lock_to(entry: InfoEntry, target: CardData) -> void` | Click-lock (B5) |
 | `HudContainer` | `func clear_lock() -> void` | (B10) |
 | `HudContainer` | `func is_locked() -> bool` | |
-| `HudContainer` | `func container_rect() -> Rect2` | What `PlayArea.board_inset_left` is derived from (D8) |
+| `HudContainer` | `func container_rect() -> Rect2` | Where the container RESTS -- what both contents lay out inside, whatever the slide is doing |
+| `HudContainer` | `func published_rect() -> Rect2` | The resting rect scaled along the band's axis by the slide: what `PlayArea.board_inset_left` and every screen beside the container are derived from |
+| `HudContainer` | `func slid_fraction() -> float` | How far in the container has slid -- 1 at rest, 0 off the window |
+| `HudContainer` | `func slide_to(target: float) -> void` | Runs the slide and returns once it is there; `Main` awaits the way out before the camera moves |
+| `PlayArea` | `var board_slide_offset : Vector2` | How far the slide has displaced the board's window from its RESTING place. The board's SIZE, and so its zoom, is fitted against the resting reserve whatever the sidebar is doing; only its position follows the slide |
 | `PlayArea` | `var board_visible_crop : Vector2` | The picture px a covering window crops off the RIGHT and BOTTOM: the board's region ends there, so it fits and centres in what the player can SEE (D9, D10, `GAP-002`=a) |
 | `PlayArea` | `static func reference_window_size() -> Vector2` | The project's own authored window shape, read from `ProjectSettings` — the aspect the game picture's height is built to and the container's cap is measured against (D6, `GAP-001`=b) |
 | `WallPicture` | `static func visible_rect_beside(design: Vector2, window: Vector2, rect: Rect2, top: bool) -> Rect2` | `local_rect_beside()`'s whole arithmetic, for a caller holding a design size but no picture instance; the instance method delegates to it (D8, `GAP-002`=a) |
@@ -89,6 +93,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `const MAP_SCREEN : StringName`, `const MENU_SCREEN : StringName` | The map's and the start menu's screen ids |
 | `HudContainer` | `signal active_screen_changed` | A different screen is showing |
 | `HudContainer` | `signal exit_accepted` | The X was accepted from keyboard or pad |
+| `HudContainer` | `signal slide_settled` | The slide reached its aim, or the container is leaving the tree, which releases `slide_to()`'s waiters too |
 | `HudContainer` | `func return_to_pack() -> void` | What `%Back` is wired to: re-shows the pack a preview card was picked out of, its own grid and its own scroll with it (K9, `GAP-010`=c) |
 | `DescriptionPanel` | `signal preview_card_picked(data: CardData, card_px: Vector2)` | A card listed in the mounted grid was pointed at, focused or tapped (K9, `Q135`=b, `Q137`=a) |
 | `DescriptionPanel` | `var scroll_position : int` | How far the panel is scrolled — the seam `return_to_pack()` restores the pack's own reading through |
@@ -134,6 +139,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | Key | Type | Default |
 |---|---|---|
 | `container_size_fraction` | `float` | `0.25` |
+| `container_slide_duration` | `float` | `0.25` |
 | `container_size_max_px` | `float` | `640.0` |
 | `card_tap_window_ms` | `float` | `300.0` |
 | `card_drag_threshold` | `float` | `0.25` |

@@ -97,12 +97,26 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   the camera's** — props and animations are authored to leave the board's edges, and a clip there
   culls them. So a grid that is off-window is off-CAMERA, not culled, and a card flying between
   grids is never cut.
+- ⚠ **The sidebar OVERLAYS the picture; it never insets it.** Every focused picture covers the
+  window edge to edge, so no bar of bare wall ever shows beside the container. The container
+  arrives afterwards: it slides in from its own edge once the picture has landed and slides fully
+  out before the camera starts any leave, and `HudContainer.published_rect()` — the resting rect
+  scaled along the band's axis by how far it has slid — is what every screen beside it yields to.
+  Out means an inset of zero and the whole picture for the screen; in means the resting inset
+  below. ⚠ **The slide SHIFTS the board, it never re-scales it:** `board_inset_*` stay the RESTING
+  reserve, which is what the board's size and zoom are fitted against, and `board_slide_offset`
+  carries the displacement. Fitting against the live reserve re-zoomed the board by up to 1.333x
+  wherever the WIDTH binds `focused_board_zoom`'s `min(tall, wide)`. The container is absent in wall view, and on the start menu unless its picker is
+  describing something, since the menu carries no HUD of its own.
 - ⚠ **The HUD follows the camera, and that is a decision, not an accident.** `HudContainer` is in
-  window px; `GameView._publish_board_inset` converts it with `WallPicture.inset_beside` — the
-  container's px over `WallPicture.cover_scale` — into `PlayArea.board_inset_left`, or
-  `board_inset_top` in the top case (`HudContainer.container_is_top`: the space left beside a side
+  window px; `GameView._publish_board_inset` converts its `published_rect()` with
+  `WallPicture.inset_beside` — the container's px over `WallPicture.cover_scale` — into
+  `PlayArea.board_inset_left`, or `board_inset_top` in the top case
+  (`HudContainer.container_is_top`: the space left beside a side
   container is taller than wide). The board centres in what is LEFT of the screen, not on the
-  screen. **The board's WINDOW is what moves, not the content** —
+  screen. Its window TRANSLATES rather than growing, so the content shifts by the container's WHOLE
+  width as the sidebar slides in.
+  **The board's WINDOW is what moves, not the content** —
   insetting the scroller's own left edge makes every centring the board already does (the focused
   aim, the resting position, the removal re-centre) land in the post-HUD space for free.
   Offsetting the content instead leaves each of those to rediscover the inset separately.

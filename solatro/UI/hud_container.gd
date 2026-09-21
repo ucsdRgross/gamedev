@@ -43,6 +43,9 @@ signal exit_accepted
 ## A second-button press landed inside the container's rect; `Wall` routes it, because the panel must not swallow cancel.
 signal second_button_pressed(event: InputEventMouseButton)
 
+## The slide reached its aim -- or this container is leaving, which releases its waiters too.
+signal slide_settled
+
 const SCENE := preload("res://UI/hud_container.tscn")
 
 ## One home for the "a standalone fixture with no `Main` gets a private instance" fallback every screen used to repeat.
@@ -129,10 +132,103 @@ func _place_panel_controls() -> void:
 func container_rect() -> Rect2:
 	return rect_for_window(get_viewport().get_visible_rect().size, PlayArea.settings())
 
+## How far the container has slid in from its own edge: 0 fully off the window, 1 at its resting rect.
+var _slide : float = 1.0
+
+## Where the slide is heading; a reversal rewrites this rather than racing a second mover against it.
+var _slide_aim : float = 1.0
+
+## How far in the container has slid -- 1 at rest, 0 off the window.
+func slid_fraction() -> float:
+	return _slide
+
+# THE CONTAINER OVERLAYS THE PICTURE AND YIELDS ONLY WHAT IT HAS ACTUALLY SLID IN: the screens
+# beside it re-fit to this, so before the slide they have the whole picture and the picture's edges
+# meet the window's. Scaled along the band's own axis, which is the axis `inset_beside()` reads.
+func published_rect() -> Rect2:
+	var rect := container_rect()
+	if container_is_top(get_viewport().get_visible_rect().size, PlayArea.settings()):
+		return Rect2(rect.position, Vector2(rect.size.x, rect.size.y * _slide))
+	return Rect2(rect.position, Vector2(rect.size.x * _slide, rect.size.y))
+
+# ⚠ AWAITED BY `Main` BEFORE THE CAMERA MOVES: the sidebar is out before a leave starts and comes
+# back only once the picture has landed. A reversal rewrites the aim and the travel runs on from
+# where it is, so every request ends at a rest state; one with nothing to show refuses it.
+
+# ⚠ **THE WAIT MUST NOT OUTLIVE ITS OWNER.** A tween's `finished` never came after `kill()`; the
+# TREE's frame came after `Main` was freed and resumed on this freed container. A signal THIS node
+# owns dies with it, and `_exit_tree()` fires it first, releasing waiters while all is still valid.
+func slide_to(target: float) -> void:
+	if target > 0.0 and not _wants_container(): return
+	_slide_aim = clampf(target, 0.0, 1.0)
+	if target > 0.0: visible = true
+	if not is_equal_approx(_slide, _slide_aim):
+		set_process(true)
+		await slide_settled
+	visible = _slide_aim > 0.0
+
+# THE ONE WRITER OF WHERE THE CONTAINER SITS: the slide, a screen change and a resize all come
+# through here, so the drawn position and the rect the screens yield to cannot disagree.
+
+# ⚠ ALREADY THERE MEANS WRITE NOTHING. This announces the rect, a hosted viewer re-publishes its
+# highlight on that announcement, and the publication comes straight back into `show_description()`
+# -- a loop that overflows the stack the moment the menu's picker opens one.
+func _write_slide(value: float) -> void:
+	var next := clampf(value, 0.0, 1.0)
+	if is_equal_approx(_slide, next): return
+	_slide = next
+	_apply_container_rect()
+
+# The slide's own step, and the scroll stick's, on the one `_process` this control owns. Both are
+# per-frame integrations of a held value, and `set_process` stays on while either is live.
+func _process(delta: float) -> void:
+	_advance_the_slide(delta)
+	_description_panel.scroll_by_pages(
+			_scroll_stick * delta * PlayArea.settings().sidebar_scroll_pages_per_second)
+	if is_equal_approx(_slide, _slide_aim) and is_zero_approx(_scroll_stick):
+		set_process(false)
+
+# A JUMP, NOT A TRAVEL: the aim moves with it, or the per-frame step would carry the container
+# straight back toward wherever the last request had aimed it.
+func _jump_slide(value: float) -> void:
+	_slide_aim = clampf(value, 0.0, 1.0)
+	_write_slide(_slide_aim)
+
+## Moves the slide one frame toward its aim at the authored speed -- a whole width per `container_slide_duration`.
+func _advance_the_slide(delta: float) -> void:
+	if is_equal_approx(_slide, _slide_aim): return
+	var duration := PlayArea.settings().container_slide_duration
+	if duration <= 0.0: _write_slide(_slide_aim)
+	else: _write_slide(move_toward(_slide, _slide_aim, delta / duration))
+	if is_equal_approx(_slide, _slide_aim): slide_settled.emit()
+
+## How far off its resting place the slide has pushed the container, along the band's own axis.
+func _slide_offset(rect: Rect2) -> Vector2:
+	var out := 1.0 - _slide
+	if container_is_top(get_viewport().get_visible_rect().size, PlayArea.settings()):
+		return Vector2(0.0, -out * rect.size.y)
+	return Vector2(-out * rect.size.x, 0.0)
+
+# Whether any screen wants this container at all: never in wall view, and on the menu only while a
+# description is actually up, since the menu carries no HUD of its own.
+func _wants_container() -> bool:
+	if _active_screen == &"": return false
+	if _active_screen == MENU_SCREEN: return showing_description()
+	return true
+
 ## The space left beside this container inside `picture`'s own space -- the one conversion every hosted screen insets by; a fixture with no picture falls back to the plain window rect.
 func rect_beside(picture: WallPicture) -> Rect2:
+	return _space_beside(picture, published_rect())
+
+# A VIEWER IS OPENED IN ORDER TO PUBLISH DESCRIPTIONS, so it lays out beside where the container
+# RESTS, never where the slide has it this instant: a card it lists has to stay reachable once the
+# description it publishes has brought the sidebar in over the picture.
+func _resting_rect_beside(picture: WallPicture) -> Rect2:
+	return _space_beside(picture, container_rect())
+
+## The space left beside `rect` inside `picture`'s own space; a fixture with no picture falls back to the plain window rect.
+func _space_beside(picture: WallPicture, rect: Rect2) -> Rect2:
 	var window := get_viewport().get_visible_rect().size
-	var rect := container_rect()
 	var top := container_is_top(window, PlayArea.settings())
 	if picture: return picture.local_rect_beside(window, rect, top)
 	var inset := WallPicture.inset_beside(rect, top, 1.0)
@@ -155,13 +251,13 @@ func host_viewer(viewer: Node, picture: WallPicture, relay: Signal) -> void:
 # only while a description is UP, redrawing the preview at its own card size: a dismissal is the
 # player's act and a window change is not one.
 func _fit_viewer(viewer: Node, picture: WallPicture) -> void:
-	viewer.call(&"fit_beside", rect_beside(picture), window_scale(picture))
+	viewer.call(&"fit_beside", _resting_rect_beside(picture), window_scale(picture))
 	if showing_description(): viewer.call(&"republish_highlight")
 
-## Sets this control's own rect to `container_rect()` and tells listeners it moved.
+## Sets this control's own rect to `container_rect()` offset by the slide, and tells listeners it moved.
 func _apply_container_rect() -> void:
 	var rect := container_rect()
-	position = rect.position
+	position = rect.position + _slide_offset(rect)
 	size = rect.size
 	_fit_content()
 	container_rect_changed.emit()
@@ -228,15 +324,25 @@ func set_active_screen(screen: StringName) -> void:
 		if remembered == null or _screen_is_processing(): _swap_to_hud()
 		else: show_description(remembered)
 		active_screen_changed.emit()
-	visible = screen != &""
-	if not visible: return
+# A screen that wants nothing shown gets the container OFF THE WINDOW AT ONCE, never tweened: the
+# leave already awaited the way out, and wall view arrives after it.
+	if not _wants_container(): _jump_slide(0.0)
+	visible = _wants_container() and _slide > 0.0
 	_game_hud.visible = screen == GAME_SCREEN
 	_map_hud.visible = screen == MAP_SCREEN
+
+# THE MENU CARRIES NO HUD, so on that one screen the container's own content decides whether it is
+# there at all: the deck picker publishing a description slides it in, dismissing slides it out.
+# Every other screen is driven by `Main` landing on it and leaving it.
+func _follow_the_menus_own_content() -> void:
+	if _active_screen != MENU_SCREEN: return
+	slide_to(1.0 if showing_description() else 0.0)
 
 func show_hud() -> void:
 	_swap_to_hud()
 	clear_lock()
 	description_dismissed.emit()
+	_follow_the_menus_own_content()
 
 # A DISMISSAL ENDS WHAT WAS BEING READ, so the screen forgets it: leaving and coming back finds the
 # HUD. The cascade's hold is not a dismissal and goes through `show_hud()`, keeping the memory.
@@ -282,6 +388,7 @@ func show_description(entry: InfoEntry) -> void:
 	_hud_stack.visible = false
 	_join_focus_while_shown(_exit_button, true)
 	_description_panel.show_entry(entry, _content_size())
+	_follow_the_menus_own_content()
 
 ## Whether the description is what shows -- `GameView` asks before spending a cancel on dismissing it.
 func showing_description() -> bool:
@@ -475,11 +582,7 @@ var _scroll_stick : float = 0.0
 func _aim_scroll_stick(axis_value: float) -> void:
 	var deadzone := InputMap.action_get_deadzone(&"sidebar_scroll")
 	_scroll_stick = axis_value if absf(axis_value) >= deadzone else 0.0
-	set_process(not is_zero_approx(_scroll_stick))
-
-func _process(delta: float) -> void:
-	_description_panel.scroll_by_pages(
-			_scroll_stick * delta * PlayArea.settings().sidebar_scroll_pages_per_second)
+	if not is_zero_approx(_scroll_stick): set_process(true)
 
 ## Re-draws the description's preview at `card_px`: the size a board card is drawn at moves with the window, and the preview reads as the same object only while it matches.
 func resize_preview(card_px: Vector2) -> void:
@@ -494,6 +597,7 @@ func _content_size() -> Vector2:
 # A stashed visual is a NODE outside the tree that nothing else will collect. The MOUNTED one is
 # the panel's own child and goes with the tree, so only the detached ones are freed here.
 func _exit_tree() -> void:
+	slide_settled.emit()
 	for screen : StringName in _entry_by_screen:
 		_free_detached_visual(_entry_by_screen[screen])
 	for screen : StringName in _locked_entry_by_screen:

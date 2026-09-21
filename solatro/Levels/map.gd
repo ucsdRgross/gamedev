@@ -43,6 +43,7 @@ func _ready() -> void:
 	# Deliberately NO node_unhovered connection: the card keeps showing its last entry across
 	# empty hover rather than blinking out, the same persistence contract Info mode's card uses.
 	controller.map_ready.connect(_update_hud)
+	controller.map_ready.connect(_publish_map_inset)
 	if _pending_run:
 		var pending := _pending_run
 		_pending_run = null
@@ -60,7 +61,8 @@ func _bind_hud_container() -> void:
 	_publish_map_inset()
 
 # The map DOES sit in a `WallPicture`, so the container's window px converts through that picture's
-# own cover scale -- `HudContainer.rect_beside()` is that one conversion, shared with `Menu`.
+# own cover scale -- `HudContainer.rect_beside()` is that one conversion, shared with `Menu`. Also
+# re-run on `map_ready`: the shift is divided by a zoom that only settles once the world exists.
 func _publish_map_inset() -> void:
 	var remaining := hud_container.rect_beside(wall_picture)
 	var screen_size := controller.camera.get_viewport_rect().size

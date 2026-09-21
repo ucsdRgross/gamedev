@@ -428,6 +428,9 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 # Input goes inert for the length of the move. The transition's `input_unlocked` lifts it
 # EARLY below; this is the only thing that ever sets it.
 	wall.lock_input()
+# The sidebar is off the window BEFORE the camera starts, so the picture's edges meet the
+# window's for the whole move; the way back in waits for the landing at the end of this method.
+	await hud_container.slide_to(0.0)
 	var dest_wp : WallPicture = _pictures[id]
 	var dest_rect : PictureRect = _rects[id]
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
@@ -482,6 +485,9 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 # Backstop: the early unlock above may never have had a frame to fire in.
 	wall.unlock_input()
 	_settle_after_deferred_resize()
+# The picture has landed and its edges are off the window: only now does the sidebar come in, and
+# the screen's own content shifts aside with it.
+	await hud_container.slide_to(1.0)
 
 # Unfocuses whatever is focused — FREEZING it in place, never freeing it — and animates the camera
 # out to wall view. A no-op if already in wall view. `duration_scale` defaults to an ordinary move;
@@ -494,6 +500,9 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 # Just as much a transition to the player. No `WallTransition`, so no early unlock -- input
 # clears on landing.
 	wall.lock_input()
+# The missing half of the pair `_focus_picture()` has: this path animates the camera straight to
+# wall view, so the sidebar has to be out before that await, not after it.
+	await hud_container.slide_to(0.0)
 	if _current_focus != &"":
 		var source_wp : WallPicture = _pictures[_current_focus]
 		var source_rect : PictureRect = _rects[_current_focus]

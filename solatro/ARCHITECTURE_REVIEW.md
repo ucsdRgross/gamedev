@@ -420,7 +420,8 @@ history stored in forward orientation).
 
 | Knob (`player_settings.gd`) | Default | What it is |
 |---|---|---|
-| `container_size_fraction` | 0.25 | the container's share of the window's near axis |
+| `container_size_fraction` | 0.25 | the container's share of the window's near axis, at rest -- it overlays the picture and yields that share only once it has slid in |
+| `container_slide_duration` | 0.25 | seconds the container takes to slide its whole width in or out; a leave waits for the way out before the camera moves |
 | `container_size_max_px` | 640.0 | pixel cap on that share |
 | `sidebar_scroll_pages_per_second` | 1.0 | stick scroll at full deflection |
 | `touch_target_fraction` | 0.06 | minimum overlay control size, of the window's smaller side |

@@ -349,8 +349,9 @@ helper in `Tests/UI/test_interaction.gd`; reuse that pattern for any future synt
   (`Tests/all_tests.tscn`); a pattern with a space matches nothing.
 - The full windowed gate: `ALL 51 SUITES ... CHECKS PASSED`, at most 22 placeholder warnings
   (the run emits 21, so there is one slot left), 0 `SCRIPT ERROR` in
-  `godot.log`, exit profile exactly `PagedAllocator ... WorkerThreadPool` + `24 resources still
-  in use` + the `1150 ObjectDB` note (wrapper exit 2 on a green run). The counts are a
+  `godot.log`, exit profile exactly `24 resources still in use` + the `1150 ObjectDB` note
+  (wrapper exit 1 on a green run). A `PagedAllocator ... WorkerThreadPool` line means a suite
+  freed a `Main` with the world generator still running - `TestMainHost.await_world_settled`. The counts are a
   FINGERPRINT, not a budget: a change to either is a new leak to explain, not a number to edit.
 - Known flakes, each seen once or twice and never twice in a row — rerun once: a TEARDOWN crash
   (0xC0000005) after a passing banner (wrapper exit 3); a map Deck-button click failure right after

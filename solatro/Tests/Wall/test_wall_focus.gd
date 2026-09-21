@@ -547,6 +547,10 @@ func test_a_real_resize_reaches_the_wall() -> void:
 func test_escape_goes_to_wall_view_while_back_retraces_the_stack() -> void:
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
+#Every navigation now also waits for the sidebar to slide out and back in, and the bounded waits
+#below are a frame budget, not a clock -- so that duration is stubbed alongside the travel's.
+	var real_slide : float = SettingsManager.settings.container_slide_duration
+	SettingsManager.settings.container_slide_duration = 0.001
 
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
@@ -589,6 +593,7 @@ func test_escape_goes_to_wall_view_while_back_retraces_the_stack() -> void:
 
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	SettingsManager.settings.container_slide_duration = real_slide
 
 # ------------------------------------------------------------------ M3 (PICTURE_WALL.md)
 
@@ -604,6 +609,10 @@ func test_escape_goes_to_wall_view_while_back_retraces_the_stack() -> void:
 func test_the_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() -> void:
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
+#Every navigation now also waits for the sidebar to slide out and back in, and the bounded waits
+#below are a frame budget, not a clock -- so that duration is stubbed alongside the travel's.
+	var real_slide : float = SettingsManager.settings.container_slide_duration
+	SettingsManager.settings.container_slide_duration = 0.001
 
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
@@ -631,6 +640,7 @@ func test_the_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() -> vo
 
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	SettingsManager.settings.container_slide_duration = real_slide
 
 # Feeds one action through the REAL `Wall._unhandled_input()` and waits, BOUNDED, for `settled` to
 # report the move finished. Never `await` on a signal: the emit runs Main's handler synchronously
@@ -668,6 +678,10 @@ func _feed_wall_action(main: Main, action: StringName, settled: Callable) -> voi
 func test_a_second_destination_mid_move_is_ignored() -> void:
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
+#Every navigation now also waits for the sidebar to slide out and back in, and the bounded waits
+#below are a frame budget, not a clock -- so that duration is stubbed alongside the travel's.
+	var real_slide : float = SettingsManager.settings.container_slide_duration
+	SettingsManager.settings.container_slide_duration = 0.001
 
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
@@ -710,6 +724,7 @@ func test_a_second_destination_mid_move_is_ignored() -> void:
 
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	SettingsManager.settings.container_slide_duration = real_slide
 
 # ------------------------------------------------------------------ C5's other half (S16, C13)
 
@@ -726,6 +741,10 @@ func test_a_second_destination_mid_move_is_ignored() -> void:
 func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> void:
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
+#Every navigation now also waits for the sidebar to slide out and back in, and the bounded waits
+#below are a frame budget, not a clock -- so that duration is stubbed alongside the travel's.
+	var real_slide : float = SettingsManager.settings.container_slide_duration
+	SettingsManager.settings.container_slide_duration = 0.001
 
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
@@ -775,6 +794,7 @@ func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> vo
 
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	SettingsManager.settings.container_slide_duration = real_slide
 
 # ------------------------------------------------------------------ overlay focus
 

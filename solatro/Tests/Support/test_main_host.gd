@@ -31,6 +31,8 @@ static func mount(parent: TestSuite, host: Node, scene: PackedScene) -> Node:
 # freeze. The one place a test writes the flag, and only after the wall is gone.
 static func unmount(parent: TestSuite, node: Node) -> void:
 	var paused_before : bool = node.get_meta(PAUSED_BEFORE_BOOT)
+	var main := node as Main
+	if main: await await_world_settled(parent, main, "teardown")
 	node.queue_free()
 	await parent.get_tree().process_frame
 	parent.get_tree().paused = paused_before
@@ -43,3 +45,16 @@ static func unmount(parent: TestSuite, node: Node) -> void:
 static func free_booted(parent: TestSuite, viewport: SubViewport, node: Node) -> void:
 	await unmount(parent, node)
 	viewport.queue_free()
+
+#A `Main` freed while its world is still generating lets the generator's stage loop resume on a
+#dying tree -- an exit-time access violation no check can see. The bake is the generator's LAST
+#write, so its arrival is the true end; `map_ready` fires inside the generation, long before it.
+static func await_world_settled(parent: TestSuite, main: Main, tag: String) -> void:
+	var baked := RunManager.MAP_BAKE_DIR.path_join("composite.png")
+	if main.map_scene.controller.map == null or FileAccess.file_exists(baked): return
+	var started := Time.get_ticks_msec()
+	while not FileAccess.file_exists(baked) and Time.get_ticks_msec() - started < 20000:
+		await parent.get_tree().process_frame
+	parent.check(FileAccess.file_exists(baked),
+			"the world generator finished before %s freed its Main" % tag,
+			"waited %d ms" % (Time.get_ticks_msec() - started))

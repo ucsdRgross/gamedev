@@ -463,12 +463,6 @@ func _time_opening_reveal(main: Main, scale: float) -> int:
 	SettingsManager.settings.wall_reveal_delay_scale = scale
 # Boxed -- lambdas capture locals BY VALUE.
 	var done : Array[bool] = [false]
-#THE REVEAL ENDS IN THE MAP, AND THE MAP GENERATES WHILE IT IS FOCUSED: a generation still running
-#when the next reveal starts one, or when `main` is freed, lands a step on a freed object -- an
-#exit-time access violation no check can see. Latched before the call, waited out after it.
-	var mapped : Array[bool] = [false]
-	main.map_scene.controller.map_ready.connect(
-			func() -> void: mapped[0] = true, CONNECT_ONE_SHOT)
 	var started := Time.get_ticks_msec()
 	_drive(func() -> void:
 			await main._on_new_run([] as Array[CardData], [] as Array[CardData]), done)
@@ -479,8 +473,7 @@ func _time_opening_reveal(main: Main, scale: float) -> int:
 	while not done[0] and Time.get_ticks_msec() - started < 20000:
 		if took == 0 and main._current_focus == &"": took = Time.get_ticks_msec() - started
 		await get_tree().process_frame
-	while not mapped[0] and Time.get_ticks_msec() - started < 20000:
-		await get_tree().process_frame
+	await TestMainHost.await_world_settled(self, main, "the reveal at scale %s" % scale)
 	return took
 
 # On the KEYBOARD/CONTROLLER path: a picture selected in wall view and then entered does not stay
@@ -569,6 +562,7 @@ func test_continue_after_a_mid_show_quit_still_reveals_wall_view() -> void:
 	check(seen.find(&"") < seen.find(&"game"),
 			"...in that order: reveal first, then the show", str(seen))
 
+	await TestMainHost.await_world_settled(self, main, "the mid-show resume")
 	main.queue_free()
 	restore_settings_snapshot(snap)
 	restore_real_settings()

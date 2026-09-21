@@ -72,6 +72,16 @@ var board_visible_crop : Vector2 = Vector2.ZERO:
 		if not is_instance_valid(scroll_container): return
 		_re_fit_after_inset_change()
 
+#⚠ THE SLIDE MOVES THE BOARD'S WINDOW, IT NEVER RESIZES IT. `board_inset_*` above are the RESTING
+#reserve, which the board's SIZE and so its zoom are fitted against whatever the sidebar is doing;
+#this is the displacement from it. The live reserve re-scaled the board by up to 1.333x.
+var board_slide_offset : Vector2 = Vector2.ZERO:
+	set(value):
+		if board_slide_offset.is_equal_approx(value): return
+		board_slide_offset = value
+		if not is_instance_valid(scroll_container): return
+		_apply_board_zoom_rect(_board_strip_h)
+
 ## How many WINDOW pixels one of this picture's own pixels is drawn at, published by `GameView` -- the same boundary `board_inset_*` crosses the other way.
 var picture_to_window_scale : float = 1.0
 
@@ -775,11 +785,12 @@ func _apply_board_zoom_rect(strip_h: float) -> void:
 	var local := _board_window_local()
 	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
 	scroll_container.scale = Vector2.ONE * board_zoom
-	scroll_container.offset_top = pad + board_inset_top
-	var inset := hud_reserve_px()
+	var top := pad + board_inset_top + board_slide_offset.y
+	scroll_container.offset_top = top
+	var inset := hud_reserve_px() + board_slide_offset.x
 	scroll_container.offset_left = inset
 	scroll_container.offset_right = inset + local.x - size.x
-	scroll_container.offset_bottom = pad + board_inset_top + local.y - size.y
+	scroll_container.offset_bottom = top + local.y - size.y
 
 #The strip the board's window is currently giving up to the Entrance, kept so the window can be
 #recomputed without waiting for a layout pass.
