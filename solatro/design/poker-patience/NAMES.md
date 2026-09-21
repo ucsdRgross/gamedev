@@ -144,7 +144,7 @@ All on `Scripts/player_settings.gd`, read via `SettingsManager.settings`.
 | `combo_repeat_step` | `0.5` | |
 | `combo_cap` | `0.0` (off) | |
 | `game_picture_max_render_px` | `4096` | The render-target clamp. |
-| `grid_bounce_velocity_px` | `900.0` | The edge push, spent as velocity into the scroll container's overdrag. Range `0.0..4000.0, or_greater`; `0` silences the bounce and no value parks the board off its edge. |
+| `grid_bounce_velocity_px` | `900.0` | The FOCUSED edge push, spent as velocity into the scroll container's overdrag. Range `0.0..4000.0, or_greater`; `0` silences the bounce and no value parks the board off its edge. |
 
 ⚠ **`stack_offset_px`, `stack_soft_cap` and `stack_spring_rise` are registered-but-absent** — every other knob in this table exists in `Scripts/player_settings.gd`.
 
@@ -237,9 +237,9 @@ that shipped.
 | `PlayArea._consume_as_focus_click()` | method | The overview's interception: a press on a grid focuses instead of placing. Covers `ui_accept` as well as the mouse. |
 | `"GRID VIEW"` | suite name | `Tests/UI/test_grid_view.gd`, between VISUAL LAYERS and SETTINGS RANGE in the ordering chain. |
 | `PlayArea.pan_grid` | `int` | The grid the view is centred on. `focus_grid` also centres, so it cannot disagree with `focused_grid`. |
-| `PlayArea.pan_to_grid(gi)` / `pan_by_grids(step)` | method | Discrete, one grid per step, always landing centred. |
+| `PlayArea.pan_to_grid(gi)` / `pan_by_grids(step)` | method | Discrete, one grid per step. FOCUSED aims the scroller and lands the grid centred; OVERVIEW only moves `pan_grid`. |
 | `PlayArea._consume_as_view_action(event)` | method | The Back/Forward interception. Returns false in the overview so the event still reaches the wall. |
-| `PlayArea._bounce_board(step)` | method | The edge bounce. |
+| `PlayArea._bounce_board(step)` | method | The FOCUSED edge bounce, spent into the scroller's overdrag. OVERVIEW has no range to push into and returns. |
 | `PlayArea.selected_grid` | `int` | The OVERVIEW's cursor: which grid the arrows have selected and Enter focuses. Kept in step with the board focus, so the mouse and the arrows cannot disagree. |
 | `PlayArea._arrow_delta(event)` | method | Which way an arrow/d-pad press points. ⚠ `y` grows DOWNWARD — row 0 is a grid's top row. |
 | `PlayArea._consume_as_cell_move(event, control)` | method | Focused mode: the selection moves along the lattice via `BoardCoord.step` and crossing a grid edge focuses (and centres) the next grid. |

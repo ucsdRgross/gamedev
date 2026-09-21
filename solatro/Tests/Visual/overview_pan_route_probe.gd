@@ -5,7 +5,7 @@ extends Node2D
 # and drives it through the REAL enter-game path (`Main.enter_game()` -> `Main._focus_picture()`),
 # then fires REAL `InputEventKey` events matching the `grid_pan_left`/`grid_pan_right` InputMap
 # bindings via `Input.parse_input_event()` -- the same route a physical key press takes through
-# `PlayArea._unhandled_input()` -- rather than calling `Main._on_overview_pan_requested()` directly.
+# `PlayArea._unhandled_input()` -- rather than calling the board's pan entry directly.
 # Samples `%Camera2D.position`/`zoom` and `PlayArea.pan_grid` every frame across the tween, and
 # screenshots at rest before/after a step.
 #

@@ -27,15 +27,6 @@ signal description_dismiss_requested
 ## Emitted once a rebuild's CardVisuals are all in-tree and ready, so a caller can await a board.
 signal board_visuals_ready
 
-#OVERVIEW ONLY: the view should rest on grid `grid_index`. The horizontal aim is dead range in the
-#overview, so the CAMERA is the single horizontal authority there; whoever owns the wall camera
-#listens and drives it from `WallPicture.grid_state()`.
-signal overview_pan_requested(grid_index: int)
-
-#OVERVIEW ONLY: a pan was attempted past the first or last grid. `step` carries the direction, so
-#the listener can push the camera the same way and spring it back.
-signal overview_bounce_requested(step: int)
-
 #The board has exactly TWO view modes and nothing in between: OVERVIEW shows every grid for
 #orientation, FOCUSED shows the one grid the player is acting on. Switching is a transition —
 #there is no intermediate zoom to sit at.
@@ -1284,11 +1275,10 @@ func pan_by_grids(step: int) -> void:
 func pan_to_grid(gi: int) -> void:
 	if gi < 0 or gi >= grid_container.get_child_count(): return
 	pan_grid = gi
-#⚠ OVERVIEW: THE CAMERA IS THE SINGLE HORIZONTAL AUTHORITY. The scroller's horizontal aim is dead
-#range there — retired rather than left as a second writer.
-	if view_mode == ViewMode.OVERVIEW:
-		overview_pan_requested.emit(gi)
-		return
+#⚠ OVERVIEW MOVES NOTHING BUT `pan_grid`. The whole set fits the picture, and inside a picture the
+#camera rests on the picture's centre — so the step is orientation state the Entrance follows, and
+#the scroller's horizontal aim stays dead range rather than becoming a second writer.
+	if view_mode == ViewMode.OVERVIEW: return
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth: return
 	var cells := _cells_root(grid_container.get_child(gi) as Control)
@@ -1318,36 +1308,13 @@ func _board_local_rect(c: Control) -> Rect2:
 #counterforce and carries the board back to rest, so the edge feels like every other overscroll in
 #the game and nothing here can park the board off its own edge.
 
-#OVERVIEW has no scroller range to spend a kick into, so it asks the camera's owner to bounce.
+#OVERVIEW has nothing to bounce: the camera does not move inside a picture and the scroller's
+#horizontal range is dead there, so an end-stop press reads as a board that will not move.
 func _bounce_board(step: int) -> void:
-	if view_mode == ViewMode.OVERVIEW:
-		overview_bounce_requested.emit(step)
-		return
+	if view_mode == ViewMode.OVERVIEW: return
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth: return
 	smooth.scroll_horizontally(float(step) * PlayArea.settings().grid_bounce_velocity_px)
-
-#How far `velocity_px` carries a scroller under `damper`'s OWN physics before it settles, simulated
-#frame by frame through `ScrollDamper.slide()` — the same public call the scroller's own `_process`
-#makes, so a camera bounce reaches exactly as far as the scroller's kick would.
-
-#`grid_bounce_velocity_px` already lives in the same design-pixel space `grid_position_size_px()`
-#does, which is the space `WallPicture.grid_state()` writes straight into `camera.position`, so the
-#returned peak is added to a camera position the same way, unscaled.
-static func bounce_peak_px(damper: ScrollDamper, velocity_px: float) -> float:
-	if not damper or is_zero_approx(velocity_px): return 0.0
-	var velocity := velocity_px
-	var offset := 0.0
-	var peak := 0.0
-	var dt := 1.0 / 60.0
-	var steps := 0
-	while absf(velocity) > 0.5 and steps < 600:
-		var result := damper.slide(velocity, dt)
-		velocity = result[0]
-		offset += result[1]
-		peak = maxf(peak, absf(offset))
-		steps += 1
-	return peak
 
 ## The single write path for the view mode; announces only real changes.
 func _set_view(mode: ViewMode, gi: int) -> void:

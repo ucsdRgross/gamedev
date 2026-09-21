@@ -52,12 +52,6 @@ var screen_root : Node = null
 ## without re-deriving them from this node's children.
 var rect : PictureRect = null
 
-## Where the camera RESTS along this picture's width, in the picture's own units, measured from its
-## centre. SESSION STATE: it survives leaving and re-entering while the app runs, is never written
-## to the run save, and `detach_screen()` clears it because a screen that is gone has no pan left to
-## remember. Zero for every picture that does not pan, which is the picture's centre exactly.
-var saved_pan_x : float = 0.0
-
 ## The entry's `background_texture`, remembered so `attach_screen()`/`detach_screen()` can show and
 ## hide it as `screen_root` comes and goes. A live screen always wins; this is the fallback. Null
 ## when the entry authored none.
@@ -196,7 +190,6 @@ func detach_screen() -> void:
 	if screen_root and is_instance_valid(screen_root):
 		screen_root.queue_free()
 	screen_root = null
-	saved_pan_x = 0.0
 	# With the live screen gone, the authored background (if any) reappears.
 	_show_background()
 
@@ -455,52 +448,6 @@ static func resting_state(rect: PictureRect, window_size: Vector2,
 		settings: PlayerSettings) -> Dictionary:
 	return {"position": rect.centre,
 			"zoom": focused_scale(rect.size, window_size, settings.wall_overfill_margin)}
-
-# `resting_state()`'s pose with `offset_x` added to `position.x` and CLAMPED to `max_pan_px()`:
-# inside a picture the wall does not exist, so panning to where it would show is not a thing the
-# player can ask for. `zoom` and `position.y` are unchanged.
-
-# THE ONE PLACE THE CLAMP LIVES: the grid step, the end-stop bounce and a restored saved pan all
-# reach the camera through here, so none of them can pose it differently.
-static func panned_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
-		offset_x: float) -> Dictionary:
-	var state := resting_state(rect, window_size, settings)
-	var rest_position : Vector2 = state["position"]
-	var reach := max_pan_px(rect, window_size, settings)
-	state["position"] = Vector2(rest_position.x + clampf(offset_x, -reach, reach), rest_position.y)
-	return state
-
-## How far the camera may leave this picture's centre before the window would leave the picture: half of what the resting zoom does not already show. Zero when the picture only just covers.
-static func max_pan_px(rect: PictureRect, window_size: Vector2,
-		settings: PlayerSettings) -> float:
-	var zoom := focused_scale(rect.size, window_size, settings.wall_overfill_margin)
-	return maxf((rect.size.x - window_size.x / zoom) * 0.5, 0.0)
-
-## The camera pose for grid position `grid_index` on a multi-grid board of `pitch` pixels per
-## grid step -- `panned_state()` at the offset that many grids away from `resting_grid`, so grid
-## `resting_grid` itself reproduces `resting_state()` exactly.
-##
-## `resting_grid` and `pitch` are caller-supplied parameters, not recomputed here: this stays a
-## pure function of its own inputs rather than reaching into `PlayArea`'s live view-mode state to
-## rediscover them.
-static func grid_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
-		grid_index: int, resting_grid: int, pitch: float) -> Dictionary:
-	return panned_state(rect, window_size, settings, pitch * float(grid_index - resting_grid))
-
-## `pan_x` re-expressed as the nearest whole grid step on a board of `grid_count` grids resting on
-## `resting_grid`, clamped into that board.
-##
-## ⚠ **A SAVED PAN IS SNAPPED ON THE WAY OUT, NOT TRUSTED AS STORED.** It was measured against the
-## grid count and pitch of the moment it was saved, and either can have changed since — a grid
-## removed while the picture was unfocused leaves an offset pointing past the board's last grid.
-## Rounding to a whole step is also what makes a restore land CENTRED on a grid rather than between
-## two of them.
-static func snap_pan_to_grid(pan_x: float, pitch: float, resting_grid: int,
-		grid_count: int) -> float:
-	if grid_count <= 0 or pitch <= 0.0:
-		return 0.0
-	var index := clampi(resting_grid + int(roundf(pan_x / pitch)), 0, grid_count - 1)
-	return pitch * float(index - resting_grid)
 
 ## Frees this picture AND its SubViewport (which build() parented elsewhere, so a plain
 ## queue_free() on this node would leak it).

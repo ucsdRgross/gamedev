@@ -49,7 +49,7 @@ func _ready() -> void:
 	await run_the_overview_draws_the_grids_close_test()
 	await run_the_entrance_is_centred_until_a_grid_owns_it_test()
 	await run_a_non_focused_grid_paints_nothing_outside_the_window_test()
-	await run_the_board_edge_bounces_test()
+	await run_the_board_edge_does_not_move_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
 	await run_one_scroll_container_on_the_board_test()
 	await run_panning_shifts_which_three_are_in_frame_test()
@@ -63,14 +63,10 @@ func _ready() -> void:
 	await run_a_drag_on_a_card_places_and_on_the_board_pans_test()
 	await run_the_game_picture_fits_exactly_three_grids_test()
 	await run_the_render_target_never_exceeds_the_clamp_test()
-	await run_the_camera_steps_between_grid_positions_test()
+	await run_an_overview_step_never_moves_the_camera_test()
 	await run_the_focused_view_frames_the_block_and_the_entrance_test()
 	await run_a_card_between_grids_is_never_clipped_away_test()
-	await run_the_camera_rests_at_the_saved_pan_test()
-	await run_leaving_and_re_entering_restores_the_pan_test()
-	await run_a_resize_re_derives_the_pose_from_the_saved_pan_test()
-	await run_no_frame_is_drawn_at_an_overview_end_stop_test()
-	await run_the_window_never_leaves_the_picture_test()
+	await run_leaving_and_re_entering_keeps_the_grid_test()
 	run_an_edge_touch_is_not_an_intrusion_test()
 	finish()
 
@@ -205,7 +201,7 @@ func _settle_camera(camera: Camera2D) -> void:
 		last = camera.position.x
 
 #Grid gi's cut-off, in px, against the CAMERA's OWN visible_rect() -- never reconstructed from
-#resting_state()/grid_state(). 0 when the grid's cell block sits wholly inside it. Measured through
+#resting_state(). 0 when the grid's cell block sits wholly inside it. Measured through
 #_grid_world_rect, the world-space rect taken through the real WallPicture.rect.
 func _camera_cut_off_px(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> float:
 	var visible := _board_view_rect(main, camera)
@@ -1343,13 +1339,13 @@ func _differing_px(a: Image, b: Image, area: Rect2i) -> int:
 				n += 1
 	return n
 
-# A BOUNCE IS A MOTION, NOT A POSE. Sampled over frames: the board must MOVE past its resting edge
-# and then come back to it. A still frame either side proves nothing.
+# A NON-MOVE IS A MOTION CLAIM, NOT A POSE. Sampled over frames: a still taken at either end cannot
+# tell a camera that never left rest from one that swung out and came back.
 
-# A show opens on the all-grids view, so that is where the edge is by default, and the OVERVIEW pan
-# is the wall camera -- which is why the bounce needs the real Main/Wall/%Camera2D.
-func run_the_board_edge_bounces_test() -> void:
-	behavior_section("THE BOARD EDGE BOUNCES")
+# A show opens on the all-grids view, so that is where the edge is by default, and the camera that
+# would have to move is the wall's -- which is why this needs the real Main/Wall/%Camera2D.
+func run_the_board_edge_does_not_move_test() -> void:
+	behavior_section("THE BOARD EDGE DOES NOT MOVE")
 	var main := await _stand_up_main_grids(3)
 	var view := _main_game_view(main)
 	var pa := view.play_area
@@ -1364,13 +1360,12 @@ func run_the_board_edge_bounces_test() -> void:
 	var rest := camera.position.x
 
 	pa._unhandled_input(_action(&"grid_pan_right"))
-# ⚠ SIGNED, NOT ABSOLUTE. An absf() here is satisfied by a swing in EITHER direction, and a bounce
-# that throws the camera a whole grid INWARD before springing back passes it. Each extreme is
-# asserted on its own side of rest.
+# ⚠ SIGNED, NOT ABSOLUTE. An absf() here is satisfied by a swing in EITHER direction, so each
+# extreme is asserted on its own side of rest.
 
-# THE END STOP IS NOW THE PICTURE'S OWN EDGE. Inside a picture the wall does not exist, so there is
+# THE END STOP IS THE PICTURE'S OWN EDGE. Inside a picture the wall does not exist, so there is
 # nothing past the edge to be pushed into and the push has nowhere to go: the player's press reads
-# as a board that simply will not move, not as a spring.
+# as a board that simply will not move.
 	var farthest := 0.0
 	var deepest_inward := 0.0
 	var waited := 0.0
@@ -1385,9 +1380,7 @@ func run_the_board_edge_bounces_test() -> void:
 			+ "(TP-102)",
 			"%f px past rest" % farthest)
 	check(deepest_inward >= -0.5,
-			"...and it never swings the other way either -- an overshoot measured from the "
-			+ "picture's centre rather than the pan the camera is actually on drags it a whole "
-			+ "grid inward before springing back",
+			"...and it never swings the other way either",
 			"%f px inward of rest" % deepest_inward)
 	check(_picture_edge_intrusion_px(main, camera) <= 0.0,
 			"...and the window is still wholly inside the picture at that stop",
@@ -1397,10 +1390,10 @@ func run_the_board_edge_bounces_test() -> void:
 			"pan_grid %d" % pa.pan_grid)
 	await _settle_camera(camera)
 	check(absf(camera.position.x - rest) <= 1.0,
-			"...and the board comes back to its edge: a bounce, not a scroll",
+			"...and the camera is still on its resting pose once everything settles",
 			"rest %f -> %f" % [rest, camera.position.x])
 	check(_camera_cut_off_px(main, pa, camera, 2) <= 1.0,
-			"the last grid is wholly on screen again once the bounce settles",
+			"the last grid is wholly on screen once everything settles",
 			"%f px off screen" % _camera_cut_off_px(main, pa, camera, 2))
 	await _tear_down_main(main)
 
@@ -2378,11 +2371,10 @@ func _grid_span(block_x: float, n: int) -> float:
 	var st := SettingsManager.settings
 	return float(n) * block_x + float(n - 1) * PlayArea.isolating_grid_buffer_px(st)
 
-# THE CAMERA STEPS BETWEEN THE GRID POSITIONS THE FRAME HOLDS, through the Main-hosted fixture.
+# AN OVERVIEW STEP MOVES THE BOARD, NOT THE CAMERA, through the Main-hosted fixture.
 
-# ⚠ DRIVES REAL INPUT THROUGH PlayArea, THE SAME ROUTE A PLAYER TAKES -- never a direct call to
-# Main._on_overview_pan_requested(), which is the shape a dead input path hides in while its own
-# tests stay green.
+# ⚠ DRIVES REAL INPUT THROUGH PlayArea, THE SAME ROUTE A PLAYER TAKES -- a direct call is the shape
+# a dead input path hides in while its own tests stay green.
 
 #The grid's own cell block, in the SAME world space as %Camera2D.position -- the picture's
 #design-pixel layout scaled by the WallPicture's real packed rect, never assumed 1:1.
@@ -2407,8 +2399,8 @@ func _outside_px(r: Rect2, visible: Rect2) -> Array[float]:
 	return [visible.position.x - r.position.x, visible.position.y - r.position.y,
 			r.end.x - visible.end.x, r.end.y - visible.end.y] as Array[float]
 
-func run_the_camera_steps_between_grid_positions_test() -> void:
-	behavior_section("THE CAMERA STEPS BETWEEN GRID POSITIONS")
+func run_an_overview_step_never_moves_the_camera_test() -> void:
+	behavior_section("AN OVERVIEW STEP MOVES THE BOARD, NOT THE CAMERA")
 	var main := await _stand_up_main_grids(3)
 	var view := _main_game_view(main)
 	var pa := view.play_area
@@ -2420,11 +2412,7 @@ func run_the_camera_steps_between_grid_positions_test() -> void:
 			"precondition: the board is in the overview, where H22 stepping lives (TP-105)",
 			"mode %d" % pa.view_mode)
 	var rest_grid := pa.pan_grid
-	var rest_x := camera.position.x
-# OBSERVED, not recomputed: the world-space distance between two adjacent grid panels' own cell
-# blocks, read the same way stepped_rect below is -- never the production formula that lays them
-# out, so this cannot agree with a wrong pitch the way a copy of it would.
-	var pitch := _grid_world_rect(main, pa, rest_grid + 1).get_center().x 			- _grid_world_rect(main, pa, rest_grid).get_center().x
+	var rest_pose := camera.position
 
 	_fire_key(KEY_PERIOD)
 	await get_tree().process_frame
@@ -2433,17 +2421,12 @@ func run_the_camera_steps_between_grid_positions_test() -> void:
 	check(pa.pan_grid == rest_grid + 1,
 			"a real grid_pan_right key press steps the view one grid (TP-105)",
 			"pan_grid %d" % pa.pan_grid)
-# THE PITCH IS WHAT IS ASKED FOR; THE PICTURE'S EDGE IS WHAT IS GRANTED. Inside a picture the wall
-# does not exist, so the step is the pitch clamped into what the picture still has to show -- which
-# at the shipped window is almost nothing, and is the whole of the answer rather than a caveat.
-	var reach := WallPicture.max_pan_px(main._pictures[&"game"].rect, window_size,
-			SettingsManager.settings)
-	var granted := clampf(pitch, -reach, reach)
-	check(is_equal_approx(camera.position.x - rest_x, granted),
-			"the camera stepped by one grid position's pitch clamped to what the picture can "
-			+ "still show, not by a scroller's own aim (TP-105)",
-			"moved %.3f, asked %.3f, picture allows %.3f"
-			% [camera.position.x - rest_x, pitch, reach])
+# INSIDE A PICTURE THE CAMERA RESTS ON THE PICTURE AND NOTHING THE PLAYER PRESSES MOVES IT. The
+# whole overview set fits the picture, so a step has nothing left to bring into view -- the board's
+# own `pan_grid` is the entire effect, and the Entrance is what follows it.
+	check(camera.position.is_equal_approx(rest_pose),
+			"...and the camera pose is unchanged by it (TP-105)",
+			"pose %s vs rest %s" % [camera.position, rest_pose])
 	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
 	var stepped_rect := _grid_world_rect(main, pa, pa.pan_grid)
 	check(visible.encloses(stepped_rect),
@@ -2567,96 +2550,11 @@ func run_a_card_between_grids_is_never_clipped_away_test() -> void:
 			+ "window, so 'never culled' is a claim about something that would otherwise be cut")
 	await _tear_down(view)
 
-# THE SAVED PAN. The picture is three grids wide, so the camera has somewhere to rest that is NOT
-# the picture's centre.
-
-# ⚠ THE LOAD-BEARING CHECK IN EACH IS THE ONE THAT NAMES THE CENTRE. A pose that happens to be one
-# pitch from where the camera was is satisfied by any offset; only "and it is NOT the picture's
-# centre" fails when the saved pan is dropped and resting_state() answers again.
-
-# ⚠ The pitch here is OBSERVED between two real grid panels, never recomputed from the production
-# formula that placed them.
-
-# ⚠ SOME CHECKS HERE ARE REGRESSION GUARDS, NOT DISCRIMINATORS. While a board is mounted the camera
-# already rests on the pan, re-derived from PlayArea every settle, so the not-at-the-centre, the
-# comes-back-on-its-grid and the survives-a-resize checks all pass with the saved pan deleted.
-
-# What discriminates are the checks naming saved_pan_x itself, and the one that asks with no live
-# board to read.
-
-#The world-space distance between two adjacent grids' cell blocks, reused from the camera-stepping
-#measurement so a wrong pitch cannot agree with itself.
-func _observed_pitch(main: Main, pa: PlayArea, gi: int) -> float:
-	return _grid_world_rect(main, pa, gi + 1).get_center().x \
-			- _grid_world_rect(main, pa, gi).get_center().x
-
-#The camera pose the game picture would rest at with NO saved pan -- WallPicture.resting_state() on
-#the real packed rect. The thing every check below must differ from.
-func _unpanned_rest_x(main: Main) -> float:
-	var wp : WallPicture = main._pictures[&"game"]
-	var window := main.get_viewport().get_visible_rect().size
-	var state := WallPicture.resting_state(wp.rect, window, SettingsManager.settings)
-	return (state["position"] as Vector2).x
-
-func run_the_camera_rests_at_the_saved_pan_test() -> void:
-	behavior_section("THE CAMERA RESTS AT THE SAVED PAN, NOT THE PICTURE CENTRE (TP-115)")
-	var main := await _stand_up_main_grids(3)
-	var view := _main_game_view(main)
-	var pa := view.play_area
-	var camera := _main_camera(main)
-	var wp : WallPicture = main._pictures[&"game"]
-	pa.open_zoomed_out()
-	await _settle_camera(camera)
-	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
-			"precondition: the board is in the overview, the one view whose pan the camera makes "
-			+ "(TP-115)", "mode %d" % pa.view_mode)
-	var centre_x := _unpanned_rest_x(main)
-	check(is_equal_approx(wp.saved_pan_x, 0.0),
-			"precondition: an unpanned picture's saved pan is zero, which IS its centre (TP-115)",
-			"saved %.3f" % wp.saved_pan_x)
-
-	var rest_grid := pa.pan_grid
-	var pitch := _observed_pitch(main, pa, rest_grid)
-	_fire_key(KEY_PERIOD)
-	await get_tree().process_frame
-	_fire_key_release(KEY_PERIOD)
-	await _settle_camera(camera)
-	check(pa.pan_grid == rest_grid + 1,
-			"sanity: a real pan-right key press moved the view one grid, so there IS a pan to save "
-			+ "(TP-115)", "pan_grid %d" % pa.pan_grid)
-	check(is_equal_approx(wp.saved_pan_x, pitch),
-			"the picture's saved pan is exactly one grid pitch — the step the player just made, "
-			+ "stored on the picture (TP-115)",
-			"saved %.3f vs pitch %.3f" % [wp.saved_pan_x, pitch])
-	check(not is_equal_approx(camera.position.x, centre_x),
-			"...and the camera is NOT at the picture's centre, which is where resting_state() "
-			+ "alone would have put it (TP-115)",
-			"camera %.3f vs centre %.3f" % [camera.position.x, centre_x])
-	check(is_equal_approx(camera.position.x - centre_x, _granted_pan(main, wp.saved_pan_x)),
-			"...it is the centre plus the saved pan, clamped to what the picture can still show "
-			+ "(TP-115)",
-			"offset %.3f vs saved %.3f granted %.3f" % [camera.position.x - centre_x,
-			wp.saved_pan_x, _granted_pan(main, wp.saved_pan_x)])
-
-# ⚠ Main._camera_resting_state() reads the live board back into the saved pan whenever there is
-# one, so the only way to see the SAVED value answering on its own is to ask while there is no
-# board to read -- the state every frame of a transition and every detached show is in.
-
-# The real field is set aside and put back, never a stand-in board.
-	var real_screen := wp.screen_root
-	wp.screen_root = null
-	var state := main._camera_resting_state(&"game", wp.rect, SettingsManager.settings)
-	wp.screen_root = real_screen
-	var pose_x : float = (state["position"] as Vector2).x
-	check(is_equal_approx(pose_x - centre_x, _granted_pan(main, pitch)),
-			"with no live board to read, the resting pose is still the SAVED pan, clamped — the "
-			+ "frames a transition and a detached show run in (TP-115)",
-			"pose %.3f, centre %.3f, saved %.3f, granted %.3f" % [pose_x, centre_x, wp.saved_pan_x,
-			_granted_pan(main, pitch)])
-	await _tear_down_main(main)
-
-func run_leaving_and_re_entering_restores_the_pan_test() -> void:
-	behavior_section("LEAVING AND RE-ENTERING RESTORES THE PAN, SNAPPED (TP-116)")
+#THE GRID THE SHOW WAS LEFT ON IS THE BOARD'S OWN STATE, not something the wall gives back: the
+#`PlayArea` survives the leave attached to its picture, so `pan_grid` is still where the player put
+#it and the Entrance comes back under the same grid.
+func run_leaving_and_re_entering_keeps_the_grid_test() -> void:
+	behavior_section("LEAVING AND RE-ENTERING KEEPS THE GRID THE SHOW WAS LEFT ON (TP-116)")
 	var settings := SettingsManager.settings
 	var prev_delay : float = settings.wall_transition_delay
 	settings.wall_transition_delay = 0.001
@@ -2664,12 +2562,9 @@ func run_leaving_and_re_entering_restores_the_pan_test() -> void:
 	var view := _main_game_view(main)
 	var pa := view.play_area
 	var camera := _main_camera(main)
-	var wp : WallPicture = main._pictures[&"game"]
 	pa.open_zoomed_out()
 	await _settle_camera(camera)
 	var rest_grid := pa.pan_grid
-	var pitch := _observed_pitch(main, pa, rest_grid)
-	var centre_x := _unpanned_rest_x(main)
 	_fire_key(KEY_PERIOD)
 	await get_tree().process_frame
 	_fire_key_release(KEY_PERIOD)
@@ -2683,119 +2578,14 @@ func run_leaving_and_re_entering_restores_the_pan_test() -> void:
 	check(main._current_focus == &"map",
 			"sanity: the player really left the show for another picture (TP-116)",
 			str(main._current_focus))
-# A saved pan predates any grid-count change, so it is restored SNAPPED rather than replayed.
-# Nothing a player does produces a pan between two grids, so the value is set here to one: 0.6 of a
-# pitch past the grid it was left on, which rounds up and then clamps back to the last grid.
-	wp.saved_pan_x = pitch * 1.6
 	await main.enter_game()
 	await _settle_camera(camera)
 	check(pa.pan_grid == left_on,
-			"re-entering puts the BOARD back on the grid the snapped pan names, not on whatever "
-			+ "grid a fresh layout rests on (TP-116)",
+			"re-entering puts the board back on the grid it was left on, not on whatever grid a "
+			+ "fresh layout rests on (TP-116)",
 			"pan_grid %d, expected %d" % [pa.pan_grid, left_on])
-	check(is_equal_approx(wp.saved_pan_x, pitch),
-			"...and the pan that was 1.6 pitches out is snapped back onto a whole grid (TP-116)",
-			"saved %.3f vs pitch %.3f" % [wp.saved_pan_x, pitch])
-	check(not is_equal_approx(camera.position.x, centre_x),
-			"...and the camera came back to the pan, not to the picture's centre (TP-116)",
-			"camera %.3f vs centre %.3f" % [camera.position.x, centre_x])
-	check(is_equal_approx(camera.position.x - centre_x, _granted_pan(main, wp.saved_pan_x)),
-			"...at the restored pan's offset, clamped to what the picture can still show (TP-116)",
-			"offset %.3f vs saved %.3f granted %.3f" % [camera.position.x - centre_x,
-			wp.saved_pan_x, _granted_pan(main, wp.saved_pan_x)])
 	await _tear_down_main(main)
 	settings.wall_transition_delay = prev_delay
-
-func run_a_resize_re_derives_the_pose_from_the_saved_pan_test() -> void:
-	behavior_section("A RESIZE RE-DERIVES THE POSE FROM THE SAVED PAN (TP-117)")
-	var main := await _stand_up_main_grids(3)
-	var view := _main_game_view(main)
-	var pa := view.play_area
-	var camera := _main_camera(main)
-	var wp : WallPicture = main._pictures[&"game"]
-	pa.open_zoomed_out()
-	await _settle_camera(camera)
-	var rest_grid := pa.pan_grid
-	var pitch := _observed_pitch(main, pa, rest_grid)
-	_fire_key(KEY_PERIOD)
-	await get_tree().process_frame
-	_fire_key_release(KEY_PERIOD)
-	await _settle_camera(camera)
-	var centre_x := _unpanned_rest_x(main)
-	check(is_equal_approx(camera.position.x - centre_x, _granted_pan(main, pitch)),
-			"sanity: the camera is off centre by the step the picture granted before the resize "
-			+ "(TP-117)",
-			"offset %.3f vs pitch %.3f granted %.3f" % [camera.position.x - centre_x, pitch,
-			_granted_pan(main, pitch)])
-
-# ⚠ DisplayServer.window_set_size() CANNOT go below the project minimum, so a suite cannot drive a
-# real resize to an arbitrary size. What a resize IS, to this code, is Main._window_size
-# disagreeing with the viewport, so that disagreement is created and the real handler run.
-	main._window_size = Vector2(1.0, 1.0)
-	main._on_window_resized()
-	await _settle_camera(camera)
-	check(main._window_size.is_equal_approx(main.get_viewport().get_visible_rect().size),
-			"sanity: the resize handler really ran and took the window's size (TP-117)",
-			"%s" % main._window_size)
-	check(is_equal_approx(wp.saved_pan_x, pitch),
-			"the saved pan survives the resize — it is a board position, not a screen one "
-			+ "(TP-117)", "saved %.3f vs pitch %.3f" % [wp.saved_pan_x, pitch])
-	check(pa.pan_grid == rest_grid + 1,
-			"...and so does the grid the board is on (TP-117)",
-			"pan_grid %d" % pa.pan_grid)
-	var after_centre_x := _unpanned_rest_x(main)
-	check(not is_equal_approx(camera.position.x, after_centre_x),
-			"...and the re-derived pose is NOT the picture's centre (TP-117)",
-			"camera %.3f vs centre %.3f" % [camera.position.x, after_centre_x])
-	check(is_equal_approx(camera.position.x - after_centre_x, _granted_pan(main, wp.saved_pan_x)),
-			"...it is the centre plus the saved pan clamped into the picture, re-derived after "
-			+ "the resize (TP-117)",
-			"offset %.3f vs saved %.3f granted %.3f" % [camera.position.x - after_centre_x,
-			wp.saved_pan_x, _granted_pan(main, wp.saved_pan_x)])
-	await _tear_down_main(main)
-
-#THE END STOPS ARE WHERE A FRAME WOULD REACH THE WINDOW FIRST, since they are where the camera sits
-#closest to the picture's edge. The clamp keeps that edge off the window and these rows keep the
-#frame undrawn -- two independent answers, neither standing in for the other.
-func run_no_frame_is_drawn_at_an_overview_end_stop_test() -> void:
-	behavior_section("NO FRAME IS DRAWN AT AN OVERVIEW END STOP")
-	var main := await _stand_up_main_grids(3)
-	var view := _main_game_view(main)
-	var pa := view.play_area
-	var camera := _main_camera(main)
-	var frame : NinePatchRect = main._pictures[&"game"].get_node(^"%Frame")
-	pa.open_zoomed_out()
-	await _settle_camera(camera)
-	check(not frame.visible,
-			"the focused picture draws no frame once the show has opened",
-			"visible %s" % frame.visible)
-	for gi : int in [0, 2]:
-		pa.pan_to_grid(gi)
-		await _settle_camera(camera)
-		check(pa.pan_grid == gi,
-				"precondition: the board really reached end stop %d -- a pan that never ran would "
-				% gi + "make the checks below vacuous",
-				"pan_grid %d" % pa.pan_grid)
-		check(not frame.visible,
-				"...and no frame is drawn at end stop %d" % gi,
-				"visible %s" % frame.visible)
-		var seen_drawn := 0
-		var samples := 0
-		pa.pan_by_grids(1 if gi == 2 else -1)
-		var waited := 0.0
-		while waited < 1.0:
-			await get_tree().process_frame
-			waited += get_process_delta_time()
-			CardEnvironment.CURRENT = view.game
-			samples += 1
-			if frame.visible: seen_drawn += 1
-		check(samples > 0,
-				"precondition: the pan past end stop %d was really sampled" % gi,
-				"%d frames" % samples)
-		check(seen_drawn == 0,
-				"...and the frame is drawn in none of that pan's frames",
-				"%d of %d frames drew it" % [seen_drawn, samples])
-	await _tear_down_main(main)
 
 #How far the game picture's nearest edge sits INSIDE the window, in WINDOW px, over all four sides
 #-- zero or less while the picture still covers it. The wall is drawn immediately outside that
@@ -2808,56 +2598,6 @@ func _picture_edge_intrusion_px(main: Main, camera: Camera2D) -> float:
 			- wp.rect.size * zoom / 2.0, wp.rect.size * zoom)
 	return maxf(maxf(drawn.position.x, drawn.position.y),
 			maxf(window.x - drawn.end.x, window.y - drawn.end.y))
-
-#INSIDE A PICTURE THE WALL DOES NOT EXIST, so no pose the player can ask for may put the window past
-#the picture's edge. The overview pan and its end-stop bounce are the only things that move the
-#camera while a picture is focused, so between them they are the whole of the question.
-func run_the_window_never_leaves_the_picture_test() -> void:
-	behavior_section("THE WINDOW NEVER LEAVES THE PICTURE")
-	var main := await _stand_up_main_grids(3)
-	var view := _main_game_view(main)
-	var pa := view.play_area
-	var camera := _main_camera(main)
-	pa.open_zoomed_out()
-	await _settle_camera(camera)
-	var window := main.get_viewport().get_visible_rect().size
-	var reach := WallPicture.max_pan_px(main._pictures[&"game"].rect, window,
-			SettingsManager.settings)
-	check(reach < pa.grid_pitch_px(),
-			"precondition: the picture leaves the camera less room than one grid step, so a step "
-			+ "really is asking to leave the picture",
-			"reach %.1f px against a %.1f px step at window %s" % [reach, pa.grid_pitch_px(),
-			window])
-	var worst := _picture_edge_intrusion_px(main, camera)
-	for gi : int in [0, 2, 1, 2, 0]:
-		pa.pan_to_grid(gi)
-		worst = maxf(worst, await _worst_intrusion_over(main, view, camera, worst, 1.0))
-	check(pa.pan_grid == 0,
-			"precondition: the pans above really walked the board to its first grid",
-			"pan_grid %d" % pa.pan_grid)
-	pa.pan_by_grids(-1)
-	worst = maxf(worst, await _worst_intrusion_over(main, view, camera, worst, 1.5))
-	pa.pan_to_grid(2)
-	await _settle_camera(camera)
-	pa.pan_by_grids(1)
-	worst = maxf(worst, await _worst_intrusion_over(main, view, camera, worst, 1.5))
-	check(worst <= 0.0,
-			"through every overview pan, both end stops and both end-stop bounces the window "
-			+ "stays inside the picture -- no wall is ever on screen inside a picture",
-			"worst edge intrusion %.3f px" % worst)
-	await _tear_down_main(main)
-
-#The worst the window ever leaves the picture over the next `seconds`, sampled EVERY frame: a pan
-#and a bounce are journeys, and a still taken at either end says nothing about what crossed it.
-func _worst_intrusion_over(main: Main, view: GameView, camera: Camera2D, worst: float,
-		seconds: float) -> float:
-	var waited := 0.0
-	while waited < seconds:
-		await get_tree().process_frame
-		waited += get_process_delta_time()
-		CardEnvironment.CURRENT = view.game
-		worst = maxf(worst, _picture_edge_intrusion_px(main, camera))
-	return worst
 
 #THE TOLERANCE MUST NOT SWALLOW A REAL SLIVER. The rects are the ones a full gate actually
 #reported, so the drifts below are the drifts the board really leaves, not invented ones.
@@ -2884,10 +2624,3 @@ func run_an_edge_touch_is_not_an_intrusion_test() -> void:
 				"...while a %.0f px sliver of it IS inside the view, and the tolerance is nowhere "
 				% sliver + "near wide enough to hide one",
 				"edge %.6f vs view %.6f" % [over.end.x, visible.position.x])
-
-#The pan the camera is actually POSED at for a board pan of `saved`: the picture's own edge is what
-#grants it, since inside a picture there is no wall to pan onto.
-func _granted_pan(main: Main, saved: float) -> float:
-	var reach := WallPicture.max_pan_px(main._pictures[&"game"].rect,
-			main.get_viewport().get_visible_rect().size, SettingsManager.settings)
-	return clampf(saved, -reach, reach)

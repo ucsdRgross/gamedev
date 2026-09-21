@@ -5,24 +5,20 @@
 question id (`Q56`, `J1`, `G10`) from code all over this subsystem. This file is the authority on
 *how it is put together* and what will bite you.
 
-⚠ **THE GAME PICTURE IS SEVERAL SCREENS WIDE NOW, AND THE CAMERA PANS OVER IT.** A show is
-played on one to three grids side by side, so the game picture's resting pose stopped being one
-pose and became a **family** of them — one per grid. Everything in this file that talks about
-"the focused picture" still holds; what changed is that the focused game picture also has a
-horizontal position within itself, and that position is state the wall owns.
+⚠ **THE GAME PICTURE IS SEVERAL SCREENS WIDE, AND THE CAMERA DOES NOT MOVE INSIDE IT.** A show is
+played on one to three grids side by side, and that whole set fits the picture at the run's cap of
+three — so a focused picture has exactly ONE pose, `WallPicture.resting_state()`, and every
+`_settle_camera()` lands on it. Everything in this file about "the focused picture" holds as
+written.
 
 | Concept | Where it lives |
 |---|---|
-| The pan offset, in picture pixels | `WallPicture.saved_pan_x` — written at the step, read for every resting pose, re-snapped on a resize, and restored into the board BEFORE re-focusing |
-| The rest pose at one grid | `WallPicture.grid_state()` — `resting_state()` evaluated at one of the pan's discrete target values |
-| Snapping a free pan back onto a grid | `WallPicture.snap_pan_to_grid()` — pure |
-| The board asking for a pan | `PlayArea.overview_pan_requested` → `GameView` → `Main`; the board lives inside the view's own `SubViewport` and has no reach to the camera outside it |
-| A pan past the first or last grid | `PlayArea.overview_bounce_requested`, carrying the direction, so `Main` can push the camera and spring it back — through the same clamp, so it pushes only as far as the picture allows |
+| The grid the overview is centred on | `PlayArea.pan_grid` — board state, read by `entrance_home_grid`; it steps, but nothing outside the `SubViewport` watches it |
 | The render-target ceiling | `settings().game_picture_max_render_px` (ships 4096) — a wide picture's `SubViewport.size` is clamped to it |
 
-⚠ **THE HORIZONTAL AIM IS DEAD RANGE IN THE OVERVIEW.** The board container is picture-wide
-there, so the CAMERA is the single horizontal authority — the board publishes the intent and
-must not also try to scroll itself, or the two fight.
+⚠ **THE HORIZONTAL AIM IS DEAD RANGE IN THE OVERVIEW.** The board container is picture-wide there
+and the camera rests on the picture's centre, so nothing may scroll it horizontally — a writer
+there would be the only thing that could take the window off the picture.
 
 ## The map
 
@@ -94,17 +90,14 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   covers the window, so there is nothing on screen to fade, and a tween here would have to survive
   §1.6's permanent pause. `_repack_wall()` re-states the answer because a newly unlocked picture is
   built with its frame drawn.
-- ⚠ **A PAN MAY NEVER TAKE THE WINDOW OFF ITS PICTURE.** Inside a picture the wall does not exist,
-  so `WallPicture.panned_state()` clamps every offset to `max_pan_px()` — half of what the resting
-  zoom does not already show. The grid step, the end-stop bounce and a restored `saved_pan_x` all
-  reach the camera through that one function. ⚠ **What this leaves is almost nothing wherever the
-  WIDTH binds the fit:** the reach is then `design_size.x * (1 - 1/wall_overfill_margin) / 2` —
-  **15.5 px against a 316 px grid step** at 1152x648 and at 1512x648, identical at one, two and
-  three grids. It is 208 px at 4:3 and 475 px (one whole step) at a tall window. So at the shipped
-  aspect the overview pan moves the camera by about a twentieth of a grid and the end-stop bounce
-  cannot move at all: the press reads as a board that will not move. `pan_grid` still steps, which
-  is what the Entrance's home grid reads. FOCUSED is untouched — there the scroller pans inside a
-  camera that does not move.
+- ⚠ **NOTHING MOVES THE CAMERA INSIDE A PICTURE, AND THAT IS THE RULING, NOT AN OVERSIGHT.** The
+  wall does not exist inside a picture, so the window may never leave it — and the only camera move
+  a focused picture ever had, the OVERVIEW grid pan, had nothing left to reveal once it was held to
+  the picture's edge: the room is `design_size.x * (1 - 1/wall_overfill_margin) / 2` wherever the
+  WIDTH binds the fit, **15.5 px against a 316 px grid step** at 1152x648 and at 1512x648, and
+  identical at one, two and three grids. It was retired rather than left as clutter. `pan_grid`
+  still steps — that is what the Entrance's home grid reads — and FOCUSED is untouched, where the
+  scroller pans inside a camera that does not move.
 - **`focused_scale()` applies its margin only when the aspects DIFFER.** That conditionality is what
   makes G10's "panning is off when everything fits" an exact zero rather than a few per cent of
   slack. Do not make it unconditional.

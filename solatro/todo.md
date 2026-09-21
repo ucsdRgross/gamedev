@@ -493,11 +493,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   ⚠ **The suite structurally cannot see any of these**: the layout suites are pinned to the OVERVIEW,
   and no `Tests/Visual/` harness drives props at all, so nothing renders a prop over a card at a
   non-1.0 `board_zoom`. **Building that harness is the first task, not the fix.**
-  - `main.gd` / `wall_transition.gd` — the game picture's resting pose is `panned_state`, but
-    `WallTransition` still interpolates between bare rect centres and `_on_info_toggled` still aims
-    at unpanned poses, so the trailing `_settle_camera()` cuts a full grid pitch. The `else` branch
-    of `_focus_picture` was fixed for exactly this and says so; the picture-to-picture branch — the
-    route `map → game` actually takes — was not.
   - `wall_picture.gd:235` — `focus()` used to force `size_2d_override = Vector2i.ZERO`; the
     replacement engages a non-identity override on a FOCUSED picture whenever the render clamp
     bites, displacing every click inside the show.

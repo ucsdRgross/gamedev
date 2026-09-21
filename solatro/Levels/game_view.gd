@@ -17,12 +17,6 @@ signal run_lost
 
 ## Relayed from PlayArea so Main can put a clicked card on the wall's info card.
 signal info_requested(entry: InfoEntry)
-#The board lives inside this view's own SubViewport and has no reach to the camera outside it.
-
-## Relayed from PlayArea so Main can step its wall camera.
-signal overview_pan_requested(grid_index: int)
-## Relayed from PlayArea so Main can bounce its wall camera off the board's OVERVIEW edge.
-signal overview_bounce_requested(step: int)
 
 # Continue button sizing (win/lose screen) — named, no magic numbers in logic.
 const CONTINUE_FONT_SIZE := 40
@@ -120,10 +114,6 @@ func _ready() -> void:
 	play_area.info_requested.connect(_relay_info_requested)
 	play_area.highlight_cleared.connect(hud_container.return_to_lock)
 	play_area.description_dismiss_requested.connect(_on_description_dismiss_requested)
-	play_area.overview_pan_requested.connect(
-			func(grid_index: int) -> void: overview_pan_requested.emit(grid_index))
-	play_area.overview_bounce_requested.connect(
-			func(step: int) -> void: overview_bounce_requested.emit(step))
 
 	add_child(game)
 	_add_prop_debug_controls()
