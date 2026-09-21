@@ -993,3 +993,19 @@
   (c) a new ink - owner: "focus outline color should be a. by default the outline is black
   before focus." Whether the legal-cell brightening should leave the cell's own rim alone -
   owner: "yes exclude focus outline rim".
+- Playtest follow-up rulings on pack picking and map travel, given after the real flow was traced
+  (a pack opens on ARRIVAL; the map sidebar and the pack chooser never coexist; describing a node
+  hid the Deck button). Owner, verbatim: "1. describing a node still shows deck button, which can
+  be a second button on the description sidebar compared to first one which is on default
+  sidebar. having special case for 1st button to show on other sidebars sounds overcomplicated.
+  2. b [Take still takes the whole pack; a click only selects for preview] 3. different color ink
+  for now. the one that shows when moving around takes precedent and shows over the different
+  color sidebar focus one. 4. i changed my mind. no more second panel. first time you click on a
+  talent pack node, show deck viewer showing all possible card effects that can be rolled.
+  sidebar remains description shower. sidebar when on node shows a button to view the possible
+  cards again, since further clicks on the node before travelling will not automatically open
+  the deck viewer again, instead requiring going to sidebar button to show the deck viewer again.
+  This is because I have found sidebar is simply too small to show enough cards together at the
+  same time."
+- Playtest follow-up ruling on the overview camera pan and its bounce, which the no-wall clamp
+  left unable to move at 16:9 - owner: "yes retire so as to not leave behind clutter".
