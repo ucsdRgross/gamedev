@@ -39,9 +39,6 @@ signal active_screen_changed
 ## The X was accepted from the keyboard or pad; hiding it left nothing focused, so the screen takes the focus back.
 signal exit_accepted
 
-## A second-button press landed inside the container's rect; `Wall` routes it, because the panel must not swallow cancel.
-signal second_button_pressed(event: InputEventMouseButton)
-
 ## The slide reached its aim -- or this container is leaving, which releases its waiters too.
 signal slide_settled
 
@@ -484,7 +481,6 @@ func _screen_is_processing() -> bool:
 # search consumes any arrow that finds a neighbour, so an arrow read any later never arrives while
 # a board cell holds the focus. Page keys scroll whenever the description shows, arrows once locked.
 func _input(event: InputEvent) -> void:
-	if _announce_second_button(event): return
 	if not showing_description(): return
 	var stick := event as InputEventJoypadMotion
 	if stick and stick.is_action(&"sidebar_scroll"):
@@ -503,17 +499,6 @@ func _input(event: InputEvent) -> void:
 	if is_zero_approx(pages): return
 	_description_panel.scroll_by_pages(pages)
 	get_viewport().set_input_as_handled()
-
-# THE PANEL EATS LEFT CLICKS IN ITS WHOLE RECT AND ONLY THOSE: cancel is reachable from anywhere on
-# screen, so the second button is announced from `_input`, ahead of the GUI pass that would hand it
-# to whichever child sits under the pointer and stop there. `Wall` routes what this announces.
-func _announce_second_button(event: InputEvent) -> bool:
-	var button := event as InputEventMouseButton
-	if not button or button.button_index != MOUSE_BUTTON_RIGHT or not button.pressed: return false
-	if not get_global_rect().has_point(get_canvas_transform().affine_inverse() * button.position):
-		return false
-	second_button_pressed.emit(button)
-	return true
 
 # ⚠ A SCREEN'S CONTROLS AND THE EXIT X SIT IN DIFFERENT VIEWPORTS, and Godot's focus search never
 # crosses one, so the sidebar carries up, off the top of a description, onto the X itself. The

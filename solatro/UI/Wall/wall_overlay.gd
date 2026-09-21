@@ -10,6 +10,9 @@ signal back_pressed
 signal forward_pressed
 signal wall_pressed
 
+## A second-button press landed on one of this layer's controls; `Wall` routes it, because they must not swallow cancel.
+signal second_button_pressed(event: InputEventMouseButton)
+
 @onready var _back_button : Button = %BackButton
 @onready var _forward_button : Button = %ForwardButton
 @onready var _wall_button : Button = %WallButton
@@ -69,3 +72,18 @@ func _on_forward_pressed() -> void:
 
 func _on_wall_pressed() -> void:
 	wall_pressed.emit()
+
+# THE ONE ANNOUNCE FOR EVERY CONTROL ON THIS LAYER -- the button row and the sidebar container alike.
+# Cancel is reachable from anywhere on screen, so the second button is read here, ahead of the GUI
+# pass that would hand it to whichever control sits under the pointer and stop there.
+
+# Each control is asked for its OWN rect: the band must not depend on the container's covering it.
+func _input(event: InputEvent) -> void:
+	var button := event as InputEventMouseButton
+	if not button or button.button_index != MOUSE_BUTTON_RIGHT or not button.pressed: return
+	for child : Node in get_children():
+		var control := child as Control
+		if control and control.is_visible_in_tree() and control.get_global_rect().has_point(
+				control.get_canvas_transform().affine_inverse() * button.position):
+			second_button_pressed.emit(button)
+			return

@@ -11,7 +11,7 @@ extends Node2D
 #individually through its own process mode.
 func _ready() -> void:
 	get_tree().paused = true
-	(%HudContainer as HudContainer).second_button_pressed.connect(_route_second_button)
+	(%Overlay as WallOverlay).second_button_pressed.connect(_route_second_button)
 
 const LAYOUT_PATH := "res://Assets/Wall/layout_default.tres"
 
@@ -277,9 +277,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
-#CANCEL IS REACHABLE FROM ANYWHERE ON SCREEN: the overlay panel is marked handled by the GUI pass
-#before `_unhandled_input` runs, so it announces the second button instead and the press takes the
-#same route to the focused picture every other wall-level event takes.
+#CANCEL IS REACHABLE FROM ANYWHERE ON SCREEN: a press on the overlay's own controls is marked handled
+#by the GUI pass before `_unhandled_input` runs, so `WallOverlay` announces the second button instead
+#and the press takes the same route to the focused picture every other wall-level event takes.
 func _route_second_button(event: InputEventMouseButton) -> void:
 	if input_locked: return
 	var focused := _focused_picture()

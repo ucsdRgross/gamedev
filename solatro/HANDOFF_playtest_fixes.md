@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P14, P16-P23, P25-P28 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6328 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P15, P24, the sweeps; P29 is in; each carries its site map in `notes:`. Gate at the stream's start:
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P24, the sweeps; P29 and P15 are in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -244,9 +244,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/UI/Wall/wall_overlay.gd, solatro/UI/Wall/wall.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar WallInput'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Same announce-ahead-of-the-GUI-pass shape P2 used on the container; the band buttons are MOUSE_FILTER_STOP too.'
+  status: done
+  evidence: 'The new band row does NOT fail on unmodified production: the sidebar resting rect (x 0..394) covers the band buttons (x 12..268), so the P2 announce already rescued the press - the bug was latent. Red by parking the announce, before and after the move alike: FILTERED 1 of 51 [Sidebar]: 1406 passed, 8 FAILED (8 behavior) - the P2 row, one row per band button and each drop-map row; inverting one new check fails 3, one per button. Green: FILTERED 3 of 51 [Sidebar WallInput WallFocus]: 1648 CHECKS PASSED (SIDEBAR 1406 -> 1414); --logic 3008. Overseer gate: ALL 51 SUITES: 6271 CHECKS PASSED, 21 placeholder warnings, the exit profile, 0 SCRIPT ERROR. Nothing drawn changes.'
+  notes: 'ONE home: WallOverlay._input announces a right press over any of its own visible Control children (the band and the container alike) through WallOverlay.second_button_pressed, which Wall routes; HudContainer.second_button_pressed and _announce_second_button are deleted. The event is never marked handled and the row asserts no band button fires from it. Brief: Same announce-ahead-of-the-GUI-pass shape P2 used on the container; the band buttons are MOUSE_FILTER_STOP too.'
 - id: P16
   description: R10 follow-up - the title pluralises the suit ("King of Knives"): five title-only localisation keys and one accessor; the singular stays everywhere else.
   files_touched: [solatro/Locale/localization.csv, solatro/UI/control_card.gd, solatro/Cards/Pips/, solatro/Tests/Wall/test_sidebar.gd]

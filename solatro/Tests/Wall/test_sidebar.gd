@@ -187,6 +187,7 @@ func _ready() -> void:
 	await test_the_second_button_dismisses_a_description_with_nothing_held()
 	await test_the_second_button_with_nothing_to_cancel_does_nothing()
 	await test_the_second_button_over_the_panel_still_cancels()
+	await test_the_second_button_over_the_overlay_band_still_cancels()
 	await test_escape_cancels_everything_and_steps_back_in_one_press()
 	await test_releasing_the_held_card_leaves_the_locked_description_up()
 	await test_a_cancel_needs_a_click_on_an_entrance_card_to_lift_again()
@@ -2400,13 +2401,16 @@ func _continue_to_the_map(view: GameView) -> void:
 
 # The cancel button a player presses: a real right press into the game picture's own viewport, so
 # the board reads it through the same handler that hears the left one.
-func _second_button_press(at: Vector2) -> void:
+
+# A press aimed at the overlay -- the sidebar or the button band -- goes into the BOOTED viewport
+# instead, which is the one the overlay's own layer draws and reads in.
+func _second_button_press(at: Vector2, viewport: SubViewport = null) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_RIGHT
 	event.pressed = true
 	event.position = at
 	event.global_position = at
-	_game_viewport.push_input(event)
+	(viewport if viewport else _game_viewport).push_input(event)
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -5175,13 +5179,7 @@ func test_the_second_button_over_the_panel_still_cancels() -> void:
 		check(_container.get_global_rect().has_point(at),
 				"the aim point is inside the container's own rect, where a click is eaten (S18.2)",
 				"%s in %s" % [str(at), str(_container.get_global_rect())])
-		var event := InputEventMouseButton.new()
-		event.button_index = MOUSE_BUTTON_RIGHT
-		event.pressed = true
-		event.position = at
-		event.global_position = at
-		_booted_viewport.push_input(event)
-		await get_tree().process_frame
+		await _second_button_press(at, _booted_viewport)
 		await get_tree().process_frame
 		check(_play_area.selected_cards.is_empty(),
 				"a second-button press over the sidebar still released the held card (S18.2, B15)",
@@ -5189,6 +5187,43 @@ func test_the_second_button_over_the_panel_still_cancels() -> void:
 		check(TestGridFixtures.lit_cell_count(_play_area) == 0,
 				"...and the drop map it lit went out with it (6.11, G12)",
 				str(TestGridFixtures.lit_cell_count(_play_area)))
+	await _end_main_fixture()
+
+## Cancel reaches the board from anywhere on screen: the overlay's Back/Forward/Wall buttons sit outside the container and must not swallow it either.
+func test_the_second_button_over_the_overlay_band_still_cancels() -> void:
+	await _start_game_fixture()
+	var overlay : WallOverlay = _main.wall.get_node(^"%Overlay")
+	var pressed : Array[bool] = [false]
+	var note := func() -> void: pressed[0] = true
+	overlay.back_pressed.connect(note)
+	overlay.forward_pressed.connect(note)
+	overlay.wall_pressed.connect(note)
+	for button_name : StringName in [&"%BackButton", &"%ForwardButton", &"%WallButton"]:
+		var button : Control = overlay.get_node(NodePath(button_name))
+		var entrance := await _entrance_card_controls()
+		check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+				str(entrance.size()))
+		if entrance.is_empty(): break
+		await _click_card(entrance[0])
+		check(not _play_area.selected_cards.is_empty(),
+				"precondition: the click left a card held before the %s press" % button_name,
+				str(_play_area.selected_cards.size()))
+		check(TestGridFixtures.lit_cell_count(_play_area) > 0,
+				"precondition: the held card lit a drop map to put out",
+				str(TestGridFixtures.lit_cell_count(_play_area)))
+		var at := button.get_global_rect().get_center()
+		check(button.is_visible_in_tree() and button.get_global_rect().has_point(at),
+				"the aim point is on %s, where a click is eaten" % button_name,
+				"%s in %s" % [str(at), str(button.get_global_rect())])
+		await _second_button_press(at, _booted_viewport)
+		await get_tree().process_frame
+		check(_play_area.selected_cards.is_empty(),
+				"a second-button press over %s still released the held card" % button_name,
+				str(_play_area.selected_cards.size()))
+		check(TestGridFixtures.lit_cell_count(_play_area) == 0,
+				"...and the drop map it lit went out with it",
+				str(TestGridFixtures.lit_cell_count(_play_area)))
+		check(not pressed[0], "...and the button itself was never pressed by it")
 	await _end_main_fixture()
 
 ## S18.3/Q100=c/E22: ONE Escape releases the held card, dismisses the description and zooms out to the wall.
