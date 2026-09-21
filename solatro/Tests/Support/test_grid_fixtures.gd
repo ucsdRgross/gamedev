@@ -287,17 +287,15 @@ static func leftmost_entrance_slot() -> int:
 	return -1
 
 # How many of the board's cells are DRAWN wearing the drop map, never the `on_drop_map` field it is
-# derived from. The two marks share one glow, so a FOCUSED cell is lit only at the squared value --
-# the focus alone puts it at the same brightness one mark does, and that one is not the drop map.
+# derived from. ONE expected value: the focus is an outline and adds nothing to the brightening, so
+# a focused cell on the map is drawn at exactly the same glow as any other.
 static func lit_cell_count(play_area: PlayArea) -> int:
 	var state := CardEnvironment.get_current_game().state
 	var glow : float = PlayArea.settings().highlight_glow
 	var marked := 0
 	for data : CardData in play_area.data_card:
 		if state.cell_type_coord(data).is_nowhere(): continue
-		var visual := play_area.data_card[data]
-		var lit := glow * glow if visual.focused else glow
-		if is_equal_approx(brightness_of(visual.type), lit):
+		if is_equal_approx(brightness_of(play_area.data_card[data].type), glow):
 			marked += 1
 	return marked
 

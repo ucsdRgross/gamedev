@@ -124,7 +124,7 @@ reason, then implement. A test written after the code passes it is a test that a
 |---|---|---|---|---|---|---|
 | 5.1 | A sub-threshold release is a CLICK | press and release 10 px apart, threshold 54 | the card is grabbed and stays held; nothing placed | Gate | E12, E13, `Q283`=a | S16 |
 | 5.2 | An over-threshold release on a LEGAL cell places | press on an Entrance card, release on an empty legal cell | `place_card_in_grid` ran; one undo step; the grid committed | Gate | E14, E16, E18 | S16 |
-| 5.3 | …on an illegal cell DROPS the card | release on an illegal cell | the hand is empty, the card flat in its slot, `following == false`, nothing placed or committed, and the drop map out on every cell — what a cancel leaves | Gate | E17, `Q280`=a, `Q281`=a, R5 | S16 |
+| 5.3 | …on an illegal cell DROPS the card | release on an illegal cell | the hand is empty, the card flat in its slot, `following == false`, nothing placed or committed, and the drop map out on every cell | Gate | E17, `Q280`=a, `Q281`=a, R5 | S16 |
 | 5.3b | The chase restarts on a press AND travel | a card lifted by a click, then a motion, then a press, then travel past the threshold | neither the motion nor the press alone starts the follow; the travel after the press does | Gate | `GAP-007`=a | S16 |
 | 5.4 | …over the container drops it too | release over the container's rect, and over bare board, another Entrance card and off the window | the same drop as 5.3: the hand empty, the card flat in its slot, the drop map out — the release's position decides only whether a cell took it | Gate | E17, `Q288`=a, R5 | S16 |
 | 5.5 | A touch TAP on a card needs no threshold | press and release on the card's own slot | the card is selected and lifted, not placed, not returned-with-cost | Gate | E24, `Q285`=b | S16 |
@@ -145,7 +145,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | 6.8 | The lift height is the same in both states | before and after following starts | equal y-offset | Gate | G8, `Q265`=a | S14 |
 | 6.9 | A CLICKED card follows immediately | click an Entrance card | `following == true` on the same frame | Gate | G11, `Q267`=a | S14 |
 | 6.10 | The arm survives undo by re-derivation | place, undo | armed slot is the leftmost present again | Gate | G16, `Q117`=a | S15 |
-| 6.11 | The legal-cell highlight IS the drop map | `TestSidebar`: a dealt board, a card grabbed, one empty cell and one CELL the board refuses (a zone card, never an Entrance card — the map only ever holds zone cards), then that cell filled by a real click; plus a right-click and an Escape cancel, and a drag released where nothing takes it | the accepted cell's own zone card is drawn at `highlight_glow` (the `u_brighten` the shader gets, not the `on_drop_map` field), the refused cell's unlit, and the placement, each cancel and a drag released where nothing takes it all leave no cell lit | Gate | G12, `Q24`=a, `Q124`=a, `GAP-005`=a, R6 | S16 |
+| 6.11 | The legal-cell highlight IS the drop map | `TestSidebar`: a dealt board, a card grabbed, one empty cell and one CELL the board refuses (a zone card, never an Entrance card — the map only ever holds zone cards), then that cell filled by a real click; plus a right-click and an Escape cancel, and a drag released where nothing takes it | the accepted cell's own zone card is drawn at `highlight_glow` (the `u_brighten` the shader gets, not the `on_drop_map` field) — at that ONE value even when it also holds the focus — the refused cell's unlit, and the placement, each cancel and a drag released where nothing takes it all leave no cell lit | Gate | G12, `Q24`=a, `Q124`=a, `GAP-005`=a, R6 | S16 |
 | 6.12 | The highlight lights the FACE and not the pips | `TestPixels`: a printed `CardVisual`, its face and its rank/suit/stamp/art shot a layer at a time, plain and under each of the two marks | the face's mean rises in EVERY channel and equals the plain face times an equal-channel multiplier within tolerance, so no channel falls and no colour is cast; the pips are byte-identical under both marks; two plain shots are byte-identical, which is what makes that comparison mean anything | Gate | G12, E6, `Q249`, `GAP-011`=a, R6 | close |
 
 ## 7. Automatic end — chart J
@@ -187,7 +187,7 @@ shows, or say UNVERIFIED.
 | 9.8 | The map: name popup above a node, everything else in the sidebar | K2, K3 | S23 |
 | 9.9 | A pack's preview card picked out of its grid: the card's own name and preview in the sidebar, with the way back up beside them | K9, `GAP-010`=c | S24 |
 | 9.10 | The outcome screen: Continue and Undo side by side, both clear of the container, Continue wearing the focus, and the HUD's own Undo still up | J13, `GAP-009`=b | S24 |
-| 9.11 | A held card's legal cells TINTED on the board, the focused card glowing, every other card unchanged from before the shader honoured `modulate` | G12, `Q249`, `GAP-011`=a | close |
+| 9.11 | A held card's legal cells brightened on the board, the focused card wearing the match rim on its outer outline and no brighter face, every other card unchanged | G12, `Q249`, `GAP-011`=a | close |
 
 ## 10. Deliberately NOT tested, and why
 

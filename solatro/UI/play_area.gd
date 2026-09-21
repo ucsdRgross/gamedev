@@ -8,6 +8,8 @@ signal card_dragged(data: CardData)
 signal card_dropped(data: CardData)
 ## A second press paired with the first one into a tap on this card.
 signal card_tapped(data: CardData)
+## The drag's release landed on nothing that takes the card, so the player has dropped it.
+signal hand_released
 ## A card is highlighted: its `InfoEntry` for the wall's one container.
 signal info_requested(entry: InfoEntry)
 
@@ -1691,12 +1693,15 @@ func _consume_as_card_release(button: InputEventMouseButton) -> bool:
 	return true
 
 # The release places onto whatever the board offers under it, and the board answers whether that
-# is legal. Over bare board, over the container or off the window nothing is under it at all, and a
-# release that places nothing lets the card go the way a cancel does.
+# is legal. Over bare board, over the container or off the window nothing is under it at all, so the
+# card is simply let go -- an ACT by the player, unlike a cancel, which is why the view is told.
 func _release_places(at: Vector2) -> void:
 	var target := _card_control_at(at)
-	if target: _emit_if_played(card_dropped, ui_data[target])
-	else: ungrab_cards()
+	if target:
+		_emit_if_played(card_dropped, ui_data[target])
+		return
+	ungrab_cards()
+	hand_released.emit()
 
 ## Nothing tracks the cursor until the next drag: a held card stays held and lifted, and a drag still waiting on its grab no longer promises one.
 func stop_following() -> void:
@@ -1910,12 +1915,20 @@ func return_focus_to_board() -> void:
 # A pad player needs a control to move from with nothing in hand: the selected grid's origin cell,
 # the cell the overview's arrow selection lands on. A card the player is holding takes it instead.
 # It is a rest, not a highlight -- it publishes no description.
+
+# ⚠ A BOARD CAN OFFER NOTHING TO REST ON, and then there is nothing to do. `_cell_focus_control`
+# answers null with no current game, with a grid not built, and while `board_focus_locked` holds
+# every cell at FOCUS_NONE -- which both of GameView's callers reach, so it is answered once, here.
 func rest_focus_on_board() -> void:
 	flush_rebuild()
 	var held : Control = data_ui.get(selected_cards[0]) if selected_cards else null
-	_rest_focus_on(held if held else _cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0)))
+	var target : Control = held if held \
+			else _cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0))
+	if not target: return
+	_rest_focus_on(target)
 
 func _rest_focus_on(control: Control) -> void:
+	assert(control, "a rest needs a control; rest_focus_on_board answers the empty board")
 	_focus_is_resting = true
 	control.grab_focus()
 	_focus_is_resting = false

@@ -115,6 +115,7 @@ static var card_jump_rise_play : float:
 	get():
 		return CARD_JUMP_RISE * settings().card_scale
 
+## The board is pointing at this card -- drawn as the card's OUTER rim, never as a brighter face.
 var focused : bool = false:
 	set(value):
 		focused = value
@@ -125,16 +126,15 @@ var on_drop_map : bool = false:
 		on_drop_map = value
 		_apply_marks()
 
-# ⚠ THE ONE PLACE THE HIGHLIGHT IS WRITTEN, and it lands on the FACE ALONE: the rank, suit, stamp and
-# art keep their own colours. Both marks brighten one face by the one glow, so it is derived from
-# both -- either setter alone makes the last one win.
+# ⚠ THE ONE PLACE THE TWO BOARD MARKS ARE WRITTEN, AND THEY LAND ON DIFFERENT THINGS. The drop map
+# brightens the FACE alone, the rank, suit, stamp and art keeping their own colours; the focus takes
+# the card's OUTER rim, in the ink a matching mark wears, so a card that is both is outlined once.
 func _apply_marks() -> void:
 	if not is_node_ready():
 		await ready
-	var glow := 1.0
-	if on_drop_map: glow *= settings().highlight_glow
-	if focused: glow *= settings().highlight_glow
-	CardOutline.set_brightness(type, glow)
+	CardOutline.set_brightness(type, settings().highlight_glow if on_drop_map else 1.0)
+	CardOutline.set_rim(type, _match_style(PaletteDB.ROLES.match_rim) if focused
+			else outline_style(), CARD_SIZE)
 
 @export var data : CardData:
 	set(value):
@@ -285,12 +285,12 @@ func _hold_mark_back() -> void:
 # unauthored type answers with anyway.
 func _push_outline_ink() -> void:
 	var style := outline_style()
-	CardOutline.set_rim(type, style, CARD_SIZE)
 	CardOutline.set_rim(rank, _rim_of(MarkMatch.Property.RANK, style), CARD_SIZE)
 	CardOutline.set_rim(suit, _rim_of(MarkMatch.Property.SUIT, style), CARD_SIZE)
 	CardOutline.set_rim(art, _rim_of(MarkMatch.Property.TALENT, style), CARD_SIZE)
 	CardOutline.set_rim(stamp, _rim_of(MarkMatch.Property.HAT, style), CARD_SIZE)
-#The polygons are POOLED, so a rebind inherits whatever brightening the last card left on them.
+#The polygons are POOLED, so a rebind inherits whatever mark the last card left on them -- and the
+#outer rim is the focus mark's, so this is also where the card's own ink is put back.
 	_apply_marks()
 	_push_alert()
 

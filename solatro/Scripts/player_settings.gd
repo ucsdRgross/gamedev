@@ -601,8 +601,8 @@ enum SeparationMode {
 		entrance_flip_stagger = maxf(value, 0.0)
 		settings_changed.emit()
 
-## How far toward white a card back the board is pointing at is lifted -- a cell the held card may land in, or the focused card; 1.0 marks nothing.
-@export var highlight_glow : float = 1.45:
+## How far toward white the back of a cell the held card may land in is lifted; 1.0 marks nothing.
+@export var highlight_glow : float = 1.825:
 	set(value):
 		highlight_glow = maxf(value, 1.0)
 		settings_changed.emit()

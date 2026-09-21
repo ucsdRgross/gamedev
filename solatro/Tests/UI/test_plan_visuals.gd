@@ -49,6 +49,8 @@ func _ready() -> void:
 	await test_a_committed_show_lights_only_the_grid_it_can_place_in()
 	await test_the_highlight_lights_elements_rather_than_tinting_the_cell()
 	await test_a_card_agreeing_with_nothing_says_nothing()
+	behavior_section("THE FOCUS IS THE CARD'S OUTER RIM, NOT A BRIGHTER FACE")
+	await test_the_focus_draws_the_outer_rim_and_leaves_the_face_alone()
 	behavior_section("A LANDED CARD WEARS THE ACTIVATED RIM UNTIL UNDO")
 	await test_a_landing_that_matched_activates_the_elements_that_agreed()
 	behavior_section("EVERY SHIMMER ON THE BOARD DRIFTS TOGETHER")
@@ -972,9 +974,9 @@ func test_a_committed_show_lights_only_the_grid_it_can_place_in() -> void:
 # A tint would be `modulate`, which reaches every child -- so it would also tint whatever is
 # stacked on the mark. Each agreeing element takes its own rim instead.
 
-# The drop map and the focus glow DO brighten the cell's face, through CardVisual.on_drop_map and
-# focused, and a held card makes this cell legal; the claim is that the MATCH added nothing on top
-# of those two -- no tint on the control, no modulate anywhere, no brightening the two do not explain.
+# The drop map DOES brighten the cell's face, through CardVisual.on_drop_map, and a held card makes
+# this cell legal; the claim is that the MATCH added nothing on top of it -- no tint on the control,
+# no modulate anywhere, no brightening the drop map does not explain.
 func test_the_highlight_lights_elements_rather_than_tinting_the_cell() -> void:
 	var visual := mark_visual(rank_cell)
 	var control : Control = pa.data_ui[game.state.cell_type_at(rank_cell)]
@@ -997,14 +999,13 @@ func test_the_highlight_lights_elements_rather_than_tinting_the_cell() -> void:
 	check(uniform_of(visual.type, &"u_outline_width") == 0,
 			"TP-64: the cell frame under them stays rimless, so the mark still reads as a mark")
 	var explained : float = PlayArea.settings().highlight_glow
-	if visual.focused: explained *= PlayArea.settings().highlight_glow
 	var face := TestGridFixtures.brightness_of(visual.type)
 	check(control.modulate == control_was
 			and visual.modulate == Color.WHITE
 			and visual.on_drop_map
 			and is_equal_approx(face, explained),
 			"TP-64: the match lit nothing -- the control is untouched, no modulate is written, and "
-			+ "the face's brightening is the drop map and the focus glow, nothing else",
+			+ "the face's brightening is the drop map alone, nothing else",
 			"%s / %s / %f" % [str(control.modulate), str(visual.modulate), face])
 	var pips : Array[float] = []
 	var pip_lit := 0
@@ -1044,6 +1045,44 @@ func test_a_card_agreeing_with_nothing_says_nothing() -> void:
 			"TP-65: and holding a card over it adds no node to the view -- no popup, no label",
 			"%d before, %d held" % [before, descendants(view)])
 	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
+
+# ==============================================================================
+# TP-66 -- the focus is the card's OUTER rim, never a brighter face
+# ==============================================================================
+
+# Driven through the board's own focus route rather than the field: a control taking the focus is
+# where a click, the arrows and the pad all end. The rim it asks for is the one a matching element
+# wears, so a card that is focused AND matched carries one look and not two.
+func test_the_focus_draws_the_outer_rim_and_leaves_the_face_alone() -> void:
+	var mark : CardData = game.state.cell_type_at(miss_cell)
+	var visual := mark_visual(miss_cell)
+	var restore_to := pa.focused_control
+	var own_ink := uniform_of(visual.type, &"u_outline_index")
+	var face_was := TestGridFixtures.brightness_of(visual.type)
+	check(own_ink != PaletteDB.ROLES.match_rim,
+			"TP-66: precondition: unfocused, the outer rim wears the card's own ink",
+			"ink %d" % own_ink)
+	pa.data_ui[mark].grab_focus()
+	await get_tree().process_frame
+	check(visual.focused, "TP-66: precondition: the board's focus route marked this card")
+	check(uniform_of(visual.type, &"u_outline_index") == PaletteDB.ROLES.match_rim
+			and uniform_of(visual.type, &"u_outline_width") == CardOutline.STYLE.width,
+			"TP-66: the focus is drawn as the card's OUTER rim, in the ink and at the width a "
+			+ "matching mark wears -- no difference between the two",
+			"ink %d, width %d" % [uniform_of(visual.type, &"u_outline_index"),
+			uniform_of(visual.type, &"u_outline_width")])
+	check(is_equal_approx(TestGridFixtures.brightness_of(visual.type), face_was),
+			"TP-66: ...and the face is drawn at exactly the brightness it had unfocused",
+			"%f, was %f" % [TestGridFixtures.brightness_of(visual.type), face_was])
+	check(rimmed_properties(visual, PaletteDB.ROLES.match_rim) == 0,
+			"TP-66: ...and no printed element took a rim: the focus is the outer outline alone",
+			str(rimmed_properties(visual, PaletteDB.ROLES.match_rim)))
+	if is_instance_valid(restore_to): restore_to.grab_focus()
+	await get_tree().process_frame
+	check(uniform_of(visual.type, &"u_outline_index") == own_ink
+			and not visual.focused,
+			"TP-66: the focus leaving puts the card's own ink back on the outer rim",
+			"ink %d, was %d" % [uniform_of(visual.type, &"u_outline_index"), own_ink])
 
 # ==============================================================================
 # TP-83 -- the landing feedback, derived and un-derived

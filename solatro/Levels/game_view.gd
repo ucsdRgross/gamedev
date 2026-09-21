@@ -115,6 +115,7 @@ func _ready() -> void:
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.card_dragged.connect(_pick_up)
 	play_area.card_dropped.connect(_on_card_dropped)
+	play_area.hand_released.connect(_finish_with_the_card)
 	play_area.card_tapped.connect(_on_card_tapped)
 	play_area.info_requested.connect(_relay_info_requested)
 	play_area.highlight_cleared.connect(hud_container.return_to_lock)
@@ -515,11 +516,12 @@ func _on_data_selected(data: CardData) -> void:
 	await _pick_up(data)
 
 # THE DRAG'S RELEASE IS ANOTHER WAY TO REACH THE SAME PLACEMENT, and nothing downstream can tell
-# which route was taken. A release the board refuses lets the card go instead, the way a cancel
-# does: only a release over a cell that takes it ends with anything in hand.
+# which route was taken. A release the board refuses lets the card go instead: the player ACTED with
+# it either way, so either way the card is finished with.
 func _on_card_dropped(data: CardData) -> void:
 	if game.processing or not await _place_held_onto(data):
 		play_area.ungrab_cards()
+		_finish_with_the_card()
 
 # A TAP UNDOES THE GRAB THE PRESS BEFORE IT MADE: the card goes back to its slot. Then the board
 # hears the tap, which is all it does in v1 -- no shipped card listens for it.
@@ -527,11 +529,21 @@ func _on_card_tapped(data: CardData) -> void:
 	play_area.ungrab_cards()
 	await game.run_all_mods(&"on_card_tapped", data)
 
-# A landed placement finishes the interaction: the container goes back to the HUD.
+# A landed placement finishes the interaction.
 func _place_held_onto(data: CardData) -> bool:
 	if not await game.try_place(play_area.selected_cards, data): return false
-	hud_container.dismiss_description()
+	_finish_with_the_card()
 	return true
+
+# THE PLAYER ACTED WITH THE CARD, so they are done reading it: the description goes back to the HUD,
+# which puts End, Undo and Marks back within reach, and the card gives up the focus that outlines it.
+# A cancel is not an act -- it keeps both, and closes the description on its own second press.
+
+# ⚠ The placement that reaches the goal ends the show before `try_place` returns, so this can run
+# with no board left to rest on. `rest_focus_on_board` owns that answer for every caller.
+func _finish_with_the_card() -> void:
+	hud_container.dismiss_description()
+	play_area.rest_focus_on_board()
 
 # THE ONE PICKUP ROUTE: a click's last resort and a drag's first act. A card no rule grabs leaves
 # the hand exactly as it was, and drops the drag's promise that the grab it asked for would follow

@@ -68,7 +68,7 @@ func _ready() -> void:
 	await test_hoop_halves_reassemble()
 	await test_one_pixel_size_for_all_art()
 	await test_effects_take_their_host_modulate()
-	await test_the_marks_brighten_the_face_and_not_the_pips()
+	await test_the_legal_cell_lights_the_face_and_the_focus_lights_the_rim()
 	await test_balls_alternate_directions()
 	await test_the_card_mask_is_the_card_the_player_sees()
 	check_all_tests_registered()
@@ -823,25 +823,17 @@ func _check_directions_split() -> void:
 # into COLOR before the fragment function, so an FX shader that OVERWRITES COLOR stops anything the
 # host did to its colour at the art. That multiply is what makes a prop's exit fade carry its flames.
 
-# Stated as pixels: each effect twice, once plain and once under the card's own highlight modulate,
-# with the highlighted one required to come out BRIGHTER. Alpha the same way — a halved modulate
-# means less coverage, the fade half of the same mechanism.
-
-# MEAN, not peak: both effects already reach near-white at their hottest and an 8-bit target clamps
-# there, so the peak barely moves under a highlight even when everything else does.
+# Stated as pixels through the ALPHA, because the exit fade is the one thing that writes a host
+# modulate: the board's own marks are a shader uniform on the card's face and an outer rim, neither
+# of them a modulate, so a brightening arm here would assert a path nothing in the game takes.
 func test_effects_take_their_host_modulate() -> void:
-	behavior_section("EFFECTS FOLLOW THEIR HOST'S MODULATE (focus highlight, fade)")
-	var lift : float = PlayArea.settings().highlight_glow
-	var highlight := Color(lift, lift, lift)
+	behavior_section("EFFECTS FOLLOW THEIR HOST'S MODULATE (the exit fade)")
 	for kind : String in ["fire", "balls"] as Array[String]:
 		var plain := await _shoot_modulated(kind, Color.WHITE)
-		var lit := await _shoot_modulated(kind, highlight)
 		var area := Rect2i(Vector2i.ZERO, plain.get_size())
-		var plain_lum := _mean_luminance(plain, area)
-		var lit_lum := _mean_luminance(lit, area)
-		check(plain_lum > 0.0 and lit_lum > plain_lum * 1.05,
-				"%s brightens when its host is highlighted" % kind,
-				"mean luminance %.3f plain vs %.3f highlighted" % [plain_lum, lit_lum])
+		check(_mean_luminance(plain, area) > 0.0,
+				"%s drew something at full alpha to compare against" % kind,
+				"mean luminance %.3f" % _mean_luminance(plain, area))
 		var faded := await _shoot_modulated(kind, Color(1.0, 1.0, 1.0, 0.35))
 		var solid_px := PixelProbe.count(plain, area, PixelProbe.is_opaque)
 		var faded_px := PixelProbe.count(faded, area, PixelProbe.is_opaque)
@@ -873,11 +865,11 @@ func _shoot_modulated(kind: String, tint: Color) -> Image:
 	_park(att, 0.13)
 	return await _shoot()
 
-# The two board marks -- the legal cell and the focus -- brighten the card's FACE and nothing else.
-# Measured as pixels because the face and the pips share one node: every node-level reading of the
-# exclusion reads what was written, not what was drawn. The 8-bit clamp is applied per pixel first.
-func test_the_marks_brighten_the_face_and_not_the_pips() -> void:
-	behavior_section("THE BOARD'S MARKS LIGHT THE CARD'S FACE ALONE (legal cell, focus glow)")
+# THE TWO BOARD MARKS LAND ON DIFFERENT PIXELS: the legal cell brightens the card's FACE, the focus
+# draws its OUTER RIM. Measured as pixels because face, pips and rim share one node, so a node-level
+# reading reads what was written and not what was drawn; the 8-bit clamp is applied per pixel first.
+func test_the_legal_cell_lights_the_face_and_the_focus_lights_the_rim() -> void:
+	behavior_section("THE LEGAL CELL LIGHTS THE FACE, THE FOCUS LIGHTS THE OUTER RIM")
 	var plain_face := await _shoot_card(false, false, true)
 	var area := Rect2i(Vector2i.ZERO, plain_face.get_size())
 	var plain_mean := _mean_colour(plain_face, area)
@@ -892,28 +884,67 @@ func test_the_marks_brighten_the_face_and_not_the_pips() -> void:
 	check(_mean_colour(plain_pips, area).a > 0.0,
 			"the rank, suit, stamp and art drew something of their own to compare against",
 			"no opaque pixel on the stage")
-	var lit_means : Array[Color] = []
-	for legal : bool in [true, false] as Array[bool]:
-		var mark := "the legal-cell highlight" if legal else "the focus glow"
-		var glow : float = PlayArea.settings().highlight_glow
-		var lit_mean := _mean_colour(await _shoot_card(legal, not legal, true), area)
-		lit_means.append(lit_mean)
-		check(lit_mean.r > plain_mean.r and lit_mean.g > plain_mean.g and lit_mean.b > plain_mean.b,
-				"%s lifts the card's face in EVERY channel -- no channel goes down" % mark,
-				"plain %s vs lit %s" % [plain_mean, lit_mean])
-		var predicted := _mean_colour(plain_face, area, Color(glow, glow, glow))
-		check(_channels_within(lit_mean, predicted, PIXEL_TOLERANCE),
-				"...by an EQUAL-CHANNEL multiplier, channel by channel, so %s casts no colour" % mark,
-				"lit %s, predicted from plain %s at x%.3f" % [lit_mean, predicted, glow])
-		var lit_pips := await _shoot_card(legal, not legal, false)
-		check(lit_pips.get_data() == plain_pips.get_data(),
-				"...and the rank, suit, stamp and art are byte-identical under %s" % mark,
-				"%d bytes differ" % _bytes_differing(lit_pips.get_data(), plain_pips.get_data()))
-#ONE GLOW, read off the pixels rather than the uniform: the drop map and the focus lift the same
-#face by the same amount, so the two lit faces are the same face.
-	check(_channels_within(lit_means[0], lit_means[1], PIXEL_TOLERANCE),
-			"the legal-cell highlight and the focus glow brighten the face by the SAME multiplier",
-			"legal %s vs focused %s" % [lit_means[0], lit_means[1]])
+
+	var glow : float = PlayArea.settings().highlight_glow
+	var legal_face := await _shoot_card(true, false, true)
+	var legal_mean := _mean_colour(legal_face, area)
+	check(legal_mean.r > plain_mean.r and legal_mean.g > plain_mean.g
+			and legal_mean.b > plain_mean.b,
+			"the legal-cell highlight lifts the card's face in EVERY channel -- no channel goes down",
+			"plain %s vs lit %s" % [plain_mean, legal_mean])
+	var predicted := _mean_colour(plain_face, area, Color(glow, glow, glow))
+	check(_channels_within(legal_mean, predicted, PIXEL_TOLERANCE),
+			"...by an EQUAL-CHANNEL multiplier, channel by channel, so it casts no colour",
+			"lit %s, predicted from plain %s at x%.3f" % [legal_mean, predicted, glow])
+	var legal_pips := await _shoot_card(true, false, false)
+	check(legal_pips.get_data() == plain_pips.get_data(),
+			"...and the rank, suit, stamp and art are byte-identical under it",
+			"%d bytes differ" % _bytes_differing(legal_pips.get_data(), plain_pips.get_data()))
+
+#THE RIM IS FOUND BY ITS INK, NOT ITS GEOMETRY: the card's corners are rounded, so the rim curves
+#back inside any box drawn around the face. Every pixel the focus changes must come out in the ink a
+#matching mark wears -- a face lifted toward white would land on no palette entry at all.
+	var match_ink := PaletteDB.color(PaletteDB.ROLES.match_rim)
+	var focused_face := await _shoot_card(false, true, true)
+	var changed := _pixels_differing(focused_face, plain_face, area)
+	var inked := _repainted(plain_face, focused_face, area, match_ink)
+	check(changed > 0 and inked == changed,
+			"the focus draws the card's OUTER RIM in the ink a matching mark wears, and changes "
+			+ "nothing else -- the face it used to brighten is left alone",
+			"%d of %d changed pixels came out in the match ink" % [inked, changed])
+	var focused_pips := await _shoot_card(false, true, false)
+	check(focused_pips.get_data() == plain_pips.get_data(),
+			"...and the rank, suit, stamp and art are byte-identical under it too",
+			"%d bytes differ" % _bytes_differing(focused_pips.get_data(), plain_pips.get_data()))
+
+#BOTH MARKS AT ONCE ARE THE TWO MARKS, NOT ONE SQUARED: the face is exactly the legal cell's and the
+#rim is exactly the focus's, so a cell that is legal AND focused shows nothing a third reading would.
+#The inks are read under the glow, the brightening reaching the rim as it reaches everything else.
+	var both := await _shoot_card(true, true, true)
+	var changed_lit := _pixels_differing(both, legal_face, area)
+	var lit_ink := (match_ink * Color(glow, glow, glow)).clamp()
+	var inked_lit := _repainted(legal_face, both, area, lit_ink)
+	check(changed_lit > 0 and inked_lit == changed_lit,
+			"a cell that is legal AND focused draws the legal cell's face untouched with the "
+			+ "focus's rim over it -- one glow on the face, never its square",
+			"%d of %d changed pixels came out in the lit match ink" % [inked_lit, changed_lit])
+
+## Pixels of `area` the two images disagree on that come out `ink` in `after`.
+func _repainted(before: Image, after: Image, area: Rect2i, ink: Color) -> int:
+	var n := 0
+	for y : int in range(area.position.y, area.end.y):
+		for x : int in range(area.position.x, area.end.x):
+			if before.get_pixel(x, y) == after.get_pixel(x, y): continue
+			if _channels_within(after.get_pixel(x, y), ink, PIXEL_TOLERANCE): n += 1
+	return n
+
+## How many pixels of `area` the two images disagree on.
+func _pixels_differing(a: Image, b: Image, area: Rect2i) -> int:
+	var n := 0
+	for y : int in range(area.position.y, area.end.y):
+		for x : int in range(area.position.x, area.end.x):
+			if a.get_pixel(x, y) != b.get_pixel(x, y): n += 1
+	return n
 
 # The card as CardVisual draws it for the player, under one mark, with either its FACE or the rank,
 # suit, stamp and art printed over it left showing -- they share one node, so the exclusion is only

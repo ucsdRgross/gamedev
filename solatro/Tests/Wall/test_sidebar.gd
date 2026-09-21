@@ -5025,13 +5025,20 @@ func test_the_legal_cell_highlight_follows_what_a_placement_accepts() -> void:
 			var refused_cell := _zone_card_of(_play_area.ui_data[refused])
 			var accepted := await _board_accepts(held, cell)
 			check(accepted, "the board takes the held card onto that cell (6.11)")
-			check(is_equal_approx(_glow_of(zone_card),
-					_drawn(_highlight_glow(), zone_card)),
+			check(is_equal_approx(_glow_of(zone_card), _highlight_glow()),
 					"...and the cell's zone card is DRAWN with the legal-cell brightening (6.11, G12)",
 					str(_glow_of(zone_card)))
-			check(is_equal_approx(_glow_of(refused_cell), _drawn(1.0, refused_cell)),
+			check(is_equal_approx(_glow_of(refused_cell), 1.0),
 					"a cell the board refuses is drawn unlit (6.11, G12)",
 					str(_glow_of(refused_cell)))
+			cell.grab_focus()
+			await get_tree().process_frame
+			check(_play_area.data_card[zone_card].focused
+					and is_equal_approx(_glow_of(zone_card), _highlight_glow()),
+					"a cell that is legal AND focused is drawn at that ONE glow and never its "
+					+ "square: the focus is an outline and brightens nothing (6.11, G12)",
+					"focused %s, glow %f" % [str(_play_area.data_card[zone_card].focused),
+					_glow_of(zone_card)])
 			var marked_before := TestGridFixtures.lit_cell_count(_play_area)
 			await _click_card(cell)
 			await _hoverable_card_controls()
@@ -5044,7 +5051,7 @@ func test_the_legal_cell_highlight_follows_what_a_placement_accepts() -> void:
 			var now_held := await _grab_a_card_to_place()
 			var still_accepted := await _board_accepts(now_held, _play_area.data_ui[held[0]])
 			check(not still_accepted, "the filled cell takes nothing more (6.11)")
-			check(is_equal_approx(_glow_of(zone_card), _drawn(1.0, zone_card)),
+			check(is_equal_approx(_glow_of(zone_card), 1.0),
 					"...so the cell that was legal has lost the highlight (6.11, G12)",
 					str(_glow_of(zone_card)))
 			var marked_after := TestGridFixtures.lit_cell_count(_play_area)
@@ -5070,7 +5077,7 @@ func test_a_direct_rebuild_re_sweeps_the_drop_map() -> void:
 			swept = swept and legal in _play_area._legal_cells
 		check(swept, "a direct rebuild re-swept the drop map to what the board accepts (6.11, G12)",
 				"%d mapped, %d legal" % [_play_area._legal_cells.size(), expected.size()])
-		check(is_equal_approx(_glow_of(zone_card), _drawn(1.0, zone_card)),
+		check(is_equal_approx(_glow_of(zone_card), 1.0),
 				"...so the filled cell is drawn unlit (6.11, G12)", str(_glow_of(zone_card)))
 	await _end_main_fixture()
 
@@ -5092,11 +5099,6 @@ func _fill_a_cell_from_the_entrance(cell: int) -> CardData:
 ## The brightening this card's face is DRAWN with -- the uniform the shader gets, never the field.
 func _glow_of(data: CardData) -> float:
 	return TestGridFixtures.brightness_of(_play_area.data_card[data].type)
-
-## What `mark` looks like drawn on this card: under the focus glow if the card holds the focus.
-func _drawn(mark: float, data: CardData) -> float:
-	var visual : CardVisual = _play_area.data_card[data]
-	return mark * PlayArea.settings().highlight_glow if visual.focused else mark
 
 func _highlight_glow() -> float:
 	return PlayArea.settings().highlight_glow

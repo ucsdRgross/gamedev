@@ -60,6 +60,8 @@ func _ready() -> void:
 	behavior_section("RELEASES THE BOARD DOES NOT OWN")
 	await test_a_release_over_the_container_drops_the_card()
 	await test_a_release_away_from_the_cells_drops_the_card()
+	await test_an_act_with_the_card_ends_its_lock_and_its_focus()
+	await test_a_rebuild_under_the_outcome_overlay_rests_on_nothing()
 	await test_a_cancel_mid_drag_leaves_nothing_for_the_release()
 	await test_an_escape_mid_drag_leaves_nothing_for_the_release()
 	await test_a_touch_tap_selects_and_lifts_without_placing()
@@ -606,7 +608,7 @@ func _spy_on_drops() -> Array[CardData]:
 
 # 5.3 (E17): only a cell that takes the card ends a drag holding anything. A
 # release over a cell the board refuses lets it go: the hand empties, the card lies flat in its
-# slot and the drop map goes out, exactly as a cancel leaves them.
+# slot and the drop map goes out.
 func test_a_release_on_an_illegal_cell_drops_the_card() -> void:
 	await _start_fixture()
 	await _drag_a_card_into_the_grid()
@@ -723,6 +725,108 @@ func test_a_release_away_from_the_cells_drops_the_card() -> void:
 				"...and the drop map is out over %s" % places[i],
 				str(TestGridFixtures.lit_cell_count(_pa)))
 	await _end_fixture()
+
+# A CARD THE PLAYER ACTED WITH IS FINISHED WITH, and a cancelled one is not. Both halves are pinned
+# here so they cannot drift together: the drop and the placement give up the description lock the
+# click made and the focus that outlines the card, and the cancel keeps both for its second press.
+func test_an_act_with_the_card_ends_its_lock_and_its_focus() -> void:
+	await _start_fixture()
+	var lifted := await _lift_the_leftmost()
+	check(lifted != null and _container.is_locked() and _is_outlined(lifted),
+			"a click lifts the card, locks its description and outlines it",
+			_lock_str(lifted))
+	var cell := await _legal_cell_control(lifted) if lifted else null
+	if lifted and cell:
+		await _drag(_card_centre(lifted), Vector2(BARE_BOARD_CORNER_PX, BARE_BOARD_CORNER_PX))
+		check(_pa.selected_cards.is_empty() and not _container.is_locked()
+				and not _container.showing_description(),
+				"a DROP gives the sidebar back to the HUD: the lock is gone and no description is up",
+				_lock_str(lifted))
+		check(not _is_outlined(lifted),
+				"...and the dropped card is no longer outlined", _lock_str(lifted))
+		check(_pa.focused_control == _resting_focus_control()
+				and _picture_viewport.gui_get_focus_owner() == _resting_focus_control(),
+				"...with the focus rested on the selected grid's origin cell, inside the board's "
+				+ "own viewport, where a pad can move on from",
+				"%s, owner %s" % [str(_pa.focused_control),
+				str(_picture_viewport.gui_get_focus_owner())])
+
+		var again := await _lift_the_leftmost()
+		var target := await _legal_cell_control(again) if again else null
+		check(again != null and target != null and _container.is_locked(),
+				"a second card is lifted, locked and aimed at a cell that takes it",
+				_lock_str(again))
+		if again and target:
+			await _drag(_control_centre(target), _control_centre(target))
+			check(_placed_cards().has(again) and not _container.is_locked()
+					and not _container.showing_description(),
+					"a PLACEMENT does the same: the card lands and the HUD is back",
+					_lock_str(again))
+			check(_pa.focused_control == _resting_focus_control()
+					and _picture_viewport.gui_get_focus_owner() == _resting_focus_control(),
+					"...and the focus is rested on the origin cell, off the card that was placed",
+					"%s, owner %s" % [str(_pa.focused_control),
+					str(_picture_viewport.gui_get_focus_owner())])
+
+		var cancelled := await _lift_the_leftmost()
+		if cancelled:
+			await _right_click(_card_centre(cancelled), false)
+			check(_pa.selected_cards.is_empty() and _container.is_locked()
+					and _container.showing_description(),
+					"a CANCEL is not an act: the first press only releases the card and the "
+					+ "description it was read against is still up",
+					_lock_str(cancelled))
+	await _end_fixture()
+
+# A RESOLVED SHOW HAS NO BOARD TO REST ON: the overlay's `disable_board_focus` holds every cell at
+# FOCUS_NONE, the one control `_cell_focus_control` will not hand back. A settings write rebuilds
+# the board under it -- the setter announces to EVERY live board -- and that rebuild asks again.
+func test_a_rebuild_under_the_outcome_overlay_rests_on_nothing() -> void:
+	await _start_fixture()
+	await _drag_a_card_into_the_grid()
+	_game.end_show()
+	await _frames(8)
+	check(_pa.board_focus_locked,
+			"the resolved show disabled the board's focus", str(_pa.board_focus_locked))
+	check(_pa._cell_focus_control(BoardCoord.new(_pa.selected_grid, 0, 0, 0)) == null
+			and _pa.selected_cards.is_empty(),
+			"...so the selected grid's origin cell offers nothing to rest on, and no held card "
+			+ "stands in for it", _hand_str())
+	var rested_on := _picture_viewport.gui_get_focus_owner()
+	var slide : float = SettingsManager.settings.container_slide_duration
+	SettingsManager.settings.container_slide_duration = slide
+	await _frames(8)
+	check(_picture_viewport.gui_get_focus_owner() == rested_on,
+			"the rebuild that settings write causes leaves the focus where the outcome put it",
+			"%s, was %s" % [str(_picture_viewport.gui_get_focus_owner()), str(rested_on)])
+	_pa.rest_focus_on_board()
+	check(_picture_viewport.gui_get_focus_owner() == rested_on,
+			"...and asking for the rest outright is the same nothing, by the one route both "
+			+ "callers take",
+			"%s, was %s" % [str(_picture_viewport.gui_get_focus_owner()), str(rested_on)])
+	_game.undo()
+	await _frames(8)
+	check(not _game.state.show_ended and not _pa.board_focus_locked,
+			"the undo takes the overlay back down, so the board has cells to rest on again and the "
+			+ "fixture hands the show on the way it found it",
+			"ended %s, locked %s" % [str(_game.state.show_ended), str(_pa.board_focus_locked)])
+	await _end_fixture()
+
+## Where a hand with nothing in it rests the board focus: the selected grid's origin cell.
+func _resting_focus_control() -> Control:
+	return _pa._cell_focus_control(BoardCoord.new(_pa.selected_grid, 0, 0, 0))
+
+## Is this card drawn wearing the focus outline -- the mark itself, not the field behind it?
+func _is_outlined(data: CardData) -> bool:
+	var visual : CardVisual = _pa.data_card.get(data)
+	if not visual: return false
+	var mat := visual.type.material as ShaderMaterial
+	var ink : int = mat.get_shader_parameter(&"u_outline_index")
+	return ink == PaletteDB.ROLES.match_rim
+
+func _lock_str(data: CardData) -> String:
+	return "locked %s, showing %s, outlined %s, %s" % [str(_container.is_locked()),
+			str(_container.showing_description()), str(_is_outlined(data)), _hand_str()]
 
 # The second mouse button mid-drag: the release that closes the cancelled gesture must reach the
 # board with nothing to place, so no drop is ever reported for a card the player let go of.

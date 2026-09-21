@@ -411,9 +411,12 @@ history stored in forward orientation).
   two no-legal-placement loops and `PlayArea._sweep_legal_cells` all read it, through the same
   `on_can_place_stack` dispatch `try_place` asks. The sweep runs when the hand changes and once per
   rebuild from `set_card_zones` (every rebuild path, after the frame's mutations); an empty hand is
-  an empty map with no dispatch. The mark is `CardVisual.tint`, folded into `modulate` with the
-  focus glow by `_apply_marks`; `outline.gdshader` carries `modulate` through a varying written in
-  `vertex()`, since in `fragment()` `COLOR` is already vertex colour × TEXTURE (§4j).
+  an empty map with no dispatch. The mark is the shader's `u_brighten`
+  uniform, written by `CardVisual._apply_marks` onto the zone card's face polygon alone, so the
+  rank, suit, stamp and art printed over it keep their own colours and no board mark touches
+  `modulate` at all. The FOCUS is the other mark and is not a brightening: `_apply_marks` gives the
+  focused card's face polygon the rim a matching mark wears, so the board is seen to point at a card
+  by its OUTER OUTLINE.
 - **`GestureMetrics`** is the one home for gesture thresholds and touch-target size, each a
   fraction of the thing touched. No DPI and no millimetres anywhere: the reported density is wrong
   on multi-monitor Windows and on Android.

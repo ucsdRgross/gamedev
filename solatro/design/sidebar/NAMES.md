@@ -107,12 +107,15 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `PlayArea` | `func rest_focus_on_board() -> void` | The board rest: the card in hand, or the selected grid's origin cell — the control the overview's arrow selection lands on, and what a pad player steps from with nothing in hand (J13, `GAP-009`=b) |
 | `GameView` | `func _rest_the_board_focus() -> void` | Called wherever the board settles (`rebuild()`, the processing-false edge): rests the board focus only while NOTHING in the picture holds it, so it never takes the focus off the player |
 | `GameView` | `func _on_outcome_undo_pressed() -> void` | The outcome row's Undo: the shared `_on_undo_pressed`, then a board rest of the picture viewport's focus, which the HUD's Undo (a root-viewport press) must not do (J13, `GAP-009`=b) |
-| `TestGridFixtures` | `static func lit_cell_count(...) -> int` | Test support: the cells whose face is DRAWN at `highlight_glow`, or at its square where the cell also holds the focus — the one counter `TestSidebar`, `TestDragPlace` and the snapshot share |
+| `TestGridFixtures` | `static func lit_cell_count(...) -> int` | Test support: the cells whose face is DRAWN at `highlight_glow` — one expected value, the focus being an outline that brightens nothing — the one counter `TestSidebar`, `TestDragPlace` and the snapshot share |
 | `TestGridFixtures` | `static func leftmost_entrance_slot() -> int` | Test support: the leftmost Entrance slot holding a card, or -1, off the current game's state — the one query `TestSidebar` and `TestDragPlace` share |
 | `TestGridFixtures` | `static func brightness_of(poly: Polygon2D) -> float` | Test support: the `u_brighten` one card polygon is drawn at; an unset uniform reads back as the shader's 1.0 |
 | `PipSuit` | `func get_plural_str() -> String` | The suit's name in the plural, read by the card title alone ("King of Knives", and "Knives" for a card with a suit and no rank); every other surface, the suit's own description block included, names it through `get_str()` |
 | `CardOutline` | `static func set_brightness(poly: Polygon2D, brightness: float) -> void` | The per-element highlight channel: an equal-channel multiplier on this polygon's drawn colour, 1.0 unlit |
-| `CardVisual` | `var on_drop_map : bool` | This card's cell is one the held card may land in; with `focused`, the two marks `_apply_marks` brightens the face by |
+| `CardVisual` | `var on_drop_map : bool` | This card's cell is one the held card may land in — the one mark `_apply_marks` brightens the face by |
+| `CardVisual` | `var focused : bool` | The board is pointing at this card: `_apply_marks` draws it as the card's OUTER rim in the match ink, never as a brighter face |
+| `PlayArea` | `signal hand_released` | A drag's release landed on nothing that takes the card, so the player dropped it — `GameView._finish_with_the_card` |
+| `GameView` | `func _finish_with_the_card() -> void` | The player ACTED with the card (a placement, a drop): the description goes back to the HUD and the focus rests on the board. A cancel is not an act and reaches none of this |
 | `WorldMapController` | `static func node_screen_rect(node: WorldGraphNode) -> Rect2` | A map node's marker rect in the map viewport's coordinates |
 | `TestMainHost` | `static func mount(parent: TestSuite, host: Node, scene: PackedScene) -> Node`, `static func unmount(parent: TestSuite, node: Node) -> void` | Test support: record the tree's `paused` before a Wall mounts, write it back after it is freed |
 | `GameView` | `var _outcome_buttons : HBoxContainer` | The row the outcome's Continue and its own Undo sit in, centred on the win/lose screen and freed as one. The Undo button itself is a local: nothing keeps it, and a test finds it by its label (J13, `GAP-009`=b) |
@@ -145,7 +148,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `card_drag_threshold` | `float` | `0.25` |
 | `touch_target_fraction` | `float` | `0.06` |
 | `entrance_flip_stagger` | `float` | `0.15` |
-| `highlight_glow` | `float` | `1.45` |
+| `highlight_glow` | `float` | `1.825` |
 
 **Removed:** `wall_info_mode`, `wall_info_card_width`, `wall_info_card_max_height`,
 `wall_info_card_overlap`, `wall_info_zoom_scale`, `wall_screen_popups`, `hud_width_fraction`,
