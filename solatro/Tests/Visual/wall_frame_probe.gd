@@ -47,6 +47,7 @@ func _ready() -> void:
 
 	await _shoot_the_slide_into_the_game()
 	await _grow_the_board()
+	await _report_the_pan_reach()
 	await _shoot_the_overview_pan()
 	await _shoot_the_aspects()
 	await _shoot_the_leave()
@@ -85,6 +86,44 @@ func _grow_the_board() -> void:
 	pa.flush_rebuild()
 	pa.open_show_view()
 	print("PROBE grew the board to ", view.game.state.grids.size(), " grids under ", g.name)
+	await _await_still()
+
+#What a pan that must keep the window INSIDE the picture has left to move, per grid count and per
+#window aspect: the picture's width against what the resting zoom already shows, beside the grid
+#step the board asks for.
+func _report_the_pan_reach() -> void:
+	var view : GameView = _main._pictures[&"game"].screen_root as GameView
+	var pa := _play_area()
+	var wp : WallPicture = _main._pictures[&"game"]
+	for count : int in [1, 2, 3]:
+		while view.game.state.grids.size() < count:
+			Board.add_grid(view.game.state, GridData.new())
+		while view.game.state.grids.size() > count:
+			Board.remove_grid(view.game.state, view.game.state.grids.size() - 1)
+		pa.flush_rebuild()
+		pa.open_show_view()
+		pa.open_zoomed_out()
+		await _await_still()
+		for size : Vector2i in [Vector2i(1152, 648), Vector2i(864, 648), Vector2i(1512, 648),
+				Vector2i(648, 900)]:
+			DisplayServer.window_set_size(size)
+			await get_tree().process_frame
+			await _await_still()
+			var window := get_viewport().get_visible_rect().size
+			var zoom := WallPicture.focused_scale(wp.rect.size, window,
+					SettingsManager.settings.wall_overfill_margin)
+			var shown := window.x / zoom
+			var slack := WallPicture.max_pan_px(wp.rect, window, SettingsManager.settings)
+			var pitch := pa.grid_pitch_px()
+			print("PROBE reach grids=%d window=%dx%d viewport=%s zoom=%.4f picture_w=%.1f shown_w=%.1f slack=%.1f pitch=%.1f steps_in_slack=%.2f"
+					% [count, size.x, size.y, window, zoom, wp.rect.size.x, shown, slack, pitch,
+					slack / maxf(pitch, 0.0001)])
+	DisplayServer.window_set_size(Vector2i(1152, 648))
+	await get_tree().process_frame
+	while view.game.state.grids.size() < GRID_COUNT:
+		Board.add_grid(view.game.state, GridData.new())
+	pa.flush_rebuild()
+	pa.open_show_view()
 	await _await_still()
 
 #The overview pan to the last end stop and the bounce past it: the camera steps inside a picture

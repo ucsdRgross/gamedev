@@ -57,6 +57,8 @@ func _ready() -> void:
 	behavior_section("PER-GRID CAMERA POSE")
 	test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_grid()
 	test_panned_state_is_the_offset_primitive_grid_state_delegates_to()
+	behavior_section("A PAN NEVER POSES THE CAMERA OFF ITS OWN PICTURE")
+	test_a_panned_pose_never_shows_past_the_picture()
 	behavior_section("THE SAVED PAN SNAPS TO A WHOLE GRID (S32, H19, Q173, Q179)")
 	test_snap_pan_to_grid_rounds_to_a_whole_step_and_clamps_into_the_board()
 	behavior_section("THE WALL EDITOR DRIVES EVERY KNOB IT SHOWS (TP-120, Q186=a)")
@@ -874,7 +876,10 @@ func test_a_second_repack_kills_the_first_ones_tween() -> void:
 # neutralisation that drops the offset term still fails here.
 func test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_grid() -> void:
 	var settings := SettingsManager.settings
-	var rect := PictureRect.new(&"probe", Vector2(1828.0, 342.5), Vector2(3656.0, 685.0),
+# ⚠ WIDE ENOUGH THAT THE POSES BELOW ARE LEGAL. `panned_state()` clamps a pan to what the picture
+# can still show, so a probe only just wider than the window would have every step below clamped
+# and this row would measure the clamp instead of the pitch it exists to measure.
+	var rect := PictureRect.new(&"probe", Vector2(2500.0, 342.5), Vector2(5000.0, 685.0),
 			Vector4.ZERO)
 	var window := Vector2(1152.0, 648.0)
 	var resting_grid := 1
@@ -914,7 +919,10 @@ func test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_
 # rather than a second, separately-maintained computation.
 func test_panned_state_is_the_offset_primitive_grid_state_delegates_to() -> void:
 	var settings := SettingsManager.settings
-	var rect := PictureRect.new(&"probe", Vector2(1828.0, 342.5), Vector2(3656.0, 685.0),
+# ⚠ WIDE ENOUGH THAT THE POSES BELOW ARE LEGAL. `panned_state()` clamps a pan to what the picture
+# can still show, so a probe only just wider than the window would have every step below clamped
+# and this row would measure the clamp instead of the pitch it exists to measure.
+	var rect := PictureRect.new(&"probe", Vector2(2500.0, 342.5), Vector2(5000.0, 685.0),
 			Vector4.ZERO)
 	var window := Vector2(1152.0, 648.0)
 	var pitch := PlayArea.grid_position_size_px(settings).x
@@ -1039,3 +1047,37 @@ func test_the_wall_editor_drives_every_knob_it_shows() -> void:
 	editor.queue_free()
 	await get_tree().process_frame
 	WallPicture.editor_settings = previous
+
+# Inside a picture the wall does not exist, so no pan may pose the camera where it would show. The
+# clamp is pure and every route reaches the camera through it, so each window shape it has to hold
+# for is asked of it directly -- a suite cannot resize the real window below the project minimum.
+func test_a_panned_pose_never_shows_past_the_picture() -> void:
+	var settings := SettingsManager.settings
+# The GAME picture's own geometry, the only one wide enough to pan inside.
+	var size := Vector2(PlayArea.game_picture_design_size(settings))
+	var rect := PictureRect.new(&"game", Vector2(788.0, -515.5), size, Vector4(24, 24, 24, 24))
+	var picture := Rect2(rect.centre - size * 0.5, size)
+	var pitch := PlayArea.grid_position_size_px(settings).x
+	var asked_any := false
+	for window : Vector2 in [Vector2(1152.0, 648.0), Vector2(1152.0, 864.0),
+			Vector2(1512.0, 648.0), Vector2(1152.0, 1599.0)]:
+		var reach := WallPicture.max_pan_px(rect, window, settings)
+		check(reach >= 0.0,
+				"at %dx%d the camera's room to pan is a real distance, never negative"
+				% [window.x, window.y], "reach %.2f px" % reach)
+		for asked : float in [-100000.0, -pitch * 3.0, -reach - 1.0, 0.0, reach + 1.0,
+				pitch * 3.0, 100000.0]:
+			asked_any = true
+			var state := WallPicture.panned_state(rect, window, settings, asked)
+			var visible := WallTransition.visible_rect(state["position"] as Vector2,
+					state["zoom"] as float, window)
+			check(visible.position.x >= picture.position.x - 0.5
+					and visible.position.y >= picture.position.y - 0.5
+					and visible.end.x <= picture.end.x + 0.5
+					and visible.end.y <= picture.end.y + 0.5,
+					"at %dx%d a pan of %.0f px still shows only the picture"
+					% [window.x, window.y, asked],
+					"window shows %s of picture %s (reach %.1f)" % [visible, picture, reach])
+	check(asked_any,
+			"sanity: the loops above really asked for some poses -- an empty sweep would assert "
+			+ "nothing at all")

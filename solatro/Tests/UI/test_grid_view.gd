@@ -21,6 +21,11 @@ const KEY_PERIOD := 46
 var _prev_run : RunState
 var _prev_save_info : RunState
 
+#How close two edges have to be, in WALL px, to count as touching rather than overlapping. Measured,
+#not chosen: the worst drift a real route leaves is 0.005 px (the one that failed a full gate), and
+#this is 20x that while still under a tenth of a screen pixel at the overview zoom.
+const EDGE_TOUCH_PX := 0.1
+
 func suite_name() -> String:
 	return "GRID VIEW"
 
@@ -65,6 +70,8 @@ func _ready() -> void:
 	await run_leaving_and_re_entering_restores_the_pan_test()
 	await run_a_resize_re_derives_the_pose_from_the_saved_pan_test()
 	await run_no_frame_is_drawn_at_an_overview_end_stop_test()
+	await run_the_window_never_leaves_the_picture_test()
+	run_an_edge_touch_is_not_an_intrusion_test()
 	finish()
 
 #Three empty 5x5 grids standing in a real GameView. Mirrors test_grid_layout._stand_up -- same
@@ -205,15 +212,16 @@ func _camera_cut_off_px(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> 
 	var r := _grid_world_rect(main, pa, gi)
 	return maxf(maxf(visible.position.x - r.position.x, 0.0), maxf(r.end.x - visible.end.x, 0.0))
 
-# Does grid `gi`'s cell block put any pixel inside the board view? ⚠ A TOUCHING EDGE IS NOT A PIXEL
-# INSIDE: isolating_grid_buffer_px lands the neighbour's edge EXACTLY on the view's edge, so the
-# compare is is_equal_approx -- a strict one flips on the last ULP (-393.9999 vs -394.0000).
+## Does grid `gi`'s cell block put anything inside the board view?
 func _camera_overlaps(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> bool:
-	var visible := _board_view_rect(main, camera)
-	var r := _grid_world_rect(main, pa, gi)
-	var past_left := r.end.x > visible.position.x and not is_equal_approx(r.end.x, visible.position.x)
-	var short_of_right := r.position.x < visible.end.x and not is_equal_approx(r.position.x, visible.end.x)
-	return past_left and short_of_right
+	return _rect_intrudes(_grid_world_rect(main, pa, gi), _board_view_rect(main, camera))
+
+#⚠ A TOUCHING EDGE IS NOT AN INTRUSION: isolating_grid_buffer_px lands a neighbour's edge EXACTLY
+#on the view's, so the two are compared with a tolerance. THE ONE PLACE it lives, so the live check
+#and the row that proves it cannot disagree about what "inside" means.
+func _rect_intrudes(r: Rect2, visible: Rect2) -> bool:
+	return r.end.x > visible.position.x + EDGE_TOUCH_PX \
+			and r.position.x < visible.end.x - EDGE_TOUCH_PX
 
 #What the camera shows OF THE BOARD'S OWN AREA -- its visible rect with the HUD's share taken off
 #the left.
@@ -1357,8 +1365,12 @@ func run_the_board_edge_bounces_test() -> void:
 
 	pa._unhandled_input(_action(&"grid_pan_right"))
 # ⚠ SIGNED, NOT ABSOLUTE. An absf() here is satisfied by a swing in EITHER direction, and a bounce
-# that throws the camera a whole grid INWARD before springing back passes it. A bounce means the
-# board is pushed FURTHER OUT and comes back, so each extreme is asserted on its own side of rest.
+# that throws the camera a whole grid INWARD before springing back passes it. Each extreme is
+# asserted on its own side of rest.
+
+# THE END STOP IS NOW THE PICTURE'S OWN EDGE. Inside a picture the wall does not exist, so there is
+# nothing past the edge to be pushed into and the push has nowhere to go: the player's press reads
+# as a board that simply will not move, not as a spring.
 	var farthest := 0.0
 	var deepest_inward := 0.0
 	var waited := 0.0
@@ -1368,15 +1380,18 @@ func run_the_board_edge_bounces_test() -> void:
 		CardEnvironment.CURRENT = view.game
 		farthest = maxf(farthest, camera.position.x - rest)
 		deepest_inward = minf(deepest_inward, camera.position.x - rest)
-	check(farthest > 1.0,
-			"pressing right at the last grid PUSHES the camera past its edge, to the RIGHT "
+	check(farthest <= 0.5,
+			"pressing right at the last grid never carries the camera past the picture's edge "
 			+ "(TP-102)",
 			"%f px past rest" % farthest)
-	check(deepest_inward >= -1.0,
-			"...and it never swings the other way first -- an overshoot measured from the "
+	check(deepest_inward >= -0.5,
+			"...and it never swings the other way either -- an overshoot measured from the "
 			+ "picture's centre rather than the pan the camera is actually on drags it a whole "
 			+ "grid inward before springing back",
 			"%f px inward of rest" % deepest_inward)
+	check(_picture_edge_intrusion_px(main, camera) <= 0.0,
+			"...and the window is still wholly inside the picture at that stop",
+			"%f px of wall in the window" % _picture_edge_intrusion_px(main, camera))
 	check(pa.pan_grid == 2,
 			"...without stepping onto a grid that is not there",
 			"pan_grid %d" % pa.pan_grid)
@@ -2418,10 +2433,17 @@ func run_the_camera_steps_between_grid_positions_test() -> void:
 	check(pa.pan_grid == rest_grid + 1,
 			"a real grid_pan_right key press steps the view one grid (TP-105)",
 			"pan_grid %d" % pa.pan_grid)
-	check(is_equal_approx(camera.position.x - rest_x, pitch),
-			"the camera stepped by EXACTLY one grid position's pitch, not a scroller's own aim "
-			+ "(TP-105)",
-			"moved %.3f vs pitch %.3f" % [camera.position.x - rest_x, pitch])
+# THE PITCH IS WHAT IS ASKED FOR; THE PICTURE'S EDGE IS WHAT IS GRANTED. Inside a picture the wall
+# does not exist, so the step is the pitch clamped into what the picture still has to show -- which
+# at the shipped window is almost nothing, and is the whole of the answer rather than a caveat.
+	var reach := WallPicture.max_pan_px(main._pictures[&"game"].rect, window_size,
+			SettingsManager.settings)
+	var granted := clampf(pitch, -reach, reach)
+	check(is_equal_approx(camera.position.x - rest_x, granted),
+			"the camera stepped by one grid position's pitch clamped to what the picture can "
+			+ "still show, not by a scroller's own aim (TP-105)",
+			"moved %.3f, asked %.3f, picture allows %.3f"
+			% [camera.position.x - rest_x, pitch, reach])
 	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
 	var stepped_rect := _grid_world_rect(main, pa, pa.pan_grid)
 	check(visible.encloses(stepped_rect),
@@ -2610,9 +2632,11 @@ func run_the_camera_rests_at_the_saved_pan_test() -> void:
 			"...and the camera is NOT at the picture's centre, which is where resting_state() "
 			+ "alone would have put it (TP-115)",
 			"camera %.3f vs centre %.3f" % [camera.position.x, centre_x])
-	check(is_equal_approx(camera.position.x - centre_x, wp.saved_pan_x),
-			"...it is the centre plus exactly the saved pan (TP-115)",
-			"offset %.3f vs saved %.3f" % [camera.position.x - centre_x, wp.saved_pan_x])
+	check(is_equal_approx(camera.position.x - centre_x, _granted_pan(main, wp.saved_pan_x)),
+			"...it is the centre plus the saved pan, clamped to what the picture can still show "
+			+ "(TP-115)",
+			"offset %.3f vs saved %.3f granted %.3f" % [camera.position.x - centre_x,
+			wp.saved_pan_x, _granted_pan(main, wp.saved_pan_x)])
 
 # ⚠ Main._camera_resting_state() reads the live board back into the saved pan whenever there is
 # one, so the only way to see the SAVED value answering on its own is to ask while there is no
@@ -2624,10 +2648,11 @@ func run_the_camera_rests_at_the_saved_pan_test() -> void:
 	var state := main._camera_resting_state(&"game", wp.rect, SettingsManager.settings)
 	wp.screen_root = real_screen
 	var pose_x : float = (state["position"] as Vector2).x
-	check(is_equal_approx(pose_x - centre_x, pitch),
-			"with no live board to read, the resting pose is still the SAVED pan — the frames a "
-			+ "transition and a detached show run in (TP-115)",
-			"pose %.3f, centre %.3f, saved %.3f" % [pose_x, centre_x, wp.saved_pan_x])
+	check(is_equal_approx(pose_x - centre_x, _granted_pan(main, pitch)),
+			"with no live board to read, the resting pose is still the SAVED pan, clamped — the "
+			+ "frames a transition and a detached show run in (TP-115)",
+			"pose %.3f, centre %.3f, saved %.3f, granted %.3f" % [pose_x, centre_x, wp.saved_pan_x,
+			_granted_pan(main, pitch)])
 	await _tear_down_main(main)
 
 func run_leaving_and_re_entering_restores_the_pan_test() -> void:
@@ -2674,9 +2699,10 @@ func run_leaving_and_re_entering_restores_the_pan_test() -> void:
 	check(not is_equal_approx(camera.position.x, centre_x),
 			"...and the camera came back to the pan, not to the picture's centre (TP-116)",
 			"camera %.3f vs centre %.3f" % [camera.position.x, centre_x])
-	check(is_equal_approx(camera.position.x - centre_x, wp.saved_pan_x),
-			"...at exactly the restored pan's offset (TP-116)",
-			"offset %.3f vs saved %.3f" % [camera.position.x - centre_x, wp.saved_pan_x])
+	check(is_equal_approx(camera.position.x - centre_x, _granted_pan(main, wp.saved_pan_x)),
+			"...at the restored pan's offset, clamped to what the picture can still show (TP-116)",
+			"offset %.3f vs saved %.3f granted %.3f" % [camera.position.x - centre_x,
+			wp.saved_pan_x, _granted_pan(main, wp.saved_pan_x)])
 	await _tear_down_main(main)
 	settings.wall_transition_delay = prev_delay
 
@@ -2696,9 +2722,11 @@ func run_a_resize_re_derives_the_pose_from_the_saved_pan_test() -> void:
 	_fire_key_release(KEY_PERIOD)
 	await _settle_camera(camera)
 	var centre_x := _unpanned_rest_x(main)
-	check(is_equal_approx(camera.position.x - centre_x, pitch),
-			"sanity: the camera is one grid off centre before the resize (TP-117)",
-			"offset %.3f vs pitch %.3f" % [camera.position.x - centre_x, pitch])
+	check(is_equal_approx(camera.position.x - centre_x, _granted_pan(main, pitch)),
+			"sanity: the camera is off centre by the step the picture granted before the resize "
+			+ "(TP-117)",
+			"offset %.3f vs pitch %.3f granted %.3f" % [camera.position.x - centre_x, pitch,
+			_granted_pan(main, pitch)])
 
 # ⚠ DisplayServer.window_set_size() CANNOT go below the project minimum, so a suite cannot drive a
 # real resize to an arbitrary size. What a resize IS, to this code, is Main._window_size
@@ -2719,14 +2747,16 @@ func run_a_resize_re_derives_the_pose_from_the_saved_pan_test() -> void:
 	check(not is_equal_approx(camera.position.x, after_centre_x),
 			"...and the re-derived pose is NOT the picture's centre (TP-117)",
 			"camera %.3f vs centre %.3f" % [camera.position.x, after_centre_x])
-	check(is_equal_approx(camera.position.x - after_centre_x, wp.saved_pan_x),
-			"...it is the centre plus the saved pan, re-derived after the resize (TP-117)",
-			"offset %.3f vs saved %.3f" % [camera.position.x - after_centre_x, wp.saved_pan_x])
+	check(is_equal_approx(camera.position.x - after_centre_x, _granted_pan(main, wp.saved_pan_x)),
+			"...it is the centre plus the saved pan clamped into the picture, re-derived after "
+			+ "the resize (TP-117)",
+			"offset %.3f vs saved %.3f granted %.3f" % [camera.position.x - after_centre_x,
+			wp.saved_pan_x, _granted_pan(main, wp.saved_pan_x)])
 	await _tear_down_main(main)
 
-#THE END STOPS ARE WHERE A FRAME COULD REACH THE WINDOW: the overview camera steps a whole grid
-#pitch inside a picture that overfills the window by about twelve pixels, so past the resting grid
-#the picture's own edge comes in from the side, and the frame band is drawn just outside it.
+#THE END STOPS ARE WHERE A FRAME WOULD REACH THE WINDOW FIRST, since they are where the camera sits
+#closest to the picture's edge. The clamp keeps that edge off the window and these rows keep the
+#frame undrawn -- two independent answers, neither standing in for the other.
 func run_no_frame_is_drawn_at_an_overview_end_stop_test() -> void:
 	behavior_section("NO FRAME IS DRAWN AT AN OVERVIEW END STOP")
 	var main := await _stand_up_main_grids(3)
@@ -2742,17 +2772,15 @@ func run_no_frame_is_drawn_at_an_overview_end_stop_test() -> void:
 	for gi : int in [0, 2]:
 		pa.pan_to_grid(gi)
 		await _settle_camera(camera)
-		var intrusion := _picture_edge_intrusion_px(main, camera)
-		check(intrusion > 1.0,
-				("precondition: at end stop %d the picture's own edge is INSIDE the window, so a "
-				% gi) + "drawn frame would be on screen there",
-				"%.1f px inside" % intrusion)
+		check(pa.pan_grid == gi,
+				"precondition: the board really reached end stop %d -- a pan that never ran would "
+				% gi + "make the checks below vacuous",
+				"pan_grid %d" % pa.pan_grid)
 		check(not frame.visible,
 				"...and no frame is drawn at end stop %d" % gi,
 				"visible %s" % frame.visible)
 		var seen_drawn := 0
 		var samples := 0
-		var deepest := intrusion
 		pa.pan_by_grids(1 if gi == 2 else -1)
 		var waited := 0.0
 		while waited < 1.0:
@@ -2760,24 +2788,106 @@ func run_no_frame_is_drawn_at_an_overview_end_stop_test() -> void:
 			waited += get_process_delta_time()
 			CardEnvironment.CURRENT = view.game
 			samples += 1
-			deepest = maxf(deepest, _picture_edge_intrusion_px(main, camera))
 			if frame.visible: seen_drawn += 1
-		check(deepest > intrusion + 1.0,
-				("precondition: the bounce past end stop %d carries the picture's edge FURTHER "
-				% gi) + "into the window than the end stop itself does",
-				"%.1f -> %.1f px inside over %d frames" % [intrusion, deepest, samples])
+		check(samples > 0,
+				"precondition: the pan past end stop %d was really sampled" % gi,
+				"%d frames" % samples)
 		check(seen_drawn == 0,
-				"...and the frame is drawn in none of that bounce's frames",
+				"...and the frame is drawn in none of that pan's frames",
 				"%d of %d frames drew it" % [seen_drawn, samples])
 	await _tear_down_main(main)
 
-#How far the game picture's nearest vertical edge sits INSIDE the window, in WINDOW px -- zero or
-#less while the picture still covers it. The frame band is drawn immediately outside that edge, so
-#this is the number that says whether a drawn frame would be on screen.
+#How far the game picture's nearest edge sits INSIDE the window, in WINDOW px, over all four sides
+#-- zero or less while the picture still covers it. The wall is drawn immediately outside that
+#edge, so this is the number that says whether any wall would be on screen.
 func _picture_edge_intrusion_px(main: Main, camera: Camera2D) -> float:
 	var window := main.get_viewport().get_visible_rect().size
 	var wp : WallPicture = main._pictures[&"game"]
 	var zoom := camera.zoom.x
-	var left := (wp.rect.centre.x - camera.position.x) * zoom + window.x / 2.0 \
-			- wp.rect.size.x * zoom / 2.0
-	return maxf(left, window.x - (left + wp.rect.size.x * zoom))
+	var drawn := Rect2((wp.rect.centre - camera.position) * zoom + window / 2.0
+			- wp.rect.size * zoom / 2.0, wp.rect.size * zoom)
+	return maxf(maxf(drawn.position.x, drawn.position.y),
+			maxf(window.x - drawn.end.x, window.y - drawn.end.y))
+
+#INSIDE A PICTURE THE WALL DOES NOT EXIST, so no pose the player can ask for may put the window past
+#the picture's edge. The overview pan and its end-stop bounce are the only things that move the
+#camera while a picture is focused, so between them they are the whole of the question.
+func run_the_window_never_leaves_the_picture_test() -> void:
+	behavior_section("THE WINDOW NEVER LEAVES THE PICTURE")
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	var camera := _main_camera(main)
+	pa.open_zoomed_out()
+	await _settle_camera(camera)
+	var window := main.get_viewport().get_visible_rect().size
+	var reach := WallPicture.max_pan_px(main._pictures[&"game"].rect, window,
+			SettingsManager.settings)
+	check(reach < pa.grid_pitch_px(),
+			"precondition: the picture leaves the camera less room than one grid step, so a step "
+			+ "really is asking to leave the picture",
+			"reach %.1f px against a %.1f px step at window %s" % [reach, pa.grid_pitch_px(),
+			window])
+	var worst := _picture_edge_intrusion_px(main, camera)
+	for gi : int in [0, 2, 1, 2, 0]:
+		pa.pan_to_grid(gi)
+		worst = maxf(worst, await _worst_intrusion_over(main, view, camera, worst, 1.0))
+	check(pa.pan_grid == 0,
+			"precondition: the pans above really walked the board to its first grid",
+			"pan_grid %d" % pa.pan_grid)
+	pa.pan_by_grids(-1)
+	worst = maxf(worst, await _worst_intrusion_over(main, view, camera, worst, 1.5))
+	pa.pan_to_grid(2)
+	await _settle_camera(camera)
+	pa.pan_by_grids(1)
+	worst = maxf(worst, await _worst_intrusion_over(main, view, camera, worst, 1.5))
+	check(worst <= 0.0,
+			"through every overview pan, both end stops and both end-stop bounces the window "
+			+ "stays inside the picture -- no wall is ever on screen inside a picture",
+			"worst edge intrusion %.3f px" % worst)
+	await _tear_down_main(main)
+
+#The worst the window ever leaves the picture over the next `seconds`, sampled EVERY frame: a pan
+#and a bounce are journeys, and a still taken at either end says nothing about what crossed it.
+func _worst_intrusion_over(main: Main, view: GameView, camera: Camera2D, worst: float,
+		seconds: float) -> float:
+	var waited := 0.0
+	while waited < seconds:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		CardEnvironment.CURRENT = view.game
+		worst = maxf(worst, _picture_edge_intrusion_px(main, camera))
+	return worst
+
+#THE TOLERANCE MUST NOT SWALLOW A REAL SLIVER. The rects are the ones a full gate actually
+#reported, so the drifts below are the drifts the board really leaves, not invented ones.
+func run_an_edge_touch_is_not_an_intrusion_test() -> void:
+	behavior_section("A TOUCHING EDGE IS NOT AN INTRUSION, A ONE-PIXEL SLIVER IS")
+	var visible := Rect2(Vector2(-394.0, -1274.059), Vector2(1166.549, 869.1176))
+	var touching := Rect2(Vector2(-769.4543, -1188.885), Vector2(375.4543, 497.1353))
+	check(is_equal_approx(touching.end.x, visible.position.x),
+			"fixture: this neighbour's right edge lands EXACTLY on the view's left, which is the "
+			+ "pose the isolating buffer aims for",
+			"edge %.6f vs view %.6f" % [touching.end.x, visible.position.x])
+	check(not _rect_intrudes(touching, visible),
+			"...so it puts nothing inside the view")
+	for drift : float in [-0.005, -0.000488, 0.000488, 0.005, EDGE_TOUCH_PX * 0.5]:
+		var drifted := Rect2(Vector2(touching.position.x + drift, touching.position.y),
+				touching.size)
+		check(not _rect_intrudes(drifted, visible),
+				"...and neither does it at %+0.6f px, within the drift real routes leave" % drift,
+				"edge %.6f vs view %.6f" % [drifted.end.x, visible.position.x])
+	for sliver : float in [1.0, 2.0, 10.0]:
+		var over := Rect2(Vector2(touching.position.x + sliver, touching.position.y),
+				touching.size)
+		check(_rect_intrudes(over, visible),
+				"...while a %.0f px sliver of it IS inside the view, and the tolerance is nowhere "
+				% sliver + "near wide enough to hide one",
+				"edge %.6f vs view %.6f" % [over.end.x, visible.position.x])
+
+#The pan the camera is actually POSED at for a board pan of `saved`: the picture's own edge is what
+#grants it, since inside a picture there is no wall to pan onto.
+func _granted_pan(main: Main, saved: float) -> float:
+	var reach := WallPicture.max_pan_px(main._pictures[&"game"].rect,
+			main.get_viewport().get_visible_rect().size, SettingsManager.settings)
+	return clampf(saved, -reach, reach)

@@ -907,8 +907,6 @@ func test_no_picture_draws_a_frame_while_one_is_focused() -> void:
 	var main : Main = MAIN_SCENE.instantiate()
 	viewport.add_child(main)
 	get_tree().paused = false
-	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
-
 	check(main._current_focus == &"start_menu",
 			"sanity: cold launch really is a LANDED focus, not wall view -- everything below is "
 			+ "about a wall with a picture already on it")
@@ -921,32 +919,42 @@ func test_no_picture_draws_a_frame_while_one_is_focused() -> void:
 			"a zoom-in that has landed leaves no frame drawn anywhere on the wall",
 			"%d of %d drawn" % [_frames_drawn(main), main._pictures.size()])
 
-# A picture-to-picture move is not a switch out to wall view, so the frames stay out for the whole
-# travel -- the ONE reading of the rule this suite pins that the words do not spell out.
-	var travel_samples := 0
-	var travel_frames_drawn := 0
+# The route between two pictures goes out through the wall, so the wall is whole for the whole
+# travel. The sidebar slides out BEFORE the camera moves and the picture still covers the window
+# then, so the frames are owed from the camera's first moving frame, not from the slide's.
+	var travel_pose := _camera_pose(main)
+	var travel_moved := 0
+	var travel_short := 0
 	main._focus_picture(&"deck")
 	while main._move_in_flight:
 		await get_tree().process_frame
-		travel_samples += 1
-		travel_frames_drawn += _frames_drawn(main)
-	check(travel_samples > 0,
-			"sanity: the picture-to-picture move really animated -- a move that never ran would "
-			+ "make the check below vacuous",
-			"%d frames" % travel_samples)
-	check(travel_frames_drawn == 0,
-			"no frame is drawn at any frame of a move BETWEEN two pictures",
-			"%d frame-draws over %d frames" % [travel_frames_drawn, travel_samples])
+# The landing runs to completion inside one frame, so the move can already be over by the time
+# this coroutine resumes -- and the landing is not travel.
+		if not main._move_in_flight: break
+		if _camera_pose(main) == travel_pose: continue
+		travel_moved += 1
+		if _frames_drawn(main) < main._pictures.size(): travel_short += 1
+	check(travel_moved > 0,
+			"sanity: the picture-to-picture move really moved the camera -- a move that never ran "
+			+ "would make the check below vacuous",
+			"%d moved frames" % travel_moved)
+	check(travel_short == 0,
+			"every frame of a move BETWEEN two pictures in which the camera had moved drew the "
+			+ "whole wall's frames",
+			"%d of %d moved frames were short" % [travel_short, travel_moved])
+	check(_frames_drawn(main) == 0,
+			"...and the landing at the far end takes every frame out again",
+			"%d of %d drawn" % [_frames_drawn(main), main._pictures.size()])
 
 # The leave: the frames must already be back before the camera has gone anywhere, or the first
 # frames of the zoom-out show a wall with holes in it.
-	var rest_pose := Vector3(camera.position.x, camera.position.y, camera.zoom.x)
+	var rest_pose := _camera_pose(main)
 	var moved_samples := 0
 	var moved_without_frames := 0
 	main._go_to_wall_view()
 	while main._move_in_flight:
 		await get_tree().process_frame
-		if Vector3(camera.position.x, camera.position.y, camera.zoom.x) == rest_pose: continue
+		if _camera_pose(main) == rest_pose: continue
 		moved_samples += 1
 		if _frames_drawn(main) < main._pictures.size(): moved_without_frames += 1
 	check(moved_samples > 0,
@@ -1012,6 +1020,11 @@ func test_a_focused_picture_covers_the_window_at_every_aspect() -> void:
 	main.queue_free()
 	await get_tree().process_frame
 	viewport.queue_free()
+
+## The one camera's whole pose, so "has it moved yet" is one comparison rather than three.
+func _camera_pose(main: Main) -> Vector3:
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+	return Vector3(camera.position.x, camera.position.y, camera.zoom.x)
 
 ## How many of `main`'s pictures are drawing their frame right now.
 func _frames_drawn(main: Main) -> int:

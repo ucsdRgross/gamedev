@@ -448,6 +448,9 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 # The sidebar is off the window BEFORE the camera starts, so the picture's edges meet the
 # window's for the whole move; the way back in waits for the landing at the end of this method.
 	await hud_container.slide_to(0.0)
+# The camera is about to travel across the wall, so the wall is put back together first -- the
+# route between two pictures goes through wall view, and the landing below takes it apart again.
+	_set_frames_visible(true)
 	var dest_wp : WallPicture = _pictures[id]
 	var dest_rect : PictureRect = _rects[id]
 	var camera : Camera2D = wall.get_node(^"%Camera2D")

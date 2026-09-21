@@ -456,16 +456,25 @@ static func resting_state(rect: PictureRect, window_size: Vector2,
 	return {"position": rect.centre,
 			"zoom": focused_scale(rect.size, window_size, settings.wall_overfill_margin)}
 
-## `resting_state()`'s pose with a continuous horizontal pan of `offset_x` pixels added to
-## `position.x` -- `zoom` and `position.y` unchanged. The primitive a touchscreen drag tracks
-## continuously; `grid_state()` below is just this evaluated at one of its discrete target values,
-## so a drag and a grid step never feel like two different mechanisms.
+# `resting_state()`'s pose with `offset_x` added to `position.x` and CLAMPED to `max_pan_px()`:
+# inside a picture the wall does not exist, so panning to where it would show is not a thing the
+# player can ask for. `zoom` and `position.y` are unchanged.
+
+# THE ONE PLACE THE CLAMP LIVES: the grid step, the end-stop bounce and a restored saved pan all
+# reach the camera through here, so none of them can pose it differently.
 static func panned_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
 		offset_x: float) -> Dictionary:
 	var state := resting_state(rect, window_size, settings)
 	var rest_position : Vector2 = state["position"]
-	state["position"] = Vector2(rest_position.x + offset_x, rest_position.y)
+	var reach := max_pan_px(rect, window_size, settings)
+	state["position"] = Vector2(rest_position.x + clampf(offset_x, -reach, reach), rest_position.y)
 	return state
+
+## How far the camera may leave this picture's centre before the window would leave the picture: half of what the resting zoom does not already show. Zero when the picture only just covers.
+static func max_pan_px(rect: PictureRect, window_size: Vector2,
+		settings: PlayerSettings) -> float:
+	var zoom := focused_scale(rect.size, window_size, settings.wall_overfill_margin)
+	return maxf((rect.size.x - window_size.x / zoom) * 0.5, 0.0)
 
 ## The camera pose for grid position `grid_index` on a multi-grid board of `pitch` pixels per
 ## grid step -- `panned_state()` at the offset that many grids away from `resting_grid`, so grid
