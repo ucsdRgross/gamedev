@@ -58,7 +58,7 @@ plan carries the citation.
 | `GridData.grid_height` | `int`, default 5 | Per grid, not global. |
 | `GridData.cells` | `Array[ArrayCardData]` | Row-major, one entry per cell; each holds that cell's stack bottom-to-top. |
 | `GridData.cell_types` | `Array[CardData]` | The 25 cell zone cards, row-major. |
-| `GameData.committed_grid` | `int`, default `-1` | Which grid the Entrance is committed to; `-1` = uncommitted. `@export_storage` so undo rewinds it. |
+| `GameData.committed_grid` | `int`, default `-1` | Which grid the Entrance is committed to; `-1` = uncommitted. `@export_storage` so undo rewinds it. Written by the first placement, and by `Game.commit_the_only_grid()` as a one-grid show opens. |
 | `GameData.scores_row` | `Dictionary[Vector3i, BigNumber]` | Row buckets, keyed `(grid, index, height)`. Height is IN the key — there is no separate raised-level container. |
 | `GameData.scores_col` | `Dictionary[Vector3i, BigNumber]` | Column buckets, same key. Shared between a grid column and the Entrance slot beneath it. |
 | `GameData.scores_cell` | `Dictionary[Vector3i, BigNumber]` | One vertical stack's bucket, keyed `(grid, x, row)`. Folds into `score_special`. |
@@ -97,6 +97,7 @@ plan carries the citation.
 | `ScoringSection.of_line_at(grid, kind, index, height)` | static | Replaces `of_line`. |
 | `Game.score_line(result, section)` | method | ⚠ New signature. `is_row`, `zone` and `index` are **gone**. |
 | `Game.add_line_score(section, amount)` | method | The single write path, unchanged in role. |
+| `Game.commit_the_only_grid()` | method | With exactly one grid there is nothing to choose, so the show commits `committed_grid = 0` as it opens; called by `PlayArea.open_show_view()`. |
 | `&"on_board_mutated"` | hook `StringName` | Fired after every board mutation; carries the coord and the compaction flag. |
 | `&"on_card_placed"` | hook `StringName` | Fired after an arrival specifically. |
 | `SkillLineDetector` | `class_name` | The detector rules card. Frame **9**. |
@@ -231,7 +232,7 @@ that shipped.
 | `PlayArea.focus_grid(gi)` | method | |
 | `PlayArea.focus_the_grid_in_view()` | method | What a PICKUP does to the board: aims it at the grid nearest the middle of the board's window. One production call site, `GameView._pick_up`, after the grab. Does nothing while a grid is committed or already focused. |
 | `PlayArea._grid_nearest_the_window_centre()` | method | `pan_grid` in the overview, where the camera is the only thing that moves the view; focused, the argmin of the grids' live drawn centres against the window's. |
-| `PlayArea.entrance_home_grid()` | method | The grid the Entrance BELONGS to: the committed grid, else `NO_GRID` for "centred in the window, under no grid". Only a PLACEMENT commits — a focus, a pickup or a pan leaves it centred. Not `GameData.entrance_grid()`, which answers which grid the Entrance BANKS into. |
+| `PlayArea.entrance_home_grid()` | method | The grid the Entrance BELONGS to: the committed grid, else `NO_GRID` for "centred in the window, under no grid". Only a PLACEMENT commits — a focus, a pickup or a pan leaves it centred — except a ONE-grid show, which commits as it opens. Not `GameData.entrance_grid()`, which answers which grid the Entrance BANKS into. |
 | `PlayArea._entrance_slide` | `float` | 0 centred, 1 under its grid; integrated toward `entrance_home_grid()`'s answer over `grid_pan_duration` and snapped by `_snap_the_entrance_home()` when a show opens. |
 | `PlayArea._grid_cells(gi)` | method | Grid `gi`'s cell block, clamped to the board. Was `_view_grid_cells()`, which could only ever answer for `pan_grid`. |
 | `PlayArea._consume_as_focus_click()` | method | The overview's interception: a press on a grid focuses instead of placing. Covers `ui_accept` as well as the mouse. |

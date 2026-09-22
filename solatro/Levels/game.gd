@@ -788,12 +788,17 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	if not processing and view:
 		view.release_grab()
 
+#WITH EXACTLY ONE GRID THERE IS NOTHING TO CHOOSE, so the show commits as it opens: the Entrance
+#sits under its grid from the first frame and the first placement moves nothing (owner ruling).
+func commit_the_only_grid() -> void:
+	if state.grids.size() == 1: state.committed_grid = 0
+
 # The grid commitment lifts once the hand the player is holding has nowhere left to go on it -- an
-# emptied Entrance included, which has nowhere to go by definition. Its own step, ahead of the
-# refill, so the next hand is free to commit to another grid.
+# emptied Entrance included. Its own step, ahead of the refill, so the next hand is free to commit
+# to another grid; a ONE-grid board has no other, so its opening commitment stands.
 func _lift_a_spent_commitment() -> void:
 	if state.committed_grid != -1 and await _no_legal_placement_remains_in_grid(state.committed_grid):
-		state.committed_grid = -1
+		if state.grids.size() > 1: state.committed_grid = -1
 
 # A placement's commit: a PLAYER's placement is the undo step. The snapshot is taken LAST so it
 # carries the scores the placement caused; under the board lock the placement belongs to the act

@@ -1007,6 +1007,10 @@ func update_gui() -> void:
 #One grid is the DEFAULT and not an edge case -- a deck of 52 or fewer unlocks exactly one.
 func open_show_view() -> void:
 	if grid_container.get_child_count() == 1:
+#A panel exists, so the game that built it does too; the commitment is the GAME's to make.
+		var game := CardEnvironment.get_current_game()
+		assert(game, "a grid panel is on the board, so a game built it")
+		game.commit_the_only_grid()
 		focus_grid(0)
 		_snap_the_entrance_home()
 		return

@@ -858,6 +858,9 @@ func test_holding_a_card_lights_the_marks_it_agrees_with() -> void:
 # agrees with. Returns that cell -- the one a committed show may no longer light.
 func add_a_second_marked_grid() -> BoardCoord:
 	game.effect_api.add_grid(GridData.new())
+#⚠ THE ONE-GRID SHOW THIS FIXTURE DEALT COMMITTED ITS GRID AS IT OPENED (nothing to choose); the
+#two-grid board below is the one a bigger deck deals, which commits nothing until a placement.
+	game.state.committed_grid = -1
 	var added : GridData = game.state.grids[1]
 	for type_card : CardData in added.cell_types:
 		BoardPlan.clear_mark(type_card)

@@ -71,6 +71,9 @@ func _ready() -> void:
 		Board.add_grid(g.state, GridData.new())
 	while g.state.grids.size() > _grid_count:
 		Board.remove_grid(g.state, g.state.grids.size() - 1)
+#⚠ THE ONE-GRID DEAL ALREADY COMMITTED ITS GRID; a dealt board of two or more commits nothing
+#until a placement, which is the board these shots are about.
+	if _grid_count > 1: g.state.committed_grid = -1
 	pa.flush_rebuild()
 #THE BOARD GREW AFTER THE SHOW OPENED, which the one-deal product never does, so the opening view
 #is re-run by its own entry point for the count the shots are about.

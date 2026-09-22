@@ -86,6 +86,8 @@ func _ready() -> void:
 	await test_the_entrance_slide_survives_the_picture_being_left()
 	behavior_section("A USED-UP ENTRANCE FREES THE COMMITTED GRID")
 	await test_a_used_up_entrance_frees_the_commitment()
+	await test_a_one_grid_show_commits_as_it_opens()
+	await test_a_one_grid_commitment_survives_a_used_up_entrance()
 	behavior_section("A DRAG PAN NEEDS THE BUTTON HELD, AND ENDS ON A GRID")
 	await test_a_drag_pan_needs_the_button_held()
 	await test_a_cancel_ends_a_latched_drag_pan()
@@ -214,6 +216,9 @@ func _start_fixture_grids(n: int) -> void:
 	await _start_fixture()
 	while _game.state.grids.size() < n:
 		Board.add_grid(_game.state, GridData.new())
+#⚠ THE ONE-GRID DEAL ALREADY COMMITTED ITS GRID (nothing to choose); a dealt board of two or more
+#commits nothing until a placement, and that is the board these rows are about.
+	if n > 1: _game.state.committed_grid = -1
 	_pa.flush_rebuild()
 	_pa.open_show_view()
 	await _settle_layout()
@@ -1535,6 +1540,24 @@ func _leave_one_entrance_card(home: int) -> CardData:
 	await _settle_layout()
 	return keep
 
+# The player's LAST Entrance card put down on the committed grid -- the used-up moment, which a
+# real show reaches only by dealing its whole deck. False when the fixture could not set it up.
+func _spend_the_last_entrance_card(home: int) -> bool:
+	var last := await _leave_one_entrance_card(home)
+	check(last != null and _filled_entrance_slots() == 1,
+			"precondition: the player is down to ONE Entrance card, and the committed grid still "
+			+ "accepts it", "%d slot(s) hold a card" % _filled_entrance_slots())
+	var last_cell := await _legal_cell_control_in_grid(last, home) if last else null
+	check(last_cell != null, "precondition: a cell on the committed grid takes that last card",
+			"cell %s" % [last_cell != null])
+	if not (last and last_cell): return false
+	var last_from := _card_centre(last)
+	await _drag(last_from, last_from)
+	var last_at := _control_centre(last_cell)
+	await _drag(last_at, last_at)
+	await _settle_layout()
+	return true
+
 #ONCE THE PLAYER'S HAND HAS NOWHERE LEFT TO GO ON THE COMMITTED GRID -- and an emptied Entrance has
 #nowhere by definition -- the commitment lifts BEFORE the refill, so the next hand may choose
 #another grid. Asked after the refill it is asked about the cards the refill just dealt.
@@ -1558,21 +1581,9 @@ func test_a_used_up_entrance_frees_the_commitment() -> void:
 		await _end_fixture()
 		return
 
-	var last := await _leave_one_entrance_card(home)
-	check(last != null and _filled_entrance_slots() == 1,
-			"precondition: the player is down to ONE Entrance card, and the committed grid still "
-			+ "accepts it", "%d slot(s) hold a card" % _filled_entrance_slots())
-	var last_cell := await _legal_cell_control_in_grid(last, home) if last else null
-	check(last_cell != null, "precondition: a cell on the committed grid takes that last card",
-			"cell %s" % [last_cell != null])
-	if not (last and last_cell):
+	if not await _spend_the_last_entrance_card(home):
 		await _end_fixture()
 		return
-	var last_from := _card_centre(last)
-	await _drag(last_from, last_from)
-	var last_at := _control_centre(last_cell)
-	await _drag(last_at, last_at)
-	await _settle_layout()
 	check(_game.state.committed_grid == -1,
 			"using the Entrance up frees the commitment: it lifts BEFORE the refill, so the hand "
 			+ "the refill deals is not what the grid is judged by",
@@ -1601,6 +1612,55 @@ func test_a_used_up_entrance_frees_the_commitment() -> void:
 				+ "would have refused",
 				"committed %d (was %d), %s"
 				% [_game.state.committed_grid, home, _hand_str()])
+	await _end_fixture()
+
+#A ONE-GRID SHOW HAS NOTHING TO CHOOSE, so it commits as it opens (owner ruling): the Entrance is
+#under the grid on the opening frame, and the first placement moves it nowhere.
+func test_a_one_grid_show_commits_as_it_opens() -> void:
+	await _start_fixture()
+	check(_game.state.grids.size() == 1, "precondition: the dealt show has exactly one grid",
+			"%d grid(s)" % _game.state.grids.size())
+	check(_game.state.committed_grid == 0,
+			"a one-grid show commits its Entrance to the only grid as it OPENS, with nothing placed",
+			"committed %d, %s" % [_game.state.committed_grid, _hand_str()])
+	check(_pa.entrance_home_grid() == 0,
+			"...so the Entrance's home is that grid from the first frame",
+			"home %d, %.2f px off grid 0"
+			% [_pa.entrance_home_grid(), _entrance_off_grid_px(0)])
+	var before := _pa.entrance_h_track.position.x
+	var held := await _lift_the_leftmost()
+	await _settle_layout()
+	var cell := await _legal_cell_control_in_grid(held, 0) if held else null
+	check(held != null and cell != null, "precondition: a card lifted and a cell that accepts it",
+			"held %s, cell %s" % [held != null, cell != null])
+	if not (held and cell):
+		await _end_fixture()
+		return
+	var at := _control_centre(cell)
+	await _drag(at, at)
+	await _settle_layout()
+	check(_placed_cards().has(held)
+			and absf(_pa.entrance_h_track.position.x - before) <= 0.01,
+			"...and the FIRST placement moves the row NOWHERE: it is already where it belongs",
+			"x %.2f -> %.2f, committed %d"
+			% [before, _pa.entrance_h_track.position.x, _game.state.committed_grid])
+	await _end_fixture()
+
+#A SPENT HAND FREES THE COMMITTED GRID SO ANOTHER CAN BE CHOSEN -- and with one grid there is no
+#other, so the opening commitment stands and the Entrance never returns to the centre.
+func test_a_one_grid_commitment_survives_a_used_up_entrance() -> void:
+	await _start_fixture()
+	if not await _spend_the_last_entrance_card(0):
+		await _end_fixture()
+		return
+	check(_game.state.committed_grid == 0,
+			"using the Entrance up leaves a ONE-grid commitment standing: there is no other grid "
+			+ "for the freed hand to choose, so lifting it would only recentre the Entrance",
+			"committed %d, %d slot(s) hold a card"
+			% [_game.state.committed_grid, _filled_entrance_slots()])
+	check(_pa.entrance_home_grid() == 0 and is_equal_approx(_pa._entrance_slide, 1.0),
+			"...so the Entrance stays under the grid across the refill",
+			"home %d, travelled %.3f" % [_pa.entrance_home_grid(), _pa._entrance_slide])
 	await _end_fixture()
 
 # ==============================================================================

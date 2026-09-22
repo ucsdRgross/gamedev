@@ -109,8 +109,10 @@ func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	return view
 
 # THIS FIXTURE GROWS THE BOARD AFTER THE SHOW HAS OPENED, which the one-deal product never does, so
-# `PlayArea`'s latched opening view is re-run by the product's own entry point for the new count.
+# the opening view is re-run by its own entry point -- and the one-grid deal's own commitment is
+# dropped, because a dealt board of two or more commits nothing until a placement.
 func _reopen_the_show_view(view: GameView) -> void:
+	if view.game.state.grids.size() > 1: view.game.state.committed_grid = -1
 	view.play_area.open_show_view()
 
 func _tear_down(view: GameView) -> void:
@@ -344,6 +346,17 @@ func run_one_grid_opens_focused_test() -> void:
 			+ "not left at the scale the board is laid out at",
 			"board_zoom %.4f vs unfitted %.4f, overview fit %.4f"
 			% [pa.board_zoom, PlayArea.DEFAULT_BOARD_ZOOM, pa.overview_board_zoom()])
+# WITH ONE GRID THERE IS NOTHING TO CHOOSE, so the show commits the Entrance to it as it opens
+# (owner ruling) -- the Entrance sits under the grid on the first frame, with no slide to watch.
+	check(view.game.state.committed_grid == 0,
+			"a one-grid show commits its Entrance to the only grid as it OPENS",
+			"committed %d" % view.game.state.committed_grid)
+	check(pa.entrance_home_grid() == 0,
+			"...so the Entrance's home is that grid from the first frame",
+			"home %d" % pa.entrance_home_grid())
+	check(is_equal_approx(pa._entrance_slide, 1.0),
+			"...and it is ALREADY there, never sliding in after the opening frame",
+			"travelled %.3f" % pa._entrance_slide)
 # The Back level stack is untouched: the overview is still reachable from a focused one-grid board,
 # so nothing the player could do before is gone.
 	pa.open_zoomed_out()
