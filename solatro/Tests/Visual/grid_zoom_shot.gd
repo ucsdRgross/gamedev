@@ -85,8 +85,9 @@ func _ready() -> void:
 	if not await _await_still(view, "uncommitted_panned"): return
 	if not await _shoot(pa, vp, "uncommitted_panned"): return
 
-#THE PICKUP, through the product's one pickup route. The Entrance's x is printed beside every frame
-#of the slide it starts, because a still frame cannot tell a slide from a jump.
+#THE PICKUP, through the product's one pickup route. It aims the BOARD and leaves the Entrance
+#where it is: the frames are taken over the pan clock, and the printed x must not move across them,
+#because a single still cannot tell a row that stayed from a row that had already arrived.
 	var lift := _leftmost_entrance_control(pa)
 	if lift:
 		view._pick_up(pa.ui_data[lift])
@@ -94,7 +95,7 @@ func _ready() -> void:
 			for _f : int in 5:
 				await get_tree().physics_frame
 			await RenderingServer.frame_post_draw
-			_shoot_frame(pa, vp, "slide_%d" % i)
+			_shoot_frame(pa, vp, "pickup_%d" % i)
 	if not await _await_still(view, "pickup"): return
 	if not await _shoot(pa, vp, "pickup"): return
 	pa.ungrab_cards()
@@ -121,6 +122,29 @@ func _ready() -> void:
 	pa.focus_grid(0 if g.state.committed_grid != 0 else _grid_count - 1)
 	if not await _await_still(view, "committed_elsewhere"): return
 	if not await _shoot(pa, vp, "committed_elsewhere"): return
+
+#THE ENTRANCE USED UP. Once the hand has nowhere left to go on the committed grid the commitment
+#lifts, so the row comes back to the middle of the window and the next hand may choose any grid.
+	if _grid_count > 1:
+		var home := g.state.committed_grid
+		var spent := await _leave_one_entrance_card(g, home)
+		if spent:
+			var target := await _legal_cell_in_grid(g, spent, home)
+			if target.grid != -1:
+				await g.place_card_in_grid(spent, target)
+				pa.flush_rebuild()
+				pa.focus_grid(home)
+				if not await _await_still(view, "entrance_freed"): return
+				if not await _shoot(pa, vp, "entrance_freed"): return
+				var other := 0 if home != 0 else _grid_count - 1
+				var next := _top_entrance_card(g)
+				var cell := await _legal_cell_in_grid(g, next, other) if next else BoardCoord.new(-1, 0, 0, 0)
+				if next and cell.grid != -1:
+					await g.place_card_in_grid(next, cell)
+					pa.flush_rebuild()
+					pa.focus_grid(other)
+					if not await _await_still(view, "committed_other"): return
+					if not await _shoot(pa, vp, "committed_other"): return
 
 #THE FIRST GRID, the end of the board the shots above never reach: the scroller clamps at both
 #ends, so an edge grid's framing has to be seen from either side before it is believed.
@@ -185,9 +209,9 @@ func _shoot(pa: PlayArea, picture: SubViewport, tag: String) -> bool:
 	get_tree().quit(1)
 	return false
 
-#A DELIBERATELY MOVING FRAME, so it carries no stillness guard: what the Entrance is doing between
-#its two resting positions is the thing being photographed, and a still of a slide that never
-#started looks exactly like a still of one that did.
+#A FRAME TAKEN WHILE THE BOARD IS STILL MOVING, so it carries no stillness guard: what the
+#Entrance is doing while the view travels is the thing being photographed, and one still cannot
+#tell a row that stayed put from a row that had already finished moving.
 func _shoot_frame(pa: PlayArea, picture: SubViewport, tag: String) -> void:
 	print("[grid_zoom_shot] %s entrance x %.1f, travelled %.3f, row centre %.1f"
 			% [tag, pa.entrance_h_track.position.x, pa._entrance_slide,
@@ -196,6 +220,41 @@ func _shoot_frame(pa: PlayArea, picture: SubViewport, tag: String) -> void:
 			* pa.upper_zone_right.size.x * 0.5])
 	picture.get_texture().get_image().save_png("%s/grid_zoom_%d_%s.png"
 			% [_out_dir, _grid_count, tag])
+
+#Empties every Entrance slot but the one whose top card grid `home` still accepts, and hands that
+#card back: a show that runs its own Entrance dry takes the whole deck to reach.
+func _leave_one_entrance_card(g: Game, home: int) -> CardData:
+	if home < 0 or home >= g.state.grids.size(): return null
+	var keep : CardData = null
+	var keep_column : ArrayCardData = null
+	for column : ArrayCardData in g.state.upper_zone:
+		if column.datas.is_empty(): continue
+		var top : CardData = column.datas.back()
+		if (await g.legal_cells_for([top] as Array[CardData], [g.state.grids[home]])).is_empty():
+			continue
+		keep = top
+		keep_column = column
+		break
+	if not keep: return null
+	for column : ArrayCardData in g.state.upper_zone:
+		if column != keep_column: column.datas.clear()
+	keep_column.datas.assign([keep] as Array[CardData])
+	return keep
+
+## The first Entrance slot's top card: the next card the player would reach for.
+func _top_entrance_card(g: Game) -> CardData:
+	for column : ArrayCardData in g.state.upper_zone:
+		if not column.datas.is_empty(): return column.datas.back()
+	return null
+
+## A coordinate in grid `gi` that accepts `held`, or a coord whose grid is -1 when none does.
+func _legal_cell_in_grid(g: Game, held: CardData, gi: int) -> BoardCoord:
+	var grid : GridData = g.state.grids[gi]
+	var legal := await g.legal_cells_for([held] as Array[CardData], [grid])
+	for i : int in grid.cells.size():
+		if grid.cell_types[i] in legal:
+			return BoardCoord.new(gi, i % grid.grid_width, i / grid.grid_width, 0)
+	return BoardCoord.new(-1, 0, 0, 0)
 
 ## The Entrance's leftmost card control: what a click has to land on to lift a card.
 func _leftmost_entrance_control(pa: PlayArea) -> Control:

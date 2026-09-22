@@ -775,20 +775,30 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	await _broadcast_board_mutation(landed, false)
 	await run_all_mods(&"on_card_placed", landed)
 	if not processing and state.has_met_goal():
+		await _lift_a_spent_commitment()
 		await _commit_placement()
 		await _end_show_on_goal()
 		return
+#⚠ THE COMMITMENT LIFTS BEFORE THE REFILL. The question is whether the hand the player HAS can
+#still go on the committed grid; asked after the refill it is asked about the cards the refill just
+#dealt. The snapshot still comes last, so it carries the refilled hand.
+	await _lift_a_spent_commitment()
 	await refill_entrance_if_due()
 	await _commit_placement()
 	if not processing and view:
 		view.release_grab()
 
-# A placement's commit: the grid commitment lifts once that grid has no legal placement left, and
-# a PLAYER's placement is the undo step. The snapshot is taken LAST so it carries the scores the
-# placement caused; under the board lock the placement belongs to the act that caused it instead.
-func _commit_placement() -> void:
+# The grid commitment lifts once the hand the player is holding has nowhere left to go on it -- an
+# emptied Entrance included, which has nowhere to go by definition. Its own step, ahead of the
+# refill, so the next hand is free to commit to another grid.
+func _lift_a_spent_commitment() -> void:
 	if state.committed_grid != -1 and await _no_legal_placement_remains_in_grid(state.committed_grid):
 		state.committed_grid = -1
+
+# A placement's commit: a PLAYER's placement is the undo step. The snapshot is taken LAST so it
+# carries the scores the placement caused; under the board lock the placement belongs to the act
+# that caused it instead.
+func _commit_placement() -> void:
 #THE PLACEMENT IS THE UNDO STEP — one snapshot each, never a batch of five, exactly as try_place
 #commits a player's drop. Taken LAST because the scores a placement caused live on `state`, so an
 #earlier snapshot would rewind the board without rewinding what it scored.

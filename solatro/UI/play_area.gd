@@ -697,12 +697,11 @@ func _sync_entrance_x() -> void:
 	_apply_entrance_zoom_rect()
 
 #THE GRID THE ENTRANCE BELONGS TO, or `NO_GRID` while it belongs to none and sits centred in the
-#board's window. The first placement commits it to one grid for the rest of the show; before that
-#it belongs to whichever grid is focused, so a board being looked at whole has it under no grid.
+#board's window. ONLY A PLACEMENT commits it (owner ruling): a focus, a pickup or a pan leaves it
+#centred, so the player can still choose another grid and the grid comes to the Entrance.
 func entrance_home_grid() -> int:
 	var game := CardEnvironment.get_current_game()
 	if game and game.state.committed_grid != -1: return game.state.committed_grid
-	if view_mode == ViewMode.FOCUSED: return focused_grid
 	return NO_GRID
 
 ## How far the Entrance has travelled from the centre of the window to its grid: 0 centred, 1 there.

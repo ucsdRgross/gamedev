@@ -235,16 +235,17 @@ func run_a_panel_per_grid_and_a_slot_per_cell_test() -> void:
 # what makes the Entrance read as the row BELOW the board rather than a separate strip near it, and
 # it is easy to lose: a leftover row-score gutter, or a left-aligned row against a centred grid.
 
-# ⚠ FOCUS FIRST: on a board being looked at whole an uncommitted Entrance belongs to no grid and is
-# centred in the window instead, which is a different rule and GRID VIEW's to assert.
+# ⚠ COMMIT FIRST: only a PLACEMENT gives the Entrance a grid, so an uncommitted Entrance is centred
+# in the window however the board is being looked at -- a different rule, and GRID VIEW's to assert.
 
 # That looks like a rounding artefact and is not one. The Entrance has its own pinned
 # %EntranceStrip, so read it through the unique-named accessor, not a path under TopLevelVBox.
 	pa.focus_grid(0)
+	view.game.state.committed_grid = 0
 	await _settle_layout(view)
 	check(pa.entrance_home_grid() == 0,
-			"precondition: the focused grid owns the Entrance, so its slots are drawn under that "
-			+ "grid's columns", "home grid %d" % pa.entrance_home_grid())
+			"precondition: a commitment to grid 0 gives the Entrance a home, so its slots are drawn "
+			+ "under that grid's columns", "home grid %d" % pa.entrance_home_grid())
 	var entrance_row : Control = pa.upper_zone_right
 	var worst_dx := 0.0
 	for col : int in mini(entrance_row.get_child_count(), grid.grid_width):

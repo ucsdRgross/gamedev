@@ -849,8 +849,11 @@ func run_every_focused_grid_centres_alone_test() -> void:
 			await _settle_board(view, camera)
 			_check_grid_alone(main, pa, camera, count, gi, "a click on it")
 			await _settle_entrance(view)
+#⚠ THIS SAYS NOTHING ABOUT OWNERSHIP, AND CANNOT: the focused grid is centred in the window and an
+#uncommitted Entrance is centred in the window, so the two coincide here by geometry. Who owns the
+#Entrance is asserted where the two positions DIFFER -- a panned board, below and in DRAG PLACE.
 			check(absf(_entrance_row_rect(pa).get_center().x - _grid_centre_x(pa, gi)) <= 1.0,
-					"...and the Entrance sits under it (%d grids, grid %d)" % [count, gi],
+					"...and the Entrance is drawn under it (%d grids, grid %d)" % [count, gi],
 					"row %.2f vs grid %.2f"
 					% [_entrance_row_rect(pa).get_center().x, _grid_centre_x(pa, gi)])
 #ARRIVING BY A PAN IS A SECOND ROUTE TO THE SAME FRAMING, and it is the one that reaches an edge
@@ -1087,16 +1090,19 @@ func _nearest_grid_dx(pa: PlayArea, at: float) -> float:
 ## Wait for the Entrance's own x to come to REST.
 func _settle_entrance(view: GameView) -> void:
 	var pa := view.play_area
-	var last := INF
+	var last_at := Vector2.INF
 	var waited := 0.0
 	while waited < 3.0:
 		await get_tree().physics_frame
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 		CardEnvironment.CURRENT = view.game
-		var now := pa.entrance_h_track.position.x
-		if is_equal_approx(now, last): return
-		last = now
+#⚠ THE TRAVELLED FRACTION IS PART OF "AT REST", NOT A SPARE READING. Its two ends are the same
+#point whenever the home grid is the one centred in the window, so the drawn x stands still through
+#a whole slide and an x-only wait returns while the Entrance is still moving between them.
+		var now := Vector2(pa.entrance_h_track.position.x, pa._entrance_slide)
+		if now.is_equal_approx(last_at): return
+		last_at = now
 
 #THE ENTRANCE BELONGS TO A GRID ONLY ONCE ONE IS FOCUSED OR COMMITTED; before that it is centred.
 
@@ -1168,10 +1174,43 @@ func run_the_entrance_is_centred_until_a_grid_owns_it_test() -> void:
 	await _settle_entrance(view)
 	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and pa.focused_grid == 1,
 			"precondition: a click focused the middle grid of three", "focused %d" % pa.focused_grid)
-	check(absf(_entrance_row_rect(pa).get_center().x - _grid_centre_x(pa, 1)) <= 1.0,
-			"a focused grid takes the Entrance: the two share a centre",
-			"row %.2f vs grid %.2f"
-			% [_entrance_row_rect(pa).get_center().x, _grid_centre_x(pa, 1)])
+#⚠ THE FOCUSED GRID IS CENTRED IN THE WINDOW AND SO IS AN UNCOMMITTED ENTRANCE, so the drawn
+#positions coincide and cannot separate the two rules. The product's own ownership answer can:
+#a focus leaves the Entrance homeless and its slide at the centre end of the travel.
+	check(pa.entrance_home_grid() == PlayArea.NO_GRID
+			and is_equal_approx(pa._entrance_slide, 0.0),
+			"a focused grid does NOT take the Entrance: it is still owned by no grid and has not "
+			+ "travelled from the centre",
+			"home grid %d, slide %.3f" % [pa.entrance_home_grid(), pa._entrance_slide])
+	var focus_win := _window_x(pa)
+	check(absf(_entrance_row_rect(pa).get_center().x
+			- (focus_win.x + focus_win.y) * 0.5) <= 1.0,
+			"...and it is drawn at the centre of the board's window",
+			"row %.2f vs window centre %.2f"
+			% [_entrance_row_rect(pa).get_center().x, (focus_win.x + focus_win.y) * 0.5])
+
+#THE GRID COMES TO THE ENTRANCE. This is where the two rules separate in DRAWN PIXELS: panning a
+#FOCUSED board used to carry the Entrance out of the window under the grid that was focused.
+	var before_pan := _entrance_row_rect(pa).get_center().x
+	pa._unhandled_input(_action(&"grid_pan_right"))
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	await _settle_entrance(view)
+	check(pa.pan_grid == 2 and pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"precondition: a real pan action stepped the FOCUSED board onto grid 2",
+			"pan_grid %d, mode %d" % [pa.pan_grid, pa.view_mode])
+	check(absf(_entrance_row_rect(pa).get_center().x - before_pan) <= 1.0,
+			"...and the Entrance waited in the middle while the board panned: it did not follow the "
+			+ "grid that was focused out of the window",
+			"row centre %.2f -> %.2f" % [before_pan, _entrance_row_rect(pa).get_center().x])
+	check(absf(_entrance_row_rect(pa).get_center().x - _grid_centre_x(pa, 2)) <= 1.0,
+			"...so grid 2 arrived over the Entrance rather than the Entrance being taken to it",
+			"row %.2f vs grid 2 %.2f"
+			% [_entrance_row_rect(pa).get_center().x, _grid_centre_x(pa, 2)])
+	pa.focus_grid(1)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	await _settle_entrance(view)
 
 #THE COMMITMENT, set on the state the way an undo or a resume restores it. That the first PLACEMENT
 #is what writes it is driven end to end in DRAG PLACE.
@@ -1200,10 +1239,17 @@ func run_the_entrance_is_centred_until_a_grid_owns_it_test() -> void:
 	check(view.game.state.committed_grid == -1,
 			"precondition: losing the committed grid cleared the commitment",
 			"committed %d" % view.game.state.committed_grid)
-	check(absf(_entrance_row_rect(pa).get_center().x - _grid_centre_x(pa, pa.focused_grid)) <= 1.0,
-			"an Entrance whose commitment lifts goes back to the grid the board is focused on",
-			"row %.2f vs grid %d %.2f" % [_entrance_row_rect(pa).get_center().x, pa.focused_grid,
-			_grid_centre_x(pa, pa.focused_grid)])
+	check(pa.entrance_home_grid() == PlayArea.NO_GRID
+			and is_equal_approx(pa._entrance_slide, 0.0),
+			"an Entrance whose commitment lifts belongs to no grid again -- the grid still being "
+			+ "focused does not inherit it",
+			"home grid %d, slide %.3f" % [pa.entrance_home_grid(), pa._entrance_slide])
+	var lifted_win := _window_x(pa)
+	check(absf(_entrance_row_rect(pa).get_center().x
+			- (lifted_win.x + lifted_win.y) * 0.5) <= 1.0,
+			"...and it is drawn back at the centre of the board's window",
+			"row %.2f vs window centre %.2f"
+			% [_entrance_row_rect(pa).get_center().x, (lifted_win.x + lifted_win.y) * 0.5])
 
 	pa._unhandled_input(_action(&"wall_back"))
 	await _settle_layout(view)

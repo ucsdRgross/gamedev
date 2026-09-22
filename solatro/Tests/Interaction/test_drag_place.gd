@@ -80,10 +80,12 @@ func _ready() -> void:
 	await test_a_key_or_pad_reaches_the_tap_two_ways()
 	await test_the_second_mouse_button_never_taps()
 	await test_the_tap_hook_runs_once_per_tap()
-	behavior_section("A PICKUP TAKES THE ENTRANCE UNDER THE GRID IN VIEW")
-	await test_a_click_pickup_slides_the_entrance_under_the_grid_in_view()
+	behavior_section("ONLY A PLACEMENT TAKES THE ENTRANCE UNDER A GRID")
+	await test_a_pickup_leaves_the_entrance_centred_until_a_placement_takes_it()
 	await test_a_drag_pickup_aims_at_the_grid_nearest_the_window_centre()
 	await test_the_entrance_slide_survives_the_picture_being_left()
+	behavior_section("A USED-UP ENTRANCE FREES THE COMMITTED GRID")
+	await test_a_used_up_entrance_frees_the_commitment()
 	finish()
 
 # ==============================================================================
@@ -176,18 +178,19 @@ func _await_the_deal() -> void:
 		waited += get_process_delta_time()
 		if not _entrance_controls().is_empty() and not _game.processing: return
 
-# Waits for the Entrance to STOP MOVING: it slides between the centre of the board's window and the
-# grid it belongs to, and a press landing mid-slide races the hovered control sliding out from under
-# the cursor. Never a frame count -- the slide is a DURATION.
+# Waits for the board AND the Entrance to STOP MOVING; never a frame count, both are DURATIONS.
+# ⚠ THE SCROLL IS PART OF "SETTLED": an uncommitted Entrance never moves, so waiting on its x alone
+# returns on the first frame and hands back a board still panning.
 func _settle_layout() -> void:
-	var last := INF
+	var last := Vector3.INF
 	var waited := 0.0
 	while waited < 2.0:
 		await get_tree().physics_frame
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-		var now := _pa.entrance_h_track.position.x
-		if is_equal_approx(now, last): return
+		var now := Vector3(_pa.entrance_h_track.position.x, _pa._entrance_slide,
+				_pa.top_level_vbox.global_position.x)
+		if now.is_equal_approx(last): return
 		last = now
 
 func _frames(count: int) -> void:
@@ -284,6 +287,16 @@ func _legal_cell_control(held: CardData) -> Control:
 	var legal := await _game.legal_cells_for([held] as Array[CardData], _game.state.grids)
 	for control : Control in _reachable_cells():
 		if _pa.ui_data[control] in legal: return control
+	return null
+
+# ⚠ "REACHABLE" IS THE WHOLE PICTURE, NOT THE BOARD'S WINDOW, so on a multi-grid board a cell of a
+# NEIGHBOUR can answer `_legal_cell_control`. A row about which grid a placement commits to has to
+# name the grid it places into.
+func _legal_cell_control_in_grid(held: CardData, gi: int) -> Control:
+	var legal := await _game.legal_cells_for([held] as Array[CardData], _game.state.grids)
+	for control : Control in _reachable_cells():
+		var data : CardData = _pa.ui_data[control]
+		if data in legal and _game.state.cell_type_coord(data).grid == gi: return control
 	return null
 
 # Every grid cell control fully on screen, where a real drag can reach it.
@@ -1230,20 +1243,20 @@ func test_the_tap_hook_runs_once_per_tap() -> void:
 	await _end_fixture()
 
 # ==============================================================================
-# A PICKUP AIMS THE BOARD. ⚠ THE GRID COUNT IS THE POINT: a one-grid board centres its only grid.
+# A PICKUP AIMS THE BOARD; ONLY A PLACEMENT TAKES THE ENTRANCE. ⚠ THE GRID COUNT IS THE POINT.
 # ==============================================================================
 
-#A CLICK is a pickup, so a click aims the board: the Entrance leaves the centre of the window and
-#comes to rest under the grid the player was looking at, passing through the positions between.
-func test_a_click_pickup_slides_the_entrance_under_the_grid_in_view() -> void:
+#A CLICK is a pickup, so a click aims the board -- but the Entrance waits in the middle of the
+#window until a card is actually PLACED, so the player can still choose another grid.
+func test_a_pickup_leaves_the_entrance_centred_until_a_placement_takes_it() -> void:
 	await _start_fixture_grids(3)
 	check(_pa.view_mode == PlayArea.ViewMode.OVERVIEW and _game.state.committed_grid == -1
 			and _game.state.grids.size() == 3,
 			"precondition: three grids, looked at whole, nothing committed",
 			"mode %d, committed %d, %d grid(s)"
 			% [_pa.view_mode, _game.state.committed_grid, _game.state.grids.size()])
-#THE KEYBOARD RIDES THE SLIDE. A card the player has focused is a card they can still act on once
-#the Entrance has moved, so the slide must not take the focus out of the picture with it.
+#THE KEYBOARD SURVIVES A FOCUS. A card the player has focused is a card they can still act on once
+#the board has moved, so aiming the board must not take the focus out of the picture with it.
 	var resting : CardData = _pa.ui_data[_entrance_controls()[0]]
 	await _focus_the_card(resting)
 	var owner := _picture_viewport.gui_get_focus_owner()
@@ -1251,12 +1264,13 @@ func test_a_click_pickup_slides_the_entrance_under_the_grid_in_view() -> void:
 			"precondition: keyboard focus can reach an Entrance card at all", str(owner))
 	_pa.focus_grid(2)
 	await _settle_layout()
-	check(_entrance_off_grid_px(2) <= 1.0,
-			"precondition: focusing a grid slid the Entrance under it", "%.2f px off grid 2"
-			% _entrance_off_grid_px(2))
+	check(_pa.entrance_home_grid() == PlayArea.NO_GRID
+			and is_equal_approx(_pa._entrance_slide, 0.0),
+			"focusing a grid does NOT take the Entrance: it belongs to no grid and has not travelled",
+			"home grid %d, slide %.3f" % [_pa.entrance_home_grid(), _pa._entrance_slide])
 	check(_picture_viewport.gui_get_focus_owner() == owner
 			and (owner as Control).get_viewport() == _picture_viewport,
-			"the slide leaves the keyboard focus on the same control, in the picture's own viewport",
+			"...and the focus stays on the same control, in the picture's own viewport",
 			str(_picture_viewport.gui_get_focus_owner()))
 	_pa.open_zoomed_out()
 	await _settle_layout()
@@ -1266,20 +1280,16 @@ func test_a_click_pickup_slides_the_entrance_under_the_grid_in_view() -> void:
 	check(_pa.pan_grid == 2,
 			"precondition: a real pan key stepped the overview onto the last grid",
 			"pan_grid %d" % _pa.pan_grid)
-	check(absf(_drawn_centre_x(_pa.upper_zone_right)
-			- _drawn_centre_x(_pa.scroll_container)) <= 1.0,
+	var window_centre := _drawn_centre_x(_pa.scroll_container)
+	check(absf(_drawn_centre_x(_pa.upper_zone_right) - window_centre) <= 1.0,
 			"precondition: the uncommitted Entrance starts centred in the board's window",
-			"row %.2f vs window %.2f" % [_drawn_centre_x(_pa.upper_zone_right),
-			_drawn_centre_x(_pa.scroll_container)])
-	check(_entrance_off_grid_px(2) > 1.0,
-			"precondition: and it is NOT already under the grid the pickup will aim at",
-			"%.2f px off grid 2" % _entrance_off_grid_px(2))
+			"row %.2f vs window %.2f"
+			% [_drawn_centre_x(_pa.upper_zone_right), window_centre])
 
 	var entrance := _entrance_controls()
 	check(not entrance.is_empty(), "precondition: the deal left a card in the Entrance to lift",
 			"%d control(s)" % entrance.size())
 	var aimed_at : CardData = _pa.ui_data[entrance[0]]
-	var started := _pa.entrance_h_track.position.x
 	var held := await _lift_the_leftmost()
 	check(held == aimed_at,
 			"a click at a card's DRAWN position picks up THAT card: hit-testing follows the "
@@ -1287,56 +1297,92 @@ func test_a_click_pickup_slides_the_entrance_under_the_grid_in_view() -> void:
 	check(_pa.view_mode == PlayArea.ViewMode.FOCUSED and _pa.focused_grid == 2,
 			"...and the pickup focuses the grid nearest the middle of the board's window",
 			"mode %d, focused %d" % [_pa.view_mode, _pa.focused_grid])
-
-#THE SLIDE, SAMPLED PER PHYSICS FRAME: a still frame cannot tell a slide from a jump. The position
-#under the grid is itself moving while the board zooms in, so the travelled fraction is read from
-#the product's own clock and the x from what the player would see.
-	var travel : Array[float] = []
-	var drawn : Array[float] = []
-	var waited := 0.0
-	var landed := -1.0
-	while waited < PlayArea.settings().grid_pan_duration * 3.0:
-		await get_tree().physics_frame
-		waited += get_physics_process_delta_time()
-		travel.append(_pa._entrance_slide)
-		drawn.append(_pa.entrance_h_track.position.x)
-		if landed < 0.0 and is_equal_approx(_pa._entrance_slide, 1.0): landed = waited
-	check(travel.size() > 2, "precondition: the slide was sampled over several physics frames",
-			"%d sample(s)" % travel.size())
-	var monotonic := true
-	for i : int in range(1, travel.size()):
-		if travel[i] + 0.0001 < travel[i - 1]: monotonic = false
-	check(monotonic, "the Entrance travels one way across, never back",
-			"%d sample(s), first %.3f last %.3f" % [travel.size(), travel[0], travel[-1]])
-	var between := 0
-	for x : float in drawn:
-		if minf(started, drawn[-1]) + 1.0 < x and x < maxf(started, drawn[-1]) - 1.0: between += 1
-	check(between > 0,
-			"...and it PASSES THROUGH the positions in between rather than jumping",
-			"%d of %d samples strictly between %.1f and %.1f"
-			% [between, drawn.size(), started, drawn[-1]])
-	check(landed >= 0.0 and landed <= PlayArea.settings().grid_pan_duration
-			+ get_physics_process_delta_time() * 2.0,
-			"...and it is all the way across within the pan clock",
-			"landed %.3f s in, clock %.3f s" % [landed, PlayArea.settings().grid_pan_duration])
-
 	await _settle_layout()
-	check(_entrance_off_grid_px(2) <= 1.0,
-			"the Entrance comes to rest sharing a centre with the grid it was taken to",
-			"%.2f px off grid 2" % _entrance_off_grid_px(2))
-	check(_held_card() == aimed_at and _is_lifted(aimed_at) and _pa.locked_data == aimed_at,
-			"...and the card is still the one in hand, still lifted, still the one described",
-			_hand_str())
+	check(_pa.entrance_home_grid() == PlayArea.NO_GRID
+			and is_equal_approx(_pa._entrance_slide, 0.0),
+			"...and the PICKUP still leaves the Entrance owned by no grid: nothing has been placed yet",
+			"home grid %d, slide %.3f, committed %d"
+			% [_pa.entrance_home_grid(), _pa._entrance_slide, _game.state.committed_grid])
 
-#A CANCELLED pickup takes nothing back: the board stays where the pickup aimed it and the Entrance
-#stays under that grid until the player looks at the whole board again.
+#A CANCELLED pickup takes nothing back and gives nothing away: the board stays where the pickup
+#aimed it and the Entrance is still free to go to any grid.
 	await _right_click(_control_centre(_entrance_controls()[-1]), false)
 	await _settle_layout()
 	check(_pa.selected_cards.is_empty(), "precondition: the second button let the card go",
 			_hand_str())
-	check(_pa.focused_grid == 2 and _entrance_off_grid_px(2) <= 1.0,
-			"a cancelled pickup leaves the board focused and the Entrance under that grid",
-			"focused %d, %.2f px off" % [_pa.focused_grid, _entrance_off_grid_px(2)])
+	check(_pa.focused_grid == 2 and _pa.entrance_home_grid() == PlayArea.NO_GRID,
+			"a cancelled pickup leaves the board focused and the Entrance still owned by no grid",
+			"focused %d, home grid %d" % [_pa.focused_grid, _pa.entrance_home_grid()])
+
+#THE PLACEMENT IS WHAT COMMITS, and the slide starts from it.
+	var to_place := await _lift_the_leftmost()
+	var cell := await _legal_cell_control_in_grid(to_place, 2) if to_place else null
+	check(to_place != null and cell != null,
+			"precondition: a card is lifted and a cell on the grid in view accepts it",
+			"held %s, cell %s" % [to_place != null, cell != null])
+	if to_place and cell:
+		var at := _control_centre(cell)
+		await _drag(at, at)
+		check(_placed_cards().has(to_place) and _game.state.committed_grid == 2,
+				"placing the card is what commits the Entrance, and it commits to the grid it went on",
+				"committed %d, %s" % [_game.state.committed_grid, _hand_str()])
+#SAMPLED PER PHYSICS FRAME, because a still frame cannot tell a slide from a jump. ⚠ THE DRAWN
+#x DOES NOT MOVE HERE and must not be asserted on: the committed grid is the focused one, so it is
+#already centred in the window and both ends of the travel are the same point.
+		var travel : Array[float] = []
+		var waited := 0.0
+		var landed := -1.0
+		while waited < PlayArea.settings().grid_pan_duration * 3.0:
+			await get_tree().physics_frame
+			waited += get_physics_process_delta_time()
+			travel.append(_pa._entrance_slide)
+			if landed < 0.0 and is_equal_approx(_pa._entrance_slide, 1.0): landed = waited
+		check(travel.size() > 2, "precondition: the slide was sampled over several physics frames",
+				"%d sample(s)" % travel.size())
+		var monotonic := true
+		for i : int in range(1, travel.size()):
+			if travel[i] + 0.0001 < travel[i - 1]: monotonic = false
+		check(monotonic, "the Entrance travels one way across, never back",
+				"%d sample(s), first %.3f last %.3f" % [travel.size(), travel[0], travel[-1]])
+		check(landed >= 0.0 and landed <= PlayArea.settings().grid_pan_duration
+				+ get_physics_process_delta_time() * 2.0,
+				"...and it is all the way across within the pan clock",
+				"landed %.3f s in, clock %.3f s" % [landed, PlayArea.settings().grid_pan_duration])
+		await _settle_layout()
+		check(_pa.entrance_home_grid() == 2 and _entrance_off_grid_px(2) <= 1.0,
+				"a committed Entrance belongs to the grid it was placed on and is drawn under it",
+				"home grid %d, %.2f px off grid 2"
+				% [_pa.entrance_home_grid(), _entrance_off_grid_px(2)])
+
+#AND NOW IT FOLLOWS THAT GRID. Panning away is the one route where the two positions differ, so it
+#is the only one that can show the Entrance MOVING through the positions in between.
+		var started := _pa.entrance_h_track.position.x
+		_pa.pan_by_grids(-1)
+		var drawn : Array[float] = []
+		var panned := 0.0
+		while panned < PlayArea.settings().grid_pan_duration * 3.0:
+			await get_tree().physics_frame
+			panned += get_physics_process_delta_time()
+			drawn.append(_pa.entrance_h_track.position.x)
+		await _settle_layout()
+		var ended := _pa.entrance_h_track.position.x
+		check(absf(ended - started) > 1.0,
+				"precondition: panning off the committed grid moved the Entrance with it",
+				"x %.2f -> %.2f" % [started, ended])
+		var between := 0
+		for x : float in drawn:
+			if minf(started, ended) + 1.0 < x and x < maxf(started, ended) - 1.0: between += 1
+		check(between > 0,
+				"...PASSING THROUGH the positions in between rather than jumping",
+				"%d of %d samples strictly between %.1f and %.1f"
+				% [between, drawn.size(), started, ended])
+		check(_entrance_off_grid_px(2) <= 1.0
+				and absf(_drawn_centre_x(_pa.upper_zone_right)
+				- _drawn_centre_x(_pa.scroll_container)) > 1.0,
+				"...and it stays under its own grid, no longer in the middle of the window",
+				"%.2f px off grid 2, %.2f px off the window centre"
+				% [_entrance_off_grid_px(2), absf(_drawn_centre_x(_pa.upper_zone_right)
+				- _drawn_centre_x(_pa.scroll_container))])
 	await _end_fixture()
 
 # The DRAG half of the same gesture aims the board exactly as the click does, and "nearest" is
@@ -1359,9 +1405,10 @@ func test_a_drag_pickup_aims_at_the_grid_nearest_the_window_centre() -> void:
 			"mode %d, focused %d" % [_pa.view_mode, _pa.focused_grid])
 	await _end_drag(from)
 	await _settle_layout()
-	check(_entrance_off_grid_px(1) <= 1.0,
-			"...and the Entrance is under that grid once the slide is over",
-			"%.2f px off grid 1" % _entrance_off_grid_px(1))
+	check(_pa.entrance_home_grid() == PlayArea.NO_GRID
+			and is_equal_approx(_pa._entrance_slide, 0.0),
+			"...and a DRAG pickup takes the Entrance no more than a click does: still owned by no grid",
+			"home grid %d, slide %.3f" % [_pa.entrance_home_grid(), _pa._entrance_slide])
 	await _right_click(from, false)
 
 #MID-PAN: the board is heading for grid 1 while grid 0 is still the one in front of the player.
@@ -1396,20 +1443,33 @@ func test_a_drag_pickup_aims_at_the_grid_nearest_the_window_centre() -> void:
 			"...and a pickup now takes grid 1: nearest is geometry, not the grid that was focused",
 			"focused %d, %s" % [_pa.focused_grid, _hand_str()])
 	await _settle_layout()
-	check(_entrance_off_grid_px(1) <= 1.0,
-			"...with the Entrance carried across to it",
-			"%.2f px off grid 1" % _entrance_off_grid_px(1))
+	check(absf(_drawn_centre_x(_pa.upper_zone_right)
+			- _drawn_centre_x(_pa.scroll_container)) <= 1.0,
+			"...with the Entrance left in the middle of the window for that grid to come to",
+			"%.2f px off the window centre"
+			% absf(_drawn_centre_x(_pa.upper_zone_right)
+			- _drawn_centre_x(_pa.scroll_container)))
 	await _end_fixture()
 
 # The picture the player is not looking at does not process, so a slide caught by leaving the game
 # screen freezes where it is — and finishes, never abandoned half way, when the picture comes back.
 func test_the_entrance_slide_survives_the_picture_being_left() -> void:
 	await _start_fixture_grids(3)
-	var entrance := _entrance_controls()
-	check(not entrance.is_empty(), "precondition: a card to lift", "%d control(s)" % entrance.size())
-	await _lift_the_leftmost()
-	check(_pa.focused_grid == 1, "precondition: the pickup aimed the board at the middle grid",
-			"focused %d" % _pa.focused_grid)
+#ONLY A PLACEMENT STARTS THE SLIDE, so the slide this row freezes has to be started by one.
+	var held := await _lift_the_leftmost()
+	await _settle_layout()
+	var cell := await _legal_cell_control_in_grid(held, _pa.focused_grid) if held else null
+	check(held != null and cell != null, "precondition: a card lifted and a cell that accepts it",
+			"held %s, cell %s" % [held != null, cell != null])
+	if not (held and cell):
+		await _end_fixture()
+		return
+	var at := _control_centre(cell)
+	await _drag(at, at)
+	check(_game.state.committed_grid != -1,
+			"precondition: the placement committed the Entrance and started its slide",
+			"committed %d" % _game.state.committed_grid)
+	var home := _game.state.committed_grid
 	check(_pa._entrance_slide < 1.0,
 			"precondition: the slide was caught part way across",
 			"travelled %.3f" % _pa._entrance_slide)
@@ -1427,8 +1487,112 @@ func test_the_entrance_slide_survives_the_picture_being_left() -> void:
 			% [frozen, _pa._entrance_slide, _pa.entrance_h_track.position.x])
 	_view.process_mode = prev_mode
 	await _settle_layout()
-	check(is_equal_approx(_pa._entrance_slide, 1.0) and _entrance_off_grid_px(1) <= 1.0,
+	check(is_equal_approx(_pa._entrance_slide, 1.0) and _entrance_off_grid_px(home) <= 1.0,
 			"...and coming back finishes it under the grid, never abandoned half way",
-			"travelled %.3f, %.2f px off grid 1"
-			% [_pa._entrance_slide, _entrance_off_grid_px(1)])
+			"travelled %.3f, %.2f px off grid %d"
+			% [_pa._entrance_slide, _entrance_off_grid_px(home), home])
+	await _end_fixture()
+
+# ==============================================================================
+# A USED-UP ENTRANCE FREES THE COMMITTED GRID.
+# ==============================================================================
+
+## How many Entrance slots still hold a card the player could pick up.
+func _filled_entrance_slots() -> int:
+	var filled := 0
+	for column : ArrayCardData in _game.state.upper_zone:
+		if not column.datas.is_empty(): filled += 1
+	return filled
+
+# Empties every Entrance slot but the one whose top card the committed grid still accepts, and
+# hands that card back. A show that runs its own Entrance dry takes the whole deck to reach.
+func _leave_one_entrance_card(home: int) -> CardData:
+	var keep : CardData = null
+	var keep_column : ArrayCardData = null
+	for column : ArrayCardData in _game.state.upper_zone:
+		if column.datas.is_empty(): continue
+		var top : CardData = column.datas.back()
+		var legal := await _game.legal_cells_for([top] as Array[CardData], [_game.state.grids[home]])
+		if legal.is_empty(): continue
+		keep = top
+		keep_column = column
+		break
+	if not keep: return null
+	for column : ArrayCardData in _game.state.upper_zone:
+		if column != keep_column: column.datas.clear()
+	keep_column.datas.assign([keep] as Array[CardData])
+	_pa.queue_rebuild()
+	await _settle_layout()
+	return keep
+
+## One card lifted and placed on `cell`, the way a player does both: a click, then a click.
+func _click_place(data: CardData, cell: Control) -> void:
+	var from := _card_centre(data)
+	await _drag(from, from)
+	var at := _control_centre(cell)
+	await _drag(at, at)
+
+#ONCE THE PLAYER'S HAND HAS NOWHERE LEFT TO GO ON THE COMMITTED GRID -- and an emptied Entrance has
+#nowhere by definition -- the commitment lifts BEFORE the refill, so the next hand may choose
+#another grid. Asked after the refill it is asked about the cards the refill just dealt.
+func test_a_used_up_entrance_frees_the_commitment() -> void:
+	await _start_fixture_grids(2)
+	var first := await _lift_the_leftmost()
+	await _settle_layout()
+	var cell := await _legal_cell_control_in_grid(first, _pa.focused_grid) if first else null
+	check(first != null and cell != null,
+			"precondition: a card lifted and a cell of the grid in view that accepts it",
+			"held %s, cell %s" % [first != null, cell != null])
+	if not (first and cell):
+		await _end_fixture()
+		return
+	var at := _control_centre(cell)
+	await _drag(at, at)
+	var home := _game.state.committed_grid
+	check(home != -1, "precondition: the first placement committed a grid",
+			"committed %d" % home)
+	if home == -1:
+		await _end_fixture()
+		return
+
+	var last := await _leave_one_entrance_card(home)
+	check(last != null and _filled_entrance_slots() == 1,
+			"precondition: the player is down to ONE Entrance card, and the committed grid still "
+			+ "accepts it", "%d slot(s) hold a card" % _filled_entrance_slots())
+	var last_cell := await _legal_cell_control_in_grid(last, home) if last else null
+	check(last_cell != null, "precondition: a cell on the committed grid takes that last card",
+			"cell %s" % [last_cell != null])
+	if not (last and last_cell):
+		await _end_fixture()
+		return
+	await _click_place(last, last_cell)
+	await _settle_layout()
+	check(_game.state.committed_grid == -1,
+			"using the Entrance up frees the commitment: it lifts BEFORE the refill, so the hand "
+			+ "the refill deals is not what the grid is judged by",
+			"committed %d, %d slot(s) hold a card"
+			% [_game.state.committed_grid, _filled_entrance_slots()])
+	check(_filled_entrance_slots() > 0,
+			"...and the refill still ran, so the player has a hand again",
+			"%d slot(s) hold a card" % _filled_entrance_slots())
+
+#THE PAYOFF: a placement onto a grid that is not the committed one is REFUSED outright, so the
+#freed commitment is the only thing that lets the next hand choose the other grid.
+	var other := 1 - home
+	_pa.focus_grid(other)
+	await _settle_layout()
+	var next := await _lift_the_leftmost()
+	await _settle_layout()
+	var next_cell := await _legal_cell_control_in_grid(next, other) if next else null
+	check(next != null and next_cell != null,
+			"precondition: a card from the refilled Entrance, and a cell on the OTHER grid that "
+			+ "accepts it", "held %s, cell %s" % [next != null, next_cell != null])
+	if next and next_cell:
+		var next_at := _control_centre(next_cell)
+		await _drag(next_at, next_at)
+		check(_placed_cards().has(next) and _game.state.committed_grid == other,
+				"...and the next hand commits to the OTHER grid, which a still-committed board "
+				+ "would have refused",
+				"committed %d (was %d), %s"
+				% [_game.state.committed_grid, home, _hand_str()])
 	await _end_fixture()

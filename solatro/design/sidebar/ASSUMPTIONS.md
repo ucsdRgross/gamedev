@@ -748,9 +748,11 @@
   topmost control, minus the slots showing only a face-down card, so the arrows walk from one
   revealed card to the next. Clearing both links every rebuild is part of it: the controls are
   pooled, so a stale path would outlive the slot that earned it.
-- Phase 7 fix 9: `Game._commit_placement()` is a placement's commit -- the grid commitment lift plus
-  the `save_state()` a PLAYER's placement owes. The winning placement runs it BEFORE the hold, so
-  undo after an automatic end rewinds only the end and the winning row survives.
+- Phase 7 fix 9: `Game._commit_placement()` is the `save_state()` a PLAYER's placement owes. The
+  winning placement runs it BEFORE the hold, so undo after an automatic end rewinds only the end
+  and the winning row survives. The grid commitment lift is its own step,
+  `Game._lift_a_spent_commitment()`, run AHEAD of the refill so the question "can the hand still go
+  on this grid" is asked of the hand the player has, not of the cards the refill just dealt.
 - Phase 7 fix 9: `Game._end_show_on_goal()` takes the board lock (`processing = true`) before the
   hold, so no undo, re-arm or second placement fits inside it. The hold length is read from
   `get_delay()` FIRST, because the lock is what compresses it.
@@ -759,8 +761,8 @@
   ends the show -- including a board saved after an undo of an automatic end, which is
   indistinguishable on disk and which the goal-ends-a-show rule wins.
 - Phase 7 fix 9: `TestGameHeadless.RefillSpy` is a test-only skill whose `on_refill` records the
-  hook; it is how 7.2 proves the end fired BEFORE the refill (`committed_grid` no longer says so,
-  because the commitment lift now runs with the placement's commit).
+  hook; it is how 7.2 proves the end fired BEFORE the refill (`committed_grid` cannot say so: its
+  lift runs ahead of the refill on every placement).
 - Phase 7 fix 9: `TestGridCards.GOAL_OUT_OF_REACH` and `TestLeakCanary.GOAL_OUT_OF_REACH` join the
   three S22 ones: TP-122's placement scores thousands, and the leak canary's phase 4 quits
   mid-show, so neither may reach the goal. The canary drops its goal to 1 on the RESUMED board and
