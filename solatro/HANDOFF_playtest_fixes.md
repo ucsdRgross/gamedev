@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P14, P16-P23, P25-P28 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6328 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P40, P42, P43, then the close; P33-P39 and P41 are in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P40, P42, P43, P44, P45, then the close; P33-P39 and P41 are in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -132,6 +132,7 @@ a lot of these issues are with lack of parity between different modal input opti
 - **Reviewers (verbatim).** "reviewer ideally fable always, but it never touches the code itself, just finds issues." Every review pass at the close runs on Fable, read-only; its findings are implementer steps.
 - **P38 single-node cancel (verbatim).** Asked: with exactly one reachable node auto-picked, does cancel/X on its description (a) drop the pick, Travel gone until the player clicks the node, or (b) keep it and skip to wall view. Owner: "i choose a. b is unintuitive for player".
 - **P39a picture size (verbatim).** Asked: (a) size the picture to the run actual grid count, or (b) keep the picture fixed and zoom the overview to fit the set. Owner: "no dont change picture size based on grid count. so it should be b."
+- **Seventh round (verbatim), the numbered letters asked after P39.** Asked: 1 one-grid cancel (a straight to the wall as built / b match Back); 2 a drag release (a re-aim the board only / b also grab focus onto an Entrance card); 3 a cancel mid-pan (a undo only / b also snap to the nearest grid); 4 a one-grid show (a the Entrance moves on the first placement / b commits on open); 5 a show opening (a arrives at scale / b eases in); 6 the sidebar arriving reserve (a the re-fit snaps / b eases, throttled once per slide); 9 an existing settings.tres keeping prop_tick_fraction 0.45. Owner: "1. a 2. b 3. b 4. commits entrance to grid immediately 5. b 6. b 9. dont keep old speed". Unanswered: 7 the game-screen HUD while a viewer is open; 8 a closed hover dropping the board focus; the gutter floor (one card of separation vs the score labels).
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -454,6 +455,22 @@ a lot of these issues are with lack of parity between different modal input opti
   status: pending
   evidence: ''
   notes: 'Measured by P39(a) at 3 grids: window 394..1576 = 1182.0; grid container combined minimum 912.0 authored; fit 1.296053 (idempotent), 912 x 1.296053 = 1182.0 to the pixel; resting scroll 0.00; authored panel stylebox margins (0,0,0,0); container custom_minimum_size.x 216 = the Entrance minimum (216 < 912, inert); drawn panel span 399.18..1581.18. Six causes EXCLUDED by measurement: the v-scrollbar reserve (0), _board_content_origin() (0), the container own minimum, the live stylebox (circular - _apply_grid_buffer writes it), the authored stylebox (0), the Entrance minimum. Not tried: the HBox SIZE_SHRINK_CENTER panel alignment against a container one separation wider than its children (3 panels, separation 0 - check the last separation), the score-gutter asymmetry (a left gutter 44 on grid 0 only?), sub-pixel pivot of the scroll_container scale. Also found: _sync_entrance_x writes grid_container.custom_minimum_size.x = the Entrance minimum with a comment whose premise is stale (EntranceStrip is a SIBLING of the scroller and is positioned directly) - inert, delete here. ALSO here, from the Fable review of (a): NAMES.md ~292 still names OVERVIEW_BOARD_ZOOM (deleted) - drop the row; test_grid_view.gd ~3236 and ~1035 assert the 1-/2-grid centring at 2.0 and 2.5 authored px (a measured ~2.2 px side asymmetry, comment ~1021) while the ~3237 message says "to the pixel" - one tolerance, honest text; play_area.gd ~1137 the is_instance_valid guard on two @onready containers and ~1166 the wide <= 0 branch have no producer - drop or assert; play_area.gd ~1248 one physical line with three literal tabs mid-expression (a lost line continuation) - restore the break.'
+- id: P44
+  description: The seventh-round board rulings, built - (2) a drag-pan release also puts the keyboard focus on an Entrance card; (3) a cancel that ends a latched pan also snaps the nearest grid into place; (4) a ONE-grid show commits its Entrance to the grid as it opens (nothing to choose, nothing moves); (5) a show EASES in as it opens instead of arriving at scale; (6) the board eases to the sidebar arriving reserve too, the re-fit throttled to once per slide; (1) as built - a one-grid cancel goes straight to the wall; name the Back/cancel difference in one line at the wall_back site.
+  files_touched: [solatro/UI/play_area.gd, solatro/Levels/game_view.gd, solatro/Tests/UI/test_grid_view.gd, solatro/Tests/Interaction/test_drag_place.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter GridView GridLayout DragPlace Interaction PlanVisuals Sidebar VisualLayers SettingsRange UiProps; by eye with grid_zoom_shot'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'Five sub-fixes, each red then green, each its own commit, in the order 4, 2, 3, 5, 6. Sites: (2) PlayArea._end_the_content_drag (lands_on_a_grid branch) - grab focus onto the Entrance card nearest the pointer or the leftmost, assert the OWNER and viewport; (3) the two cancel callers pass lands_on_a_grid = true; (4) entrance_home_grid()/Game commit: with exactly one grid, committed_grid = 0 at open_show_view (the P39(e) fixture waits and the four latched stand-ups must still hold); (5) _snap_the_view_into_place at the opening view becomes the ease - measure the first frames (the P24 render-target lesson: the picture is shown on its first frame) and keep the fixture-latched and inset re-fit snaps; (6) _re_fit_after_inset_change: one ease per sidebar slide (HudContainer.slide_settled is the end event), not per frame - measure that the board arrives (P39(b) measured it never did when re-fit every frame). Drawn-geometry change: run VisualLayers, SettingsRange, UiProps in the filter.'
+- id: P45
+  description: An existing user://settings.tres carrying prop_tick_fraction 0.45 is brought to the new default on load - the owner: "dont keep old speed".
+  files_touched: [solatro/Scripts/settings_manager.gd, solatro/Scripts/player_settings.gd, solatro/Tests/Settings/]
+  verification_command: 'run_tests.py --logic; --filter Settings'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Find how settings load (SettingsManager) and whether a version/migration seam exists; if none, the smallest honest mechanism is a settings-format version with one migration (0.45 -> 0.15 when the stored value equals the OLD default only - a player who set their own value keeps it; say if the owner wants otherwise). Red: a saved .tres with 0.45 loads as 0.15. sonnet unless a seam has to be designed.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -518,7 +535,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P40 (opus), P42, P43, then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P40 (opus), P44 (opus, five commits), P45 (sonnet), P42, P43, then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
