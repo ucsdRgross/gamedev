@@ -52,6 +52,7 @@ func _ready() -> void:
 # left below it lists cards only the keyboard can reach, and its click-to-close never fires.
 func _inspect(cards: Array[CardData], inspect: Button) -> void:
 	var viewer := DeckViewer.show_deck(self, cards, inspect)
+	if viewer == null: return
 	viewer.layer = layer + 1
 	viewer_opened.emit(viewer)
 

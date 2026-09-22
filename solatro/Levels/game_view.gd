@@ -298,7 +298,8 @@ static func sorted_stock_union(state: GameData) -> Array[CardData]:
 # highlights to this view, which relays them the same way, and closing one hands the sidebar back
 # to whatever was locked behind it.
 func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
-	hud_container.host_viewer(DeckViewer.show_deck(self, cards, opener), wall_picture, info_requested)
+	var viewer := DeckViewer.show_deck(self, cards, opener)
+	if viewer: hud_container.host_viewer(viewer, wall_picture, info_requested)
 
 # Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores
 # the press where it cannot act.

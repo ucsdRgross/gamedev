@@ -72,11 +72,15 @@ func detach_entry() -> void:
 # ⚠ THE PANEL OWNS WHATEVER IS MOUNTED and frees it when another entry replaces it. A caller that
 # still needs its visual takes it back through `detach_entry()` first. It leaves the tree FIRST: a
 # queue-freed child is still a child until the frame ends, and this entry is measured before then.
+
+# ⚠ THE ONE ALREADY MOUNTED IS NOT REPLACED BY ITSELF: showing an entry a second time -- which is
+# what locking to the card already being read is -- would otherwise free the very visual it mounts.
 func _mount_visual(visual: Node) -> void:
 	for child : Node in _visual_slot.get_children():
+		if child == visual: continue
 		_visual_slot.remove_child(child)
 		child.queue_free()
-	if visual == null: return
+	if visual == null or visual.get_parent() == _visual_slot: return
 	_visual_slot.add_child(visual)
 	_make_still(visual)
 

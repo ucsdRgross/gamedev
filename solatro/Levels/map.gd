@@ -236,16 +236,20 @@ func _show_possible_cards(node: WorldGraphNode) -> void:
 	var cards := await _booster_of(node).get_possible_preview_cards()
 	_host_map_viewer(DeckViewer.show_deck(self, cards, possible_cards_button))
 
-# EVERY VIEWER THIS SCREEN OPENS COMES BACK TO WHAT THE PLAYER WAS LOOKING AT: the picked node's
-# description. Without it the sidebar keeps whichever card the viewer's own highlight last reached.
+# ⚠ HOSTED FIRST, REPUBLISHED SECOND: the container's close handler takes the viewer's card out of
+# the sidebar, so a pick put back before it would be wiped by it. The pick is what every viewer
+# this screen opens comes back to.
 func _host_map_viewer(viewer: DeckViewer) -> void:
-	viewer.highlight_cleared.connect(_republish_the_pick)
+	if viewer == null: return
+	selection_buttons.visible = false
 	hud_container.host_viewer(viewer, wall_picture, info_hovered)
+	viewer.highlight_cleared.connect(_republish_the_pick)
 
 # Nothing picked is the HUD's own Deck button opening the viewer from the basic view; the container
 # takes itself back to the HUD and there is no description to return to.
 func _republish_the_pick() -> void:
 	var picked := controller.selected()
+	selection_buttons.visible = picked != null
 	if picked: info_hovered.emit(_info_for(picked))
 
 func _info_for(node: WorldGraphNode) -> InfoEntry:

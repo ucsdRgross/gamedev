@@ -29,7 +29,189 @@ func _ready() -> void:
 	await test_booster_pool_comes_from_settings()
 	await test_pack_click_selects()
 	await test_take_ignores_the_selection()
+	behavior_section("THE VIEWER IS MODAL: HOVER DESCRIBES, A CLICK STICKS")
+	await test_a_hover_describes_a_viewer_card_and_a_click_sticks_it()
+	await test_a_later_hover_borrows_the_description_and_gives_it_back()
+	await test_a_sticky_description_puts_the_packs_buttons_beyond_reach()
+	await test_a_click_on_a_listed_card_never_closes_the_viewer()
+	await test_cancel_unsticks_before_it_closes()
+	await test_an_arrow_off_the_lists_edge_never_reaches_the_screen_beneath()
+	await test_an_edge_arrow_asks_for_the_sidebar_only_while_a_card_is_stuck()
+	await test_the_same_opener_pressed_again_closes_the_viewer()
+	await test_the_pack_chooser_swallows_a_cancel_it_cannot_answer()
 	finish()
+
+## The button a test viewer was opened from, kept so the toggle can press the SAME one again.
+var _test_opener : Button = null
+
+# A viewer opened the way every screen opens one, with two cards so a highlight can MOVE, and its
+# published entries collected: what the sidebar would be reading, without booting one.
+func _two_card_viewer(published: Array[String]) -> DeckViewer:
+	_test_opener = Button.new()
+	add_child(_test_opener)
+	var deck : Array[CardData] = [_card(), _card().with_type(TypeHeavy.new())]
+	var viewer := DeckViewer.show_deck(self, deck, _test_opener)
+	viewer.info_requested.connect(func(entry: InfoEntry) -> void:
+		published.append(entry.title)
+		if entry.visual: entry.visual.queue_free())
+	return viewer
+
+func _drop_viewer(viewer: DeckViewer) -> void:
+	if is_instance_valid(viewer): viewer.queue_free()
+	if is_instance_valid(_test_opener): _test_opener.queue_free()
+	_test_opener = null
+	await get_tree().process_frame
+
+## An `InputEventAction` for one action, which is what a viewer's own modal verdict reads.
+func _action_event(action: StringName) -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = true
+	return event
+
+## Hovering a listed card describes it; only a CLICK makes the sidebar keep it.
+func test_a_hover_describes_a_viewer_card_and_a_click_sticks_it() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	var cards := viewer._cards.controls
+	cards[0].mouse_entered.emit()
+	check(not published.is_empty(), "a hover publishes the card it landed on", str(published))
+	check(viewer._cards.sticky == null, "...and sticks nothing")
+	_click(cards[0])
+	check(viewer._cards.sticky == cards[0].child.data, "a click sticks the sidebar to that card")
+	await _drop_viewer(viewer)
+
+## A later hover BORROWS the description while it lasts; letting go gives it back to the stuck card, so a long one can be read in the sidebar.
+func test_a_later_hover_borrows_the_description_and_gives_it_back() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	var cards := viewer._cards.controls
+	_click(cards[0])
+	var after_the_click := published.size()
+	var gave_back : Array[int] = [0]
+	viewer._cards.highlight_left.connect(func() -> void: gave_back[0] += 1)
+	cards[1].mouse_entered.emit()
+	check(published.size() > after_the_click,
+			"a hover over another card does show that card while it lasts",
+			"%d vs %d" % [published.size(), after_the_click])
+	check(viewer._cards.sticky == cards[0].child.data,
+			"...and the clicked card is still the stuck one")
+	cards[1].mouse_exited.emit()
+	check(gave_back[0] == 1,
+			"the pointer leaving every listed card hands the sidebar back to the stuck one",
+			str(gave_back[0]))
+	cards[0].mouse_entered.emit()
+	cards[1].mouse_entered.emit()
+	cards[0].mouse_exited.emit()
+	check(gave_back[0] == 1,
+			"...and it is only the LAST card leaving that does, however many were hovered between",
+			str(gave_back[0]))
+	await _drop_viewer(viewer)
+
+## A sticky description is being read, so nothing in the pack can be pressed until it is cancelled -- by pointer or by pad.
+func test_a_sticky_description_puts_the_packs_buttons_beyond_reach() -> void:
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0, 2)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(not viewer.confirm_button.disabled, "sanity: Take is live with nothing picked")
+	_click(viewer._cards.controls[0])
+	check(viewer.confirm_button.disabled,
+			"Take cannot be pressed while a sticky description is up")
+	check(viewer.confirm_button.focus_mode == Control.FOCUS_NONE,
+			"...and a pad cannot reach it either", str(viewer.confirm_button.focus_mode))
+	var reachable := 0
+	for button : Button in viewer._reroll_buttons:
+		if not button.disabled or button.focus_mode != Control.FOCUS_NONE: reachable += 1
+	check(reachable == 0, "...nor any Reroll button", str(reachable))
+	viewer._cards.unstick()
+	check(not viewer.confirm_button.disabled
+			and viewer.confirm_button.focus_mode == Control.FOCUS_ALL,
+			"cancelling the description puts Take back within reach")
+	viewer.queue_free()
+	await get_tree().process_frame
+
+## A click on a listed card is the card's own act: the catcher behind the list never sees it.
+func test_a_click_on_a_listed_card_never_closes_the_viewer() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	_click(viewer._cards.controls[0])
+	await get_tree().process_frame
+	check(not viewer.is_queued_for_deletion(), "the viewer is still open after a click on a card")
+	await _drop_viewer(viewer)
+
+## ONE cancel unsticks and closes together -- there is no two-press ladder out of a viewer.
+func test_cancel_unsticks_before_it_closes() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	_click(viewer._cards.controls[0])
+	check(viewer._cards.sticky != null, "sanity: a card is stuck")
+	check(viewer._cards.modal_verdict(_action_event(&"ui_cancel")) == CardsViewer.Modal.CLOSE,
+			"the FIRST cancel with a card stuck already reads as a close")
+	await _drop_viewer(viewer)
+
+## An arrow that walked off the list's own edge is KEPT, so the map or board beneath never answers it.
+func test_an_arrow_off_the_lists_edge_never_reaches_the_screen_beneath() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	for action : StringName in CardsViewer.NAVIGATION:
+		check(viewer._cards.modal_verdict(_action_event(action)) == CardsViewer.Modal.KEEP,
+				"%s is kept by the open viewer" % action)
+	await _drop_viewer(viewer)
+
+## The X lives in another viewport, so the edge arrow ASKS for it -- and only while a stuck card has put one there.
+func test_an_edge_arrow_asks_for_the_sidebar_only_while_a_card_is_stuck() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	var asked : Array[int] = [0]
+	viewer._cards.sidebar_requested.connect(func() -> void: asked[0] += 1)
+	viewer._cards.modal_verdict(_action_event(&"ui_up"))
+	check(asked[0] == 0, "an edge arrow with nothing stuck asks for nothing", str(asked[0]))
+	_click(viewer._cards.controls[0])
+	viewer._cards.modal_verdict(_action_event(&"ui_up"))
+	check(asked[0] == 1, "...and with a card stuck it hands the focus to the sidebar",
+			str(asked[0]))
+	await _drop_viewer(viewer)
+
+## The Deck button TOGGLES: pressed again it closes the viewer it opened, and opens nothing.
+func test_the_same_opener_pressed_again_closes_the_viewer() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	check(is_instance_valid(viewer) and not viewer.is_queued_for_deletion(),
+			"sanity: the first press opened a viewer")
+	var again := DeckViewer.show_deck(self, [_card()] as Array[CardData], _test_opener)
+	check(again == null, "the same opener pressed again opens nothing", str(again))
+	check(viewer.is_queued_for_deletion(), "...and closes the viewer it had opened")
+	await _drop_viewer(viewer)
+	var other := Button.new()
+	add_child(other)
+	var first := _two_card_viewer(published)
+	await get_tree().process_frame
+	var swapped := DeckViewer.show_deck(self, [_card()] as Array[CardData], other)
+	check(swapped != null and swapped != first,
+			"a DIFFERENT opener still replaces the open viewer rather than closing it")
+	if swapped: swapped.queue_free()
+	other.queue_free()
+	await _drop_viewer(first)
+
+## The pack cannot be reopened, so its cancel unsticks and is then SWALLOWED: the wall never hears it either.
+func test_the_pack_chooser_swallows_a_cancel_it_cannot_answer() -> void:
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_click(viewer._cards.controls[0])
+	viewer._unhandled_input(_action_event(&"ui_cancel"))
+	check(viewer.selected_card == null, "a cancel lets the pack's picked card go")
+	check(not viewer.is_queued_for_deletion(), "...and the pack itself is still open")
+	check(not viewer.confirm_button.disabled, "...with Take back within reach")
+	viewer.queue_free()
+	await get_tree().process_frame
 
 ## A dummy pack. It overrides create_one_choice so a roll needs no RunManager.run (the real one goes through luck(), which dereferences a null run in a bare test), while still driving the REAL on_map_picked -> ChoiceViewer path — which is where booster_reroll_pool is read.
 class StubBooster extends BoosterTemplate:
@@ -229,18 +411,18 @@ func test_pack_click_selects() -> void:
 	check(viewer.selected_card == first.child.data, "a click picks the card it landed on")
 	check(first.child.selected and not second.child.selected,
 			"exactly one listed card is picked at a time")
-	check(_rim_index(first) == PaletteDB.ROLES.selected_rim,
-			"the picked card's rim is drawn in the selection ink", str(_rim_index(first)))
-	check(_rim_index(first) != resting and PaletteDB.ROLES.selected_rim != PaletteDB.ROLES.match_rim,
-			"the selection ink is neither the resting ink nor the focus ink")
-	first.grab_focus()
-	await get_tree().process_frame
+	check(first.has_focus(),
+			"the click also focuses the card it picked, so the sidebar can stay on it",
+			str(first.get_viewport().gui_get_focus_owner()))
 	check(_rim_index(first) == PaletteDB.ROLES.match_rim,
 			"the moving focus takes the rim while it is on the picked card", str(_rim_index(first)))
 	second.grab_focus()
 	await get_tree().process_frame
 	check(_rim_index(first) == PaletteDB.ROLES.selected_rim,
-			"the selection ink returns once the focus moves off", str(_rim_index(first)))
+			"the picked card's rim is drawn in the selection ink once the focus moves off",
+			str(_rim_index(first)))
+	check(_rim_index(first) != resting and PaletteDB.ROLES.selected_rim != PaletteDB.ROLES.match_rim,
+			"the selection ink is neither the resting ink nor the focus ink")
 	_click(first)
 	await get_tree().process_frame
 	check(viewer.selected_card == first.child.data, "a second click on the picked card keeps it")
@@ -260,8 +442,11 @@ func test_take_ignores_the_selection() -> void:
 		await get_tree().process_frame
 		if pick >= 0: _click(viewer._cards.controls[pick])
 		await get_tree().process_frame
-		check(not viewer.confirm_button.disabled,
-				"Take is live with %s picked" % ("a card" if pick >= 0 else "nothing"))
+		check(viewer.confirm_button.disabled == (pick >= 0),
+				"Take is live with nothing picked, and held behind a sticky description with %s"
+						% ("a card picked" if pick >= 0 else "nothing picked"))
+		viewer._cards.unstick()
+		await get_tree().process_frame
 		var got : Array[CardData] = []
 		viewer.confirmed.connect(func(taken: Array[CardData]) -> void: got.assign(taken))
 		viewer.confirm_button.pressed.emit()

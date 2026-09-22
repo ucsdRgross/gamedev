@@ -25,11 +25,15 @@ var _return_focus : Control = null
 ## Where the focus goes on close when the opener is hidden; set by the `HudContainer` hosting this viewer.
 var fallback_focus : Control = null
 
-# ⚠ THE OPENER HANDS ITS OWN CONTROL IN: the pile buttons live in the wall overlay while this
-# viewer lives inside a picture's SubViewport, and focus is cleared across every viewport of one
-# window -- so reading a focus owner here would find nothing to come back to.
+# ⚠ THE OPENER HANDS ITS OWN CONTROL IN: focus is cleared across every viewport of one window, so
+# reading a focus owner here would find nothing to come back to. A SECOND PRESS OF THAT SAME
+# opener is a close and returns null; any other replaces the viewer, as swapping piles does.
 static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control) -> DeckViewer:
-	if is_instance_valid(_open):
+	if is_instance_valid(_open) and not _open.is_queued_for_deletion():
+		var same_opener : bool = _open._return_focus == opener
+		if same_opener:
+			_open._close()
+			return null
 		_open.queue_free()
 	var viewer :DeckViewer= DECK_VIEWER.instantiate()
 	viewer.deck = new_deck
@@ -39,12 +43,12 @@ static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control) -> 
 	_open = viewer
 	return viewer
 
-# Closing announces the lost highlight the same way the board does, so a description locked before
-# this viewer opened comes back and an unlocked sidebar keeps the last card read here.
+# ⚠ ANNOUNCED BEFORE THE FOCUS IS HANDED BACK: the sidebar falls back to what was under this
+# viewer first, so the opener is on screen again by the time the focus goes looking for it.
 func _close() -> void:
-	_hand_the_focus_back()
-	highlight_cleared.emit()
 	queue_free()
+	highlight_cleared.emit()
+	_hand_the_focus_back()
 
 # ⚠ THE OPENER CAN BE HIDDEN BY WHAT THIS VIEWER PUBLISHED: a pile button lives in the sidebar's
 # own scene, which hides its HUD stack while a description shows, so the focus goes to the fallback
@@ -62,8 +66,7 @@ func update_viewer() -> void:
 	var first := _cards.populate(deck, _publish_info)
 	if first: first.grab_focus.call_deferred()
 
-# A HOVER OR A KEY/PAD FOCUS, NEVER A CLICK: a click in this viewer is its own action, and the lock
-# belongs to the board.
+# The card the highlight reached, drawn at this viewer's own card size.
 func _publish_info(data: CardData) -> void:
 	PlayArea.card_info(data,
 			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)
@@ -83,6 +86,14 @@ func fit_beside(remaining: Rect2, window_scale: float) -> void:
 func republish_highlight() -> void:
 	_cards.republish_highlight()
 
+## This viewer's listed cards, which carry the modal and sticky model its host wires itself to.
+func cards() -> CardsViewer:
+	return _cards
+
+## The sidebar's own X asking this viewer to go: one press unsticks and closes together.
+func close_from_sidebar() -> void:
+	_close()
+
 ## The margins the scene authored, read once before the first fit overrides them.
 var _authored_margins : Dictionary[StringName, int] = {}
 
@@ -95,17 +106,20 @@ func _inset_margin(margin: StringName, inset: float) -> void:
 	margin_container.add_theme_constant_override(margin,
 			_authored_margins[margin] + ceili(inset))
 
-## Keyboard/controller close: Escape/back AND Enter/accept both close (the viewer is read-only, so accept has no other meaning). Mouse click on the margin closes below.
+## Keyboard/controller: the shared modal verdict decides, and accept closes on top of it (the viewer is read-only, so accept has no other meaning). Mouse click on the margin closes below.
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"ui_accept"):
-		get_viewport().set_input_as_handled()
-		_close()
+	var verdict := _cards.modal_verdict(event)
+	if event.is_action_pressed(&"ui_accept"): verdict = CardsViewer.Modal.CLOSE
+	if verdict == CardsViewer.Modal.PASS: return
+	get_viewport().set_input_as_handled()
+	if verdict == CardsViewer.Modal.CLOSE: _close()
 
 func _on_flow_container_hidden() -> void:
 	if _cards: _cards.clear()
 
+# EITHER BUTTON: a press outside the list closes, and the second button cancels from anywhere on
+# screen, which over this viewer is the same act.
 func _on_margin_container_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var mouse_event : InputEventMouseButton = event
-		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			_close()
+	var button := event as InputEventMouseButton
+	if button == null or not button.pressed: return
+	if button.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]: _close()

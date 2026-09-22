@@ -128,6 +128,14 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `TestMainHost` | `static func mount(parent: TestSuite, host: Node, scene: PackedScene) -> Node`, `static func unmount(parent: TestSuite, node: Node) -> void` | Test support: record the tree's `paused` before a Wall mounts, write it back after it is freed |
 | `GameView` | `var _outcome_buttons : HBoxContainer` | The row the outcome's Continue and its own Undo sit in, centred on the win/lose screen and freed as one. The Undo button itself is a local: nothing keeps it, and a test finds it by its label (J13, `GAP-009`=b) |
 | `GameView` | `func _add_outcome_button(row: HBoxContainer, key: StringName, handler: Callable) -> Button` | One localised button in the outcome row, wired to `handler`; Continue and Undo are its two callers (J13, `GAP-009`=b) |
+| `CardsViewer` | `var sticky : CardData`, `func stick_to(data)`, `func unstick()`, `signal sticky_changed(stuck: bool)` | THE ONE STICKY MODEL every viewer shares: a click on a listed card pins the sidebar to it, and the host turns that into `HudContainer.lock_to`/`clear_lock` — the same lock a board click makes |
+| `CardsViewer` | `enum Modal { PASS, KEEP, CLOSE }`, `const NAVIGATION`, `func modal_verdict(event) -> Modal` | The modal rule, in one place: a viewer answers cancel and every arrow that walked off its list's own edge, so the map or board beneath never sees one |
+| `CardsViewer` | `signal sidebar_requested` | An edge arrow with a card stuck: the X is in another viewport and focus never crosses one, so the host grabs it |
+| `CardsViewer` | `signal highlight_left`, `var _hovering`, `func _enter_highlight(data)`, `func _leave_highlight()` | A later hover BORROWS the description while it lasts; the pointer leaving every listed card hands it back to the stuck card, or takes an unstuck one away |
+| `DeckViewer` / `ChoiceViewer` | `func cards() -> CardsViewer`, `func close_from_sidebar() -> void` | How the host reaches the shared model, and how the sidebar's X asks the viewer to go |
+| `ChoiceViewer` | `func _follow_the_pick()`, `func _held_by_a_sticky_description() -> bool`, `static func _hold(button, held)` | The pick's ink, and every button beyond reach — pointer AND pad — while a sticky description is up |
+| `HudContainer` | `var _suspended_lock`, `var _entry_under_the_viewer`, `var _hosted_viewer` | What a viewer is covering: the screen's own lock, the description it was showing, and the viewer itself, so the X can close it |
+| `HudContainer` | `func _fall_back_under_the_viewer()`, `func _close_hosted_viewer()`, `func _entry_to_come_back_to()`, `func _refresh_exit_button()`, `func _follow_the_viewers_sticky(stuck)`, `func _dismiss_from_the_x()` | The one answer for a highlight that has gone and for a viewer closing; the X exists only over a sticky description |
 | `Game` | `func legal_cells_for(held: Array[CardData], grids: Array[GridData]) -> Array[CardData]` | THE ONE legality walk: the zone card of every cell in `grids` where `held` may land, asked through `on_can_place_stack` exactly as `try_place` asks. `_no_held_card_has_a_legal_placement`, `_no_legal_placement_remains_in_grid` and `PlayArea._sweep_legal_cells` all read it (G12, `GAP-005`=a) |
 
 ## 4. Deleted methods and properties
@@ -142,6 +150,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `WallTransition` | the `wall_info_mode` branch in `sample_at()` | L2 |
 | `WallOverlay` | `_info_button`, `toggle_info()`, `magnifier_icon()`, `_distance_to_segment()` | L1 |
 | `GameData` | `draw_deck` as the single deck | L12, H1 |
+| `ChoiceViewer` | `_select_on_click()`, `_on_card_gui_input()`, `select()`, and `selected_card` as a stored field (now a getter over `CardsViewer.sticky`) | The pick IS the sticky card; one record, in the shared model |
 
 ## 5. Settings keys — `Scripts/player_settings.gd`
 
@@ -187,7 +196,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `Tests/Engine/test_gesture_metrics.gd` / `.tscn` | `TestGestureMetrics` | Chart M — both bases, no DPI anywhere |
 | `Tests/Engine/test_entrance_stocks.gd` / `.tscn` | `TestEntranceStocks` | Chart H — deal, rebalance, exhaustion, determinism |
 | `Tests/Interaction/test_drag_place.gd` / `.tscn` | `TestDragPlace` | Chart E — click vs drag, release targets |
-| `Tests/Visual/sidebar_snapshot.gd` / `.tscn` | — | By-eye gate (`Q153`=a) |
+| `Tests/Visual/sidebar_snapshot.gd` / `.tscn` | — | By-eye gate (`Q153`=a); also the hover/sticky/closed trio and the map's card description |
 
 ## 9. Localisation keys — `Locale/localization.csv`
 

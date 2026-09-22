@@ -21,6 +21,10 @@ const DESCRIPTION_SCROLL_OUT_PATH := "user://sidebar_snapshot/description_scroll
 const VIEWER_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/viewer_description.png"
 const VIEWER_DESCRIPTION_TOP_OUT_PATH := "user://sidebar_snapshot/viewer_description_top.png"
 const CHOICE_VIEWER_OUT_PATH := "user://sidebar_snapshot/choice_viewer_description.png"
+const VIEWER_HOVER_OUT_PATH := "user://sidebar_snapshot/viewer_hover_no_x.png"
+const VIEWER_STICKY_OUT_PATH := "user://sidebar_snapshot/viewer_sticky_with_x.png"
+const VIEWER_CLOSED_OUT_PATH := "user://sidebar_snapshot/viewer_closed_hud.png"
+const MAP_CARD_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/map_card_description.png"
 const ENTRANCE_STOCKS_OUT_PATH := "user://sidebar_snapshot/entrance_stocks.png"
 const ENTRANCE_FLIP_MID_OUT_PATH := "user://sidebar_snapshot/entrance_flip_mid.png"
 # Slow enough that the stagger is a THING YOU CAN SEE in one still: at the shipped 0.15 the whole
@@ -105,6 +109,15 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(MAP_POPUP_OUT_PATH)
+
+	await _describe_a_card_on_the_map(main)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(MAP_CARD_DESCRIPTION_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT map_card_description buttons_visible=%s"
+			% main.map_scene.selection_buttons.visible)
+	if is_instance_valid(DeckViewer._open): DeckViewer._open.free()
+	await get_tree().process_frame
 
 
 	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
@@ -249,8 +262,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	DeckViewer._open.free()
-	await get_tree().process_frame
+	await _shoot_the_sticky_trio(view)
 
 	await _refill_the_whole_entrance(view)
 	_capture(ENTRANCE_FLIP_MID_OUT_PATH)
@@ -595,9 +607,104 @@ func _resolve_window_size() -> Vector2i:
 	if w.is_empty() or h.is_empty(): return Vector2i(1280, 720)
 	return Vector2i(int(w), int(h))
 
-# The VIEWER still: the deck viewer opened through the container's own Deck button, with one of its
-# listed cards under the key/pad highlight. The description then sits BESIDE the viewer's cards,
-# which is the whole point of the inset the viewer takes.
+# THE THREE STATES A VIEWER CARD PASSES THROUGH, in one still each: hovered with no exit X, clicked
+# and sticky with one, and the HUD the close comes back to.
+func _shoot_the_sticky_trio(view: GameView) -> void:
+	var cards := _listed_cards(DeckViewer._open.flow_container)
+	if cards.size() < 2: return
+	var card := cards[1]
+	card.grab_focus()
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(VIEWER_HOVER_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT viewer_hover sticky=%s exit_x_visible=%s"
+			% [DeckViewer._open.cards().sticky, (view.hud_container.get_node(^"%ExitX") as Control).visible])
+	DeckViewer._open.cards().stick_to(card.child.data)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(VIEWER_STICKY_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT viewer_sticky sticky=%s exit_x_visible=%s"
+			% [DeckViewer._open.cards().sticky, (view.hud_container.get_node(^"%ExitX") as Control).visible])
+	DeckViewer._open._close()
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(VIEWER_CLOSED_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT viewer_closed description=%s"
+			% view.hud_container.showing_description())
+
+# ⚠ EVERY WAIT HERE IS ON A STATE, NOT A FRAME COUNT: the wall camera is still easing into the
+# picture, an unreachable pack refuses the pick outright, and the preview cards come from a
+# coroutine -- a fixed number of frames photographed a half-travelled map with no viewer.
+func _describe_a_card_on_the_map(main: Main) -> void:
+	var map := main.map_scene
+	var pack := _the_pack_node(map)
+	if pack == null: return
+	await _await_the_wall_camera_still(main)
+	_make_the_node_reachable(map.controller, pack)
+	map.controller.select_node(pack)
+	await _await_a_viewer()
+# A PACK LISTS WHAT IT COULD ROLL, which is mostly PART of a card and describes as nothing. The
+# still is of a card DESCRIPTION, so the pack's own viewer gives way to the run deck's.
+	if is_instance_valid(DeckViewer._open): DeckViewer._open._close()
+	await get_tree().process_frame
+	map.selection_deck_button.pressed.emit()
+	await _await_a_viewer()
+	if not is_instance_valid(DeckViewer._open): return
+	var told := _the_most_described_card(_listed_cards(DeckViewer._open.flow_container))
+	if told: told.grab_focus()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("SIDEBAR_SNAPSHOT map_card_description title=%s"
+			% (ControlCard.describe_card(told.child.data) if told else "<none>"))
+
+# A PACK LISTS WHAT IT COULD ROLL, which is mostly PART of a card -- a bare rank, a bare suit. The
+# still is of a description, so the card with the most to say is the one put under the highlight.
+func _the_most_described_card(cards: Array[ControlCard]) -> ControlCard:
+	var best : ControlCard = null
+	var longest := 0
+	for card : ControlCard in cards:
+		var length := ControlCard.describe_card(card.child.data).length()
+		if length > longest:
+			longest = length
+			best = card
+	return best
+
+## Waits for a viewer to actually be up: a pack's preview cards and the run deck alike come through a coroutine.
+func _await_a_viewer() -> void:
+	for frame : int in CASCADE_WATCH_FRAMES:
+		if is_instance_valid(DeckViewer._open) 				and not DeckViewer._open.is_queued_for_deletion(): return
+		await get_tree().process_frame
+
+## Puts the token one step before `node`, since the map refuses a pick it cannot reach from where the token stands.
+func _make_the_node_reachable(controller: WorldMapController, node: WorldGraphNode) -> void:
+	if node in controller.next_nodes_of(controller._current): return
+	for n : WorldGraphNode in controller.map.overlay().nodes():
+		if node in controller.next_nodes_of(n):
+			controller._current = n
+			controller.refresh_visuals()
+			return
+
+## The wall camera has stopped easing into the picture: a still taken before it has is of a picture half off the window.
+func _await_the_wall_camera_still(main: Main) -> void:
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+	var last := Transform2D()
+	var still := 0
+	for frame : int in CASCADE_WATCH_FRAMES:
+		var now := camera.get_global_transform()
+		still = still + 1 if frame > 0 and now == last else 0
+		if still >= BOARD_STILL_FRAMES: return
+		last = now
+		await RenderingServer.frame_post_draw
+
+## The generated map's first talent-pack node, whose pick opens a viewer of its possible cards.
+func _the_pack_node(map: Map) -> WorldGraphNode:
+	for node : WorldGraphNode in map.controller.map.overlay().nodes():
+		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == MapNodeRoles.ROLE_BOOSTER: return node
+	return null
+
 func _open_the_deck_viewer(view: GameView) -> void:
 	var button := view.deck_ui.get_node(^"Button") as Button
 	button.grab_focus()
