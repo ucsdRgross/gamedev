@@ -68,6 +68,7 @@ func _ready() -> void:
 	await run_a_card_between_grids_is_never_clipped_away_test()
 	await run_leaving_and_re_entering_keeps_the_grid_test()
 	run_an_edge_touch_is_not_an_intrusion_test()
+	await run_the_board_does_not_scroll_while_it_fits_test()
 	finish()
 
 #Three empty 5x5 grids standing in a real GameView. Mirrors test_grid_layout._stand_up -- same
@@ -2624,3 +2625,196 @@ func run_an_edge_touch_is_not_an_intrusion_test() -> void:
 				"...while a %.0f px sliver of it IS inside the view, and the tolerance is nowhere "
 				% sliver + "near wide enough to hide one",
 				"edge %.6f vs view %.6f" % [over.end.x, visible.position.x])
+
+# ==============================================================================
+# THE BOARD DOES NOT SCROLL WHILE IT FITS
+# ==============================================================================
+
+# The board's VERTICAL scroll range, in the scroller's own units: what is left over once the page
+# is taken out of the content. Zero means there is nothing out of view and nothing to scroll to.
+func _board_scroll_range(pa: PlayArea) -> float:
+	var bar := pa.scroll_container.get_v_scroll_bar()
+	return bar.max_value - bar.page
+
+# Where grid 0's cell block is DRAWN. `_grid_cells_origin` is republished every physics frame, so
+# this is the number the player's eye reads, not a cached rect.
+func _grid_drawn_y(pa: PlayArea) -> float:
+	return pa._grid_cells_origin[0].y if pa._grid_cells_origin.has(0) else NAN
+
+# One wheel tick over BARE BOARD, hover first -- a wheel a card eats is not a wheel the board
+# refused, and SmoothScrollContainer reads its own hover.
+func _wheel_the_board(pa: PlayArea) -> void:
+	var vp := pa.get_viewport()
+	var at := _bare_point(pa)
+	var hover := InputEventMouseMotion.new()
+	hover.position = at
+	hover.global_position = at
+	vp.push_input(hover)
+	await get_tree().process_frame
+	for pressed : bool in [true, false]:
+		var tick := InputEventMouseButton.new()
+		tick.button_index = MOUSE_BUTTON_WHEEL_UP
+		tick.pressed = pressed
+		tick.position = at
+		tick.global_position = at
+		vp.push_input(tick)
+	for i : int in 30: await get_tree().process_frame
+
+## The dealt Entrance's own card controls -- the ones a player can pick up.
+func _entrance_controls(pa: PlayArea) -> Array[Control]:
+	pa.flush_rebuild()
+	var out : Array[Control] = []
+	for control : Control in pa.ui_data:
+		if control.focus_mode == Control.FOCUS_NONE: continue
+		if pa.is_stock_control(control): continue
+		if pa.upper_zone_right.is_ancestor_of(control): out.append(control)
+	return out
+
+## How many identical frames in a row read as "the board has stopped", not "it has not started".
+const BOARD_STILL_FRAMES := 10
+
+# Wait for the BOARD to stop moving VERTICALLY and answer where it came to rest. A focus zoom and a
+# smooth scroll both have a DURATION, and `_settle_scroll` watches only x, so a frame count here
+# would read a board still in flight.
+func _settle_board_y(pa: PlayArea) -> float:
+	var last := INF
+	var still := 0
+	var waited := 0.0
+	while waited < 3.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		var now := _grid_drawn_y(pa)
+#⚠ CONSECUTIVE FRAMES, NOT ONE. A pan that has been asked for but has not started yet reads
+#identical on two frames, and a single comparison takes that for arrival.
+		still = still + 1 if is_equal_approx(now, last) else 0
+		if still >= BOARD_STILL_FRAMES: return now
+		last = now
+	return _grid_drawn_y(pa)
+
+# Sample the drawn y every frame for `frames` frames: (samples taken, widest spread, lowest y).
+func _drawn_y_spread(pa: PlayArea, frames: int) -> Vector3:
+	var lo := INF
+	var hi := -INF
+	var seen := 0
+	for i : int in frames:
+		await get_tree().process_frame
+		var y := _grid_drawn_y(pa)
+		if is_nan(y): continue
+		lo = minf(lo, y)
+		hi = maxf(hi, y)
+		seen += 1
+	return Vector3(float(seen), hi - lo if seen > 0 else NAN, lo)
+
+#⚠ THE RULE IS ABOUT THE RANGE, NOT ABOUT THE BAR. `SCROLL_MODE_SHOW_NEVER` only hides the bar; the
+#content stays scrollable while it is taller than the page, and a board the player can slide off
+#its spawn position is exactly that overhang made of nothing.
+
+#The board's floor is a MINIMUM height, so while the grids fit it IS the content height -- which is
+#why "content equals page to the pixel" is the whole claim, and everything below is that one number
+#seen through a wheel, a scroll write, a placement and a score.
+func run_the_board_does_not_scroll_while_it_fits_test() -> void:
+	behavior_section("THE BOARD DOES NOT SCROLL WHILE ITS CONTENT FITS")
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	await _settle_scroll(view)
+	var resting := await _settle_board_y(pa)
+	var bar := pa.scroll_container.get_v_scroll_bar()
+	check(is_equal_approx(bar.max_value, bar.page),
+			"at rest the board's content is exactly its page, to the pixel",
+			"content %.3f vs page %.3f" % [bar.max_value, bar.page])
+	check(is_zero_approx(_board_scroll_range(pa)),
+			"...so there is no vertical range to scroll through",
+			"range %.3f" % _board_scroll_range(pa))
+	await _wheel_the_board(pa)
+	check(is_equal_approx(_grid_drawn_y(pa), resting),
+			"a wheel tick over the bare board moves the grid by nothing",
+			"%.3f -> %.3f" % [resting, _grid_drawn_y(pa)])
+	check(is_zero_approx(_board_scroll_range(pa)), "...and the range is still 0",
+			"range %.3f" % _board_scroll_range(pa))
+	pa.scroll_container.scroll_vertical = 40
+	for i : int in 6: await get_tree().process_frame
+	check(is_equal_approx(_grid_drawn_y(pa), resting),
+			"a programmatic scroll_vertical write moves it by nothing either",
+			"%.3f -> %.3f, scroll_vertical %d"
+			% [resting, _grid_drawn_y(pa), pa.scroll_container.scroll_vertical])
+
+#⚠ THE PICTURE'S OWN REGION IS THE CASE THAT BROKE. `board_inset_top` and `board_visible_crop`
+#come from the wall picture's visible region, and a floor measured against the whole control turns
+#every pixel of inset into scroll range on a board with nothing out of view.
+	pa.board_inset_top = 30.0
+	await _settle_scroll(view)
+	var inset_rest := await _settle_board_y(pa)
+	check(is_zero_approx(_board_scroll_range(pa)),
+			"with 30 px of picture inset the board still has no range",
+			"content %.3f vs page %.3f" % [bar.max_value, bar.page])
+	await _wheel_the_board(pa)
+	pa.scroll_container.scroll_vertical = 20
+	for i : int in 6: await get_tree().process_frame
+	check(is_equal_approx(_grid_drawn_y(pa), inset_rest),
+			"...and neither a wheel nor a scroll write moves the inset board",
+			"%.3f -> %.3f" % [inset_rest, _grid_drawn_y(pa)])
+	pa.board_inset_top = 0.0
+	await _settle_scroll(view)
+
+	pa.focus_grid(0)
+	await _settle_scroll(view)
+	var focused_rest := await _settle_board_y(pa)
+	var entrance := _entrance_controls(pa)
+	check(not entrance.is_empty(), "precondition: the dealt Entrance offers a card to place",
+			"%d control(s)" % entrance.size())
+	if not entrance.is_empty():
+		_click(pa, entrance[0])
+		await get_tree().process_frame
+		var held : CardData = pa.selected_cards[0] if pa.selected_cards else null
+		var legal : Array[CardData] = await view.game.legal_cells_for(
+				[held] as Array[CardData], view.game.state.grids) if held else []
+		var cell : Control = null
+		for control : Control in pa.ui_data:
+			if pa.ui_data[control] in legal:
+				cell = control
+				break
+		check(held != null and cell != null, "precondition: a card is lifted and a cell takes it",
+				"held %s, cell %s" % [held != null, cell != null])
+		if cell:
+			_click(pa, cell)
+			var placed : Vector3 = await _drawn_y_spread(pa, 25)
+			check(placed.x > 0.0, "the placement was sampled every frame",
+					"%d frame(s)" % int(placed.x))
+			check(is_zero_approx(placed.y),
+					"...and the grid's drawn y did not move on any of them",
+					"spread %.4f px about %.3f" % [placed.y, placed.z])
+
+#A banked line score is the other half of the owner's report: it pops a height label, which moves
+#the shared smallest font and the score gutters with it.
+	var section := ScoringSection.of_line_at(view.game.state, 0, ScoringSection.LineKind.ROW, 1, 0)
+	view.game.add_line_score(section, 500)
+	var scored : Vector3 = await _drawn_y_spread(pa, 25)
+	check(scored.x > 0.0, "the scoring show was sampled every frame",
+			"%d frame(s)" % int(scored.x))
+	check(is_zero_approx(scored.y), "...and the grid's drawn y did not move on any of them",
+			"spread %.4f px about %.3f" % [scored.y, scored.z])
+	check(is_equal_approx(_grid_drawn_y(pa), focused_rest),
+			"...so a placement and a score leave the board where it opened",
+			"%.3f -> %.3f" % [focused_rest, _grid_drawn_y(pa)])
+
+#⚠ AND THE SCROLL MUST STILL BE THERE WHEN IT IS EARNED. A grid taller than the window is content
+#genuinely out of view, which is the one case the board is allowed to move in.
+	var tall := GridData.new()
+	tall.grid_height = 14
+	tall.build_cells()
+	Board.add_grid(view.game.state, tall)
+	Board.remove_grid(view.game.state, 0)
+	pa.flush_rebuild()
+	pa.open_show_view()
+	await _settle_scroll(view)
+	var deep_rest := await _settle_board_y(pa)
+	check(_board_scroll_range(pa) > 1.0,
+			"a grid taller than the window leaves a real range to scroll through",
+			"content %.3f vs page %.3f" % [bar.max_value, bar.page])
+	pa.scroll_container.scroll_vertical = int(bar.max_value)
+	var deep_moved := await _settle_board_y(pa)
+	check(absf(deep_moved - deep_rest) > 1.0,
+			"...and a scroll to the far end of it really does move the grid",
+			"%.3f -> %.3f" % [deep_rest, deep_moved])
+	await _tear_down_main(main)

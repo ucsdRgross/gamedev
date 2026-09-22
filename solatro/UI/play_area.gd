@@ -851,12 +851,19 @@ func _entrance_row_height() -> float:
 #floor.
 func _give_the_board_a_floor(strip_h: float) -> void:
 	if not is_instance_valid(top_level_vbox) or not is_instance_valid(grid_container): return
-#⚠ Divided by the zoom, and by NOTHING ELSE: `size.y - strip_h` is the floor in SCREEN pixels while
-#the content is laid out in the scroller's own, smaller ones. ⚠ It must not be taken from the
-#scroller's window either -- that window is carved out by the Entrance's RESERVATION, not its depth.
+#⚠ Divided by the zoom, and by NOTHING ELSE: the height term is the floor in SCREEN pixels while
+#the content is laid out in the scroller's own, smaller ones. `strip_h` is the Entrance's REAL
+#depth, not the window's reservation, so a deeper Entrance lowers the floor rather than raising it.
+
+#⚠ `_board_height_left()`, NEVER `size.y`: the scroller's own window is that height less the
+#picture's inset and crop, so the FULL control made the content
+#`(board_inset_top + board_visible_crop.y) / board_zoom` taller than the page.
+
+#30 px of inset then left 30.25 of scroll range on a board with nothing out of view -- a board the
+#player could slide off its own spawn position.
 	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
 	top_level_vbox.custom_minimum_size.y = maxf(
-			maxf(size.y - strip_h - 2.0 * pad, 0.0) / maxf(board_zoom, 0.0001)
+			maxf(_board_height_left() - strip_h - 2.0 * pad, 0.0) / maxf(board_zoom, 0.0001)
 			- _scroller_frame_h(), 0.0)
 	top_level_vbox.alignment = BoxContainer.ALIGNMENT_END
 	_publish_board_floor()
