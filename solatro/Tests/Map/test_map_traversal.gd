@@ -24,6 +24,7 @@ func _ready() -> void:
 	await test_reach_end()
 	await test_lap_flip_and_reverse_move()
 	await test_keyboard_selection()
+	await test_auto_select_on_population_and_lap_flip()
 	RunManager.run = real_run
 	controller.queue_free()
 	finish()
@@ -96,6 +97,7 @@ func test_initial_state() -> void:
 	check(run.current_node_id == 0, "fresh run starts on the lap-origin anchor")
 	check(controller.token.position == _node(0).position, "token placed on the start node")
 	check(_ids(controller.next_nodes_of(_node(0))) == [1, 2], "start offers both branches")
+	check(controller.selected() == null, "two reachable nodes leaves nothing auto-selected")
 	check(controller.reachable_ids().size() == 4, "everything reachable before moving")
 	for pair: Array in [[0, 1], [0, 2], [1, 3], [2, 3]]:
 		check(_line(pair[0] as int, pair[1] as int).visible, "edge %s visible at lap start" % str(pair))
@@ -116,6 +118,11 @@ func test_forward_move_and_edge_states() -> void:
 	check(_line(1, 3).default_color == WorldMapController.HIGHLIGHT_COLOR,
 			"the remaining path is highlighted")
 	check(_ids(controller.next_nodes_of(_node(1))) == [3], "only the end remains reachable")
+# The controller only offers the decision -- Map calls it after its own arrival dispatch, so an
+# ordinary rest-stop arrival is simulated here the way Map's else-branch does.
+	controller._auto_select_if_single()
+	check(controller.selected() == _node(3),
+			"the single reachable node auto-selects on an ordinary arrival, no click")
 
 func test_reach_end() -> void:
 	await controller.move_to(_node(3))
@@ -142,9 +149,17 @@ func test_lap_flip_and_reverse_move() -> void:
 	check(_ids(controller.next_nodes_of(_node(2))) == [0], "next step heads to the old start")
 	check(not _line(0, 1).visible or _line(0, 1).default_color == WorldMapController.HISTORY_COLOR,
 			"unreachable-but-traveled edges keep their history color")
+	controller._auto_select_if_single()
+	check(controller.selected() == _node(0),
+			"the single reachable node auto-selects on an ordinary arrival, no click")
 
-# Runs after test_lap_flip_and_reverse_move: reversed lap, token on node 2, next = [0].
+# Runs after test_lap_flip_and_reverse_move: reversed lap, token on node 2, next = [0] -- a single
+# reachable node, so it auto-selected on arrival already; re-pointed to clear that pick first so the
+# cycle below still demonstrates a fresh keyboard pick rather than a no-op re-select.
 func test_keyboard_selection() -> void:
+	check(controller.selected() == _node(0),
+			"the single reachable node auto-selected on arrival, no click")
+	controller.clear_selection()
 	var picked: Array[WorldGraphNode] = []
 	controller.node_selected.connect(func(n: WorldGraphNode) -> void: picked.append(n))
 	controller._cycle_selection(1)
@@ -158,3 +173,43 @@ func test_keyboard_selection() -> void:
 	await controller.move_to(controller.selected())
 	check(run.current_node_id == 0, "travelling to the pick lands on it")
 	check(controller.selected() == null, "the pick is dropped after travelling")
+
+# A separate two-node rig (0 -> 1, one edge) isolates the auto-select calls in _on_graph_populated
+# and in on_lap_completed from the move_to arrival case above.
+func test_auto_select_on_population_and_lap_flip() -> void:
+	var line_run := RunState.new()
+	line_run.world_seed = 998
+	RunManager.run = line_run
+	var line_controller := WorldMapController.new()
+	var cam := Camera2D.new()
+	cam.name = "Camera2D"
+	line_controller.add_child(cam)
+	cam.owner = line_controller
+	cam.unique_name_in_owner = true
+	var token := MapPlayerToken.new()
+	token.name = "Token"
+	line_controller.add_child(token)
+	token.owner = line_controller
+	token.unique_name_in_owner = true
+	add_child(line_controller)
+	var line_map := WorldMap2D.new()
+	line_map.generate_on_ready = false
+	line_map.bake_directory = "user://__traversal_test_no_bake_line__"
+	line_controller.add_child(line_map)
+	line_controller.map = line_map
+	line_controller.run = line_run
+	var line_overlay := line_map.overlay()
+	line_overlay.populate({"start": 0, "end": 1, "max_depth": 1, "biomes": [], "nodes": [
+		{"id": 0, "pos": _pos(0), "depth": 0, "landmass": 0, "height": 0.5, "biome": -1,
+			"out": [_edge(0, 1)]},
+		{"id": 1, "pos": _pos(1), "depth": 1, "landmass": 0, "height": 0.5, "biome": -1,
+			"out": []},
+	]}, Vector2(40, 40))
+	line_controller._on_graph_populated()
+	check(line_controller.selected() == line_overlay.node(1),
+			"the single reachable node auto-selects on population, no click")
+	await line_controller.move_to(line_overlay.node(1))
+	line_controller.on_lap_completed()
+	check(line_controller.selected() == line_overlay.node(0),
+			"the single reachable node auto-selects after a lap flip, no click")
+	line_controller.queue_free()

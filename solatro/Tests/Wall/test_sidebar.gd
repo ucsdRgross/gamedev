@@ -242,6 +242,7 @@ func _ready() -> void:
 	await test_a_tap_picks_the_node_and_no_second_tap_enters_it()
 	await test_a_finger_drag_pans_the_map()
 	await test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x()
+	await test_a_single_reachable_node_selects_itself_and_a_dismissal_drops_it_like_any_other_clear()
 	await test_up_inside_a_hosted_viewer_walks_the_viewer_not_the_x()
 	await test_selecting_a_node_by_key_describes_it()
 	behavior_section("THE MAP SIDEBAR: A BASIC VIEW, THEN A PICK WITH ITS OWN BUTTONS")
@@ -1785,6 +1786,14 @@ func _start_map_fixture(size := Vector2i(1280, 720)) -> void:
 	await _focus_map(_main, run)
 	_container = _main.wall.get_node(^"%HudContainer")
 	_panel = _container.get_node(^"%DescriptionPanel")
+	await _clear_any_auto_pick()
+
+# ⚠ THE GRAPH IS RANDOMISED PER BOOT with no seed hook, so whether the start node's single onward
+# node auto-picks is a coin flip -- and a pick hides the resting view every map row asserts. The
+# auto-pick is proved where it is DRIVEN: the single-reachable-node row, and TestMapTraversal.
+func _clear_any_auto_pick() -> void:
+	_map.controller.clear_selection()
+	await get_tree().process_frame
 
 # The same fixture carried on into a dealt game screen: the only one that proves the WHOLE board
 # route -- the board's focus, `GameView`'s relay, `Main`'s handler and the container's swap.
@@ -3630,6 +3639,9 @@ func test_a_new_run_does_not_inherit_the_maps_last_description() -> void:
 	await _main._focus_picture(&"map")
 	if not _map.controller._accepting_input:
 		await _map.controller.map_ready
+# The new run populates a fresh graph, which may auto-pick its own single onward node -- the NEW
+# run's description, never the old one's, and a no-op clear on every other boot.
+	await _clear_any_auto_pick()
 	check(_hud_is_up(),
 			"Close fix 2: a new run's map opens on the HUD, not the last run's pack description")
 	await _end_main_fixture()
@@ -6464,6 +6476,44 @@ func test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x() -> vo
 			str(_map.controller.selected()))
 	await _end_main_fixture()
 
+# A node with exactly one onward node needs no click. Measured: dismissal routes through the same
+# `show_hud()` a cancel does, so re-applying the pick there would re-select through a cancel too --
+# a dismissal drops the pick like any other clear; the next arrival/population/lap flip re-picks it.
+func test_a_single_reachable_node_selects_itself_and_a_dismissal_drops_it_like_any_other_clear() -> void:
+	await _start_map_fixture()
+	var controller := _map.controller
+	var lone : WorldGraphNode = null
+	for n : WorldGraphNode in controller.map.overlay().nodes():
+		if controller.next_nodes_of(n).size() == 1:
+			lone = n
+			break
+	check(lone != null, "sanity: the generated map has a node with a single onward node")
+	if lone == null:
+		await _end_main_fixture()
+		return
+	var only := controller.next_nodes_of(lone)[0]
+	controller._current = lone
+	controller.refresh_visuals()
+	controller._auto_select_if_single()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(controller.selected() == only,
+			"the single reachable node auto-selects, no click")
+	check(_map.travel_button.is_visible_in_tree(),
+			"...and Travel is live without a click")
+	check(_container.showing_description(), "...with its description on the sidebar")
+	check(_container._hosted_viewer == null,
+			"...and NO viewer over the map: an auto-pick is not a request to read a pack",
+			"pack=%s" % str(_map._booster_of(only) != null))
+	await _tap_key(KEY_UP)
+	await _tap_key(KEY_ENTER)
+	check(controller.selected() == null,
+			"dismissing the description drops the pick, same as any other clear")
+	check(not _map.travel_button.is_visible_in_tree(),
+			"...so Travel goes with it")
+	check(_hud_is_up(), "...back to the basic HUD view")
+	await _end_main_fixture()
+
 # A HOSTED VIEWER HAS A FOCUS CHAIN OF ITS OWN -- the pack's cards, their Rerolls, Take all -- so an
 # up pressed inside it walks that chain, never the panel: the X taking the press would clear the
 # viewer's focus, and the accept after it would find no owner in either viewport.
@@ -6531,7 +6581,7 @@ func test_selecting_a_node_by_key_describes_it() -> void:
 			"%s vs %s" % [_map.name_popup.get_rect().get_center().x, dot.get_center().x])
 	await _end_main_fixture()
 
-## No path is picked for the player, so the map opens on its HUD: Fame, Lap, Luck and the Deck button, and not one control that belongs to a pick.
+## With nothing picked the map rests on its HUD: Fame, Lap, Luck and the Deck button, and not one control that belongs to a pick.
 func test_the_map_rests_with_nothing_picked_and_no_pick_buttons() -> void:
 	await _start_map_fixture()
 	check(_map.controller.selected() == null, "the map rests with nothing picked")

@@ -100,6 +100,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `DescriptionPanel` | `func mount_buttons(row: Control) -> void` | The `%ButtonRow` slot: the panel never learns what the buttons do |
 | `WorldMapController` | `func select_node(node: WorldGraphNode) -> void` | A pointer, finger or pad PICKS a reachable node; travelling is the map screen's Travel button |
 | `WorldMapController` | `func clear_selection() -> void` | Back to the basic view: nothing picked, nothing marked |
+| `WorldMapController` | `func _auto_select_if_single() -> void`, `var auto_picking` | One onward node needs no click, so it is picked on population, on a lap flip and on a rest-stop arrival; `auto_picking` is true only while that pick's `node_selected` runs, and `Map` reads it to leave a pack's contents unopened |
 | `WorldMapController` | `func selected() -> WorldGraphNode` | The standing pick, or null at rest |
 | `WorldMapController` | `signal node_selected(node: WorldGraphNode)`, `signal selection_cleared` | The pick changed, or went |
 | `WorldMapController` | `signal travel_focus_requested` | Accept on the map, a map node being no Control: the screen hands the pad to its Travel button |

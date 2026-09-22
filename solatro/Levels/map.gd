@@ -128,7 +128,9 @@ func start_run(new_run: RunState) -> void:
 	hud_container.release_screen(HudContainer.MAP_SCREEN)
 	controller.start_run(new_run)
 
-## Node arrival dispatch: a game or the lap-target boss launches a show, a booster opens a take-all pack, the lap-origin anchor is just a rest stop.
+# Node arrival dispatch: a game or the lap-target boss launches a show, a booster opens a take-all
+# pack, the lap-origin anchor is just a rest stop -- only the rest stop auto-selects its own next
+# hop (a booster or a show would otherwise race it for the chooser, measured).
 func _on_node_entered(node: WorldGraphNode) -> void:
 	name_popup.hide_name()
 	_packs_shown.clear()
@@ -139,6 +141,7 @@ func _on_node_entered(node: WorldGraphNode) -> void:
 		_start_show(node)
 	else:
 		RunManager.save_run()
+		controller._auto_select_if_single()
 	_update_hud()
 
 # A game node (or the boss anchor): stash the goal + node for Game._ready (persisted, so
@@ -221,7 +224,10 @@ func _on_node_selected(node: WorldGraphNode) -> void:
 	name_popup.show_above(entry.title, node)
 	selection_buttons.visible = true
 	possible_cards_button.visible = _booster_of(node) != null
-	await _open_possible_cards_once(node)
+# ⚠ A PICK NOBODY CLICKED DOES NOT OPEN THE PACK: a viewer left up outlives this screen (the
+# container's `_entry_under_the_viewer` is not per-screen, so the game entered next reads the map's
+# entry back instead of its HUD). Possible cards is still there to ask with.
+	if not controller.auto_picking: await _open_possible_cards_once(node)
 
 # Back to the basic view: the HUD, with its own Deck button, and no row of the description's buttons
 # left in anyone's focus chain.
