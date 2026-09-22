@@ -9,8 +9,10 @@ warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ER
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
-**IMPLEMENTED-BY:** implementers `general-purpose` on `opus` (Opus 5) at default effort, one fix
-at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
+**IMPLEMENTED-BY:** P1-P37 and P41: implementers `general-purpose` on `opus` (Opus 5) at default
+effort; from P38 on: `sonnet` (Sonnet 5) by default, `opus` per step where the row says so
+(implementer-routing memory) - the reviewer floor for the branch is therefore Opus 5. One fix at
+a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 
 ## Owner rulings (verbatim where quoted; each overturns or extends the design it names)
 
@@ -133,7 +135,7 @@ a lot of these issues are with lack of parity between different modal input opti
   anywhere on screen.
 
 ## Run rules in force
-- One implementer at a time, `general-purpose` on `opus`; never two Godot runners; the second
+- One implementer at a time, `general-purpose` on `sonnet` by default, `opus` where the row says so (owner: costs); never two Godot runners; the second
   subagent slot is read-only work. Implementers run `--logic` and `--filter`; only the overseer
   runs the full windowed gate, and it is the verdict.
 - Private `APPDATA` for every run; `GODOT_BIN` from `.claude/memory/machine-profiles.md`.

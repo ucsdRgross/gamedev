@@ -30,6 +30,7 @@
 **Running a plan** (everything else lives in the `/plan-run` skill)
 - [Tests that prove nothing](tests-that-prove-nothing.md) — the ways a green test asserts nothing; prove every one red first
 - [Built but not wired](built-but-not-wired.md) — a done-when must name the call site, or the component ships with no caller
+- [Implementer routing](implementer-routing.md) — Sonnet by default, Opus per step for input/focus/model work; escalate after two rejections; the reviewer floor follows the author
 - [One fix at a time](one-fix-at-a-time.md) — full suite between fixes; a crashing batch cannot be diagnosed
 
 **Design workflow** (everything else lives in the `/flowchart-design` skill)
