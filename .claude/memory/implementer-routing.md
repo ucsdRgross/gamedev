@@ -5,7 +5,7 @@ metadata:
   type: feedback
 ---
 
-**Opus 5.5 needs Claude Code 2.1.280 or newer** (a 400 from 2.1.275: "does not support this model"); until the app is updated both implementer definitions say `model: claude-opus-5`, same effort split - flip them back to `claude-opus-5-5` after `claude update`.
+**A session caches an agent definition when it first loads it**: editing `model:` in the file did not change what a later dispatch in the same session sent (still `claude-opus-5-5`), and the two refused dispatches left `.claude/.subagent.lock` held - clear it by hand when nothing runs. Until the next session, dispatch `general-purpose` with `model: "opus"` (session effort inherited). **Opus 5.5 needs Claude Code 2.1.280 or newer** (a 400 from 2.1.275: "does not support this model"); until the app is updated both implementer definitions say `model: claude-opus-5`, same effort split - flip them back to `claude-opus-5-5` after `claude update`.
 
 **Implementers run Opus 5.5 (`model: claude-opus-5-5` in the agent frontmatter - the bare `opus`
 alias resolved to Opus 5 from a Fable session), and the lever is EFFORT, not the model family:
