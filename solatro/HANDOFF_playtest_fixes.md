@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P14, P16-P23, P25-P28 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6328 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: the close per /plan-run; every P row is in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: the second playtest P33-P40, then the close; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -110,6 +110,21 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   going to sidebar button to show the deck viewer again. This is because I have found sidebar is
   simply too small to show enough cards together at the same time." The dead overview pan and
   bounce - "yes retire so as to not leave behind clutter".
+- **Second playtest (verbatim), after P29/P15/P24/P30-P32 landed.** "deck viewer allows key clicking onto map while deck viewer is still open, when instead it should not be possible and go to sidebar instead so that x can be clicked. mouse click should also not be able to click behind deck viewer. instead clicks outside should close deck viewer first. closing deck viewer should also remove focus on a card inside deck viewer, so that sidebar does not remain on description of a card that is no longer visible. card description sidebar in map should not show travel here and deck button. clicking deck again should close an open deck. deck viewer is also missing focus behavior from game view. clicking on a card should cause it be sidebar focused so that it stays on sidebar description
+pressing cancel button in deck viewer should close deck viewer if a card has not been clicked and focused to view in sidebar
+if card is not clicked and sticky to sidebar, there should be no exit button by default to show that it will not stick around.
+consider every path player can take when interacting with deck viewer, is there anything i missed?
+same behaviors as i described should be same across all deck viewers, and when hovering cards in game grid as well. right now merely hovering a card causes it to become sticky as if it was clicked on.
+for some reason outline highlight does not move when viewing deck in game. arrow keys does not seem to move it either.
+i notice for some reason based grid board is scrollable such that you can make it sit higher or lower than spawn position. this is not ideal since it should not be scrollable at all while nothing is sitting out of view. this is not ideal as it causes grid to shift around everytime card is placed or scoring happens as it changes container sizing a tiny bit.
+base prop speed should be tripled.
+if only one possible node option to travel to on map, it should automatically select it to save player from having to click it.
+when 2 grids, for some reason clicking is a toggle to drag when it should be drag pan requires holding down key.
+for some reason on entering a 2 grid board, everything is just a shrunk down version and buffer size remains way too large when it should only be a card width worth of separation between grids. focusing on a grid causes everything to snap when it should smoothly interpolate/animate into position. entrance also snaps to a grid too early, before any cards have been placed, making it hard to choose other grid instead, entrance should remain in center of screen until card has actually been placed. clicking cancel button does not zoom back out to every board view either to reselect. clicking left and right seems to behave closer to what i expected, but entrance noticeably jumps to other grid instead of waiting in middle for grid to come to it instead. for sake of dragging, grid snapping to center should happen on closest grid to center once dragging is complete as if left or right was pressed with buttons and refocus the entrance card.
+key presses from grid is unable to reach sidebar. for example clicking left on leftmost card does not enter sidebar ever, which means sidebar is never interactable.
+once an entrance has been used up, it remains snapped to a grid forever when it should be possible to choose other grids to put those cards into instead.
+a lot of these issues are with lack of parity between different modal input options. right now requires mixing of keyboard and mouse to do anything, when it should be possible to use only one for everything."
+  It overturns, where they collide: the R7 follow-up "any focus takes an uncommitted Entrance - yes" (the Entrance now stays centred until a card is PLACED); R8's 100 px overview gap "ok for now" (one card width); the P13 node-description buttons on a CARD description (none). The standing principle: **every route is complete with one input device alone** - mouse only, keyboard only, pad only.
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -344,6 +359,70 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   status: done
   evidence: 'A: the assert text appears 0 times in --logic and the 7-suite filter; kept. B: no behaviour row changed. FILTERED 7 of 51: 2415 -> 2404 CHECKS PASSED, SIDEBAR 1414 -> 1403, the 11 accounted: 2 tautologies, the 7 checks of test_no_zoom_out_route_leaves_half_a_lock, its 2 fixture checks; six other suites identical. Overseer gate: ALL 51 SUITES: 6281 CHECKS PASSED (SIDEBAR 1403), 21 placeholder warnings, the exit profile, 0 SCRIPT ERROR. doc_check --changed silent; dup_check 82.'
   notes: 'A: selected_cards has two writers (grab_cards, ungrab_cards) and grab_cards already indexes data_ui unguarded, so a held card always has a control - asserted. B: HudContainer keeps ONE lock dictionary, _locked_entry_by_screen; lock_to(entry). The one answer that changed: after the container _exit_tree, is_locked() is now false where it was true - the old true led only to a missing key in return_to_lock (argued from call sites, not measured). The agreement helper and the row built wholly on it are deleted: one dictionary cannot disagree with itself.'
+- id: P33
+  description: The viewer is MODAL (deck viewer, possible-cards viewer, pack chooser alike) - keys never leave it for the screen beneath; a pointer click never reaches beneath it and a click outside closes it; closing clears the card focus so the sidebar never describes a card no longer visible; a viewer card is described on hover/focus but becomes sidebar-STICKY only on a CLICK (the game-view model), with the X shown only while sticky; cancel unsticks first, then closes; keys from a card at the viewer edge enter the sidebar so the X is reachable; Deck (and Possible cards) TOGGLES - a second press closes; a CARD description on the map shows no Travel/Deck buttons.
+  files_touched: [solatro/UI/cards_viewer.gd, solatro/UI/deck_viewer.gd, solatro/UI/choice_viewer.gd, solatro/UI/hud_container.gd, solatro/UI/description_panel.gd, solatro/Levels/map.gd, solatro/Levels/game_view.gd, solatro/Tests/UI/test_ui_viewers.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter UiViewers Sidebar MapTraversal WallInput; by eye'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'MEASURE FIRST on the booted Main, per viewer and per device (mouse, keyboard, pad): what a key press does today while a viewer is open, where a click beneath lands, what closing leaves locked, whether hover locks. The paths the owner asked about are listed under "Viewer paths" below - assert each. Escape/ui_cancel order: sticky -> unstick; else viewer -> close; else the existing route (description lock, then wall view). Reuse the game-view lock machinery (HudContainer lock_to / clear_lock) - one home for sticky on every surface.'
+- id: P34
+  description: Hovering a board card describes it but must NOT make it sticky (only a click does) - the game grid gets the same hover/click split as the viewer.
+  files_touched: [solatro/UI/play_area.gd, solatro/Levels/game_view.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar DragPlace; by eye'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'Owner: "right now merely hovering a card causes it to become sticky as if it was clicked on." Find the writer that locks on hover (a click locks; a drag pickup never locks).'
+- id: P35
+  description: In the in-game deck viewer the focus outline does not move and the arrow keys do not move it - find why (a focus that never lands in the viewer viewport, or the rim not redrawn) and fix; the row asserts the FOCUS OWNER after each arrow.
+  files_touched: [solatro/UI/deck_viewer.gd, solatro/UI/cards_viewer.gd, solatro/Tests/UI/test_ui_viewers.gd]
+  verification_command: 'run_tests.py --filter UiViewers Sidebar; by eye'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'Likely the same root as P33 key routing; do after P33 and re-measure first.'
+- id: P36
+  description: The board must not scroll vertically while nothing is out of view - the grid sits still through placements and scoring instead of shifting as the container re-sizes.
+  files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_view.gd]
+  verification_command: 'run_tests.py --filter GridView GridLayout DragPlace; by eye'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'Measure the content height vs the window across a placement and a score; the SmoothScrollContainer clamp (P21 notes) is where vertical range comes from.'
+- id: P37
+  description: Base prop speed tripled (one knob, one home).
+  files_touched: [solatro/Scripts/player_settings.gd]
+  verification_command: 'run_tests.py --logic; by eye (fx-verify duration)'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'Find the one speed knob; if the tests pin the old rate, re-point them to the knob, not the number.'
+- id: P38
+  description: On the map, when exactly one node is reachable it is selected automatically (Travel live without a click); more than one leaves nothing selected (R4).
+  files_touched: [solatro/Scripts/Map/world_map_controller.gd, solatro/Levels/map.gd, solatro/Tests/Map/test_map_traversal.gd]
+  verification_command: 'run_tests.py --filter MapTraversal Sidebar'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Selection is WorldMapController._selected. Re-evaluate on every arrival and on a new run.'
+- id: P39
+  description: Two-grid board - (a) the overview gap is ONE CARD WIDTH and the overview is not a shrunk board; (b) focusing a grid ANIMATES into place, never snaps; (c) a drag pan requires the button HELD (no click-toggle), and on release the grid nearest the centre snaps in as if Left/Right were pressed; (d) cancel zooms back out to the every-grid overview; (e) the Entrance stays CENTRED until a card is actually PLACED - a focus or a Left/Right does not take it, the grid comes to it; (f) once the Entrance is used up (no card can go on the committed grid) it is free to commit to another grid.
+  files_touched: [solatro/UI/play_area.gd, solatro/Levels/game_view.gd, solatro/Scripts/player_settings.gd, solatro/Tests/UI/test_grid_view.gd, solatro/Tests/Interaction/test_drag_place.gd]
+  verification_command: 'run_tests.py --filter GridView GridLayout DragPlace Interaction; by eye with grid_zoom_shot'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'Six sub-fixes, each red then green, each its own commit. (a) overturns the R8 follow-up 100 px; grid_overview_gap_cards -> 1.0 - and measure why the 2-grid overview reads "shrunk" (the picture size is fixed 1576x887; the fit may be height-bound). (e) overturns the R7 follow-up "any focus takes an uncommitted Entrance"; entrance_home_grid() = committed_grid else NO_GRID. (f) P22 built committed_grid clearing when no Entrance card has a legal cell - measure why the owner still sees it stuck (an empty Entrance that refills?). (c): find the click-toggle writer.'
+- id: P40
+  description: Keyboard/pad parity on the board - Left from the leftmost card (and the matching edge on every screen) enters the sidebar, so the sidebar is reachable with no mouse; and every route in P33-P39 is completable with one device alone.
+  files_touched: [solatro/UI/play_area.gd, solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar DragPlace GridView'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Focus never crosses viewports by itself; the sidebar and the board are in different viewports (hud_container.gd). Rows assert the focus OWNER and its viewport after each press. Last: the parity audit - walk every route mouse-only, keyboard-only, pad-only on the booted Main and list any that need a second device.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -386,6 +465,11 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   notes: 'DESIGN.md dead paths now name UI/description_panel.gd, Tests/Wall/test_sidebar.gd, Tests/Visual/sidebar_snapshot.gd; doc_check does not resolve bare inline-code paths inside a markdown table, so they were fixed by hand. OPEN: the same table (sidebar DESIGN.md "Info mode, as it exists", rows ~214, ~217, ~221, ~224) still names wall_info_mode, _on_info_toggled, info_zoom_state, _apply_info_mode, _restore_info_mode_for, none of which exists in any .gd - for /docs at the close. Design ids stay in two check() strings (test_interaction.gd ~480, ~489), which are code.'
 ```
 
+
+## Viewer paths (the owner asked "is there anything i missed?") - each a row in P33 or an owner question
+Covered by the ruling: keys stay in; click beneath blocked / click outside closes; close clears focus; hover describes, click sticks; X only while sticky; cancel unsticks then closes; Deck toggles; edge key -> sidebar; no Travel/Deck on a card description.
+Not covered - built on the reading given, to confirm: (1) opening a viewer by pad/keyboard lands the focus on the FIRST card (else keys have nowhere to start); (2) while a card is sticky, hovering another does NOT change the description (the game-view lock); (3) a viewer opened while a BOARD card is lifted or its description locked: the board lock is suspended and restored on close - built: restored; (4) the possible-cards viewer auto-opens on the first click of a pack node - with click-outside-closes, the NEXT map click closes it rather than picking a node; (5) the pack chooser: Take with a sticky card - Take closes the viewer and clears the focus; (6) closing a viewer with nothing sticky on the MAP returns the sidebar to the picked node's description (Travel live) - or hides it when no node is picked (R1); (7) Escape with a sticky card: first press unsticks, second closes, third is the existing route; (8) the X while sticky: unsticks only, or closes the viewer too? built: unsticks only; (9) wheel / page keys scroll the viewer, never the screen beneath; (10) the sidebar's own Deck / Possible cards button while its viewer is open = close (the toggle), from the pad too.
+
 ## Verified vs assumed
 - The research behind every ruling's "overturns" line: two read-only Explore agents on `opus`,
   file:line cited in their reports; not re-read by the overseer.
@@ -401,7 +485,7 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. The close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P33, P34, P35, P36, P37, P38, P39 (a-f), P40, then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
