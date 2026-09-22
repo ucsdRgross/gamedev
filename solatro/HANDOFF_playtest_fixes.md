@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P14, P16-P23, P25-P28 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6328 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P40, P42, P43, P44, P45, then the close; P33-P39 and P41 are in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P40, P42-P47, then the close; P33-P39 and P41 are in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -133,6 +133,7 @@ a lot of these issues are with lack of parity between different modal input opti
 - **P38 single-node cancel (verbatim).** Asked: with exactly one reachable node auto-picked, does cancel/X on its description (a) drop the pick, Travel gone until the player clicks the node, or (b) keep it and skip to wall view. Owner: "i choose a. b is unintuitive for player".
 - **P39a picture size (verbatim).** Asked: (a) size the picture to the run actual grid count, or (b) keep the picture fixed and zoom the overview to fit the set. Owner: "no dont change picture size based on grid count. so it should be b."
 - **Seventh round (verbatim), the numbered letters asked after P39.** Asked: 1 one-grid cancel (a straight to the wall as built / b match Back); 2 a drag release (a re-aim the board only / b also grab focus onto an Entrance card); 3 a cancel mid-pan (a undo only / b also snap to the nearest grid); 4 a one-grid show (a the Entrance moves on the first placement / b commits on open); 5 a show opening (a arrives at scale / b eases in); 6 the sidebar arriving reserve (a the re-fit snaps / b eases, throttled once per slide); 9 an existing settings.tres keeping prop_tick_fraction 0.45. Owner: "1. a 2. b 3. b 4. commits entrance to grid immediately 5. b 6. b 9. dont keep old speed". Unanswered: 7 the game-screen HUD while a viewer is open; 8 a closed hover dropping the board focus; the gutter floor (one card of separation vs the score labels).
+- **Eighth round (verbatim).** 7 (the game-screen HUD while a viewer is open): "b, deck viewer being open means deck viewer is new focus and provides the descriptions, board and its cards are no longer the focus". 8 (a closed hover leaving the board focus): "a with fix" - keep the focus rim; a pointer re-entering the focused card describes it again. The gutter floor: "as close as possible. adding score labels should not change the distance between grids. so minimum distance between 2 grids is width of the score labels." - as built: the gap rests on the always-reserved gutters (88 px), never on the knob below it.
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -471,6 +472,22 @@ a lot of these issues are with lack of parity between different modal input opti
   status: pending
   evidence: ''
   notes: 'Find how settings load (SettingsManager) and whether a version/migration seam exists; if none, the smallest honest mechanism is a settings-format version with one migration (0.45 -> 0.15 when the stored value equals the OLD default only - a player who set their own value keeps it; say if the owner wants otherwise). Red: a saved .tres with 0.45 loads as 0.15. sonnet unless a seam has to be designed.'
+- id: P46
+  description: While a viewer is hosted, the board and its cards are not the focus - a board card holding keyboard focus publishes NO description to the sidebar (the HUD or the viewer card's description shows), so the game screen matches the map (owner, eighth round, 7 = b).
+  files_touched: [solatro/UI/play_area.gd, solatro/Levels/game_view.gd, solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar UiViewers DragPlace'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'P41 notes name the publisher: PlayArea.highlight_info via on_control_focus_entered while a card holds focus. One home: the publisher asks whether a viewer is hosted (HudContainer._hosted_viewer) - or the viewer takes the board focus on open and gives it back on close (P33 _suspended_lock is the pattern) - measure which leaves the pad player somewhere sensible when the viewer closes (the focus must return to the card it left, assert the OWNER and viewport). Red: open the deck viewer on the game screen with a card focused - the sidebar shows the HUD, not that card.'
+- id: P47
+  description: A pointer re-entering the card that holds the keyboard focus describes it again (a closed hover left the focus behind, so the second hover published nothing) - the focus rim stays (owner, eighth round, 8 = a with fix).
+  files_touched: [solatro/UI/play_area.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar DragPlace'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'P34 measured it: hover publishes through grab_focus -> on_control_focus_entered, so a card already focused gets no focus_entered on re-hover. Publish on mouse_entered as well (one home: highlight_info) without moving the focus. Red: hover A, leave, hover A again - the sidebar describes A twice. sonnet.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -535,7 +552,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P40 (opus), P44 (opus, five commits), P45 (sonnet), P42, P43, then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P40 (opus), P44 (opus, five commits), P46 (opus), P47 (sonnet), P45 (sonnet), P42, P43, then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
