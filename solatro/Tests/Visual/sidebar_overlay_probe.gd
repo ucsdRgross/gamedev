@@ -215,7 +215,7 @@ func _shoot_the_pack_chooser(pack: WorldGraphNode) -> void:
 	await _await_still()
 	await _shoot("chooser_focus_over_the_pick", &"map")
 	print("PROBE   take disabled=", viewer.confirm_button.disabled,
-			" picked=", viewer.selected_card != null)
+			" picked=", viewer.cards().sticky != null)
 	viewer.queue_free()
 	await get_tree().process_frame
 

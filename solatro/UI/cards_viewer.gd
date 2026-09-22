@@ -95,8 +95,17 @@ const NAVIGATION : Array[StringName] = [&"ui_left", &"ui_right", &"ui_up", &"ui_
 # already moved and never arrives, so what is left is an arrow off the list's own EDGE.
 func modal_verdict(event: InputEvent) -> Modal:
 	if event.is_action_pressed(&"ui_cancel"): return Modal.CLOSE
+# ACCEPT IS THE CLICK'S OWN KEY: it sticks the card the focus is on. Reaching here at all means no
+# button took it, so it is swallowed either way rather than reaching the map beneath.
+	if event.is_action_pressed(&"ui_accept"):
+		for control : ControlCard in controls:
+			if control.has_focus(): stick_to(control.child.data)
+		return Modal.KEEP
 	for action : StringName in NAVIGATION:
 		if not event.is_action_pressed(action, true): continue
+# ⚠ REACHED FOR A PRESS PUSHED STRAIGHT INTO THIS PICTURE'S OWN VIEWPORT, which never rises to the
+# overlay, so the container's earlier hand-over never sees it -- measured on the map's deck viewer.
+		if focus_first(): return Modal.KEEP
 		if sticky != null:
 			_publish_highlight(sticky)
 			sidebar_requested.emit()
@@ -108,6 +117,15 @@ func modal_verdict(event: InputEvent) -> Modal:
 func _publish_highlight(data: CardData) -> void:
 	_highlighted = data
 	_on_inspect.call(data)
+
+# HOW A KEY OR PAD PLAYER ENTERS A LIST THAT OPENED WITH NOTHING FOCUSED. Answers whether it took
+# the press, so the caller knows whether the screen beneath may still have it.
+func focus_first() -> bool:
+	if controls.is_empty(): return false
+	for control : ControlCard in controls:
+		if control.has_focus(): return false
+	controls[0].grab_focus()
+	return true
 
 ## Publishes the card the highlight is on again -- nothing to say while a freshly built list has not been pointed at yet.
 func republish_highlight() -> void:

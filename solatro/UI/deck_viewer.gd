@@ -31,10 +31,8 @@ var fallback_focus : Control = null
 static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control) -> DeckViewer:
 	if is_instance_valid(_open) and not _open.is_queued_for_deletion():
 		var same_opener : bool = _open._return_focus == opener
-		if same_opener:
-			_open._close()
-			return null
-		_open.queue_free()
+		_open._close()
+		if same_opener: return null
 	var viewer :DeckViewer= DECK_VIEWER.instantiate()
 	viewer.deck = new_deck
 	viewer._return_focus = opener
@@ -58,13 +56,12 @@ func _hand_the_focus_back() -> void:
 	if _return_focus.is_visible_in_tree(): _return_focus.grab_focus()
 	else: fallback_focus.grab_focus()
 
-# The initial focus is stolen from whatever button opened this viewer, so ui_accept cannot re-open
-# it and the arrows walk the cards (ControlCards are focus stops). ⚠ DEFERRED: that focus is a
-# highlight, so it must publish AFTER the opener has connected and fitted this viewer, never before.
+# ⚠ NOTHING IS FOCUSED ON OPEN: a focus here is a highlight, and a highlight holds the sidebar
+# against the HUD the player still has to reach. The first arrow enters the list instead
+# (`HudContainer` hands it over, the two being in different viewports).
 func update_viewer() -> void:
 	_cards = CardsViewer.new(flow_container)
-	var first := _cards.populate(deck, _publish_info)
-	if first: first.grab_focus.call_deferred()
+	_cards.populate(deck, _publish_info)
 
 # The card the highlight reached, drawn at this viewer's own card size.
 func _publish_info(data: CardData) -> void:
@@ -106,10 +103,9 @@ func _inset_margin(margin: StringName, inset: float) -> void:
 	margin_container.add_theme_constant_override(margin,
 			_authored_margins[margin] + ceili(inset))
 
-## Keyboard/controller: the shared modal verdict decides, and accept closes on top of it (the viewer is read-only, so accept has no other meaning). Mouse click on the margin closes below.
+## Keyboard/controller: the shared modal verdict decides. Mouse click on the margin closes below.
 func _unhandled_input(event: InputEvent) -> void:
 	var verdict := _cards.modal_verdict(event)
-	if event.is_action_pressed(&"ui_accept"): verdict = CardsViewer.Modal.CLOSE
 	if verdict == CardsViewer.Modal.PASS: return
 	get_viewport().set_input_as_handled()
 	if verdict == CardsViewer.Modal.CLOSE: _close()

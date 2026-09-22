@@ -131,6 +131,10 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `CardsViewer` | `var sticky : CardData`, `func stick_to(data)`, `func unstick()`, `signal sticky_changed(stuck: bool)` | THE ONE STICKY MODEL every viewer shares: a click on a listed card pins the sidebar to it, and the host turns that into `HudContainer.lock_to`/`clear_lock` — the same lock a board click makes |
 | `CardsViewer` | `enum Modal { PASS, KEEP, CLOSE }`, `const NAVIGATION`, `func modal_verdict(event) -> Modal` | The modal rule, in one place: a viewer answers cancel and every arrow that walked off its list's own edge, so the map or board beneath never sees one |
 | `CardsViewer` | `signal sidebar_requested` | An edge arrow with a card stuck: the X is in another viewport and focus never crosses one, so the host grabs it |
+| `CardsViewer` | `func focus_first() -> bool` | A viewer opens with NOTHING focused, so the HUD stays reachable: the first navigation or accept press enters the list, here. Answers whether it took the press |
+| `HudContainer` | `func _enters_the_hosted_viewer(event) -> bool`, `func _another_hosted_viewer() -> Node` | The viewer is in another viewport, where the overlay's focus search never looks, so the first arrow is handed over ahead of the GUI pass; and a viewer closing over another hands the field back |
+| `ChoiceViewer` | `var _backdrop`, node `Backdrop` (was `Dim`) | The chooser is the new focus until Take: an OPAQUE whole-picture cover, so the map behind it is not visible at all |
+| `Map` | `func _show_only_the_deck_button(chooser_is_up: bool)` | The chooser has no node, so the row a picked node owns is borrowed for its one useful button |
 | `CardsViewer` | `signal highlight_left`, `var _hovering`, `func _enter_highlight(data)`, `func _leave_highlight()` | A later hover BORROWS the description while it lasts; the pointer leaving every listed card hands it back to the stuck card, or takes an unstuck one away |
 | `DeckViewer` / `ChoiceViewer` | `func cards() -> CardsViewer`, `func close_from_sidebar() -> void` | How the host reaches the shared model, and how the sidebar's X asks the viewer to go |
 | `ChoiceViewer` | `func _follow_the_pick()`, `func _held_by_a_sticky_description() -> bool`, `static func _hold(button, held)` | The pick's ink, and every button beyond reach — pointer AND pad — while a sticky description is up |
@@ -152,7 +156,8 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `WallTransition` | the `wall_info_mode` branch in `sample_at()` | L2 |
 | `WallOverlay` | `_info_button`, `toggle_info()`, `magnifier_icon()`, `_distance_to_segment()` | L1 |
 | `GameData` | `draw_deck` as the single deck | L12, H1 |
-| `ChoiceViewer` | `_select_on_click()`, `_on_card_gui_input()`, `select()`, and `selected_card` as a stored field (now a getter over `CardsViewer.sticky`) | The pick IS the sticky card; one record, in the shared model |
+| `ChoiceViewer` | `_select_on_click()`, `_on_card_gui_input()`, `select()`, `selected_card` | The pick IS the sticky card: one record, `cards().sticky`, read directly |
+| `HudContainer` | `_entry_to_come_back_to()` | Inlined into its one caller, `show_description` |
 
 ## 5. Settings keys — `Scripts/player_settings.gd`
 

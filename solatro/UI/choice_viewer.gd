@@ -18,8 +18,12 @@ const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 @onready var confirm_button: Button = %ConfirmButton
 @onready var rerolls_label: Label = %RerollsLeft
 
-## Everything this viewer draws over its dimmed backdrop -- the pack and the chrome around it, so fitting moves them together.
+## Everything this viewer draws over its backdrop -- the pack and the chrome around it, so fitting moves them together.
 @onready var _layout: Control = $Layout
+
+# ⚠ OPAQUE AND WHOLE-PICTURE: this is the new focus until the cards are taken, so the map behind it
+# is not visible at all; its CONTENTS still lay out beside the sidebar (`fit_beside`).
+@onready var _backdrop: ColorRect = $Backdrop
 
 ## Reroll button geometry, in pixels below the card it belongs to (no magic numbers in logic).
 const REROLL_BUTTON_HEIGHT := 34.0
@@ -60,6 +64,7 @@ static func add_choices_to_scene(parent:Node, data:Data) -> ChoiceViewer:
 func _ready() -> void:
 # ui_accept confirms immediately; arrow keys walk the (focusable) cards.
 	confirm_button.text = TRANSLATION.find('CHOICE_TAKE')
+	_backdrop.color = PaletteDB.color(PaletteDB.ROLES.hud_background)
 	confirm_button.grab_focus()
 	_populate()
 
@@ -70,10 +75,6 @@ func _populate() -> void:
 	for i in _cards.controls.size():
 		_reroll_buttons.append(_add_reroll_button(_cards.controls[i], i))
 	_refresh_rerolls()
-
-## The card the player has picked out of this pack, or `null` while none is picked. What Take adds is the WHOLE pack either way -- this is what the player is pointing at, nothing more.
-var selected_card : CardData:
-	get: return _cards.sticky
 
 ## Exactly one listed card wears the selection ink: the one the sidebar is stuck to. Its buttons follow, being out of reach while one is.
 func _follow_the_pick() -> void:

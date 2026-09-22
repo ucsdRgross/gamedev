@@ -289,7 +289,13 @@ func _close_hosted_viewer() -> void:
 	if _suspended_lock:
 		_locked_entry_by_screen[_active_screen] = _suspended_lock
 		_suspended_lock = null
+# A VIEWER CAN BE OPENED OVER ANOTHER -- the run deck over the pack chooser -- so the one closing
+# hands the field back to whatever is still up rather than leaving the X with nothing to ask.
+	var closing := _hosted_viewer
 	_hosted_viewer = null
+	for screen : Node in _screen_connections:
+		if (screen is DeckViewer or screen is ChoiceViewer) and screen != closing \
+				and not screen.is_queued_for_deletion(): _hosted_viewer = screen
 	highlight_gone()
 	var under := _entry_under_the_viewer
 	_entry_under_the_viewer = null
@@ -417,8 +423,7 @@ func _on_exit_gui_input(event: InputEvent) -> void:
 # THE X IS THE SAME CANCEL AS EVERY OTHER: over a viewer it unsticks and closes together, rather
 # than dismissing a description the viewer would republish a moment later.
 func _dismiss_from_the_x() -> void:
-	if _hosted_viewer and is_instance_valid(_hosted_viewer) \
-			and not _hosted_viewer.is_queued_for_deletion():
+	if _hosted_viewer:
 		_hosted_viewer.call(&"close_from_sidebar")
 		return
 	dismiss_description()
@@ -439,7 +444,12 @@ func show_description(entry: InfoEntry) -> void:
 	if _screen_is_processing():
 		_free_detached_visual(entry)
 		return
-	var kept := _entry_to_come_back_to()
+# ⚠ THE PANEL FREES WHATEVER IT IS HOLDING when another entry replaces it, so anything the
+# container still means to come back to is taken out first -- a lock waiting under a viewer is no
+# less kept than a live one.
+	var kept : InfoEntry = _locked_entry_by_screen.get(_active_screen)
+	if kept == null: kept = _suspended_lock
+	if kept == null: kept = _entry_under_the_viewer
 	if kept and kept != entry and _description_panel.current_entry == kept:
 		_description_panel.detach_entry()
 	_release_remembered_entry(_active_screen, entry)
@@ -452,15 +462,6 @@ func show_description(entry: InfoEntry) -> void:
 ## Hangs a screen's own row of buttons above the description body. The screen builds the row, decides when it shows and owns the node.
 func mount_description_buttons(row: Control) -> void:
 	_description_panel.mount_buttons(row)
-
-# ⚠ THE PANEL FREES WHATEVER IT IS HOLDING when another entry replaces it, so anything the
-# container still means to come back to is taken out first -- a lock waiting under a viewer is no
-# less kept than a live one.
-func _entry_to_come_back_to() -> InfoEntry:
-	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
-	if locked: return locked
-	if _suspended_lock: return _suspended_lock
-	return _entry_under_the_viewer
 
 ## Whether the description is what shows -- `GameView` asks before spending a cancel on dismissing it.
 func showing_description() -> bool:
@@ -572,6 +573,9 @@ func _screen_is_processing() -> bool:
 # search consumes any arrow that finds a neighbour, so an arrow read any later never arrives while
 # a board cell holds the focus. Page keys scroll whenever the description shows, arrows once locked.
 func _input(event: InputEvent) -> void:
+	if _enters_the_hosted_viewer(event):
+		get_viewport().set_input_as_handled()
+		return
 	if not showing_description(): return
 	var stick := event as InputEventJoypadMotion
 	if stick and stick.is_action(&"sidebar_scroll"):
@@ -590,6 +594,16 @@ func _input(event: InputEvent) -> void:
 	if is_zero_approx(pages): return
 	_description_panel.scroll_by_pages(pages)
 	get_viewport().set_input_as_handled()
+
+# ⚠ THE VIEWER OPENS WITH NOTHING FOCUSED so the HUD stays reachable, and it is in another
+# viewport, where the overlay's own focus search would never look: the first navigation press is
+# handed to it here, ahead of the GUI pass that would walk the HUD buttons instead.
+func _enters_the_hosted_viewer(event: InputEvent) -> bool:
+	if _hosted_viewer == null: return false
+	for action : StringName in CardsViewer.NAVIGATION:
+		if event.is_action_pressed(action, true):
+			return (_hosted_viewer.call(&"cards") as CardsViewer).focus_first()
+	return false
 
 # ⚠ A SCREEN'S CONTROLS AND THE EXIT X SIT IN DIFFERENT VIEWPORTS, and Godot's focus search never
 # crosses one, so the sidebar carries up, off the top of a description, onto the X itself. The

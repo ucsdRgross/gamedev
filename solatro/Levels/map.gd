@@ -157,6 +157,17 @@ func _open_booster(node: WorldGraphNode) -> void:
 	var viewer : ChoiceViewer = await booster.on_map_picked(ui_layer)
 	viewer.confirmed.connect(_on_booster_confirmed)
 	hud_container.host_viewer(viewer, wall_picture, info_hovered)
+	_show_only_the_deck_button(true)
+	viewer.confirmed.connect(_show_only_the_deck_button.bind(false).unbind(1))
+
+# ⚠ THE CHOOSER HAS NO NODE, so the row a picked node owns is borrowed for its one useful button:
+# the description of a card being chosen still has to offer a look at the deck it is joining.
+func _show_only_the_deck_button(chooser_is_up: bool) -> void:
+	selection_buttons.visible = chooser_is_up
+	travel_button.visible = not chooser_is_up
+	if not chooser_is_up: return
+	possible_cards_button.visible = false
+	selection_deck_button.visible = true
 
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
 	for card in cards:

@@ -39,7 +39,55 @@ func _ready() -> void:
 	await test_an_edge_arrow_asks_for_the_sidebar_only_while_a_card_is_stuck()
 	await test_the_same_opener_pressed_again_closes_the_viewer()
 	await test_the_pack_chooser_swallows_a_cancel_it_cannot_answer()
+	await test_a_viewer_opens_with_nothing_focused_and_nothing_published()
+	await test_the_first_navigation_press_enters_the_list()
+	await test_the_pack_chooser_covers_its_whole_picture_opaquely()
 	finish()
+
+## A viewer opens with no card focused and nothing published: a focus is a highlight, and a highlight would hold the sidebar against the HUD the player still has to reach.
+func test_a_viewer_opens_with_nothing_focused_and_nothing_published() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(published.is_empty(), "opening a viewer publishes no description at all", str(published))
+	var focused := 0
+	for control : ControlCard in viewer._cards.controls:
+		if control.has_focus(): focused += 1
+	check(focused == 0, "...and leaves no listed card focused", str(focused))
+	await _drop_viewer(viewer)
+
+## The first navigation press is what enters the list -- it lands on the first card, and the list keeps the press.
+func test_the_first_navigation_press_enters_the_list() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	check(viewer._cards.modal_verdict(_action_event(&"ui_right")) == CardsViewer.Modal.KEEP,
+			"the first arrow is kept by the viewer")
+	check(viewer._cards.controls[0].has_focus(),
+			"...and lands on its first card", str(viewer._cards.controls[0].has_focus()))
+	check(published.size() == 1, "...which publishes that card, once", str(published))
+	viewer._cards.controls[1].grab_focus()
+	await get_tree().process_frame
+	check(not viewer._cards.focus_first(),
+			"a later arrow never drags the focus back to the first card")
+	await _drop_viewer(viewer)
+
+## The pack chooser is the new focus until Take: an OPAQUE cover of its whole picture, so the map behind it is not visible at all.
+func test_the_pack_chooser_covers_its_whole_picture_opaquely() -> void:
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var backdrop := viewer.get_node(^"Backdrop") as ColorRect
+	check(backdrop != null and is_equal_approx(backdrop.color.a, 1.0),
+			"the chooser's backdrop is opaque, not a dim", str(backdrop.color if backdrop else ""))
+	check(backdrop != null
+			and backdrop.get_global_rect().encloses(viewer.get_viewport_rect()),
+			"...and covers the whole picture it is drawn in",
+			"%s vs %s" % [backdrop.get_global_rect() if backdrop else Rect2(),
+					viewer.get_viewport_rect()])
+	viewer.queue_free()
+	await get_tree().process_frame
 
 ## The button a test viewer was opened from, kept so the toggle can press the SAME one again.
 var _test_opener : Button = null
@@ -207,7 +255,7 @@ func test_the_pack_chooser_swallows_a_cancel_it_cannot_answer() -> void:
 	await get_tree().process_frame
 	_click(viewer._cards.controls[0])
 	viewer._unhandled_input(_action_event(&"ui_cancel"))
-	check(viewer.selected_card == null, "a cancel lets the pack's picked card go")
+	check(viewer.cards().sticky == null, "a cancel lets the pack's picked card go")
 	check(not viewer.is_queued_for_deletion(), "...and the pack itself is still open")
 	check(not viewer.confirm_button.disabled, "...with Take back within reach")
 	viewer.queue_free()
@@ -405,10 +453,10 @@ func test_pack_click_selects() -> void:
 	var first : ControlCard = viewer._cards.controls[0]
 	var second : ControlCard = viewer._cards.controls[1]
 	var resting := _rim_index(first)
-	check(viewer.selected_card == null, "a pack opens with nothing picked")
+	check(viewer.cards().sticky == null, "a pack opens with nothing picked")
 	_click(first)
 	await get_tree().process_frame
-	check(viewer.selected_card == first.child.data, "a click picks the card it landed on")
+	check(viewer.cards().sticky == first.child.data, "a click picks the card it landed on")
 	check(first.child.selected and not second.child.selected,
 			"exactly one listed card is picked at a time")
 	check(first.has_focus(),
@@ -425,10 +473,10 @@ func test_pack_click_selects() -> void:
 			"the selection ink is neither the resting ink nor the focus ink")
 	_click(first)
 	await get_tree().process_frame
-	check(viewer.selected_card == first.child.data, "a second click on the picked card keeps it")
+	check(viewer.cards().sticky == first.child.data, "a second click on the picked card keeps it")
 	_click(second)
 	await get_tree().process_frame
-	check(viewer.selected_card == second.child.data and not first.child.selected,
+	check(viewer.cards().sticky == second.child.data and not first.child.selected,
 			"clicking another card moves the pick")
 	check(_rim_index(first) == resting, "the card that lost the pick goes back to its own ink")
 	viewer.queue_free()

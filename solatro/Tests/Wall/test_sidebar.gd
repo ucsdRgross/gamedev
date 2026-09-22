@@ -139,9 +139,9 @@ func _ready() -> void:
 	behavior_section("S10: THE IN-BOARD POPUP IS GONE")
 	test_no_script_names_the_retired_in_board_popup()
 	behavior_section("THE VIEWERS PUBLISH TOO")
-	await test_opening_a_viewer_by_pad_shows_its_first_card()
+	await test_the_first_arrow_enters_a_viewer_and_shows_its_first_card()
 	await test_closing_a_viewer_leaves_the_focus_somewhere_visible()
-	await test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card()
+	await test_swapping_viewers_falls_back_to_what_the_viewer_covered()
 	await test_the_deck_viewer_publishes_into_the_sidebar()
 	await test_the_rules_and_discard_viewers_publish_into_the_sidebar()
 	await test_the_choice_viewer_publishes_into_the_sidebar()
@@ -166,6 +166,11 @@ func _ready() -> void:
 	await test_the_map_shows_no_travel_or_deck_while_it_describes_a_card()
 	await test_the_sidebars_x_over_a_viewer_unsticks_and_closes_together()
 	await test_an_unstuck_viewer_description_goes_when_the_pointer_leaves_the_card()
+	await test_the_deck_button_toggles_by_mouse_while_its_viewer_is_open()
+	await test_the_deck_button_toggles_by_pad_while_its_viewer_is_open()
+	await test_a_cancel_from_a_sticky_description_leaves_the_focus_in_the_sidebar()
+	await test_the_chooser_covers_the_map_and_its_sidebar_offers_the_deck()
+	await test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser()
 	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
 	await test_the_start_menus_inspect_viewer_publishes_into_the_container()
 	await test_the_start_menus_inspect_viewer_publishes_on_hover()
@@ -1207,11 +1212,18 @@ func test_the_sidebar_is_hidden_on_the_menu_until_the_picker_describes_something
 	var picker : DeckPicker = main.menu_scene.find_child("DeckPicker", true, false) as DeckPicker
 	var inspect : Button = (picker.rows.get_child(0) as HBoxContainer).get_child(1) as Button
 	inspect.pressed.emit()
+	await get_tree().process_frame
+	await get_tree().process_frame
+# A VIEWER HIGHLIGHTS NOTHING UNTIL THE PLAYER DOES, and the menu has no HUD of its own, so it is
+# the highlight -- not the open -- that brings the sidebar in.
+	var listed := _listed_viewer_cards()
+	check(not listed.is_empty(), "the picker's viewer lists cards", str(listed.size()))
+	if not listed.is_empty(): listed[0].grab_focus()
 	for _i : int in range(120):
 		if container.visible and is_equal_approx(container.slid_fraction(), 1.0): break
 		await get_tree().process_frame
 	check(container.showing_description(),
-			"the picker's viewer publishes a description onto the menu's sidebar")
+			"a highlight in the picker's viewer publishes a description onto the menu's sidebar")
 	check(container.visible and is_equal_approx(container.slid_fraction(), 1.0),
 			"...so the sidebar has slid in for it", "%.3f" % container.slid_fraction())
 
@@ -3867,19 +3879,26 @@ func _open_viewer_by_accept(button: Button) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-## The pad's open IS a highlight: the viewer's own opening focus shows that card, with no further input.
-func test_opening_a_viewer_by_pad_shows_its_first_card() -> void:
+## The pad's open is NOT a highlight -- the sidebar stays on the HUD, and the FIRST ARROW is what enters the list and shows its first card.
+func test_the_first_arrow_enters_a_viewer_and_shows_its_first_card() -> void:
 	await _start_game_fixture()
 	var title : Label = _panel.get_node(^"%Title")
+	var deck := _container.deck_ui.get_node(^"Button") as Button
 	_container.show_hud()
-	await _open_viewer_by_accept(_container.deck_ui.get_node(^"Button") as Button)
+	await _open_viewer_by_accept(deck)
 	check(is_instance_valid(DeckViewer._open), "accept on the Deck button opened the viewer")
 	if is_instance_valid(DeckViewer._open):
 		var first := DeckViewer._open.flow_container.get_child(0) as ControlCard
+		check(first != null and not first.has_focus(),
+				"the opened viewer focuses nothing, so no card holds the sidebar (S12.8)")
+		check(_hud_is_up() and deck.is_visible_in_tree(),
+				"...the HUD is what shows, with its Deck button still there to press (S12.8)")
+		await _push_arrow(_booted_viewport, KEY_RIGHT)
 		check(first != null and first.has_focus(),
-				"the opened viewer's first card wears the focus ring (S12.8, B1)")
+				"the first arrow lands on the viewer's first card (S12.8, B1)",
+				str(_game_viewport.gui_get_focus_owner()))
 		check(_container.showing_description(),
-				"...and that opening focus alone opened the description (S12.8, B1)")
+				"...and THAT highlight is what opens the description (S12.8, B1)")
 		if first != null:
 			check(title.text == _expected_text(first.child.data)[0],
 					"...reading the first card's own name", title.text)
@@ -3903,8 +3922,8 @@ func test_closing_a_viewer_leaves_the_focus_somewhere_visible() -> void:
 			str(landed))
 	await _end_main_fixture()
 
-## A pile button pressed over an open viewer: the sidebar lands on the NEW viewer's own first card, with the board's lock still waiting under it.
-func test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card() -> void:
+## A pile button pressed over an open viewer: the new viewer highlights nothing, so the sidebar falls back to the board's own lock until the player points at something.
+func test_swapping_viewers_falls_back_to_what_the_viewer_covered() -> void:
 	await _start_game_fixture()
 	var state := (_main._pictures[&"game"].screen_root as GameView).game.state
 	var stocked := state.all_stock_cards()
@@ -3918,6 +3937,7 @@ func test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card() -> 
 		var title : Label = _panel.get_node(^"%Title")
 		await _click_card(entrance[0])
 		check(_container.is_locked(), "sanity: the board click locked the sidebar")
+		var locked_title := title.text
 		var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
 		var incoming := _expected_text(state.discard_deck[0])[0]
 		var read_here := _viewer_card_named_other_than(cards, incoming)
@@ -3937,10 +3957,9 @@ func test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card() -> 
 			discard_button.pressed.emit()
 			await get_tree().process_frame
 			await get_tree().process_frame
-			var opened := DeckViewer._open.flow_container.get_child(0) as ControlCard
-			check(opened != null and title.text == _expected_text(opened.child.data)[0]
-					and title.text != read_title,
-					"the swap leaves the sidebar on the NEW viewer's first card (S12.10, B7)", title.text)
+			check(title.text == locked_title and _container._suspended_lock != null,
+					"the swap falls back to the board's own card, waiting under the new viewer, which highlights nothing until the player does (S12.10, B7)",
+					"%s vs %s" % [title.text, locked_title])
 			check(_container._suspended_lock != null,
 					"...with the board's own lock still waiting under both of them")
 	await _end_main_fixture()
@@ -4393,6 +4412,144 @@ func test_an_unstuck_viewer_description_goes_when_the_pointer_leaves_the_card() 
 				"...and the viewer itself is still open")
 	await _end_main_fixture()
 
+## With nothing stuck the sidebar is the HUD, so the Deck button is under the pointer the whole time a viewer is open -- and pressing it again closes what it opened.
+func test_the_deck_button_toggles_by_mouse_while_its_viewer_is_open() -> void:
+	await _start_game_fixture()
+	var deck := _container.deck_ui.get_node(^"Button") as Button
+	_container.show_hud()
+	await get_tree().process_frame
+	check(await _click_button(deck, _booted_viewport), "a real click on Deck opened its viewer")
+	await get_tree().process_frame
+	check(is_instance_valid(DeckViewer._open), "sanity: the viewer is open")
+	check(_hud_is_up() and not _container.showing_description(),
+			"the open viewer describes nothing, so the sidebar is the HUD")
+	check(deck.is_visible_in_tree(),
+			"...and the Deck button is on screen for the pointer to reach")
+	check(await _click_button(deck, _booted_viewport), "a real second click on Deck pressed it")
+	await get_tree().process_frame
+	check(not is_instance_valid(DeckViewer._open)
+			or DeckViewer._open.is_queued_for_deletion(),
+			"...and that second press closed the viewer instead of opening another")
+	await _end_main_fixture()
+
+## The same route with no pointer at all: the opener keeps the pad focus, so accept on it opens and accept again closes.
+func test_the_deck_button_toggles_by_pad_while_its_viewer_is_open() -> void:
+	await _start_game_fixture()
+	var deck := _container.deck_ui.get_node(^"Button") as Button
+	_container.show_hud()
+	await _open_viewer_by_accept(deck)
+	check(is_instance_valid(DeckViewer._open), "accept on the Deck button opened the viewer")
+	check(deck.has_focus(),
+			"the open no longer steals the focus, so the pad is still on the Deck button",
+			str(_booted_viewport.gui_get_focus_owner()))
+	_push_key(_booted_viewport, KEY_ENTER, true)
+	_push_key(_booted_viewport, KEY_ENTER, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(not is_instance_valid(DeckViewer._open)
+			or DeckViewer._open.is_queued_for_deletion(),
+			"...so a second accept closes it, with no pointer anywhere")
+	await _end_main_fixture()
+
+## Cancel on a sticky card description leaves the focus in the SIDEBAR with no card description behind it.
+func test_a_cancel_from_a_sticky_description_leaves_the_focus_in_the_sidebar() -> void:
+	await _start_game_fixture()
+	var deck := _container.deck_ui.get_node(^"Button") as Button
+	_container.show_hud()
+	var cards := await _open_viewer_cards(deck)
+	check(not cards.is_empty(), "the deck viewer lists cards", str(cards.size()))
+	if not cards.is_empty():
+		await _click(cards[0].get_global_rect().get_center(), _game_viewport)
+		check(_container.is_locked(), "sanity: the click stuck the card")
+		await _close_open_viewer(_game_viewport)
+		check(not _container.showing_description(),
+				"the cancel leaves no card description standing")
+		var landed := _booted_viewport.gui_get_focus_owner()
+		check(landed != null and _container.is_ancestor_of(landed),
+				"...and the focus is in the sidebar, where the player can act", str(landed))
+	await _end_main_fixture()
+
+## The chooser is the new focus until Take: opaque over the whole map picture, beside the sidebar band, and its sidebar offers a look at the deck the cards are joining.
+func test_the_chooser_covers_the_map_and_its_sidebar_offers_the_deck() -> void:
+	await _start_map_fixture()
+	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	check(pack != null, "the generated map offers a talent-pack node")
+	if pack != null:
+		await _map._open_booster(pack)
+		await get_tree().process_frame
+		var chooser := _map.find_child("ChoiceViewer", true, false) as ChoiceViewer
+		check(chooser != null, "the pack node opened its chooser")
+		if chooser != null:
+			var backdrop := chooser.get_node(^"Backdrop") as ColorRect
+			check(is_equal_approx(backdrop.color.a, 1.0)
+					and backdrop.get_global_rect().encloses(chooser.get_viewport_rect()),
+					"the chooser hides the map behind it entirely", str(backdrop.color))
+			var band := _container.container_rect()
+			var layout := (chooser.get_node(^"Layout") as Control).get_global_rect()
+			check(layout.position.x > 0.0,
+					"...and its contents are inset off the sidebar's own edge, not under it",
+					"%s beside %s" % [layout, band])
+			_click_a_listed_card(chooser._cards.controls[0])
+			await get_tree().process_frame
+			check(_container.showing_description() and _container.is_locked(),
+					"a click on a chosen card sticks its description to the sidebar")
+			check(_map.selection_deck_button.is_visible_in_tree(),
+					"...which carries a Deck button, the chooser having no node of its own")
+			check(not _map.travel_button.is_visible_in_tree()
+					and not _map.possible_cards_button.is_visible_in_tree(),
+					"...and nothing else: there is no node here to travel to or list")
+			_map.selection_deck_button.pressed.emit()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			check(is_instance_valid(DeckViewer._open),
+					"that Deck button opens the run deck over the chooser")
+			check(is_instance_valid(chooser) and not chooser.is_queued_for_deletion(),
+					"...and the chooser is still there underneath it")
+			if is_instance_valid(DeckViewer._open): DeckViewer._open._close()
+			await get_tree().process_frame
+			if is_instance_valid(chooser): chooser.queue_free()
+			await get_tree().process_frame
+	await _end_main_fixture()
+
+## A click outside closes the pack's possible-cards viewer; the chooser cannot be left that way -- Take is the only way out of it.
+func test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser() -> void:
+	await _start_map_fixture()
+	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	check(pack != null, "the generated map offers a talent-pack node")
+	if pack != null:
+		await _select_map_node_and_settle(pack)
+		check(is_instance_valid(DeckViewer._open),
+				"sanity: picking the pack node opened its possible-cards viewer")
+		await _click(Vector2(_map_viewport.size) - Vector2.ONE, _map_viewport)
+		check(not is_instance_valid(DeckViewer._open)
+				or DeckViewer._open.is_queued_for_deletion(),
+				"a click outside the possible-cards viewer closes it")
+		await _map._open_booster(pack)
+		await get_tree().process_frame
+		var chooser := _map.find_child("ChoiceViewer", true, false) as ChoiceViewer
+		check(chooser != null, "the pack node opened its chooser")
+		if chooser != null:
+			await _click(Vector2(_map_viewport.size) - Vector2.ONE, _map_viewport)
+			check(not chooser.is_queued_for_deletion(),
+					"a click outside the chooser closes nothing")
+			var cancel := InputEventAction.new()
+			cancel.action = &"ui_cancel"
+			cancel.pressed = true
+			_map_viewport.push_input(cancel)
+			await get_tree().process_frame
+			check(not chooser.is_queued_for_deletion(),
+					"...and neither does a cancel: Take is the only way out")
+			chooser.queue_free()
+			await get_tree().process_frame
+	await _end_main_fixture()
+
+## A real left press on a listed control, through the signal Godot's own GUI pass fires.
+func _click_a_listed_card(control: ControlCard) -> void:
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	control.gui_input.emit(press)
+
 # The start menu's own Inspect viewer, reached the way a player reaches it: New Run opens the deck
 # picker, the first deck's Inspect button opens a viewer over the menu. Returns
 # `[viewport, main, inspect_button]`.
@@ -4421,7 +4578,12 @@ func test_the_start_menus_inspect_viewer_lists_beside_the_container() -> void:
 	check(opened[2] != null and is_instance_valid(DeckViewer._open),
 			"New Run's picker offers an Inspect button that opens a viewer (S12.16)")
 	if is_instance_valid(DeckViewer._open):
-		check(container.visible, "sanity: the container is up (empty) on the start menu (Q143=a)")
+# The menu hides its container while it has nothing to show, and a viewer that highlights nothing
+# has nothing to show yet -- so a card is pointed at first, exactly as a player would.
+		var listed := _listed_viewer_cards()
+		if not listed.is_empty(): listed[0].grab_focus()
+		await get_tree().process_frame
+		check(container.visible, "sanity: the container is up on the start menu (Q143=a)")
 		_check_every_card_inside(_listed_viewer_cards(), _unbounded_below(
 					_space_beside_the_container(main._pictures[&"start_menu"], container)),
 				"every card the picker's viewer lists lies beside the container and inside the visible picture (S12.16)")

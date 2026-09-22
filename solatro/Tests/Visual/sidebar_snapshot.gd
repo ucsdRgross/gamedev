@@ -25,6 +25,9 @@ const VIEWER_HOVER_OUT_PATH := "user://sidebar_snapshot/viewer_hover_no_x.png"
 const VIEWER_STICKY_OUT_PATH := "user://sidebar_snapshot/viewer_sticky_with_x.png"
 const VIEWER_CLOSED_OUT_PATH := "user://sidebar_snapshot/viewer_closed_hud.png"
 const MAP_CARD_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/map_card_description.png"
+const VIEWER_OPEN_HUD_OUT_PATH := "user://sidebar_snapshot/viewer_open_hud_showing.png"
+const CHOOSER_OPAQUE_OUT_PATH := "user://sidebar_snapshot/chooser_opaque.png"
+const DECK_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_over_chooser.png"
 const ENTRANCE_STOCKS_OUT_PATH := "user://sidebar_snapshot/entrance_stocks.png"
 const ENTRANCE_FLIP_MID_OUT_PATH := "user://sidebar_snapshot/entrance_flip_mid.png"
 # Slow enough that the stagger is a THING YOU CAN SEE in one still: at the shipped 0.15 the whole
@@ -118,6 +121,9 @@ func _ready() -> void:
 			% main.map_scene.selection_buttons.visible)
 	if is_instance_valid(DeckViewer._open): DeckViewer._open.free()
 	await get_tree().process_frame
+
+	await _shoot_a_viewer_over_the_hud(main)
+	await _shoot_the_chooser(main)
 
 
 	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
@@ -705,8 +711,62 @@ func _the_pack_node(map: Map) -> WorldGraphNode:
 		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == MapNodeRoles.ROLE_BOOSTER: return node
 	return null
 
+# A VIEWER HIGHLIGHTS NOTHING UNTIL THE PLAYER DOES, so the sidebar is still the HUD and its Deck
+# button is still there to press. Shot on the MAP, whose sidebar has no board focus of its own
+# publishing a highlight beside the viewer's.
+func _shoot_a_viewer_over_the_hud(main: Main) -> void:
+	var map := main.map_scene
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	container.show_hud()
+	await get_tree().process_frame
+	map._on_deck_clicked()
+	await _await_a_viewer()
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(VIEWER_OPEN_HUD_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT viewer_open_hud description=%s deck_button=%s"
+			% [container.showing_description(), container.map_deck_button.is_visible_in_tree()])
+	if is_instance_valid(DeckViewer._open): DeckViewer._open.free()
+	await get_tree().process_frame
+
+# THE CHOOSER IS THE NEW FOCUS UNTIL TAKE: an opaque cover of the whole map picture, its contents
+# beside the sidebar, and a chosen card described there with a Deck button of its own -- whose
+# viewer opens OVER it.
+func _shoot_the_chooser(main: Main) -> void:
+	var map := main.map_scene
+	var pack := _the_pack_node(map)
+	if pack == null: return
+	await map._open_booster(pack)
+	await get_tree().process_frame
+	var chooser := map.find_child("ChoiceViewer", true, false) as ChoiceViewer
+	if chooser == null: return
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	chooser._cards.controls[0].gui_input.emit(press)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(CHOOSER_OPAQUE_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT chooser backdrop=%s deck_button=%s sticky=%s"
+			% [(chooser.get_node(^"Backdrop") as ColorRect).color,
+					map.selection_deck_button.is_visible_in_tree(), chooser.cards().sticky])
+	map.selection_deck_button.pressed.emit()
+	await _await_a_viewer()
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(DECK_OVER_CHOOSER_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT deck_over_chooser viewer=%s chooser_alive=%s"
+			% [is_instance_valid(DeckViewer._open), is_instance_valid(chooser)])
+	if is_instance_valid(DeckViewer._open): DeckViewer._open.free()
+	await get_tree().process_frame
+	if is_instance_valid(chooser): chooser.free()
+	await get_tree().process_frame
+
 func _open_the_deck_viewer(view: GameView) -> void:
 	var button := view.deck_ui.get_node(^"Button") as Button
+	view.hud_container.show_hud()
+	await get_tree().process_frame
 	button.grab_focus()
 	await get_tree().process_frame
 	button.pressed.emit()

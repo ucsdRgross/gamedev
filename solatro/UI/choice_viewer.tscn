@@ -12,14 +12,14 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_wlx1c")
 
-[node name="Dim" type="ColorRect" parent="." unique_id=1216211906]
+[node name="Backdrop" type="ColorRect" parent="." unique_id=1216211906]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
+color = Color(0, 0, 0, 1)
 
 [node name="Layout" type="Control" parent="." unique_id=1216211910]
 layout_mode = 1
