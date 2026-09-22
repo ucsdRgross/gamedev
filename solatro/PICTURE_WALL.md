@@ -13,7 +13,7 @@ written.
 
 | Concept | Where it lives |
 |---|---|
-| The grid the overview is centred on | `PlayArea.pan_grid` — board state, read by `entrance_home_grid`; it steps, but nothing outside the `SubViewport` watches it |
+| The grid the overview is centred on | `PlayArea.pan_grid` — board state; `_sync_entrance_x` falls back to it for the Entrance’s width while no grid owns the Entrance; it steps, but nothing outside the `SubViewport` watches it |
 | The render-target ceiling | `settings().game_picture_max_render_px` (ships 4096) — a wide picture's `SubViewport.size` is clamped to it |
 
 ⚠ **THE HORIZONTAL AIM IS DEAD RANGE IN THE OVERVIEW.** The board container is picture-wide there

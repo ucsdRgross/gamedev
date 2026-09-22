@@ -86,6 +86,10 @@ func _ready() -> void:
 	await test_the_entrance_slide_survives_the_picture_being_left()
 	behavior_section("A USED-UP ENTRANCE FREES THE COMMITTED GRID")
 	await test_a_used_up_entrance_frees_the_commitment()
+	behavior_section("A DRAG PAN NEEDS THE BUTTON HELD, AND ENDS ON A GRID")
+	await test_a_drag_pan_needs_the_button_held()
+	await test_a_cancel_ends_a_latched_drag_pan()
+	await test_a_drag_pan_release_lands_on_the_grid_nearest_the_centre()
 	finish()
 
 # ==============================================================================
@@ -1525,13 +1529,6 @@ func _leave_one_entrance_card(home: int) -> CardData:
 	await _settle_layout()
 	return keep
 
-## One card lifted and placed on `cell`, the way a player does both: a click, then a click.
-func _click_place(data: CardData, cell: Control) -> void:
-	var from := _card_centre(data)
-	await _drag(from, from)
-	var at := _control_centre(cell)
-	await _drag(at, at)
-
 #ONCE THE PLAYER'S HAND HAS NOWHERE LEFT TO GO ON THE COMMITTED GRID -- and an emptied Entrance has
 #nowhere by definition -- the commitment lifts BEFORE the refill, so the next hand may choose
 #another grid. Asked after the refill it is asked about the cards the refill just dealt.
@@ -1565,7 +1562,10 @@ func test_a_used_up_entrance_frees_the_commitment() -> void:
 	if not (last and last_cell):
 		await _end_fixture()
 		return
-	await _click_place(last, last_cell)
+	var last_from := _card_centre(last)
+	await _drag(last_from, last_from)
+	var last_at := _control_centre(last_cell)
+	await _drag(last_at, last_at)
 	await _settle_layout()
 	check(_game.state.committed_grid == -1,
 			"using the Entrance up frees the commitment: it lifts BEFORE the refill, so the hand "
@@ -1596,3 +1596,154 @@ func test_a_used_up_entrance_frees_the_commitment() -> void:
 				"committed %d (was %d), %s"
 				% [_game.state.committed_grid, home, _hand_str()])
 	await _end_fixture()
+
+# ==============================================================================
+# A DRAG PAN NEEDS THE BUTTON HELD, AND ENDS ON A GRID.
+# ==============================================================================
+
+## The scroll container's own drag latch: true while it believes the button is still down.
+func _content_dragging() -> bool:
+	return (_pa.scroll_container as SmoothScrollContainer).input_handler.content_dragging
+
+## Where the board's content sits, in the picture's own pixels: what a pan moves.
+func _board_content_x() -> float:
+	return _pa.top_level_vbox.global_position.x
+
+# A point inside the board's window that no card control answers to, so a press there is a PAN and
+# never a pickup. The isolating buffer leaves bare board at the window's own edges.
+func _bare_board_point() -> Vector2:
+	var window := _pa.scroll_container.get_global_rect()
+	for step : int in 12:
+		var at := Vector2(window.position.x + 4.0 + step * 6.0, window.get_center().y)
+		if _pa._card_control_at(at) == null: return at
+	return Vector2.INF
+
+# A motion event that CARRIES ITS TRAVEL. SmoothScrollContainer pans by `relative` alone, so a
+# motion synthesized without it moves the pointer and the board not at all.
+func _motion_by(at: Vector2, rel: Vector2) -> InputEventMouseMotion:
+	var event := InputEventMouseMotion.new()
+	event.position = at
+	event.global_position = at
+	event.relative = rel
+	return event
+
+## Press at `from` and carry the pointer `travel` px in four steps, leaving the button DOWN.
+func _begin_pan(from: Vector2, travel: float) -> void:
+	await _push(_motion(from), _picture_viewport)
+	await _push(_mouse_button(from, true), _picture_viewport)
+	for step : int in 4:
+		await _push(_motion_by(from + Vector2(travel * (step + 1) / 4.0, 0.0),
+				Vector2(travel / 4.0, 0.0)), _picture_viewport)
+
+#THE PAN IS HELD, NOT TOGGLED. The board consumes the release before the scroll container's own
+#input handler can see it, so the container's drag has to be ended here or it latches on and bare
+#motion keeps panning -- which is the "clicking is a toggle to drag" the owner saw.
+func test_a_drag_pan_needs_the_button_held() -> void:
+	await _start_fixture_grids(3)
+	_pa.focus_grid(1)
+	await _settle_layout()
+	var from := _bare_board_point()
+	check(from != Vector2.INF, "precondition: the board window offers a point on no card to press",
+			str(from))
+	if from == Vector2.INF:
+		await _end_fixture()
+		return
+	await _begin_pan(from, -120.0)
+	check(_content_dragging(),
+			"precondition: a press on bare board with the button still down IS a drag pan",
+			"content_dragging %s" % _content_dragging())
+	await _push(_mouse_button(from + Vector2(-120.0, 0.0), false), _picture_viewport)
+	await _frames(2)
+	check(not _content_dragging(),
+			"letting the button go ends the pan: the container's own drag latch is clear even "
+			+ "though the board consumed the release",
+			"content_dragging %s" % _content_dragging())
+
+	await _settle_layout()
+	var resting := _board_content_x()
+	for step : int in 6:
+		await _push(_motion_by(from + Vector2(-140.0 - step * 20.0, 0.0), Vector2(-20.0, 0.0)),
+				_picture_viewport)
+	await _frames(2)
+	check(is_equal_approx(_board_content_x(), resting),
+			"...and bare motion afterwards moves the board not at all -- the pan needs the button "
+			+ "HELD, it is not a toggle",
+			"content x %.2f -> %.2f" % [resting, _board_content_x()])
+	await _end_fixture()
+
+#A CANCEL ALSO ENDS IT. The right-click press is consumed before the GUI pass exactly as the
+#release is, so without this the one thing that should stop a runaway pan cannot reach it.
+func test_a_cancel_ends_a_latched_drag_pan() -> void:
+	await _start_fixture_grids(3)
+	_pa.focus_grid(1)
+	await _settle_layout()
+	var from := _bare_board_point()
+	check(from != Vector2.INF, "precondition: a point on no card to press", str(from))
+	if from == Vector2.INF:
+		await _end_fixture()
+		return
+	await _begin_pan(from, -120.0)
+	check(_content_dragging(), "precondition: the pan is live with the button down",
+			"content_dragging %s" % _content_dragging())
+	await _right_click(from + Vector2(-120.0, 0.0), false)
+	await _frames(2)
+	check(not _content_dragging(),
+			"a right-click cancel ends a live drag pan",
+			"content_dragging %s" % _content_dragging())
+	await _end_fixture()
+
+#THE RELEASE LANDS ON A GRID, as if Left or Right had been pressed: the board does not stop wherever
+#the finger left it. The Entrance follows the grid it belongs to, which is the (e) rule and needs
+#nothing of its own here.
+func test_a_drag_pan_release_lands_on_the_grid_nearest_the_centre() -> void:
+	await _start_fixture_grids(3)
+	_pa.focus_grid(0)
+	await _settle_layout()
+	check(_pa.pan_grid == 0 and _nearest_drawn_grid() == 0,
+			"precondition: the board is centred on grid 0", "pan_grid %d, nearest %d"
+			% [_pa.pan_grid, _nearest_drawn_grid()])
+	var from := _bare_board_point()
+	check(from != Vector2.INF, "precondition: a point on no card to press", str(from))
+	if from == Vector2.INF:
+		await _end_fixture()
+		return
+
+#PART OF THE WAY TO GRID 1 AND NO FURTHER: the release is what has to finish the journey, so it is
+#let go while the board sits between two grids.
+	var travel := -_pa.grid_pitch_px() * 0.75 * _pa.board_zoom
+	await _begin_pan(from, travel)
+	await _frames(2)
+	var mid := _nearest_drawn_grid()
+	check(mid == 1,
+			"precondition: the drag carried grid 1 nearest the middle of the window without the "
+			+ "board ever being aimed there",
+			"nearest %d, pan_grid %d, travelled %.1f px, grid 1 is %.1f px off centre"
+			% [mid, _pa.pan_grid, travel, _grid_off_centre_px(1)])
+	await _push(_mouse_button(from + Vector2(travel, 0.0), false), _picture_viewport)
+	await _frames(2)
+	check(_pa.pan_grid == 1,
+			"the release aims the board at the grid nearest the middle of the window, as Left and "
+			+ "Right do", "pan_grid %d" % _pa.pan_grid)
+	await _settle_layout()
+	await _settle_scroll_x()
+	check(_nearest_drawn_grid() == 1 and _grid_off_centre_px(1) <= 1.0,
+			"...and the board comes to rest with that grid centred, not wherever the pointer left "
+			+ "it", "nearest %d, %.2f px off centre"
+			% [_nearest_drawn_grid(), _grid_off_centre_px(1)])
+	await _end_fixture()
+
+## How far grid `gi`'s cell block is from the middle of the board's window, drawn.
+func _grid_off_centre_px(gi: int) -> float:
+	return absf(_drawn_centre_x(_pa._cells_root(_pa.grid_container.get_child(gi) as Control))
+			- _drawn_centre_x(_pa.scroll_container))
+
+## Wait for the board's own scroll to stop: the pan eases, and `_settle_layout` alone can return inside it.
+func _settle_scroll_x() -> void:
+	var last := INF
+	var waited := 0.0
+	while waited < 3.0:
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		if is_equal_approx(_board_content_x(), last): return
+		last = _board_content_x()

@@ -137,7 +137,11 @@ func _ready() -> void:
 				if not await _await_still(view, "entrance_freed"): return
 				if not await _shoot(pa, vp, "entrance_freed"): return
 				var other := 0 if home != 0 else _grid_count - 1
-				var next := _top_entrance_card(g)
+				var next : CardData = null
+				for column : ArrayCardData in g.state.upper_zone:
+					if column.datas.is_empty(): continue
+					next = column.datas.back()
+					break
 				var cell := await _legal_cell_in_grid(g, next, other) if next else BoardCoord.new(-1, 0, 0, 0)
 				if next and cell.grid != -1:
 					await g.place_card_in_grid(next, cell)
@@ -151,6 +155,19 @@ func _ready() -> void:
 	pa.focus_grid(0)
 	if not await _await_still(view, "focused_first"): return
 	if not await _shoot(pa, vp, "focused_first"): return
+
+#A DRAG PAN LET GO PART OF THE WAY ACROSS. The board must not stop where the pointer left it: the
+#release lands the grid nearest the middle of the window, as Left and Right do.
+	if _grid_count > 1:
+		var from := _bare_board_point(pa)
+		if from != Vector2.INF:
+			var travel := -pa.grid_pitch_px() * 0.75 * pa.board_zoom
+			await _drag_the_board(vp, from, travel)
+			await RenderingServer.frame_post_draw
+			_shoot_frame(pa, vp, "drag_midway")
+			vp.push_input(_button_event(from + Vector2(travel, 0.0), false))
+			if not await _await_still(view, "drag_landed"): return
+			if not await _shoot(pa, vp, "drag_landed"): return
 
 	view.queue_free()
 	await get_tree().process_frame
@@ -224,7 +241,7 @@ func _shoot_frame(pa: PlayArea, picture: SubViewport, tag: String) -> void:
 #Empties every Entrance slot but the one whose top card grid `home` still accepts, and hands that
 #card back: a show that runs its own Entrance dry takes the whole deck to reach.
 func _leave_one_entrance_card(g: Game, home: int) -> CardData:
-	if home < 0 or home >= g.state.grids.size(): return null
+	assert(home >= 0 and home < g.state.grids.size(), "the deal's first placement committed a grid")
 	var keep : CardData = null
 	var keep_column : ArrayCardData = null
 	for column : ArrayCardData in g.state.upper_zone:
@@ -241,12 +258,6 @@ func _leave_one_entrance_card(g: Game, home: int) -> CardData:
 	keep_column.datas.assign([keep] as Array[CardData])
 	return keep
 
-## The first Entrance slot's top card: the next card the player would reach for.
-func _top_entrance_card(g: Game) -> CardData:
-	for column : ArrayCardData in g.state.upper_zone:
-		if not column.datas.is_empty(): return column.datas.back()
-	return null
-
 ## A coordinate in grid `gi` that accepts `held`, or a coord whose grid is -1 when none does.
 func _legal_cell_in_grid(g: Game, held: CardData, gi: int) -> BoardCoord:
 	var grid : GridData = g.state.grids[gi]
@@ -255,6 +266,35 @@ func _legal_cell_in_grid(g: Game, held: CardData, gi: int) -> BoardCoord:
 		if grid.cell_types[i] in legal:
 			return BoardCoord.new(gi, i % grid.grid_width, i / grid.grid_width, 0)
 	return BoardCoord.new(-1, 0, 0, 0)
+
+## A point inside the board's window that no card control answers to: a press there is a PAN.
+func _bare_board_point(pa: PlayArea) -> Vector2:
+	var window := pa.scroll_container.get_global_rect()
+	for step : int in 12:
+		var at := Vector2(window.position.x + 4.0 + step * 6.0, window.get_center().y)
+		if pa._card_control_at(at) == null: return at
+	return Vector2.INF
+
+func _button_event(at: Vector2, pressed: bool) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = pressed
+	event.position = at
+	event.global_position = at
+	return event
+
+#Press and carry the pointer `travel` px, leaving the button DOWN. ⚠ The motions CARRY THEIR TRAVEL:
+#the scroll container pans by `relative` alone and ignores where the pointer actually is.
+func _drag_the_board(vp: SubViewport, from: Vector2, travel: float) -> void:
+	vp.push_input(_button_event(from, true))
+	await get_tree().process_frame
+	for step : int in 4:
+		var motion := InputEventMouseMotion.new()
+		motion.position = from + Vector2(travel * (step + 1) / 4.0, 0.0)
+		motion.global_position = motion.position
+		motion.relative = Vector2(travel / 4.0, 0.0)
+		vp.push_input(motion)
+		await get_tree().process_frame
 
 ## The Entrance's leftmost card control: what a click has to land on to lift a card.
 func _leftmost_entrance_control(pa: PlayArea) -> Control:

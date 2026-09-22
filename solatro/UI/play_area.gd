@@ -1772,8 +1772,13 @@ func _input(event: InputEvent) -> void:
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
 			if not _press_closes_a_pair(mouse_event): _arm_card_gesture(mouse_event.position)
 			return
+#A GESTURE THAT TRAVELLED CARRYING NO CARD IS A PAN, and it is the only release that ends on a
+#grid. Read BEFORE the release resolves, which clears the press it is measured from.
+		var panned := (_press_origin.distance_to(mouse_event.position) > _gesture_threshold_px()
+				and not (_press_data in selected_cards))
 		if _consume_as_card_release(mouse_event):
 			get_viewport().set_input_as_handled()
+		_end_the_content_drag(panned)
 
 # ONLY A LIVE DRAG CARRIES A CARD: motion with no button down leaves a lifted card resting in its
 # slot. Crossing OUT of the held card's own cell closes the description, read before that, and
@@ -1844,10 +1849,26 @@ func grab_cards(datas:Array[CardData]) -> void:
 			and _origin_cell_rect(carried).has_point(get_global_mouse_position()))
 	_sweep_legal_cells()
 
+#⚠ THE SCROLL CONTAINER NEVER SEES THE RELEASE THAT ENDS ITS DRAG, so the board ends it. A release
+#this board consumes is marked handled before the GUI pass, so `content_dragging` stayed latched
+#and bare motion went on panning until a later click fell through: the pan became a toggle.
+
+#`lands_on_a_grid` is true only for a gesture that TRAVELLED carrying no card -- a drag pan, which
+#the owner's rule ends on the grid nearest the middle of the window, as Left and Right do. A cancel
+#passes false: it undoes the gesture rather than acting on it.
+func _end_the_content_drag(lands_on_a_grid: bool) -> void:
+	var smooth := scroll_container as SmoothScrollContainer
+	if not smooth or not smooth.input_handler.content_dragging: return
+	smooth.input_handler._end_content_drag()
+	if not lands_on_a_grid: return
+	var gi := _grid_nearest_the_window_centre()
+	if gi != NO_GRID: pan_to_grid(gi)
+
 # THE SECOND BUTTON CANCELS ONE THING PER PRESS: the held card is let go first, so the description
 # it was read against survives that press, and only the next press closes the description.
 func _cancel_one_step() -> void:
 	_end_the_gesture()
+	_end_the_content_drag(false)
 	if selected_cards:
 		ungrab_cards()
 		return
@@ -1857,6 +1878,7 @@ func _cancel_one_step() -> void:
 # hears it afterwards and takes its own step back out of the game screen.
 func _cancel_everything() -> void:
 	_end_the_gesture()
+	_end_the_content_drag(false)
 	ungrab_cards()
 	description_dismiss_requested.emit()
 
