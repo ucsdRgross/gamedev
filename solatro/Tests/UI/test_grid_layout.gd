@@ -102,6 +102,11 @@ func _stand_up() -> GameView:
 # opening view stays the product's own decision everywhere else.
 	view.play_area._show_view_opened = true
 	view.play_area.open_zoomed_out()
+#⚠ AT THE UNFITTED SCALE, AND SAID OUT LOUD. These checks are the board's LAYOUT ARITHMETIC,
+#which is authored at scale 1; the all-grids view now FITS the set it has, so "the overview's
+#scale" is no longer 1 and every length below would carry the fit.
+	view.play_area.board_zoom = PlayArea.DEFAULT_BOARD_ZOOM
+	view.play_area.snap_the_view_into_place()
 	return view
 
 func _tear_down(view: GameView) -> void:

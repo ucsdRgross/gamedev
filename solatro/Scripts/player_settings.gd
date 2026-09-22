@@ -583,7 +583,7 @@ enum SeparationMode {
 #the gap stops shrinking.
 
 ## The gap between two neighbouring grids in the all-grids view, in card widths.
-@export var grid_overview_gap_cards : float = 2.5:
+@export var grid_overview_gap_cards : float = 1.0:
 	set(value):
 		grid_overview_gap_cards = maxf(value, 0.0)
 		settings_changed.emit()

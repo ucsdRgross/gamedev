@@ -106,6 +106,11 @@ func make_play_area() -> PlayArea:
 # arithmetic at the overview's scale. The opening view stays the product's decision elsewhere.
 	pa._show_view_opened = true
 	pa.open_zoomed_out()
+#⚠ AT THE UNFITTED SCALE, AND SAID OUT LOUD. The all-grids view now FITS the set it has, so "the
+#overview's scale" is no longer 1 -- every length below would carry the fit, and the wide fixture
+#would stop overflowing the window it is built to overflow.
+	pa.board_zoom = PlayArea.DEFAULT_BOARD_ZOOM
+	pa.snap_the_view_into_place()
 	return pa
 
 # Mark every prop kind as formation-checked with none present, so _formation_set() returns null and

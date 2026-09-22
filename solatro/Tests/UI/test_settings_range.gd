@@ -181,6 +181,7 @@ func _stand_up() -> PlayArea:
 #⚠ AND IT ARRIVES ON THIS FRAME. A mode change EASES over the pan clock, so a latched view read
 #two frames later is read at the scale the board is leaving -- measured, drawn 2.5179 against a
 #board_zoom of 1.0000, and every length below carried that factor.
+	pa.board_zoom = PlayArea.DEFAULT_BOARD_ZOOM
 	pa.snap_the_view_into_place()
 	await get_tree().process_frame
 	await get_tree().process_frame

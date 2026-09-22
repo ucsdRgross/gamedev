@@ -397,10 +397,14 @@ func test_one_pixel_size_for_all_art() -> void:
 		var box_prop := PixelProbe.bounds(img_prop, Rect2i(Vector2i.ZERO, img_prop.get_size()),
 				PixelProbe.is_opaque)
 		var per_unit := card_scale * _zoom
+#⚠ THIS SUITE MOUNTS NO PLAY AREA and reads no board zoom: `_zoom` is its own stage's. If the row
+#moves, the driver is one of the settings the drawn sizes come from, so they are in the evidence.
 		var rim := Vector2i(Vector2.ONE * 2.0 * CardOutline.WIDTH * per_unit)
 		check(box_pip.size == box_prop.size + rim and box_prop.size.x > 0,
-				("card_scale %.1f: one source texel is one size on both, and the pip's rim is exactly "
-				+ "%.0f art unit") % [card_scale, CardOutline.WIDTH],
+				("card_scale %.1f [stage zoom %.3f, outline %.3f, settings card_scale %.3f] -- "
+				% [card_scale, _zoom, CardOutline.WIDTH, SettingsManager.settings.card_scale]
+				+ "one source texel is one size on both, and the pip's rim is exactly "
+				+ "%.0f art unit") % [CardOutline.WIDTH],
 				"pip %s vs prop %s + rim %s (%.1f px per art unit)"
 				% [box_pip.size, box_prop.size, rim, per_unit])
 

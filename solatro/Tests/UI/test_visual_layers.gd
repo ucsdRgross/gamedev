@@ -256,6 +256,11 @@ func make_play_area() -> PlayArea:
 # overview's scale. The opening view stays the product's own decision everywhere else.
 	pa._show_view_opened = true
 	pa.open_zoomed_out()
+#⚠ AT THE UNFITTED SCALE, AND SAID OUT LOUD. These checks are the board's LAYOUT ARITHMETIC,
+#which is authored at scale 1; the all-grids view now FITS the set it has, so "the overview's
+#scale" is no longer 1 and every length below would carry the fit.
+	pa.board_zoom = PlayArea.DEFAULT_BOARD_ZOOM
+	pa.snap_the_view_into_place()
 	return pa
 
 
@@ -1690,6 +1695,7 @@ func _stand_up_view() -> GameView:
 	view.play_area.open_zoomed_out()
 #⚠ AND IT ARRIVES ON THIS FRAME, for the reason the other stand-up gives: a mode change eases, and
 #a latched view read two frames later is read at the scale the board is leaving.
+	view.play_area.board_zoom = PlayArea.DEFAULT_BOARD_ZOOM
 	view.play_area.snap_the_view_into_place()
 	await get_tree().process_frame
 	await get_tree().process_frame

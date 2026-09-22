@@ -1046,7 +1046,7 @@ func _open_show_view_once() -> void:
 ## Open the all-grids view with nothing focused.
 func open_zoomed_out() -> void:
 	_set_view(ViewMode.OVERVIEW, NO_GRID)
-	_zoom_board_to(OVERVIEW_BOARD_ZOOM)
+	_zoom_board_to(overview_board_zoom())
 	rest_board()
 
 #The grid the board RESTS centred on, per view mode. `NO_GRID` while there is no grid to rest on.
@@ -1123,16 +1123,54 @@ func _grid_nearest_the_window_centre() -> int:
 # THE ZOOM — what makes the two modes different on screen and not merely in state
 # ------------------------------------------------------------------------------
 
-#The overview's zoom: the board at the scale it is laid out at. The overview shows as many grids
-#as fit at ONE fixed readable zoom and pans to reach the rest, so it never scales.
-const OVERVIEW_BOARD_ZOOM := 1.0
+#The scale a board with nothing to fit is laid out at, and the answer every fit falls back to.
+const DEFAULT_BOARD_ZOOM := 1.0
+
+#THE ALL-GRIDS VIEW FITS THE GRIDS THE RUN ACTUALLY HAS. The picture's own size never follows the
+#grid count (owner ruling), so the FIT does: two grids in a span built for three used to sit small
+#in the middle of it, which is the "shrunk down version" the owner saw.
+
+#⚠ THE SAME FIXED-POINT SHAPE `focused_board_zoom` SOLVES, for the same reason: every term on the
+#bottom is authored at scale 1 and grows with the zoom, so the answer is the ratio of the window to
+#the authored set, never a value read back off the last layout.
+func overview_board_zoom() -> float:
+	if not is_instance_valid(scroll_container) or not is_instance_valid(grid_container):
+		return DEFAULT_BOARD_ZOOM
+	var count := grid_container.get_child_count()
+	if count == 0 or size.x <= 0.0 or size.y <= 0.0: return DEFAULT_BOARD_ZOOM
+	var settings_res := PlayArea.settings()
+	var gutters := _grid_gutters()
+#THE SEPARATION THE CONTAINER ACTUALLY GETS, not the gap: each panel already carries its score
+#gutters, and the gap is measured cell block to cell block, so the gutters sit INSIDE it.
+	var sep := roundi(maxf(overview_grid_gap_px(settings_res) - gutters.x - gutters.y, 0.0))
+	var block_h := 0.0
+	var gutter_h := 0.0
+	for gi : int in count:
+		var grid : GridData = _bound_grids[gi] if gi < _bound_grids.size() else GridData.new()
+		block_h = maxf(block_h, grid_block_size_px(settings_res, grid).y)
+		gutter_h = maxf(gutter_h, _panel_gutter_h(gi))
+	if block_h <= 0.0: return DEFAULT_BOARD_ZOOM
+#⚠ ASKED OF THE CONTAINER THAT LAYS THE SET OUT, at the separation this view will give it -- not
+#summed here. A sum of the panels missed whatever else the box adds, and the set drew 5.2 px wider
+#than the window it was fitted to (measured).
+	var was := grid_container.get_theme_constant(&"separation")
+	grid_container.add_theme_constant_override("separation", sep)
+	var wide := grid_container.get_combined_minimum_size().x
+	grid_container.add_theme_constant_override("separation", was)
+#⚠ THE FIT IS EXACT AND IDEMPOTENT: 912 authored px of grids at 1.296053 is the window's 1182, to
+#the pixel, twice over. The 4 px a three-grid set still rests off centre is NOT this and not the
+#scroller's panel margins, which measure zero -- see `_sync_entrance_x`, which widens the row.
+	var tall := maxf(_board_height_left(), 0.0) / (block_h + gutter_h
+			+ entrance_strip_height_px(settings_res, 1.0)
+			+ 2.0 * board_edge_pad_px(settings_res) + _scroller_frame_h())
+	return tall if wide <= 0.0 else minf(tall, maxf(_board_width_left(), 1.0) / wide)
 
 #The scale the board is being TAKEN TO. Every aim is computed at this one, so a pan and a zoom
 #started together land together.
-var board_zoom : float = OVERVIEW_BOARD_ZOOM
+var board_zoom : float = DEFAULT_BOARD_ZOOM
 
 ## The scale the board is DRAWN at this frame: it eases toward `board_zoom` over the pan clock.
-var drawn_zoom : float = OVERVIEW_BOARD_ZOOM
+var drawn_zoom : float = DEFAULT_BOARD_ZOOM
 
 #The focused view's scale: grid `gi`'s CELL BLOCK made exactly as tall as the board's window.
 #Derived from the grid's own shape and the window, never authored — a taller grid zooms less. ⚠ The
@@ -1142,12 +1180,12 @@ var drawn_zoom : float = OVERVIEW_BOARD_ZOOM
 #scale with THIS zoom, so "the block exactly fills the window" is a fixed point in `z`, not a value
 #last zoom's strip can supply. Reading it made the first focus and a later step land differently.
 func focused_board_zoom(gi: int) -> float:
-	if not is_instance_valid(scroll_container): return OVERVIEW_BOARD_ZOOM
+	if not is_instance_valid(scroll_container): return DEFAULT_BOARD_ZOOM
 	var grid : GridData = _bound_grids[gi] if gi >= 0 and gi < _bound_grids.size() else GridData.new()
 	var block_h := grid_block_size_px(PlayArea.settings(), grid).y
 	var base_strip := entrance_strip_height_px(PlayArea.settings(), 1.0)
 	var pad := board_edge_pad_px(PlayArea.settings())
-	if block_h <= 0.0 or size.y <= 0.0 or size.x <= 0.0: return OVERVIEW_BOARD_ZOOM
+	if block_h <= 0.0 or size.y <= 0.0 or size.x <= 0.0: return DEFAULT_BOARD_ZOOM
 	var tall := maxf(_board_height_left(), 0.0) / (block_h + _panel_gutter_h(gi) + base_strip
 			+ 2.0 * pad + _scroller_frame_h())
 	var wide := _panel_width(gi)
@@ -1204,7 +1242,10 @@ func _panel_gutter_h(gi: int) -> float:
 func _zoom_board_to(z: float) -> void:
 	if not is_instance_valid(scroll_container): return
 	var target := maxf(z, 0.0001)
-	if is_equal_approx(board_zoom, target) and is_equal_approx(drawn_zoom, target): return
+#⚠ THE GAP IS PART OF "ALREADY THERE". Once the overview fits the set, two grids leave the two
+#modes at the SAME scale and only the gap between them changes -- and a zoom-only test let that
+#change snap, which is the thing this ease exists to stop.
+	if is_equal_approx(board_zoom, target) and is_equal_approx(drawn_zoom, target) 			and is_equal_approx(_drawn_grid_gap, _grid_gap_target()): return
 	board_zoom = target
 	if _view_tween and _view_tween.is_valid(): _view_tween.kill()
 	_view_ease = 0.0
@@ -2864,7 +2905,10 @@ func _recentre_board() -> void:
 #container still holds the half-margin it centred the content with (measured: 4 px) and drops it
 #the moment the scroll moves, so an aim from rest lands short. One frame in, the second corrects.
 	await get_tree().process_frame
-	if is_inside_tree() and is_instance_valid(grid_container): pan_to_grid(pan_grid)
+	if not is_inside_tree() or not is_instance_valid(grid_container):
+		_recentre_waiting = false
+		return
+	pan_to_grid(pan_grid)
 #⚠ THE FLAG COVERS BOTH AIMS, NOT JUST THE WAIT. Cleared before them, it said "settled" one frame
 #before the second aim landed -- and anything that read the board in that frame had its own scroll
 #taken back from under it.
