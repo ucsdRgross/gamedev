@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P14, P16-P23, P25-P28 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6328 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P37-P40, then the close; P33-P36 and P41 are in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P38-P40, then the close; P33-P37 and P41 are in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -400,9 +400,9 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/Scripts/player_settings.gd]
   verification_command: 'run_tests.py --logic; by eye (fx-verify duration)'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
-  notes: 'RECON: the one knob is PlayerSettings.prop_tick_fraction = 0.45 (player_settings.gd ~49, seconds per slot as get_delay() times this; bigger is slower) -> 0.15. Readers: prop_layer.gd ~100, fx_attachment.gd ~628; test_fx_attachment.gd ~453 reads the knob, no test pins 0.45. MIN_FLOURISH_SECS 0.12 (prop_layer.gd ~107) is a floor that bypasses the knob - report whether it now binds.'
+  status: done
+  evidence: 'prop_tick_fraction 0.45 -> 0.15 (player_settings.gd ~49), the one quantity "base prop speed" resolves to (PropLayer.current_tick_seconds; FxAttachment.transition_secs derives from it on purpose); no .tres carries it. MIN_FLOURISH_SECS is on the poof path only - does not bind. Measured (real UI PROPS fixture, base_delay 1.0, 5-slot flight): 0.559 s/slot, 33.6 frames -> 0.196 s/slot, 11.8 frames (2.85x; the fixed spawn/despawn beats are the shortfall from 3.00x), motion monotone. One test had a frame count baked to the speed (test_row_prop_never_leaves_its_row: base_delay 0.3 -> 0.14 / prop_tick_fraction); FILTERED 4 of 51 [FxAttachment PropEngine SuitProps UiProps]: 343 CHECKS PASSED; --logic 3035. Overseer gate: ALL 51 SUITES: 6513 CHECKS PASSED, 21 placeholder warnings, the exit profile, 0 SCRIPT ERROR. By eye: prop art unchanged (10_prop_kinds, 12_prop_facing); the x trace per frame is the duration evidence. doc_check --changed: 13 legacy findings in test_ui_props.gd; dup_check 82.'
+  notes: 'OPEN (asked): user://settings.tres is written on every change, so an EXISTING settings file keeps 0.45 - the owner own playtest profile will not see the tripling until reset or changed in-game. HANDOFF_poker_patience.md ~202 cites 0.45 - stale, another stream. Found in passing, pre-existing: prop_art_snapshot.tscn emits four "previously freed" teardown errors from prop_visual.gd ~299, byte-identical with the knob at 0.45 -> Open bugs. test_ui_props.gd owes a sweep (13). Brief RECON: the one knob is PlayerSettings.prop_tick_fraction = 0.45 (player_settings.gd ~49, seconds per slot as get_delay() times this; bigger is slower) -> 0.15. Readers: prop_layer.gd ~100, fx_attachment.gd ~628; test_fx_attachment.gd ~453 reads the knob, no test pins 0.45. MIN_FLOURISH_SECS 0.12 (prop_layer.gd ~107) is a floor that bypasses the knob - report whether it now binds.'
 - id: P38
   description: On the map, when exactly one node is reachable it is selected automatically (Travel live without a click); more than one leaves nothing selected (R4).
   files_touched: [solatro/Scripts/Map/world_map_controller.gd, solatro/Levels/map.gd, solatro/Tests/Map/test_map_traversal.gd]
@@ -492,12 +492,13 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - A worldgen teardown abort (0xC000001D in addons/worldgen/core/steps/rivers.gd, a river step reading a freed object while a Main is torn down mid-generation - the un-awaited map_scene.start_run path P4 notes) hit 1 abort plus 1 post-banner SCRIPT ERROR in an implementer's 5 Sidebar-including runs during P22; 0 of the overseer's gates.
 - `PIXELS: fire brightens when its host is highlighted` failed once (0.272 plain vs 0.250 highlighted) in 1 of 5 overseer gates on the P12 tree, never before; nothing in P12 reaches that suite. Measure before naming a cause.
 - PLAN VISUALS TP-92 (cell k starts k shares of the stagger in) failed once - worst drift 0.084 s against a 0.080 s stagger - in 1 of 3 overseer gates on the P23 tree, green on the rerun and in every filtered run; a wall-clock timing row under full-gate load. Measure before naming a cause.
+- prop_art_snapshot.tscn emits four `previously freed ... TypedArray` teardown errors from prop_visual.gd ~299 (found by P37, identical with the knob parked at its old value) - not caused by any P row; measure before naming a cause.
 - Gate totals move run to run ONLY through BOARD FUZZ (347..376 over six gates, a randomised suite); every other suite count is stable, so compare per-suite tables in logs/test/test_output_all.log, never the banner totals. Unexplained: before P15 SIDEBAR read 1391 on the full gate against 1406 filtered (equal, 1414, after P15) - 15 checks the full gate did not run; fits the leaked-board item below, not measured.
 - A LEAKED LIVE BOARD between suites: a settings write in WALL FOCUS rebuilt a PlayArea another suite left alive (the P23 SCRIPT ERROR surfaced only on the full gate, under no filtered subset). Harmless now, but it is an order-dependence source - find the suite that does not free its Main/GameView.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P37, P38, P39 (a-f), P40, then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P38 (sonnet), P39 (a-f), P40, then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)

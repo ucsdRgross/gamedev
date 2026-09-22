@@ -46,7 +46,7 @@ signal settings_changed
 #Bigger is slower and more visible props. Read live by PropLayer every frame.
 
 ## Seconds a prop spends crossing ONE board slot, as get_delay() times this.
-@export var prop_tick_fraction : float = 0.45:
+@export var prop_tick_fraction : float = 0.15:
 	set(value):
 		prop_tick_fraction = value
 		settings_changed.emit()

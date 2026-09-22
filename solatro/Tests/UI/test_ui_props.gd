@@ -649,8 +649,10 @@ func test_reactions_drive_card_pose() -> void:
 # row instead. The sweep must also never reverse direction, derived from the raw samples.
 func test_row_prop_never_leaves_its_row() -> void:
 # Slow the tick so each leg spans many sampled frames; the fast delay gives about one per leg.
+# The TICK is what spans them, not the delay, so target ~0.14 s per tick through the live
+# prop_tick_fraction — pinning a delay makes this test fail when the prop-speed knob changes.
 	var fast := SettingsManager.settings.base_delay
-	SettingsManager.settings.base_delay = 0.3
+	SettingsManager.settings.base_delay = 0.14 / SettingsManager.settings.prop_tick_fraction
 # Column 0, the ENTRY column, is EMPTY: the exact live shape, props entering at an empty edge
 # column, whose inflated-header fallback staged knives diagonally off the board.
 	var g := make_board_game(4, [0] as Array[int])
