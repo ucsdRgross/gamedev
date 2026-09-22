@@ -1,5 +1,6 @@
 ---
 name: adversarial-review
+model: fable
 description: Read-only adversarial reviewer for a finished plan run. Reads the design, plan, test plan and names registry, then judges the ENTIRE worktree branch against main for as many real defects as it can find, plus every way the implementation drifted from the plan. Use at the close of a plan run, or when a branch is about to be merged. Never edits anything.
 tools: Read, Grep, Glob, Bash
 ---
@@ -12,7 +13,7 @@ output is a report the overseer acts on.
 The handoff's `IMPLEMENTED-BY:` line names it, and the floor is same generation or newer, same
 effort or higher — `.claude/skills/plan-run/SKILL.md` "The reviewer's model floor" carries the
 evidence. **The SAME model clears the floor.** A different model is a bonus at or above it, never a
-reason to drop below. This definition sets no `model:` on purpose, so the caller must choose one.
+reason to drop below. Owner ruling: every reviewer runs `fable`, read-only; the frontmatter says so.
 **If you are weaker than the implementing model, say so in the first line of your report and review
 nothing.** A below-floor review recorded as a real one is worse than a gap on the checklist.
 

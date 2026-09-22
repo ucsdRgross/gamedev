@@ -1,6 +1,6 @@
 ---
 name: implementer-routing
-description: "Which model implements a step: Sonnet by default, Opus for input/focus/multi-viewport model work, Fable never as a subagent; escalate after two rejected verifications; the reviewer floor follows the author"
+description: "Which model implements a step: Sonnet by default, Opus for input/focus/multi-viewport model work, Fable only as the read-only reviewer; escalate after two rejected verifications"
 metadata:
   type: feedback
 ---
@@ -28,7 +28,7 @@ read-only recon that names the writer first. So by step kind, from what actually
 | a bug whose CAUSE the recon left open (measure-first diagnoses: the P24 render-target frame, the P36 floor identity), a deletion that must prove every caller gone | ~30% | `opus` | the value is in the measurement design; the recon candidates were wrong twice on this stream |
 | a new input or focus model across viewports, a modal/lock state machine, anything with three or more interacting rulings | ~15% | `opus`, and split the brief before dispatch | even Opus took 3-4 rounds; a smaller brief is the lever, not a bigger model |
 | read-only recon (`Explore`) ahead of a step | every non-trivial row | `sonnet` | grep-and-cite; the implementer measures anyway - and it is what turns an Opus row into a Sonnet one |
-| `bloat-reviewer` per diff, adversarial review at the close | as `/plan-run` says | at or above the author | the floor rule |
+| `bloat-reviewer` per diff, adversarial review at the close | as `/plan-run` says | `fable`, read-only | owner ruling; a finding is a brief for an implementer |
 
 **Escalation:** a Sonnet step whose report the overseer rejects twice (a wrong diagnosis, a
 weakened row, a leak it cannot find) goes to Opus with the evidence so far — the tree, the logs,
@@ -41,8 +41,15 @@ reviewers catch the same errors at either tier.
 it does not change with the author. Rule 7 of CLAUDE.md is the known risk — assistants differ
 ~7x in unprompted defensive code — so the bloat review stays per diff.
 
+**Reviewers are Fable, always, and never edit.** Owner ruling, verbatim: "reviewer ideally fable
+always, but it never touches the code itself, just finds issues." So `bloat-reviewer`,
+`plan-auditor`, `adversarial-review`, the test-surface pass and the `/code-review` and `/simplify`
+angles all run on `fable` and REPORT; every fix they name is a brief for an implementer (routed by
+the table above), verified and gated like any step. `/simplify`'s apply phase and
+`/code-review --fix` are not used here.
+
 **How to apply:** pass `model: "sonnet"` or `"opus"` on the `Agent` call; record every model that
-wrote code in the handoff's `IMPLEMENTED-BY` line the moment it changes. The reviewer floor
-([[plan-run]] "The reviewer's model floor") follows the AUTHOR: a Sonnet-authored diff may be
-reviewed by Sonnet, Opus or Fable; an Opus-authored one by Opus or Fable. Related:
+wrote code in the handoff's `IMPLEMENTED-BY` line the moment it changes. The reviewer is Fable
+regardless of the author, so the floor ([[plan-run]] "The reviewer's model floor") is always
+cleared. Related:
 [[one-fix-at-a-time]], [[tests-that-prove-nothing]].

@@ -158,15 +158,16 @@ the weaker author's code gained 18.1 points. **Capability is the lever; a differ
 Cross-vendor review buys decorrelated blind spots and is worth having *at or above* the floor —
 never below it.
 
-The floor follows the AUTHOR of the diff under review: a Sonnet-authored step may be reviewed by
-`sonnet`, `opus` or `fable`; an Opus-authored one by `opus` or `fable`; never `haiku`. A branch
-with both authors is reviewed at the higher one. `plan-auditor` and `bloat-reviewer`
+Owner ruling (verbatim): "reviewer ideally fable always, but it never touches the code itself,
+just finds issues." Every reviewer in this list runs `fable` and is read-only; a finding is a
+brief for an implementer ([[implementer-routing]]), never an edit by the reviewer. The floor is
+therefore always cleared whatever the author. `plan-auditor` and `bloat-reviewer`
 run `opus` and clear the floor; the Fable 5.1 overseer clears it too, so the close may run in a
 Fable session. Raising an implementer's tier raises the floor with it.
 
-**A review pass REPORTS; only a green suite lets it APPLY.** `/simplify` and `/code-review --fix`
-edit code, and a model correcting its own work without external feedback degrades it — the tests are
-that feedback. On red, or with no suite covering the lines, the pass reports and stops.
+**A review pass REPORTS, never applies.** `/simplify`'s apply phase and `/code-review --fix` are
+not used here: the reviewer never touches the code (owner ruling above); its findings go to an
+implementer as a step, red-then-green and gated like any other.
 
 ⚠ **THE FLOOR IS A RULE THE OVERSEER FOLLOWS, NOT ONE IT CAN CHECK.** `effort` is declared in agent
 frontmatter or a model override and is not visible at dispatch time, so nothing validates it. If it
