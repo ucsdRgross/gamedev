@@ -18,13 +18,13 @@ what that shipped. Everything below aims at that failure.
 ## Setup
 
 - A **git worktree on its own branch**, never the main working tree. The owner merges when done.
-- **The overseer session runs Fable 5.1 at high effort. Implementers default to Sonnet 5, with
-  Opus 5 chosen PER STEP** — pass `model:` on the dispatch ([[implementer-routing]] carries the
-  rule: Sonnet when the brief names the writer and the row; Opus for input routing, focus
-  ownership, a modal or lock state machine, a proving deletion; escalate a step to Opus only after
-  the overseer rejects its report twice). `plan-implementer`'s own frontmatter says `opus`; the
-  override on the call wins. A session's model is chosen at startup, so check yours before the
-  first dispatch.
+- **The overseer session runs Fable 5.1 at high effort. Implementers run Opus 5.5 by full id,
+  and the lever is EFFORT**: `plan-implementer-low` for a step whose writer and row the brief
+  names, `plan-implementer` (medium) for input routing, focus ownership, a modal or lock state
+  machine, a proving deletion, an open-cause diagnosis ([[implementer-routing]] carries the rule
+  and the arithmetic; a Sonnet tier was measured and dropped). Effort lives in the agent
+  frontmatter only - the dispatch cannot override it. A session's model is chosen at startup, so
+  check yours before the first dispatch.
 - **The repo's no-commit rule is REVERSED for the overseer on that branch**: commit after every step
   you verified yourself, one step per commit. Commits are the only rollback points, and a long run
   will lose sessions to API limits — assume it.

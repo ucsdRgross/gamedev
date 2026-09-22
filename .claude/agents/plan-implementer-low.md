@@ -1,9 +1,9 @@
 ---
-name: plan-implementer
-description: Executes one step of an already-written implementation plan under an overseer. Makes code changes, writes the tests the test plan names, runs the suite, and reports in a fixed schema. Never designs, never renames, never decides. Use when a plan, test plan and name registry already exist and the work is purely execution.
+name: plan-implementer-low
+description: The same implementer at LOW effort, for a step whose writer and row the brief already names - a knob, a comment sweep, a re-point of named tests, a probe re-shot, a one-site fix with its file:line. Never for an open-cause diagnosis or a model change.
 tools: Read, Write, Edit, Grep, Glob, Bash, PowerShell
 model: claude-opus-5-5
-effort: medium
+effort: low
 maxTurns: 150
 color: green
 permissionMode: auto
