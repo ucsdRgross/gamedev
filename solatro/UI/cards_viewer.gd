@@ -121,11 +121,15 @@ func _publish_highlight(data: CardData) -> void:
 # HOW A KEY OR PAD PLAYER ENTERS A LIST THAT OPENED WITH NOTHING FOCUSED. Answers whether it took
 # the press, so the caller knows whether the screen beneath may still have it.
 func focus_first() -> bool:
-	if controls.is_empty(): return false
-	for control : ControlCard in controls:
-		if control.has_focus(): return false
+	if controls.is_empty() or focus_is_inside(): return false
 	controls[0].grab_focus()
 	return true
+
+## Whether one of the listed cards holds the keyboard/pad focus: the one test for "the player is navigating inside this list".
+func focus_is_inside() -> bool:
+	for control : ControlCard in controls:
+		if control.has_focus(): return true
+	return false
 
 ## Publishes the card the highlight is on again -- nothing to say while a freshly built list has not been pointed at yet.
 func republish_highlight() -> void:

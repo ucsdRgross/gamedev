@@ -161,6 +161,8 @@ func _ready() -> void:
 	await test_closing_a_viewer_takes_its_card_out_of_the_sidebar()
 	await test_the_exit_x_shows_only_once_a_viewer_card_is_clicked()
 	await test_a_board_lock_waits_under_a_stuck_viewer_card_and_comes_back()
+	await test_every_arrow_walks_the_viewers_grid_and_the_rim_follows()
+	await test_an_edge_arrow_leaves_the_stuck_viewer_for_the_exit_x()
 	await test_an_edge_key_in_a_viewer_lands_the_focus_on_the_exit_x()
 	await test_the_deck_button_pressed_again_closes_the_viewer_it_opened()
 	await test_the_map_shows_no_travel_or_deck_while_it_describes_a_card()
@@ -4316,6 +4318,81 @@ func test_a_board_lock_waits_under_a_stuck_viewer_card_and_comes_back() -> void:
 			await _close_open_viewer(_game_viewport)
 			check(_container.is_locked() and title.text == locked_title,
 					"closing hands the board's own lock straight back", title.text)
+	await _end_main_fixture()
+
+## P35: every arrow walks the open viewer's own grid -- across FlowContainer rows too -- and the rim follows the focus, whether or not a card is stuck to the sidebar.
+func test_every_arrow_walks_the_viewers_grid_and_the_rim_follows() -> void:
+	await _start_game_fixture()
+	_container.show_hud()
+	await _open_viewer_by_accept(_container.deck_ui.get_node(^"Button") as Button)
+	var cards := _listed_viewer_cards()
+	check(cards.size() > _MID_CARD, "the deck viewer lists more than one row of cards",
+			str(cards.size()))
+	if cards.size() > _MID_CARD:
+		for stuck : bool in [false, true]:
+			cards[_MID_CARD].grab_focus()
+			await get_tree().process_frame
+			if stuck:
+				await _click(cards[_MID_CARD].get_global_rect().get_center(), _game_viewport)
+				check(_container.is_locked(), "sanity: the click stuck that card to the sidebar")
+			for keycode : Key in [KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UP]:
+				cards[_MID_CARD].grab_focus()
+				await get_tree().process_frame
+				await _walks_one_neighbour(cards, keycode, stuck)
+	await _end_main_fixture()
+
+## A card with a neighbour in every direction: past the first row, and not at either end of its own.
+const _MID_CARD : int = 12
+
+# One arrow from `_MID_CARD`, read back the way a player sees it: which control the PICTURE's own
+# viewport now focuses, and the rim each card is actually drawn with.
+func _walks_one_neighbour(cards: Array[ControlCard], keycode: Key, stuck: bool) -> void:
+	var from := cards[_MID_CARD]
+	var tag := "%s with a card stuck" % keycode if stuck else "%s with nothing stuck" % keycode
+	check(_rim_of(from) == PaletteDB.ROLES.match_rim,
+			"sanity: the card the walk starts from wears the focus rim (%s)" % tag,
+			str(_rim_of(from)))
+	await _push_arrow(_booted_viewport, keycode)
+	var landed := _game_viewport.gui_get_focus_owner() as ControlCard
+	check(landed != null and landed != from and cards.has(landed),
+			"%s moves the focus to a neighbouring card in the viewer's own grid" % tag,
+			str(_game_viewport.gui_get_focus_owner()))
+	check(_booted_viewport.gui_get_focus_owner() == null,
+			"...with the focus still in the picture's viewport, never the sidebar's (%s)" % tag,
+			str(_booted_viewport.gui_get_focus_owner()))
+	check(not from.child.focused and _rim_of(from) != PaletteDB.ROLES.match_rim,
+			"...the card it left goes dark (%s)" % tag, str(_rim_of(from)))
+	if landed != null:
+		check(landed.child.focused and _rim_of(landed) == PaletteDB.ROLES.match_rim,
+				"...and the rim follows onto the card it landed on (%s)" % tag,
+				str(_rim_of(landed)))
+
+## The palette index a listed card's rim is ACTUALLY drawn in, read off the polygon's own material.
+func _rim_of(control: ControlCard) -> int:
+	return CardOutline.material_of(control.child.type).get_shader_parameter(&"u_outline_index")
+
+## P35: ONLY an arrow off the list's own edge leaves for the sidebar -- and only while a stuck card has put the X there for it to land on.
+func test_an_edge_arrow_leaves_the_stuck_viewer_for_the_exit_x() -> void:
+	await _start_game_fixture()
+	_container.show_hud()
+	await _open_viewer_by_accept(_container.deck_ui.get_node(^"Button") as Button)
+	var cards := _listed_viewer_cards()
+	check(not cards.is_empty(), "the deck viewer lists cards", str(cards.size()))
+	if not cards.is_empty():
+		cards[0].grab_focus()
+		await get_tree().process_frame
+		await _push_arrow(_booted_viewport, KEY_UP)
+		check(_game_viewport.gui_get_focus_owner() == cards[0],
+				"up off the top row with nothing stuck stays on the card: the HUD has no focusable control to land on (P40)",
+				str(_game_viewport.gui_get_focus_owner()))
+		await _click(cards[0].get_global_rect().get_center(), _game_viewport)
+		check(_container.is_locked(), "sanity: the click stuck the first card to the sidebar")
+		await _push_arrow(_booted_viewport, KEY_UP)
+		check(_booted_viewport.gui_get_focus_owner() == _exit_button(),
+				"...and with it stuck the same edge press lands on the X, in the sidebar's viewport",
+				str(_booted_viewport.gui_get_focus_owner()))
+		check(not cards[0].child.focused and _rim_of(cards[0]) != PaletteDB.ROLES.match_rim,
+				"...the card it left giving up the rim with the focus", str(_rim_of(cards[0])))
 	await _end_main_fixture()
 
 ## The X is in the OVERLAY's viewport and focus never crosses one, so the arrow off the list's edge hands it over by itself.

@@ -576,6 +576,7 @@ func _input(event: InputEvent) -> void:
 	if _enters_the_hosted_viewer(event):
 		get_viewport().set_input_as_handled()
 		return
+	if _the_arrows_belong_to_the_hosted_viewer(event): return
 	if not showing_description(): return
 	var stick := event as InputEventJoypadMotion
 	if stick and stick.is_action(&"sidebar_scroll"):
@@ -603,6 +604,16 @@ func _enters_the_hosted_viewer(event: InputEvent) -> bool:
 	for action : StringName in CardsViewer.NAVIGATION:
 		if event.is_action_pressed(action, true):
 			return (_hosted_viewer.call(&"cards") as CardsViewer).focus_first()
+	return false
+
+# ⚠ A FOCUSED VIEWER OWNS THE ARROWS. Read before the GUI pass, the page scroll and the up-to-the-X
+# would answer a grid key the viewer's own neighbour search can use, and a stuck card could never
+# change rows. Only an arrow that finds no neighbour comes back, as `sidebar_requested`.
+func _the_arrows_belong_to_the_hosted_viewer(event: InputEvent) -> bool:
+	if _hosted_viewer == null: return false
+	if not (_hosted_viewer.call(&"cards") as CardsViewer).focus_is_inside(): return false
+	for action : StringName in CardsViewer.NAVIGATION:
+		if event.is_action_pressed(action, true): return true
 	return false
 
 # ⚠ A SCREEN'S CONTROLS AND THE EXIT X SIT IN DIFFERENT VIEWPORTS, and Godot's focus search never
