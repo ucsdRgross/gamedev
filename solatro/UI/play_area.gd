@@ -20,6 +20,9 @@ signal highlight_cleared
 
 ## The player asked to close the description: a cancel press, or a press on bare board.
 signal description_dismiss_requested
+
+## A navigation key reached the BOARD'S OWN LEFT EDGE: the sidebar is the only place left to go, and it is in another viewport, so nothing here can take the focus there.
+signal sidebar_requested
 #A CardVisual enters the tree through call_deferred, so right after set_card_zones it is mapped
 #in data_card and not yet ready; a deferred emit queued after those adds fires only once they
 #are. visuals_ready() is the check-then-await pair for a board that is already built.
@@ -1576,8 +1579,32 @@ func _consume_as_grid_select(event: InputEvent) -> bool:
 #nothing panning to follow it. `accept_event` is what stops that search from also running.
 func _on_cell_gui_input(event: InputEvent, control: Control) -> void:
 	if _arrow_delta(event) == Vector2i.ZERO: return
-	if _consume_as_cell_move(event, control) or _consume_as_grid_select(event):
+	if _consume_as_sidebar_edge(event, control) or _consume_as_cell_move(event, control) \
+			or _consume_as_grid_select(event):
 		control.accept_event()
+
+#THE BOARD'S LEFT EDGE IS THE SIDEBAR'S DOOR, the way a viewer list's edge is: the press has
+#nowhere left to go on the board, and the sidebar is in the overlay's viewport, which no focus
+#search reaches from here. Asked FIRST, so the movers below never swallow the edge press.
+
+#⚠ THE ENTRANCE AND A CELL ARE DIFFERENT QUESTIONS. An Entrance stop is at the edge when
+#`_link_arrow_stops` left it no left neighbour, which is the same fact a skipped face-down slot
+#moves; a cell is at the edge when the lattice step lands on no cell at all.
+func _consume_as_sidebar_edge(event: InputEvent, control: Control) -> bool:
+	if _arrow_delta(event) != Vector2i.LEFT: return false
+	var at_the_edge := false
+	if upper_zone_right.is_ancestor_of(control):
+		at_the_edge = control.focus_neighbor_left.is_empty()
+	elif view_mode == ViewMode.OVERVIEW:
+		at_the_edge = selected_grid <= 0
+	else:
+		var from := _coord_of_control(control)
+		at_the_edge = (not from.is_nowhere()
+				and not CardEnvironment.get_current_game().state.has_cell(
+				from.step(-1, 0, _grid_widths())))
+	if not at_the_edge: return false
+	sidebar_requested.emit()
+	return true
 
 #Does a BOARD control genuinely hold the focus right now? `focused_control` is a last-known value
 #and goes stale as soon as focus moves to other UI, so the viewport is asked too.

@@ -21,6 +21,9 @@ signal selection_cleared
 ## Accept was pressed with a node picked. A map node is not a Control, so the pad is handed to the Travel button by the screen that owns it.
 signal travel_focus_requested
 
+## A left press with nothing picked: the map's own dots are not Controls, so this is the one key route into the sidebar's basic view, which the screen hands on.
+signal sidebar_requested
+
 ## Traveled path, dim gold, kept across laps.
 const HISTORY_COLOR := Color("#b8860b")
 ## Edges to directly reachable nodes.
@@ -239,7 +242,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed(&"ui_left") or event.is_action_pressed(&"ui_up"):
-		_cycle_selection(-1)
+# LEFT OFF THE MAP IS THE SIDEBAR, as it is off the board's leftmost card -- and with nothing
+# picked the Deck button is all the sidebar shows, reachable by no other key. Up and a second
+# direction still start the picking, so no route is lost.
+		if _selected == null and event.is_action_pressed(&"ui_left"):
+			sidebar_requested.emit()
+		else:
+			_cycle_selection(-1)
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed(&"ui_accept"):

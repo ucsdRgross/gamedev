@@ -42,6 +42,7 @@ func _ready() -> void:
 	controller.node_selected.connect(_on_node_selected)
 	controller.selection_cleared.connect(_on_selection_cleared)
 	controller.travel_focus_requested.connect(travel_button.grab_focus)
+	controller.sidebar_requested.connect(hud_container.focus_sidebar)
 	controller.map_ready.connect(_update_hud)
 	controller.map_ready.connect(_publish_map_inset)
 	if _pending_run:

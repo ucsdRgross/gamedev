@@ -114,6 +114,7 @@ func _ready() -> void:
 	play_area.info_requested.connect(_relay_info_requested)
 	play_area.highlight_cleared.connect(hud_container.highlight_gone)
 	play_area.description_dismiss_requested.connect(_on_description_dismiss_requested)
+	play_area.sidebar_requested.connect(hud_container.focus_sidebar)
 
 	add_child(game)
 	_add_prop_debug_controls()

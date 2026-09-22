@@ -36,7 +36,7 @@ signal description_dismissed
 ## A different screen is showing; the map drops the name it had pinned to a dot on its own picture.
 signal active_screen_changed
 
-## The X was accepted from the keyboard or pad; hiding it left nothing focused, so the screen takes the focus back.
+## The sidebar let the focus go -- the X accepted from the keyboard or pad, or a right press off the last control -- leaving nothing focused, so the screen takes it back.
 signal exit_accepted
 
 ## The slide reached its aim -- or this container is leaving, which releases its waiters too.
@@ -577,6 +577,11 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if _the_arrows_belong_to_the_hosted_viewer(event): return
+	if _leaves_the_sidebar_for_the_picture(event):
+		get_viewport().gui_get_focus_owner().release_focus()
+		exit_accepted.emit()
+		get_viewport().set_input_as_handled()
+		return
 	if not showing_description(): return
 	var stick := event as InputEventJoypadMotion
 	if stick and stick.is_action(&"sidebar_scroll"):
@@ -605,6 +610,27 @@ func _enters_the_hosted_viewer(event: InputEvent) -> bool:
 		if event.is_action_pressed(action, true):
 			return (_hosted_viewer.call(&"cards") as CardsViewer).focus_first()
 	return false
+
+# A DESCRIPTION NOTHING STUCK IS ALREADY ON ITS WAY OUT, the focus having left the card it
+# describes, so the HUD is brought back first and its own controls are what the press lands on.
+## The sidebar takes the focus: the X while a stuck description holds the panel, else the HUD's first control.
+func focus_sidebar() -> void:
+	if showing_description() and not is_locked(): highlight_gone()
+	var target := _exit_button if showing_description() else _hud_stack.find_next_valid_focus()
+# ⚠ THE ONE PRODUCER OF AN OFF-SCREEN TARGET is the board asking while a viewer is hosted, which
+# hides the HUD stack the search just walked. The board should not be asking at all from under a
+# viewer; until it stops, the press is dropped rather than parked on a control nobody can see.
+	if not target.is_visible_in_tree(): return
+	target.grab_focus()
+
+# ⚠ THE PICTURE IS IN ANOTHER VIEWPORT, so the engine's neighbour search can never step back into
+# it and the last control in the row would strand a pad player. Which control is last is asked of
+# that same search rather than written down here, so the two can never disagree.
+func _leaves_the_sidebar_for_the_picture(event: InputEvent) -> bool:
+	if not event.is_action_pressed(&"ui_right", true): return false
+	var owner := get_viewport().gui_get_focus_owner()
+	if owner == null or not is_ancestor_of(owner): return false
+	return owner.find_valid_focus_neighbor(SIDE_RIGHT) == null
 
 # ⚠ A FOCUSED VIEWER OWNS THE ARROWS. Read before the GUI pass, the page scroll and the up-to-the-X
 # would answer a grid key the viewer's own neighbour search can use, and a stuck card could never

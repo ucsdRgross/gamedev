@@ -260,6 +260,13 @@ func _ready() -> void:
 	await test_starting_a_run_takes_the_name_off_the_map()
 	behavior_section("A CARD LEAVING THE BOARD FLIES TO ITS PILE")
 	await test_a_card_leaving_the_board_flies_to_its_pile()
+	behavior_section("THE BOARD'S DOOR TO THE SIDEBAR (P40)")
+	await test_left_from_the_leftmost_entrance_card_enters_the_sidebar()
+	await test_left_from_the_leftmost_grid_cell_enters_the_sidebar()
+	await test_right_from_the_sidebars_last_control_returns_to_the_card_it_left()
+	await test_left_with_a_stuck_description_lands_on_the_x()
+	await test_a_pad_accept_on_the_landed_hud_button_presses_it()
+	await test_left_on_the_map_with_nothing_picked_reaches_its_deck_button()
 	finish()
 
 
@@ -4415,7 +4422,7 @@ func test_an_edge_arrow_leaves_the_stuck_viewer_for_the_exit_x() -> void:
 		await get_tree().process_frame
 		await _push_arrow(_booted_viewport, KEY_UP)
 		check(_game_viewport.gui_get_focus_owner() == cards[0],
-				"up off the top row with nothing stuck stays on the card: the HUD has no focusable control to land on (P40)",
+				"up off the top row with nothing stuck stays on the card: an unstuck viewer asks for the sidebar at no edge (P40)",
 				str(_game_viewport.gui_get_focus_owner()))
 		await _click(cards[0].get_global_rect().get_center(), _game_viewport)
 		check(_container.is_locked(), "sanity: the click stuck the first card to the sidebar")
@@ -5826,7 +5833,9 @@ func test_an_arrow_from_an_entrance_card_leaves_the_focus_on_the_board() -> void
 	check(not entrance.is_empty(), "the dealt board offers an Entrance card to focus from",
 			str(entrance.size()))
 	if not entrance.is_empty():
-		for keycode : Key in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]:
+#⚠ LEFT IS NOT ON THIS LIST (P40): off the strip's leftmost stop it is the sidebar's door, and
+#where it lands is asserted there. The rule this row pins is about the arrows that STAY.
+		for keycode : Key in [KEY_UP, KEY_DOWN, KEY_RIGHT]:
 			entrance[0].grab_focus()
 			await get_tree().process_frame
 			_push_key(_game_viewport, keycode, true)
@@ -6289,18 +6298,20 @@ func test_an_arrow_never_stops_on_a_face_down_card() -> void:
 			"...and that slot still draws its face-down card (S21.7)",
 			str(_stock_controls(0).size()))
 	var landed := await _focus_after_arrow(_slot_top_control(1), KEY_LEFT)
-	check(landed != null and not _play_area.is_stock_control(landed),
+	check(landed == null or not _play_area.is_stock_control(landed),
 			"an arrow into the emptied slot never stops on its face-down card (S21.7)",
 			_board_input_state(_slot_top_control(0)))
-#⚠ WHERE IT GOES INSTEAD IS NOT WIRED, so this asserts only that it left the Entrance row: the
-#leftmost STOP is left with no explicit left neighbour (`_link_arrow_stops`), so the engine's own
-#geometric search answers, and it picks the grid cell above the skipped slot.
-	check(landed != null and not _play_area.upper_zone_right.is_ancestor_of(landed),
-			"...and with no card revealed that way the arrow leaves the Entrance row altogether "
-			+ "rather than stopping on the emptied slot (S21.7)",
-			"landed %s at %s under %s"
-			% [landed, landed.get_global_rect() if landed else "-",
-			landed.get_parent().name if landed else "-"])
+#⚠ RE-POINTED BY P40: skipping the emptied slot leaves slot 1's top as the strip's LEFTMOST stop,
+#and left off that is the sidebar's door -- so the arrow leaves the picture's viewport entirely
+#rather than landing on the grid cell the engine's geometric search used to answer with.
+	check(_booted_viewport.gui_get_focus_owner() != null
+			and _container.is_ancestor_of(_booted_viewport.gui_get_focus_owner()),
+			"...and with no card revealed that way the arrow leaves the Entrance row for the "
+			+ "sidebar rather than stopping on the emptied slot (S21.7, P40)",
+			"picture owner %s, sidebar owner %s"
+			% [landed, _booted_viewport.gui_get_focus_owner()])
+	_play_area.return_focus_to_board()
+	await get_tree().process_frame
 	await _discard_held_cards_of(2)
 	landed = await _focus_after_arrow(_slot_top_control(1), KEY_RIGHT)
 	check(landed != null and not _play_area.is_stock_control(landed),
@@ -6946,3 +6957,148 @@ func _content_height() -> float:
 func _scroll_overflow() -> float:
 	var bar := _panel_scroll(_panel).get_v_scroll_bar()
 	return maxf(bar.max_value - bar.page, 0.0)
+
+# ------------------------------------------------------------- P40: the board's door to the sidebar
+
+# The sidebar and the picture are two focus worlds, so every row here says WHICH viewport owns the
+# focus after the press: a row that asserts only the control is green while the pad is stranded.
+func _p40_press(viewport: Viewport, keycode: Key) -> void:
+	_push_key(viewport, keycode, true)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_push_key(viewport, keycode, false)
+	await get_tree().process_frame
+
+## The game HUD's first control -- where a press off the board's left edge lands.
+func _first_hud_control() -> Control:
+	return _container.deck_ui.get_node(^"Button") as Button
+
+# The one route three rows below share: a dealt board, the focus on the strip's leftmost stop, one
+# left press. Returns the card the press left, or null when the deal offered none to press from.
+func _left_off_the_leftmost_entrance_card() -> Control:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to press from",
+			str(entrance.size()))
+	if entrance.is_empty(): return null
+	entrance[0].grab_focus()
+	await get_tree().process_frame
+	await _p40_press(_game_viewport, KEY_LEFT)
+	return entrance[0]
+
+## P40: left off the leftmost Entrance card is the keyboard's only way into the sidebar, and it lands on a HUD button in the OVERLAY's viewport.
+func test_left_from_the_leftmost_entrance_card_enters_the_sidebar() -> void:
+	var left_from : Control = await _left_off_the_leftmost_entrance_card()
+	check(left_from != null and left_from.focus_neighbor_left.is_empty(),
+			"sanity: the card pressed from is the strip's leftmost stop, with no left neighbour",
+			str(left_from.focus_neighbor_left) if left_from else "-")
+	check(_booted_viewport.gui_get_focus_owner() == _first_hud_control(),
+			"P40: left off the leftmost Entrance card lands on the HUD's Deck button",
+			str(_booted_viewport.gui_get_focus_owner()))
+	check(_game_viewport.gui_get_focus_owner() == null,
+			"P40: ...and the picture's own viewport owns nothing any more",
+			str(_game_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+## P40: the same door from a grid cell -- the lattice step lands on no cell, which is the board's left edge.
+func test_left_from_the_leftmost_grid_cell_enters_the_sidebar() -> void:
+	await _start_game_fixture()
+	var cell := _play_area._cell_focus_control(BoardCoord.new(0, 0, 0, 0))
+	check(cell != null, "the dealt board offers the leftmost grid cell to press from", str(cell))
+	if cell == null:
+		await _end_main_fixture()
+		return
+	cell.grab_focus()
+	await get_tree().process_frame
+	await _p40_press(_game_viewport, KEY_LEFT)
+	check(_booted_viewport.gui_get_focus_owner() == _first_hud_control(),
+			"P40: left off the leftmost column of the leftmost grid lands on the HUD's Deck button",
+			str(_booted_viewport.gui_get_focus_owner()))
+	check(_game_viewport.gui_get_focus_owner() == null,
+			"P40: ...leaving the picture's viewport with no focus owner",
+			str(_game_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+## P40: and back again -- rights walk the HUD's own row and the one off its right edge returns to the very card the press left.
+func test_right_from_the_sidebars_last_control_returns_to_the_card_it_left() -> void:
+	var left_from : Control = await _left_off_the_leftmost_entrance_card()
+	var steps := 0
+	while steps < 6:
+		var owner := _booted_viewport.gui_get_focus_owner()
+		if owner == null or not _container.is_ancestor_of(owner): break
+		await _p40_press(_booted_viewport, KEY_RIGHT)
+		steps += 1
+	check(steps > 0 and _booted_viewport.gui_get_focus_owner() == null,
+			"P40: rights walk the HUD's controls and the last one gives the sidebar's focus up",
+			"%d presses, owner %s" % [steps, _booted_viewport.gui_get_focus_owner()])
+	check(_game_viewport.gui_get_focus_owner() == left_from,
+			"P40: ...handing the picture back the card the press left, in the picture's viewport",
+			str(_game_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+## P40: a stuck description holds the panel, so the edge press lands on its X rather than on a HUD button that is not on screen.
+func test_left_with_a_stuck_description_lands_on_the_x() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to click",
+			str(entrance.size()))
+	if entrance.is_empty():
+		await _end_main_fixture()
+		return
+	await _click_card(entrance[0])
+	check(_container.is_locked(), "sanity: the click stuck the card's description to the sidebar")
+	var cell := _play_area._cell_focus_control(BoardCoord.new(0, 0, 0, 0))
+	check(cell != null, "the dealt board offers the leftmost grid cell to press from", str(cell))
+	if cell:
+		cell.grab_focus()
+		await get_tree().process_frame
+		await _p40_press(_game_viewport, KEY_LEFT)
+		check(_booted_viewport.gui_get_focus_owner() == _exit_button(),
+				"P40: with a stuck description the edge press lands on the X, in the sidebar's viewport",
+				str(_booted_viewport.gui_get_focus_owner()))
+		check(_container.is_locked(),
+				"P40: ...and the description it is the way out of is still stuck")
+	await _end_main_fixture()
+
+## P40: the landing is a real button -- a pad accept on it presses it, so a pad player opens the deck with no mouse.
+func test_a_pad_accept_on_the_landed_hud_button_presses_it() -> void:
+	await _left_off_the_leftmost_entrance_card()
+	check(_booted_viewport.gui_get_focus_owner() == _first_hud_control(),
+			"sanity: the edge press landed on the Deck button",
+			str(_booted_viewport.gui_get_focus_owner()))
+	for pressed : bool in [true, false]:
+		var pad := InputEventJoypadButton.new()
+		pad.button_index = JOY_BUTTON_A
+		pad.pressed = pressed
+		_booted_viewport.push_input(pad)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(is_instance_valid(DeckViewer._open),
+			"P40: a pad accept on the button the edge press landed on opens the deck viewer",
+			str(DeckViewer._open))
+	await _close_the_open_viewer()
+	await _end_main_fixture()
+
+## P40: the map's own edge -- its dots are no Controls, so left with nothing picked is the one key route to the Deck button its basic view offers.
+func test_left_on_the_map_with_nothing_picked_reaches_its_deck_button() -> void:
+	await _start_map_fixture()
+	check(_map.controller._selected == null, "sanity: the map rests with nothing picked",
+			str(_map.controller._selected))
+	check(_container.map_deck_button.is_visible_in_tree(),
+			"sanity: the basic view's Deck button is the only control the map's sidebar offers")
+	await _p40_press(_map_viewport, KEY_LEFT)
+	var entered := _booted_viewport.gui_get_focus_owner() == _container.map_deck_button
+	check(entered,
+			"P40: left with nothing picked lands on the map's Deck button, in the sidebar's viewport",
+			str(_booted_viewport.gui_get_focus_owner()))
+	check(_map.controller._selected == null,
+			"P40: ...and picks no node on the way out", str(_map.controller._selected))
+	await _p40_press(_booted_viewport, KEY_RIGHT)
+	check(entered and _booted_viewport.gui_get_focus_owner() == null,
+			"P40: right off that one control gives the sidebar's focus back up",
+			str(_booted_viewport.gui_get_focus_owner()))
+	await _p40_press(_map_viewport, KEY_DOWN)
+	check(entered and _map.controller._selected != null,
+			"P40: ...so the map's own arrows answer again and pick a node",
+			str(_map.controller._selected))
+	await _end_main_fixture()

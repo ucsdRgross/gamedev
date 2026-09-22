@@ -92,7 +92,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `func release_screen(screen: StringName) -> void` | A screen's content ended: hands back its memory, lock and cascade flag |
 | `HudContainer` | `const MAP_SCREEN : StringName`, `const MENU_SCREEN : StringName` | The map's and the start menu's screen ids |
 | `HudContainer` | `signal active_screen_changed` | A different screen is showing |
-| `HudContainer` | `signal exit_accepted` | The X was accepted from keyboard or pad |
+| `HudContainer` | `signal exit_accepted` | The sidebar let the focus go: the X accepted from keyboard or pad, or a right press off its last control |
 | `HudContainer` | `signal slide_settled` | The slide reached its aim, or the container is leaving the tree, which releases `slide_to()`'s waiters too |
 | `HudContainer` | `func _join_focus_while_shown(button: Button, shown: bool) -> void` | The one rule for the X: a panel control is visible and in the focus chain for exactly the same span (C16) |
 | `HudContainer` | `func _hosting_a_viewer() -> bool` | Whether a Deck/Choice viewer is up, read off `host_viewer`'s own connections: the map's up-into-the-panel route yields to a viewer's focus chain (K10, `GAP-012`=a) |
@@ -197,6 +197,8 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `PlayArea` | `card_tapped(data: CardData)` | F8. Nothing listens in v1 but the dummy test effect |
 | `PlayArea` | `info_requested(entry: InfoEntry)` | **unchanged name**, now routed to `HudContainer` rather than `Main`'s card |
 | `HudContainer` | `description_dismissed` | B10 |
+| `PlayArea` | `sidebar_requested` | A left press off the board's own left edge; `GameView` hands it to `HudContainer.focus_sidebar()` |
+| `WorldMapController` | `sidebar_requested` | A left press with no node picked; `Map` hands it to `HudContainer.focus_sidebar()` |
 
 ## 8. Test suites
 
