@@ -15,6 +15,21 @@ fully specify: input routing across viewports, focus ownership, a modal/lock sta
 deletion that must prove every caller gone, anything the recon left open. Never dispatch Fable as
 an implementer; a step that needs it needs a smaller brief.
 
+**The distribution, measured on one 20-step playtest stream** (all steps on Opus, 40k-480k
+tokens each): cost concentrated in two places - the steps that DESIGNED a state machine
+(a modal viewer, a lock suspension: 3-4 rejection rounds even on Opus) and the REWORK rounds
+(a first pass that games a rule, a leak found only by the full gate, a shot taken mid-travel).
+Neither is lowered by a stronger implementer; both are lowered by a sharper brief and a
+read-only recon that names the writer first. So by step kind, from what actually happened:
+
+| Kind of step | Share | Model | Why |
+|---|---|---|---|
+| a knob, a re-point of named rows, a comment sweep, a probe re-shot, a test-only repair, a one-site fix with its `file:line` in the brief | ~55% | `sonnet` | mechanical once the writer is named; the gate and sweep_check catch the miss |
+| a bug whose CAUSE the recon left open (measure-first diagnoses: the P24 render-target frame, the P36 floor identity), a deletion that must prove every caller gone | ~30% | `opus` | the value is in the measurement design; the recon candidates were wrong twice on this stream |
+| a new input or focus model across viewports, a modal/lock state machine, anything with three or more interacting rulings | ~15% | `opus`, and split the brief before dispatch | even Opus took 3-4 rounds; a smaller brief is the lever, not a bigger model |
+| read-only recon (`Explore`) ahead of a step | every non-trivial row | `sonnet` | grep-and-cite; the implementer measures anyway - and it is what turns an Opus row into a Sonnet one |
+| `bloat-reviewer` per diff, adversarial review at the close | as `/plan-run` says | at or above the author | the floor rule |
+
 **Escalation:** a Sonnet step whose report the overseer rejects twice (a wrong diagnosis, a
 weakened row, a leak it cannot find) goes to Opus with the evidence so far — the tree, the logs,
 the rejected report — not a fresh brief. Never escalate on the first miss; the gate and the
