@@ -5,6 +5,8 @@ metadata:
   type: feedback
 ---
 
+**Opus 5.5 needs Claude Code 2.1.280 or newer** (a 400 from 2.1.275: "does not support this model"); until the app is updated both implementer definitions say `model: claude-opus-5`, same effort split - flip them back to `claude-opus-5-5` after `claude update`.
+
 **Implementers run Opus 5.5 (`model: claude-opus-5-5` in the agent frontmatter - the bare `opus`
 alias resolved to Opus 5 from a Fable session), and the lever is EFFORT, not the model family:
 `plan-implementer-low` (effort low) for a step whose writer and row the brief names,

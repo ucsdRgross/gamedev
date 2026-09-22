@@ -10,8 +10,8 @@ warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ER
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
 **IMPLEMENTED-BY:** P1-P37 and P41: implementers `general-purpose` on `opus` (Opus 5) at default
-effort; P38 Sonnet 5 then Opus 5; P39-P40 Opus 5; from P44 on: Opus 5.5 by full id
-(`plan-implementer-low` / `plan-implementer`, effort low / medium - implementer-routing memory). One fix at
+effort; P38 Sonnet 5 then Opus 5; P39-P40 Opus 5; from P44 on: `plan-implementer-low` / `plan-implementer` (effort low / medium; Opus 5 until
+the app reaches Claude Code 2.1.280, then Opus 5.5 - implementer-routing memory). One fix at
 a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 
 ## Owner rulings (verbatim where quoted; each overturns or extends the design it names)
