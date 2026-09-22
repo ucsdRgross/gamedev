@@ -68,7 +68,7 @@ func update_viewer() -> void:
 
 # The card the highlight reached, drawn at this viewer's own card size.
 func _publish_info(data: CardData) -> void:
-	PlayArea.card_info(data,
+	PlayArea.highlight_info(data,
 			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)
 
 # ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,

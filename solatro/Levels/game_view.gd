@@ -112,7 +112,7 @@ func _ready() -> void:
 	play_area.hand_released.connect(_finish_with_the_card)
 	play_area.card_tapped.connect(_on_card_tapped)
 	play_area.info_requested.connect(_relay_info_requested)
-	play_area.highlight_cleared.connect(hud_container.return_to_lock)
+	play_area.highlight_cleared.connect(hud_container.highlight_gone)
 	play_area.description_dismiss_requested.connect(_on_description_dismiss_requested)
 
 	add_child(game)

@@ -180,7 +180,7 @@ static func _hold(button: Button, held: bool) -> void:
 
 # The card the highlight reached, drawn at this viewer's own card size.
 func _publish_info(card: CardData) -> void:
-	PlayArea.card_info(card,
+	PlayArea.highlight_info(card,
 			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)
 
 # Confirming closes this viewer, so it announces the lost highlight the same way the board does: a

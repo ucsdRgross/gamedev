@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P14, P16-P23, P25-P28 are done, each red-then-green and by eye where it draws,
 one verified step per commit. Last gate: `ALL 51 SUITES: 6328 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P34-P41, then the close; P33 is in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P41, P35-P40, then the close; P33 and P34 are in; P29, P15 and P24 are in; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -374,9 +374,9 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/UI/play_area.gd, solatro/Levels/game_view.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar DragPlace; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
-  notes: 'Owner: "right now merely hovering a card causes it to become sticky as if it was clicked on." Find the writer that locks on hover (a click locks; a drag pickup never locks).'
+  status: done
+  evidence: 'Measured first (booted Main, real input): a hover NEVER locked - two defects read as sticky: _refresh_exit_button showed the X on any board description (its only-a-highlight test was the viewer-presence proxy), and game_view.gd wired the lost highlight to return_to_lock, which returns early when nothing is locked, so the description stayed. Red (production parked, tests kept): FILTERED 5 of 51: 2069 passed, 7 FAILED (7 behavior) - no X on a hover, no pad route onto it, the pointer leaving closes, the focus leaving closes. Green: FILTERED 5 of 51: 2074 CHECKS PASSED (SIDEBAR 1498 -> 1496 by three honest re-points); then the full gate found the new probe tripping GAME HEADLESS test_zone_only_tests_do_not_multiply (a new Tests file touching a zone must also cover a grid) - the probe now hovers a GRID cell too; FILTERED 2 of 51 [GameHeadless Sidebar]: 1592 CHECKS PASSED. Overseer gate: ALL 51 SUITES: 6386 CHECKS PASSED, 21 placeholder warnings, the exit profile, 0 SCRIPT ERROR. By eye (overseer, p34_hover_no_x.png): "5 of Knives" described, sidebar top-right empty, no X; implementer read the click/X, hover-B-while-sticky and sidebar-returns-A shots. Bloat review (opus): _showing_a_highlight duplicated the panel entry with no clearing event - deleted; a one-caller test helper inlined. doc_check --changed: 2 legacy findings in info_entry.gd. dup_check 82.'
+  notes: 'ONE home with P33: every highlight publisher (PlayArea.highlight_info, deck_viewer, choice_viewer) marks its InfoEntry.transient; the X follows the entry (locked or not transient); a gone highlight closes through HudContainer.highlight_gone (the generalised P33 fall-back) - game_view.gd wires play_area.highlight_cleared to it. The click lock (lock_to) is untouched; a stuck card survives hovers and returns at the sidebar (path answer 2, asserted on the board). New instrument Tests/Visual/board_hover_probe. Retired: the B4/Q32=a row "the description STAYS when the pointer leaves every card" (overturned by the ruling). OPEN (asked): a closed highlight leaves the card holding keyboard focus (rim on; re-hover publishes nothing until the focus moves) - drop the focus too? The map node description keeps its X (a pick, not a highlight). info_entry.gd owes a sweep (2). The implementer overlapped two of its own Godot runs once (a fabricated TP-92 failure) and ended both by verified pid. Brief: Owner: "right now merely hovering a card causes it to become sticky as if it was clicked on." Find the writer that locks on hover (a click locks; a drag pickup never locks).'
 - id: P35
   description: In the in-game deck viewer the focus outline does not move and the arrow keys do not move it - find why (a focus that never lands in the viewer viewport, or the rim not redrawn) and fix; the row asserts the FOCUS OWNER after each arrow.
   files_touched: [solatro/UI/deck_viewer.gd, solatro/UI/cards_viewer.gd, solatro/Tests/UI/test_ui_viewers.gd]
@@ -495,7 +495,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P34, P41 (resume the P33 agent), P35, P36, P37, P38, P39 (a-f), P40, then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P41 (resume the P33 agent), P35, P36, P37, P38, P39 (a-f), P40, then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)

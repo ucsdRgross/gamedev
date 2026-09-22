@@ -7,6 +7,11 @@ extends RefCounted
 ## Already localised by whatever built this entry; no `TRANSLATION.find()` happens here.
 var title : String = ""
 var body : String = ""
+# THE X PROMISES THE DESCRIPTION WILL STAY, and a highlight's does not: it closes the moment the
+# pointer or the focus leaves what it describes. Only a lock -- a click -- makes one stay.
+## Whether this entry is a HIGHLIGHT rather than something the player made stay: no exit X, and the highlight leaving closes it.
+var transient : bool = false
+
 ## Optional visual of the hovered thing, shown beside the description. May be null.
 ## Ownership: the caller that builds the entry frees this unless `HudContainer.show_description()`
 ## takes it into the container's own tree — see that method.

@@ -238,7 +238,7 @@ func host_viewer(viewer: Node, picture: WallPicture, relay: Signal) -> void:
 	var cards : CardsViewer = viewer.call(&"cards")
 	cards.sticky_changed.connect(_follow_the_viewers_sticky)
 	cards.sidebar_requested.connect(_exit_button.grab_focus)
-	cards.highlight_left.connect(_fall_back_under_the_viewer)
+	cards.highlight_left.connect(highlight_gone)
 # ⚠ CAPTURED ONCE PER RUN OF VIEWERS: swapping piles frees the old viewer without closing it, and a
 # second capture would read the emptied dictionary and lose the screen's lock for good.
 	if not is_instance_valid(_hosted_viewer):
@@ -261,10 +261,9 @@ var _entry_under_the_viewer : InfoEntry = null
 ## The viewer this container is hosting, so the sidebar's own X can ask it to go. Null while none is up.
 var _hosted_viewer : Node = null
 
-# WHAT THE VIEWER IS COVERING: the card a click stuck, else the screen's own lock, else whatever
-# the sidebar was reading when the viewer opened, else the HUD. One answer for a highlight that has
-# gone and for the viewer closing.
-func _fall_back_under_the_viewer() -> void:
+# A HIGHLIGHT NOTHING CLICKED LEAVES NOTHING BEHIND -- that is what makes it a highlight.
+## Board and viewer alike, the pointer or focus is on nothing this describes: back to the stuck card, else what the viewer covered, else the HUD.
+func highlight_gone() -> void:
 # A TEARDOWN IS NOT A POINTER MOVE: Godot fires `mouse_exited` on the hovered card as the tree
 # comes apart, and this container is already out of it by then -- measured, one SCRIPT ERROR a run.
 	if not is_inside_tree(): return
@@ -291,16 +290,17 @@ func _close_hosted_viewer() -> void:
 		_locked_entry_by_screen[_active_screen] = _suspended_lock
 		_suspended_lock = null
 	_hosted_viewer = null
-	_fall_back_under_the_viewer()
+	highlight_gone()
 	var under := _entry_under_the_viewer
 	_entry_under_the_viewer = null
 	if under and under != _description_panel.current_entry: _free_detached_visual(under)
 
-# THE X PROMISES THE DESCRIPTION WILL STAY: a viewer highlight nothing has clicked will not, so it
-# carries no X until a click sticks the card. Every other description keeps the one it always had.
+# THE X PROMISES THE DESCRIPTION WILL STAY: a highlight nothing has clicked will not, wherever it
+# was published, so it carries no X until a click locks it.
 func _refresh_exit_button() -> void:
 	_join_focus_while_shown(_exit_button,
-			showing_description() and (is_locked() or not _hosting_a_viewer()))
+			showing_description()
+			and (is_locked() or not _description_panel.current_entry.transient))
 
 # A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD, re-fitted after its screen's own inset. It republishes
 # only while a description is UP, redrawing the preview at its own card size: a dismissal is the

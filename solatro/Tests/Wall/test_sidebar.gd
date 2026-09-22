@@ -81,7 +81,8 @@ func _ready() -> void:
 	await test_the_title_leaves_the_exit_xs_column()
 	await test_the_preview_is_drawn_at_the_one_preview_size()
 	await test_the_preview_follows_a_resize_to_the_new_preview_size()
-	await test_losing_the_highlight_keeps_the_last_entry()
+	await test_a_hover_describes_a_board_card_without_sticking_it()
+	await test_a_pad_focus_describes_a_board_card_without_sticking_it()
 	await test_leaving_and_returning_restores_the_screens_own_description()
 	await test_a_description_dismissed_with_the_x_stays_dismissed_on_return()
 	await test_a_description_a_placement_took_down_stays_down_on_return()
@@ -97,6 +98,7 @@ func _ready() -> void:
 	behavior_section("S6: FOLLOW, RETURN AND DISMISS")
 	await test_the_description_follows_the_hover_while_locked()
 	await test_leaving_everything_returns_to_the_locked_card()
+	await test_a_stuck_card_survives_hovers_and_the_pointer_reaching_the_sidebar()
 	await test_focus_leaving_the_board_returns_to_the_locked_card()
 	await test_cancel_reverts_to_the_hud_and_still_reaches_the_wall()
 	await test_the_second_button_releases_the_held_card_then_dismisses()
@@ -2099,9 +2101,13 @@ func _check_parts_start_one_inset_inside(parts: Array[Control], owner_label: Str
 ## The X sits over the description's top-right corner, so the wrapped name must leave that column free or a word draws beneath it.
 func test_the_title_leaves_the_exit_xs_column() -> void:
 	await _start_game_fixture()
-	var data := await _hover_a_card_with_a_visual()
-	check(data != null, "the pointer described a board card")
-	if data != null:
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
+		check(_exit_button().is_visible_in_tree(),
+				"a click stuck the description, the one state with an X")
 		for window : Vector2i in INSET_WINDOWS:
 			await _resize_viewport(_booted_viewport, window)
 			await get_tree().physics_frame
@@ -2227,8 +2233,8 @@ func test_the_preview_follows_a_resize_to_the_new_preview_size() -> void:
 					% [preview_px, one_size, board_px, _play_area.board_zoom])
 	await _end_main_fixture()
 
-## 1.3/B4/Q32=a: the pointer leaving every card publishes nothing, so the description keeps its last entry.
-func test_losing_the_highlight_keeps_the_last_entry() -> void:
+## R "merely hovering a card causes it to become sticky": a hover DESCRIBES with no X, and closes again the moment the pointer is on no card.
+func test_a_hover_describes_a_board_card_without_sticking_it() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
 	var title : Label = _panel.get_node(^"%Title")
@@ -2238,17 +2244,50 @@ func test_losing_the_highlight_keeps_the_last_entry() -> void:
 	if not controls.is_empty():
 		_hover(controls[0].get_global_rect().get_center())
 		await get_tree().process_frame
-		var shown : InfoEntry = _panel.current_entry
-		check(shown != null, "hovering a card opened the description")
+		check(_panel.visible and not hud_stack.visible, "hovering a card opens the description")
+		check(title.text == _expected_text(_play_area.ui_data[controls[0]])[0],
+				"...reading the card the pointer is on", title.text)
+		check(not _container.is_locked(),
+				"...and a HOVER STICKS NOTHING: only a click locks the sidebar")
+		check(not _exit_button().is_visible_in_tree(),
+				"...so it carries NO exit X, which would promise it will stay")
+		check(_exit_button().focus_mode == Control.FOCUS_NONE,
+				"...and no pad player can navigate onto that X either",
+				str(_exit_button().focus_mode))
+
 		_hover(_bare_board_point(controls))
 		await get_tree().process_frame
 		await get_tree().process_frame
+		check(hud_stack.visible and not _panel.visible,
+				"the pointer leaving every card CLOSES the description again")
+		check(not _exit_button().is_visible_in_tree(), "...with the X gone with it")
+	await _end_main_fixture()
+
+## The same rule for the other device: a pad/keyboard focus describes and sticks nothing, and the focus leaving the board closes it.
+func test_a_pad_focus_describes_a_board_card_without_sticking_it() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to focus",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(_off_the_board_point())
+		await get_tree().process_frame
+		controls[0].grab_focus()
+		await get_tree().process_frame
 		check(_panel.visible and not hud_stack.visible,
-				"the description STAYS when the pointer leaves every card (B4)")
-		check(shown != null and _panel.current_entry == shown,
-				"...still the very same entry, by identity (Q32=a)")
-		check(title.text == _expected_text(_play_area.ui_data[controls[0]])[0],
-				"...still reading the card the pointer left", title.text)
+				"a pad focus onto a card opens the description")
+		check(not _container.is_locked(), "...and sticks nothing (R: only a click does)")
+		check(not _exit_button().is_visible_in_tree(), "...so it carries no exit X")
+
+		_container.submit_button.grab_focus()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(_game_viewport.gui_get_focus_owner() == null,
+				"the board holds no focused control once the HUD took the focus",
+				str(_game_viewport.gui_get_focus_owner()))
+		check(hud_stack.visible and not _panel.visible,
+				"...so the focus leaving the board closes the description")
 	await _end_main_fixture()
 
 ## 1.14/B15/B16/Q19=c/Q20=b: each screen remembers its own last description and gets it back on return.
@@ -2619,16 +2658,15 @@ func test_the_exit_x_reverts_to_the_hud() -> void:
 ## C16/Q47=a: the exit X is a full touch target in the container's top-right, below the overlay's own button band, and only while the description shows.
 func test_the_exit_x_is_a_touch_target_below_the_button_band() -> void:
 	await _start_game_fixture()
-	var controls := await _hoverable_card_controls()
-	check(not controls.is_empty(), "the dealt board offers a card control to hover",
-			str(controls.size()))
-	if not controls.is_empty():
-		_hover(controls[0].get_global_rect().get_center())
-		await get_tree().process_frame
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
 		var button := _exit_button()
 		var target := GestureMetrics.touch_target_px(
 				_container.get_viewport().get_visible_rect().size, PlayArea.settings())
-		check(button.is_visible_in_tree(), "the exit X shows while the description does")
+		check(button.is_visible_in_tree(), "the exit X shows over a STUCK description")
 		check(button.size.x >= target - 0.5 and button.size.y >= target - 0.5,
 				"...at the same touch target every overlay control is grown to (Q47=a)",
 				"%s vs %.1f" % [button.size, target])
@@ -2789,8 +2827,50 @@ func test_leaving_everything_returns_to_the_locked_card() -> void:
 			await get_tree().process_frame
 			await get_tree().process_frame
 			check(not _container.is_locked(), "nothing is locked once the container went back")
-			check(title.text == _expected_text(_play_area.ui_data[second])[0],
-					"...so leaving everything STAYS on the last card read (B4)", title.text)
+			check((_container.get_node(^"%HudStack") as Control).visible and not _panel.visible,
+					"...so leaving everything CLOSES an unstuck description (R, overturns B4)")
+	await _end_main_fixture()
+
+## Viewer-path answer (2) on the BOARD: a click sticks and shows the X, other cards borrow the sidebar only while hovered, and the stuck one is back once the pointer is on nothing -- or on the sidebar itself.
+func test_a_stuck_card_survives_hovers_and_the_pointer_reaching_the_sidebar() -> void:
+	await _start_game_fixture()
+	var title : Label = _panel.get_node(^"%Title")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var stuck : CardData = _play_area.ui_data[entrance[0]]
+		await _lock_without_holding(entrance[0])
+		check(_container.is_locked(), "a CLICK is what sticks the description")
+		check(_exit_button().is_visible_in_tree(),
+				"...and only a stuck description carries the exit X")
+
+		var controls := await _hoverable_card_controls()
+		var elsewhere := await _hover_another_card(controls, _play_area.data_ui[stuck])
+		check(elsewhere != null, "the pointer landed on a second card")
+		if elsewhere != null:
+			check(title.text == _expected_text(_play_area.ui_data[elsewhere])[0],
+					"hovering another card borrows the sidebar while it lasts", title.text)
+			check(_container.is_locked() and _play_area.locked_data == stuck,
+					"...without unsticking the clicked one")
+			check(_exit_button().is_visible_in_tree(), "...and the X stays up through the hover")
+			_hover(_bare_board_point(controls))
+			await get_tree().process_frame
+			await get_tree().process_frame
+			check(title.text == _expected_text(stuck)[0],
+					"...and the stuck card is back once no card is hovered", title.text)
+
+		var borrowed := await _hover_another_card(controls, _play_area.data_ui[stuck])
+		check(borrowed != null, "the pointer can borrow the sidebar a second time")
+		_hover(_off_the_board_point())
+		_hover_in(_booted_viewport, _container.get_global_rect().get_center())
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(title.text == _expected_text(stuck)[0],
+				"the pointer REACHING THE SIDEBAR shows the stuck card, so it can be read there",
+				title.text)
+		check(_container.is_locked() and _play_area.locked_data == stuck,
+				"...still stuck to the card that was clicked")
 	await _end_main_fixture()
 
 ## B7 for the pad: the board focus landing on a HUD control leaves no card highlighted, so the locked card comes back.
@@ -2886,12 +2966,12 @@ func test_the_second_button_releases_the_held_card_then_dismisses() -> void:
 func test_a_press_on_bare_board_reverts_to_the_hud() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
-	var controls := await _hoverable_card_controls()
-	check(not controls.is_empty(), "the dealt board offers a card control to hover",
-			str(controls.size()))
-	if not controls.is_empty():
-		var read := await _hover_another_card(controls, null)
-		check(read != null, "the pointer read a card first")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
+		var controls := await _hoverable_card_controls()
 		var dismissals : Array[int] = []
 		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
 		check(_container.showing_description(), "the description is up before the press")

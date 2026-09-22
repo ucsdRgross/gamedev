@@ -3306,7 +3306,14 @@ func _publish_focus_left_cards() -> void:
 
 # THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike.
 func _publish_info(data: CardData) -> void:
-	card_info(data, CardVisual.preview_window_px(picture_to_window_scale)).relay_to(info_requested)
+	highlight_info(data,
+			CardVisual.preview_window_px(picture_to_window_scale)).relay_to(info_requested)
+
+## `card_info()` for a HIGHLIGHT -- the one home for what a hover or a focus publishes, on the board and in every viewer alike.
+static func highlight_info(data: CardData, card_px: Vector2) -> InfoEntry:
+	var entry := card_info(data, card_px)
+	entry.transient = true
+	return entry
 
 # A FACE-DOWN CARD DESCRIBES THE SLOT, NEVER ITSELF -- what is hidden stays hidden, and what the
 # player is asking is how much this slot has left to draw.
@@ -3315,6 +3322,7 @@ func _publish_stock_info(slot: int) -> void:
 	var entry := InfoEntry.new()
 	entry.title = game.state.upper_zone_type[slot].type.get_str()
 	entry.body = TRANSLATION.find('SIDEBAR_STOCK_REMAINING') % game.state.entrance_stocks()[slot].datas.size()
+	entry.transient = true
 	info_requested.emit(entry)
 
 var focused_visual : CardVisual
