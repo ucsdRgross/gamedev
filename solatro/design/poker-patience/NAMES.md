@@ -239,6 +239,8 @@ that shipped.
 | `PlayArea.pan_grid` | `int` | The grid the view is centred on. `focus_grid` also centres, so it cannot disagree with `focused_grid`. |
 | `PlayArea.pan_to_grid(gi)` / `pan_by_grids(step)` | method | Discrete, one grid per step. FOCUSED aims the scroller and lands the grid centred; OVERVIEW only moves `pan_grid`. |
 | `PlayArea._consume_as_view_action(event)` | method | The Back/Forward interception. Returns false in the overview so the event still reaches the wall. |
+| `PlayArea._step_out_of_the_focused_grid()` | method | The cancel ladder’s board rung, shared by `_cancel_one_step` and `_cancel_everything`: FOCUSED with more than one grid → `open_zoomed_out()`, setting `_zoom_out_grid` exactly as `wall_back` does. False (the press is the wall’s) in the overview and on a one-grid board. |
+| `PlayArea._cancel_everything()` | method | Returns whether it took the board’s own rung, which is when `_unhandled_input` consumes the press. A press that let a card go or took a description down is spent and goes on to the wall — the one-press rule. |
 | `PlayArea._end_the_content_drag(lands_on_a_grid)` | method | Ends `SmoothScrollContainer`'s own drag, which never sees the release the board consumed. True only for a gesture that travelled carrying no card — a drag pan, which then lands on `_grid_nearest_the_window_centre()` as Left/Right do. A cancel passes false. |
 | `PlayArea._bounce_board(step)` | method | The FOCUSED edge bounce, spent into the scroller's overdrag. OVERVIEW has no range to push into and returns. |
 | `PlayArea.selected_grid` | `int` | The OVERVIEW's cursor: which grid the arrows have selected and Enter focuses. Kept in step with the board focus, so the mouse and the arrows cannot disagree. |

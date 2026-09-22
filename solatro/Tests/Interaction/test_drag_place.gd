@@ -90,6 +90,11 @@ func _ready() -> void:
 	await test_a_drag_pan_needs_the_button_held()
 	await test_a_cancel_ends_a_latched_drag_pan()
 	await test_a_drag_pan_release_lands_on_the_grid_nearest_the_centre()
+	behavior_section("THE CANCEL LADDER STEPS OUT ONE LEVEL PER PRESS")
+	await test_the_second_button_cancels_one_rung_per_press()
+	await test_an_escape_with_something_to_spend_still_reaches_the_wall()
+	await test_an_escape_with_nothing_to_spend_steps_out_of_the_grid_first()
+	await test_a_one_grid_board_has_no_grid_to_step_out_of()
 	finish()
 
 # ==============================================================================
@@ -1747,3 +1752,151 @@ func _settle_scroll_x() -> void:
 		waited += get_process_delta_time()
 		if is_equal_approx(_board_content_x(), last): return
 		last = _board_content_x()
+
+# ==============================================================================
+# THE CANCEL LADDER: HELD CARD, DESCRIPTION, THE EVERY-GRID VIEW, THE WALL.
+# ==============================================================================
+
+# ⚠ WHETHER THE WALL TOOK ITS STEP IS THE ONLY HONEST READING of "the board consumed it": the rung
+# below the board belongs to the wall, and a press the board kept never reaches it. Boxed in an
+# Array because a lambda captures an outer local BY VALUE.
+func _watch_for_wall_view() -> Array[bool]:
+	var left : Array[bool] = [false]
+	_main.wall.wall_view_entered.connect(func() -> void: left[0] = true)
+	return left
+
+#ONE RUNG PER PRESS FOR THE SECOND BUTTON: the card, then the description it was read against, then
+#the grid itself. Stepping out of the grid is the rung the owner found missing -- without it a
+#cancel could not get back to the every-grid view to choose another grid.
+func test_the_second_button_cancels_one_rung_per_press() -> void:
+	await _start_fixture_grids(3)
+	var lifted := await _lift_the_leftmost()
+	await _settle_layout()
+	check(lifted != null and _pa.locked_data == lifted
+			and _pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"precondition: a click left a card held, its description locked, one grid focused",
+			"held %s, locked %s, mode %d"
+			% [lifted != null, _pa.locked_data != null, _pa.view_mode])
+	var quiet := _bare_board_point()
+	check(quiet != Vector2.INF, "precondition: a point on no card for the second button",
+			str(quiet))
+	if lifted == null or quiet == Vector2.INF:
+		await _end_fixture()
+		return
+	var focused := _pa.focused_grid
+
+	await _right_click(quiet, false)
+	await _frames(2)
+	check(_pa.selected_cards.is_empty() and _pa.locked_data == lifted
+			and _pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"RUNG 1 -- the first press lets the card go, and takes neither the description nor "
+			+ "the grid with it",
+			"held %d, locked %s, mode %d"
+			% [_pa.selected_cards.size(), _pa.locked_data != null, _pa.view_mode])
+
+	await _right_click(quiet, false)
+	await _frames(2)
+	check(_pa.locked_data == null and _pa.view_mode == PlayArea.ViewMode.FOCUSED
+			and _pa.focused_grid == focused,
+			"RUNG 2 -- the second press takes the description down, and the board is still "
+			+ "focused on the same grid",
+			"locked %s, mode %d, focused %d"
+			% [_pa.locked_data != null, _pa.view_mode, _pa.focused_grid])
+
+	await _right_click(quiet, false)
+	await _frames(2)
+	check(_pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"RUNG 3 -- the third press steps out of the grid to the EVERY-GRID view, where "
+			+ "another grid can be chosen",
+			"mode %d, focused %d" % [_pa.view_mode, _pa.focused_grid])
+	check(_pa._zoom_out_grid == focused,
+			"...and it remembered the grid it left, so Forward returns to it",
+			"zoom out grid %d, was focused on %d" % [_pa._zoom_out_grid, focused])
+	await _settle_layout()
+
+	await _right_click(quiet, false)
+	await _frames(2)
+	check(_pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"RUNG 4 -- a press in the every-grid view takes no board step of its own: the level "
+			+ "below the board is the wall's",
+			"mode %d" % _pa.view_mode)
+	await _end_fixture()
+
+#ESCAPE SPENDS ITSELF ON THE CARD AND THE DESCRIPTION IN ONE PRESS and still leaves for wall view --
+#the owner's rule, unchanged. It does NOT step out of the grid on top of that.
+func test_an_escape_with_something_to_spend_still_reaches_the_wall() -> void:
+	await _start_fixture_grids(3)
+	var lifted := await _lift_the_leftmost()
+	await _settle_layout()
+	check(lifted != null and _pa.locked_data == lifted
+			and _pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"precondition: a card held, its description locked, one of three grids focused",
+			"held %s, locked %s, mode %d"
+			% [lifted != null, _pa.locked_data != null, _pa.view_mode])
+	if lifted == null:
+		await _end_fixture()
+		return
+	var left := _watch_for_wall_view()
+	await _escape_press()
+	check(_pa.selected_cards.is_empty() and _pa.locked_data == null,
+			"one Escape lets the card go AND takes the description down, in the same press",
+			"held %d, locked %s" % [_pa.selected_cards.size(), _pa.locked_data != null])
+	check(_pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"...and does NOT step out of the grid on top of that: the press was already spent",
+			"mode %d" % _pa.view_mode)
+	check(left[0],
+			"...so the wall still hears it and takes its own step out of the screen",
+			"wall view entered %s" % left[0])
+	await _end_fixture()
+
+#WITH NOTHING TO SPEND, ESCAPE TAKES THE SAME RUNG THE SECOND BUTTON DOES -- and the wall does not
+#get that press, because the board still had a level of its own to give.
+func test_an_escape_with_nothing_to_spend_steps_out_of_the_grid_first() -> void:
+	await _start_fixture_grids(3)
+#A THREE-GRID SHOW OPENS ON THE EVERY-GRID VIEW, so the grid this row steps out of is focused here.
+	_pa.focus_grid(1)
+	await _settle_layout()
+	check(_pa.view_mode == PlayArea.ViewMode.FOCUSED and _pa.selected_cards.is_empty()
+			and _pa.locked_data == null,
+			"precondition: one of three grids focused, nothing held, nothing stuck",
+			"mode %d, held %d, locked %s"
+			% [_pa.view_mode, _pa.selected_cards.size(), _pa.locked_data != null])
+	var focused := _pa.focused_grid
+	var left := _watch_for_wall_view()
+	await _escape_press()
+	check(_pa.view_mode == PlayArea.ViewMode.OVERVIEW and _pa._zoom_out_grid == focused,
+			"an Escape with nothing to let go and nothing to dismiss steps out of the grid to the "
+			+ "every-grid view", "mode %d, zoom out grid %d" % [_pa.view_mode, _pa._zoom_out_grid])
+	check(not left[0],
+			"...and the wall does NOT take that press: the board's own level comes first",
+			"wall view entered %s" % left[0])
+	await _settle_layout()
+
+	await _escape_press()
+	check(_pa.view_mode == PlayArea.ViewMode.OVERVIEW and left[0],
+			"...and the NEXT press, with no board level left to give, is the wall's",
+			"mode %d, wall view entered %s" % [_pa.view_mode, left[0]])
+	await _end_fixture()
+
+#ONE GRID IS NOT A LEVEL. The overview frames exactly what the focused view frames, so a cancel on a
+#one-grid board has nothing to step out to and the press belongs to the wall.
+func test_a_one_grid_board_has_no_grid_to_step_out_of() -> void:
+	await _start_fixture()
+	check(_pa.grid_container.get_child_count() == 1
+			and _pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"precondition: a one-grid show opens focused on its only grid",
+			"%d grid(s), mode %d" % [_pa.grid_container.get_child_count(), _pa.view_mode])
+	var quiet := _bare_board_point()
+	check(quiet != Vector2.INF, "precondition: a point on no card", str(quiet))
+	if quiet != Vector2.INF:
+		await _right_click(quiet, false)
+		await _frames(2)
+		check(_pa.view_mode == PlayArea.ViewMode.FOCUSED,
+				"a second-button cancel on a one-grid board does not zoom out to an every-grid "
+				+ "view of one grid", "mode %d" % _pa.view_mode)
+	var left := _watch_for_wall_view()
+	await _escape_press()
+	check(_pa.view_mode == PlayArea.ViewMode.FOCUSED and left[0],
+			"...and Escape still reaches the wall from it, never kept by a level that is not there",
+			"mode %d, wall view entered %s" % [_pa.view_mode, left[0]])
+	await _end_fixture()

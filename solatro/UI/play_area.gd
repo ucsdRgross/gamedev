@@ -1739,7 +1739,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_emit_if_played(data_selected, ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		_cancel_everything()
+		if _cancel_everything(): get_viewport().set_input_as_handled()
 
 #Clicks outside the play area reach here too.
 
@@ -1860,27 +1860,45 @@ func _end_the_content_drag(lands_on_a_grid: bool) -> void:
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth or not smooth.input_handler.content_dragging: return
 	smooth.input_handler._end_content_drag()
-	if not lands_on_a_grid: return
-	var gi := _grid_nearest_the_window_centre()
-	if gi != NO_GRID: pan_to_grid(gi)
+	if lands_on_a_grid: pan_to_grid(_grid_nearest_the_window_centre())
 
 # THE SECOND BUTTON CANCELS ONE THING PER PRESS: the held card is let go first, so the description
-# it was read against survives that press, and only the next press closes the description.
+# it was read against survives that press, then the description, then the grid itself.
 func _cancel_one_step() -> void:
 	_end_the_gesture()
 	_end_the_content_drag(false)
 	if selected_cards:
 		ungrab_cards()
 		return
+	if locked_data != null:
+		description_dismiss_requested.emit()
+		return
+	if _step_out_of_the_focused_grid(): return
 	description_dismiss_requested.emit()
 
-# Escape does everything the second button would, in the one press, and is never consumed: the wall
-# hears it afterwards and takes its own step back out of the game screen.
-func _cancel_everything() -> void:
+#THE FOCUSED GRID IS A LEVEL OF ITS OWN, and a cancel steps out of it to the every-grid view, where
+#another grid can be chosen (owner ruling). Back takes this same step, and leaves `_zoom_out_grid`
+#the same way so Forward returns to the grid that was left.
+
+#⚠ ONE GRID IS NOT A LEVEL: the overview frames exactly what the focused view frames, so there is
+#nothing to step out to and the press belongs to the wall instead (`open_show_view`).
+func _step_out_of_the_focused_grid() -> bool:
+	if view_mode != ViewMode.FOCUSED or grid_container.get_child_count() <= 1: return false
+	_zoom_out_grid = focused_grid
+	open_zoomed_out()
+	return true
+
+# Escape does everything the second button would, in the one press. It is consumed ONLY when it
+# stepped out of a grid; otherwise the wall hears it and takes its own step out of the screen.
+func _cancel_everything() -> bool:
 	_end_the_gesture()
 	_end_the_content_drag(false)
+#⚠ READ BEFORE THE CANCEL SPENDS THEM. A press that let a card go or took a description down has
+#done its work, and the owner's one-press rule sends it on to the wall from there.
+	var spent := not selected_cards.is_empty() or locked_data != null
 	ungrab_cards()
 	description_dismiss_requested.emit()
+	return false if spent else _step_out_of_the_focused_grid()
 
 func ungrab_cards() -> void:
 	_next_grab_follows = false

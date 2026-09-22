@@ -160,6 +160,7 @@ func _ready() -> void:
 #release lands the grid nearest the middle of the window, as Left and Right do.
 	if _grid_count > 1:
 		var from := _bare_board_point(pa)
+		assert(from != Vector2.INF, "the board window has a pixel on no card to press")
 		if from != Vector2.INF:
 			var travel := -pa.grid_pitch_px() * 0.75 * pa.board_zoom
 			await _drag_the_board(vp, from, travel)
@@ -168,6 +169,20 @@ func _ready() -> void:
 			vp.push_input(_button_event(from + Vector2(travel, 0.0), false))
 			if not await _await_still(view, "drag_landed"): return
 			if not await _shoot(pa, vp, "drag_landed"): return
+
+#A CANCEL WITH NOTHING HELD AND NOTHING STUCK steps out of the focused grid to the every-grid view,
+#which is where another grid can be chosen (owner ruling). One press, and the board is looked at
+#whole again.
+		pa.focus_grid(_grid_count / 2)
+		if not await _await_still(view, "before_cancel"): return
+		var cancel := InputEventMouseButton.new()
+		cancel.button_index = MOUSE_BUTTON_RIGHT
+		cancel.pressed = true
+		cancel.position = from
+		cancel.global_position = from
+		vp.push_input(cancel)
+		if not await _await_still(view, "cancel_overview"): return
+		if not await _shoot(pa, vp, "cancel_overview"): return
 
 	view.queue_free()
 	await get_tree().process_frame
