@@ -62,7 +62,19 @@ overseer decides the next run.
 it does not change with the author. Rule 7 of CLAUDE.md is the known risk — assistants differ
 ~7x in unprompted defensive code — so the bloat review stays per diff.
 
-**Reviewers are Fable, always, and never edit.** Owner ruling, verbatim: "reviewer ideally fable
+**The overseer stays Fable for a stream in flight; the next stream may try Opus 5.5 at high effort
+and compare.** The arithmetic: an overseer's turns are almost all cache reads of a long context,
+priced $0.25/MTok on Fable 5.1 against $0.20 on Opus 5.5 - near parity - while its output and
+fresh input are small; so switching the overseer saves far less than the sticker prices (2.5x)
+suggest, and mid-stream it costs a full context re-read. What the overseer buys is judgement
+over a very long context: rejecting a report whose exit profile moved, whose shot was taken
+mid-travel, whose "flake" had passed four gates, whose tolerance was calibrated to a bug. Judge
+a 5.5 overseer on that record, not on benchmarks.
+
+**Reviewers are Fable, always, and never edit.** With the implementer on Opus 5.5 that is also a
+DIFFERENT model reading the author's code - decorrelated blind spots, which `/plan-run` values at
+or above the floor - and a review is a short read (24k-58k tokens each on this stream), so its
+Fable price is small. Owner ruling, verbatim: "reviewer ideally fable
 always, but it never touches the code itself, just finds issues." So `bloat-reviewer`,
 `plan-auditor`, `adversarial-review`, the test-surface pass and the `/code-review` and `/simplify`
 angles all run on `fable` and REPORT; every fix they name is a brief for an implementer (routed by
