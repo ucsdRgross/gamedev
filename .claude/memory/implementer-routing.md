@@ -7,17 +7,18 @@ metadata:
 
 **Owner, verbatim: "implementers will be opus 5.5 medium or low or sonnet 5 low."** Three
 definitions, effort set in each one's frontmatter (the docs' only per-subagent effort control;
-the `Agent` call cannot pass it): `plan-implementer` (claude-opus-5-5, medium),
-`plan-implementer-low` (claude-opus-5-5, low), `plan-implementer-sonnet` (claude-sonnet-5, low -
+the `Agent` call cannot pass it): `plan-implementer` (`opus`, medium),
+`plan-implementer-low` (`opus`, low), `plan-implementer-sonnet` (claude-sonnet-5, low -
 mechanical steps only). ⚠ A definition naming a model the app cannot run is SUBSTITUTED by the
 session's model, and the owner saw that run at the session's effort (high) rather than the
-frontmatter's low. So name only a model the app supports, and have the owner confirm model and
+frontmatter's low. The Opus presets use the `opus` alias so they follow each new Opus (owner); Sonnet stays pinned.
+Name only a model the app supports, and have the owner confirm model and
 effort on the subagent's `/tasks` row after an edit. **A session caches an agent definition when it
 first loads it**: an edit takes effect in the NEXT session; a refused dispatch leaves
 `.claude/.subagent.lock` held - clear it by hand when nothing runs.
 
-**Implementers run Opus 5.5 (`model: claude-opus-5-5` in the agent frontmatter - the bare `opus`
-alias resolved to Opus 5 from a Fable session), and the lever is EFFORT, not the model family:
+**Implementers run the latest Opus (`model: opus`; on an older app the alias resolved to Opus 5
+from a Fable session - confirm on `/tasks`), and the lever is EFFORT, not the model family:
 `plan-implementer-low` (effort low) for a step whose writer and row the brief names,
 `plan-implementer` (effort medium) for the rest.** The overseer (Fable) writes no source.
 Owner ruling: costs were too high with every implementer on Opus 5. A Sonnet tier failed one
