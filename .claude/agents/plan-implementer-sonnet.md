@@ -2,7 +2,7 @@
 name: plan-implementer-sonnet
 description: The same implementer on Sonnet 5 at LOW effort, for purely mechanical work - a comment sweep, a knob, a re-point of named tests, a probe re-shot. Never for a bug fix, an open-cause diagnosis or a model change.
 tools: Read, Write, Edit, Grep, Glob, Bash, PowerShell
-model: claude-sonnet-5
+model: sonnet
 effort: low
 maxTurns: 150
 color: green

@@ -8,10 +8,10 @@ metadata:
 **Owner, verbatim: "implementers will be opus 5.5 medium or low or sonnet 5 low."** Three
 definitions, effort set in each one's frontmatter (the docs' only per-subagent effort control;
 the `Agent` call cannot pass it): `plan-implementer` (`opus`, medium),
-`plan-implementer-low` (`opus`, low), `plan-implementer-sonnet` (claude-sonnet-5, low -
+`plan-implementer-low` (`opus`, low), `plan-implementer-sonnet` (`sonnet`, low -
 mechanical steps only). ⚠ A definition naming a model the app cannot run is SUBSTITUTED by the
 session's model, and the owner saw that run at the session's effort (high) rather than the
-frontmatter's low. The Opus presets use the `opus` alias so they follow each new Opus (owner); Sonnet stays pinned.
+frontmatter's low. The presets use the `opus` and `sonnet` aliases so they follow each new version (owner).
 Name only a model the app supports, and have the owner confirm model and
 effort on the subagent's `/tasks` row after an edit. **A session caches an agent definition when it
 first loads it**: an edit takes effect in the NEXT session; a refused dispatch leaves
