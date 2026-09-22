@@ -143,7 +143,9 @@ func _settle_layout(view: GameView) -> void:
 		waited += get_process_delta_time()
 		CardEnvironment.CURRENT = view.game
 		var smooth := pa.scroll_container as SmoothScrollContainer
-		if pa._recentre_waiting or (smooth and smooth.is_scrolling):
+#A MODE CHANGE IS A DURATION: the scale and the gap ease over the pan clock, and every rect read
+#before it lands is a frame of a scale the board is only passing through.
+		if pa._view_ease < 1.0 or pa._recentre_waiting or (smooth and smooth.is_scrolling):
 			last = INF
 			continue
 		var now := pa.slot_center_global(BoardCoord.new(0, 0, 0, 0)).y
@@ -520,7 +522,11 @@ func run_slot_center_global_reads_no_control_rects_test() -> void:
 	pa.flush_rebuild()
 	await get_tree().process_frame
 
-	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)
+#⚠ TAKEN INTO SCREEN PIXELS. `slot_center_global` answers where a card is DRAWN, so the authored
+#pitch has to cross the same boundary -- the row held only while this fixture happened to sit at
+#zoom 1.0, and said nothing about the board at any other.
+	var depth_pitch := (float(CardVisual.card_separation_play_custom) + float(pa.separation)) \
+			* pa.drawn_zoom
 	var occupied := pa.slot_center_global(coord)
 	check(pa.data_ui.has(g.state.card_at(coord)),
 			"precondition: h 0 really does have a control, so the two cases differ")
@@ -530,7 +536,8 @@ func run_slot_center_global_reads_no_control_rects_test() -> void:
 	check(absf((occupied.y - empty_h.y) - 4.0 * depth_pitch) < 0.5,
 			"Q255: a height with NO control still answers, on the same pitch as the occupied ones -- "
 			+ "a rect read could not, because there is no rect",
-			"%.1f vs %.1f" % [occupied.y - empty_h.y, 4.0 * depth_pitch])
+			"%.1f vs %.1f at zoom %.4f"
+			% [occupied.y - empty_h.y, 4.0 * depth_pitch, pa.drawn_zoom])
 	check(absf(empty_h.x - occupied.x) < 0.5,
 			"...and it stays in its own column")
 
@@ -1148,8 +1155,8 @@ func run_a_height_label_stays_above_its_stack_when_focused_zoom_is_not_one_test(
 		return
 
 	var top_card_y := pa.slot_center_global(BoardCoord.new(0, 3, 2, 1)).y
-	var expected_gap := CardVisual.card_size_play.y * pa.board_zoom * 0.5
-	var label_bottom := label.global_position.y + label.size.y * pa.board_zoom
+	var expected_gap := CardVisual.card_size_play.y * pa.drawn_zoom * 0.5
+	var label_bottom := label.global_position.y + label.size.y * pa.drawn_zoom
 	check(absf((top_card_y - expected_gap) - label_bottom) < 1.5,
 			"the label's bottom sits exactly half a (zoom-scaled) card above its stack's top card, "
 			+ "even off the overview's own zoom of 1.0",

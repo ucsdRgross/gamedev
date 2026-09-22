@@ -48,6 +48,8 @@ func _ready() -> void:
 	await run_every_focused_grid_centres_alone_test()
 	await run_the_overview_draws_the_grids_close_test()
 	await run_the_entrance_is_centred_until_a_grid_owns_it_test()
+	await run_a_mode_change_eases_into_place_test()
+	await run_the_opening_view_does_not_ease_test()
 	await run_a_non_focused_grid_paints_nothing_outside_the_window_test()
 	await run_the_board_edge_does_not_move_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
@@ -255,6 +257,7 @@ func _settle_layout(view: GameView) -> void:
 	var pa := view.play_area
 	CardEnvironment.CURRENT = view.game
 	pa.flush_rebuild()
+	await _settle_the_view_ease(view)
 	var last := INF
 	var waited := 0.0
 	while waited < 2.0:
@@ -264,6 +267,18 @@ func _settle_layout(view: GameView) -> void:
 		var now := pa.slot_center_global(BoardCoord.new(0, 0, 0, 0)).y
 		if is_equal_approx(now, last): return
 		last = now
+
+#⚠ A MODE CHANGE IS A DURATION NOW, NOT A FRAME. The scale and the gap ease over the pan clock, so
+#a board read before the ease lands is read mid-transition -- and every rect on it is a frame of a
+#scale the board is only passing through.
+func _settle_the_view_ease(view: GameView) -> void:
+	var pa := view.play_area
+	var waited := 0.0
+	while waited < 3.0 and pa._view_ease < 1.0:
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		CardEnvironment.CURRENT = view.game
 
 ## The zone-card control of cell (0,0) in grid gi -- a real board control the player can click.
 func _cell_control(pa: PlayArea, gi: int) -> Control:
@@ -387,10 +402,13 @@ func _reset_input_handled() -> void:
 func _scroller(pa: PlayArea) -> SmoothScrollContainer:
 	return pa.scroll_container as SmoothScrollContainer
 
-#Wait for the BOARD to stop moving horizontally. A pan and a bounce both have a DURATION, so a
-#still frame taken right after the press is the wrong instrument for either. It returns how long
-#that took in seconds: only a move with a DURATION takes longer than one frame to come to rest.
+#Wait for the BOARD to stop moving horizontally, and hand back how long that took: a pan and a
+#bounce both have a DURATION, so a still frame right after the press is the wrong instrument.
+
+#⚠ THE EASE COMES FIRST: the scroll cannot be settled while the board it is aimed inside is still
+#changing size -- the gap between grids opens over the pan clock, and the reach opens with it.
 func _settle_scroll(view: GameView) -> float:
+	await _settle_the_view_ease(view)
 	var smooth := _scroller(view.play_area)
 	var last := INF
 	var waited := 0.0
@@ -1467,7 +1485,7 @@ func run_the_clamp_collapses_to_centre_when_it_fits_test() -> void:
 	var panel := pa.grid_container.get_child(0) as Control
 	var win := _window_x(pa)
 	var window_centre := (win.x + win.y) * 0.5
-	var grid_centre := panel.global_position.x + panel.size.x * 0.5 * pa.board_zoom
+	var grid_centre := panel.global_position.x + panel.size.x * 0.5 * pa.drawn_zoom
 	check(absf(grid_centre - window_centre) <= 2.0,
 			"the board that already fits sits CENTRED, not parked at an edge (TP-103)",
 			"grid %f vs window %f" % [grid_centre, window_centre])
@@ -1476,7 +1494,7 @@ func run_the_clamp_collapses_to_centre_when_it_fits_test() -> void:
 		pa._unhandled_input(_action(a))
 	await _settle_scroll(view)
 	var after := pa.grid_container.get_child(0) as Control
-	var after_centre := after.global_position.x + after.size.x * 0.5 * pa.board_zoom
+	var after_centre := after.global_position.x + after.size.x * 0.5 * pa.drawn_zoom
 	check(absf(after_centre - window_centre) <= 2.0,
 			"panning either way leaves it centred: the clamp collapsed the whole range",
 			"grid %f vs window %f" % [after_centre, window_centre])
@@ -2732,6 +2750,13 @@ func _settle_board_y(pa: PlayArea) -> float:
 		var now := _grid_drawn_y(pa)
 #⚠ CONSECUTIVE FRAMES, NOT ONE. A pan that has been asked for but has not started yet reads
 #identical on two frames, and a single comparison takes that for arrival.
+
+#⚠ AND A RE-CENTRE STILL WAITING IS A PAN NOT YET ASKED FOR: it aims the board once its own probe
+#stops moving, which is after this loop would otherwise have called the board still.
+		if pa._recentre_waiting:
+			still = 0
+			last = now
+			continue
 		still = still + 1 if is_equal_approx(now, last) else 0
 		if still >= BOARD_STILL_FRAMES: return now
 		last = now
@@ -2858,9 +2883,220 @@ func run_the_board_does_not_scroll_while_it_fits_test() -> void:
 	check(_board_scroll_range(pa) > 1.0,
 			"a grid taller than the window leaves a real range to scroll through",
 			"content %.3f vs page %.3f" % [bar.max_value, bar.page])
-	pa.scroll_container.scroll_vertical = int(bar.max_value)
+#⚠ THROUGH THE SCROLLER'S OWN API, NOT `scroll_vertical`. `SmoothScrollContainer` owns `pos` and
+#rewrites the container's scroll from it every physics frame, so a direct write is taken back before
+#the next frame draws -- measured: the write landed, the board stayed at its resting 137.25.
+
+#And it scrolls to the TOP, because the focused view already frames the FLOOR: the bottom of a grid
+#taller than the window IS the far end, so a scroll to the far end asks the board to stay put.
+	var smooth := pa.scroll_container as SmoothScrollContainer
+	smooth.scroll_y_to(0.0, 0.0)
 	var deep_moved := await _settle_board_y(pa)
 	check(absf(deep_moved - deep_rest) > 1.0,
-			"...and a scroll to the far end of it really does move the grid",
-			"%.3f -> %.3f" % [deep_rest, deep_moved])
+			"...and a scroll through that range really does move the grid",
+			"%.3f -> %.3f, bar value %.2f of max %.2f page %.2f"
+			% [deep_rest, deep_moved, bar.value, bar.max_value, bar.page])
 	await _tear_down_main(main)
+
+# ==============================================================================
+# A MODE CHANGE EASES INTO PLACE, AND LANDS EXACTLY.
+# ==============================================================================
+
+#Sample the transition PER PHYSICS FRAME for up to three pan clocks. ⚠ A still frame cannot tell an
+#ease from a snap: the whole question is whether the board was ever at a value in between.
+func _sample_the_ease(view: GameView, gi: int) -> Array[Vector3]:
+	var pa := view.play_area
+	var frames : Array[Vector3] = []
+	var waited := 0.0
+	while waited < PlayArea.settings().grid_pan_duration * 3.0:
+		await get_tree().physics_frame
+		waited += get_physics_process_delta_time()
+		CardEnvironment.CURRENT = view.game
+		frames.append(Vector3(pa.drawn_zoom, pa._drawn_grid_gap, _grid_centre_x(pa, gi)))
+		if pa._view_ease >= 1.0: break
+	return frames
+
+## How many samples sit strictly between `a` and `b`, by more than `slack` at either end.
+func _strictly_between(values: Array[float], a: float, b: float, slack: float) -> int:
+	var count := 0
+	for v : float in values:
+		if minf(a, b) + slack < v and v < maxf(a, b) - slack: count += 1
+	return count
+
+#THE OWNER RULING THAT OVERTURNED "THE SCALE IS NOT ANIMATED": focusing a grid must interpolate into
+#position rather than snap. The scale, the gap between grids and the scroll all travel on one clock.
+## The sentinel `_grid_nearest_the_window_centre` answers with when a board has no grid at all.
+const NO_GRID_SENTINEL := -1
+
+func run_a_mode_change_eases_into_place_test() -> void:
+	behavior_section("A MODE CHANGE EASES INTO PLACE")
+	var design := PlayArea.game_picture_design_size(SettingsManager.settings)
+	for count : int in [2, 3]:
+		var picture_vp := SubViewport.new()
+		picture_vp.size = design
+		add_child(picture_vp)
+		var view := await _stand_up_grids(count, picture_vp)
+		var pa := view.play_area
+		await _settle_layout(view)
+		await _settle_scroll(view)
+		var target_grid := count - 1
+		check(pa.view_mode == PlayArea.ViewMode.OVERVIEW
+				and is_equal_approx(pa.drawn_zoom, pa.board_zoom),
+				"precondition: a %d-grid show opens on the all-grids view, at rest" % count,
+				"mode %d, drawn %.4f vs target %.4f" % [pa.view_mode, pa.drawn_zoom, pa.board_zoom])
+		var from_zoom := pa.drawn_zoom
+		var from_gap := pa._drawn_grid_gap
+
+		pa.focus_grid(target_grid)
+		var to_zoom := pa.board_zoom
+		var to_gap := pa._grid_gap_target()
+		check(to_zoom > from_zoom + 0.01 and to_gap > from_gap + 1.0,
+				"precondition: focusing grid %d is a real change of BOTH scale and gap (%d grids)"
+				% [target_grid, count],
+				"zoom %.4f -> %.4f, gap %.1f -> %.1f" % [from_zoom, to_zoom, from_gap, to_gap])
+		check(not is_equal_approx(pa.drawn_zoom, to_zoom),
+				"...and the board has not arrived on the frame the focus was asked for (%d grids)"
+				% count,
+				"drawn %.4f vs target %.4f" % [pa.drawn_zoom, to_zoom])
+
+#MID-EASE, THE BOARD MUST NAME THE GRID THE PLAYER CAN SEE. `_grid_nearest_the_window_centre` is
+#what a pickup and a drag release ask, and both can happen while the board is still travelling.
+		for _f : int in 4:
+			await get_tree().physics_frame
+		var drawn_win := _window_x(pa)
+		var drawn_centre := (drawn_win.x + drawn_win.y) * 0.5
+		var seen := NO_GRID_SENTINEL
+		var seen_dx := INF
+		for gi : int in count:
+			var dx := absf(_grid_centre_x(pa, gi) - drawn_centre)
+			if dx >= seen_dx: continue
+			seen_dx = dx
+			seen = gi
+		check(pa._view_ease < 1.0,
+				"precondition: the board is still travelling when it is asked (%d grids)" % count,
+				"ease %.3f, drawn %.4f of %.4f" % [pa._view_ease, pa.drawn_zoom, pa.board_zoom])
+		check(pa._grid_nearest_the_window_centre() == seen,
+				"mid-ease the board names the grid nearest the middle of what is DRAWN, not of the "
+				+ "window it is travelling to (%d grids)" % count,
+				"product says %d, drawn nearest is %d (%.1f px), window centre %.1f"
+				% [pa._grid_nearest_the_window_centre(), seen, seen_dx, drawn_centre])
+
+		var frames := await _sample_the_ease(view, target_grid)
+		check(frames.size() > 2,
+				"precondition: the transition was sampled over several physics frames (%d grids)"
+				% count, "%d sample(s)" % frames.size())
+		var zooms : Array[float] = []
+		var gaps : Array[float] = []
+		var centres : Array[float] = []
+		for f : Vector3 in frames:
+			zooms.append(f.x)
+			gaps.append(f.y)
+			centres.append(f.z)
+		check(_strictly_between(zooms, from_zoom, to_zoom, 0.001) > 0,
+				"THE ZOOM is drawn at scales IN BETWEEN the two modes, never cut from one to the "
+				+ "other (%d grids)" % count,
+				"%d of %d samples strictly between %.4f and %.4f"
+				% [_strictly_between(zooms, from_zoom, to_zoom, 0.001), zooms.size(),
+				from_zoom, to_zoom])
+		check(_strictly_between(gaps, from_gap, to_gap, 1.0) > 0,
+				"THE GAP between grids opens through the sizes in between on the same clock "
+				+ "(%d grids)" % count,
+				"%d of %d samples strictly between %.1f and %.1f"
+				% [_strictly_between(gaps, from_gap, to_gap, 1.0), gaps.size(), from_gap, to_gap])
+		check(_strictly_between(centres, centres[0], centres[-1], 1.0) > 0,
+				"THE PAN carries the grid through the positions in between, so the three move as "
+				+ "one motion (%d grids)" % count,
+				"%d of %d samples strictly between %.1f and %.1f"
+				% [_strictly_between(centres, centres[0], centres[-1], 1.0), centres.size(),
+				centres[0], centres[-1]])
+		var monotonic := true
+		for i : int in range(1, zooms.size()):
+			if zooms[i] + 0.0001 < zooms[i - 1]: monotonic = false
+		check(monotonic, "...and the scale travels one way across, never back (%d grids)" % count,
+				"%d sample(s), first %.4f last %.4f" % [zooms.size(), zooms[0], zooms[-1]])
+		check(frames.size() <= roundi(PlayArea.settings().grid_pan_duration
+				/ maxf(get_physics_process_delta_time(), 0.0001)) + 4,
+				"...and it is all the way across within the pan clock, the one knob (%d grids)"
+				% count,
+				"%d sample(s) for a %.3f s clock at %.4f s a frame"
+				% [frames.size(), PlayArea.settings().grid_pan_duration,
+				get_physics_process_delta_time()])
+
+#THE LANDING. Everything an aim is built from is the END state, so the eased scale must not have
+#moved where the board came to rest -- the defect the old "the scale is not animated" rule existed
+#to avoid.
+		await _settle_layout(view)
+		await _settle_scroll(view)
+		await _settle_entrance(view)
+		check(is_equal_approx(pa.drawn_zoom, pa.board_zoom)
+				and is_equal_approx(pa._drawn_grid_gap, pa._grid_gap_target()),
+				"the ease lands EXACTLY on the mode's own scale and gap (%d grids)" % count,
+				"drawn %.6f vs %.6f, gap %.3f vs %.3f"
+				% [pa.drawn_zoom, pa.board_zoom, pa._drawn_grid_gap, pa._grid_gap_target()])
+		var win := _window_x(pa)
+		check(absf(_grid_centre_x(pa, target_grid) - (win.x + win.y) * 0.5) <= 1.0,
+				"...with grid %d centred in the board's window to the pixel (%d grids)"
+				% [target_grid, count],
+				"grid centre %.2f vs window centre %.2f"
+				% [_grid_centre_x(pa, target_grid), (win.x + win.y) * 0.5])
+		for other : int in count:
+			if other == target_grid: continue
+			var r := _screen_rect(pa._cells_root(pa.grid_container.get_child(other) as Control))
+			check(r.position.x >= win.y or r.end.x <= win.x,
+					"...and NO neighbour is inside the window on the frame it lands on (grid %d of %d)"
+					% [other, count],
+					"grid %d x [%.1f .. %.1f] vs window [%.1f .. %.1f]"
+					% [other, r.position.x, r.end.x, win.x, win.y])
+
+#THE REVERSE IS THE SAME MOTION. Back out to the all-grids view eases too, or the board snaps on
+#the way out of exactly what it eased into.
+		var back_from_zoom := pa.drawn_zoom
+		var back_from_gap := pa._drawn_grid_gap
+		pa.open_zoomed_out()
+		var back := await _sample_the_ease(view, target_grid)
+		var back_zooms : Array[float] = []
+		for f : Vector3 in back:
+			back_zooms.append(f.x)
+		check(back.size() > 2,
+				"precondition: the way back was sampled over several physics frames (%d grids)"
+				% count, "%d sample(s)" % back.size())
+		check(_strictly_between(back_zooms, back_from_zoom, PlayArea.OVERVIEW_BOARD_ZOOM,
+				0.001) > 0,
+				"the way BACK to the all-grids view eases as well (%d grids)" % count,
+				"%d of %d samples strictly between %.4f and %.4f"
+				% [_strictly_between(back_zooms, back_from_zoom, PlayArea.OVERVIEW_BOARD_ZOOM,
+				0.001), back_zooms.size(), back_from_zoom, PlayArea.OVERVIEW_BOARD_ZOOM])
+		await _settle_layout(view)
+		await _settle_scroll(view)
+		check(is_equal_approx(pa.drawn_zoom, PlayArea.OVERVIEW_BOARD_ZOOM)
+				and is_equal_approx(pa._drawn_grid_gap, pa._grid_gap_target()),
+				"...and lands exactly on the overview's own scale and gap (%d grids)" % count,
+				"drawn %.6f, gap %.3f vs %.3f"
+				% [pa.drawn_zoom, pa._drawn_grid_gap, pa._grid_gap_target()])
+		check(back_from_gap > pa._drawn_grid_gap + 1.0,
+				"...closing the gap it opened (%d grids)" % count,
+				"gap %.1f -> %.1f" % [back_from_gap, pa._drawn_grid_gap])
+		await _tear_down(view)
+		picture_vp.queue_free()
+		await get_tree().process_frame
+
+#THE OPENING VIEW IS NOT A MODE CHANGE THE PLAYER MADE, so it is already at its scale and its gap on
+#the first frame -- the same rule the Entrance's own slide follows.
+func run_the_opening_view_does_not_ease_test() -> void:
+	behavior_section("THE OPENING VIEW DOES NOT EASE")
+	var design := PlayArea.game_picture_design_size(SettingsManager.settings)
+	var picture_vp := SubViewport.new()
+	picture_vp.size = design
+	add_child(picture_vp)
+	var view := await _stand_up_grids(1, picture_vp)
+	var pa := view.play_area
+	pa._show_view_opened = false
+	pa.open_show_view()
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"precondition: a one-grid show opens focused on its only grid", "mode %d" % pa.view_mode)
+	check(is_equal_approx(pa.drawn_zoom, pa.board_zoom) and pa._view_ease >= 1.0,
+			"the show's opening frame is already at the view's own scale: nothing eases into it",
+			"drawn %.6f vs %.6f, ease %.3f" % [pa.drawn_zoom, pa.board_zoom, pa._view_ease])
+	await _tear_down(view)
+	picture_vp.queue_free()
+	await get_tree().process_frame

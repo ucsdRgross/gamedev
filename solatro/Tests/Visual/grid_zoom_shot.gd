@@ -161,14 +161,13 @@ func _ready() -> void:
 	if _grid_count > 1:
 		var from := _bare_board_point(pa)
 		assert(from != Vector2.INF, "the board window has a pixel on no card to press")
-		if from != Vector2.INF:
-			var travel := -pa.grid_pitch_px() * 0.75 * pa.board_zoom
-			await _drag_the_board(vp, from, travel)
-			await RenderingServer.frame_post_draw
-			_shoot_frame(pa, vp, "drag_midway")
-			vp.push_input(_button_event(from + Vector2(travel, 0.0), false))
-			if not await _await_still(view, "drag_landed"): return
-			if not await _shoot(pa, vp, "drag_landed"): return
+		var travel := -pa.grid_pitch_px() * 0.75 * pa.drawn_zoom
+		await _drag_the_board(vp, from, travel)
+		await RenderingServer.frame_post_draw
+		_shoot_frame(pa, vp, "drag_midway")
+		vp.push_input(_button_event(from + Vector2(travel, 0.0), false))
+		if not await _await_still(view, "drag_landed"): return
+		if not await _shoot(pa, vp, "drag_landed"): return
 
 #A CANCEL WITH NOTHING HELD AND NOTHING STUCK steps out of the focused grid to the every-grid view,
 #which is where another grid can be chosen (owner ruling). One press, and the board is looked at
@@ -183,6 +182,21 @@ func _ready() -> void:
 		vp.push_input(cancel)
 		if not await _await_still(view, "cancel_overview"): return
 		if not await _shoot(pa, vp, "cancel_overview"): return
+
+#THREE FRAMES OF THE EASE. ⚠ A STILL CANNOT TELL AN EASE FROM A SNAP, so the frames are taken
+#across the pan clock with the drawn scale printed beside each: the board must be at a scale
+#BETWEEN the two modes in the middle ones, and exactly on the focused one when it lands.
+		pa.open_zoomed_out()
+		if not await _await_still(view, "before_ease"): return
+		if not await _shoot(pa, vp, "before_ease"): return
+		pa.focus_grid(_grid_count - 1)
+		for i : int in 3:
+			for _f : int in 4:
+				await get_tree().physics_frame
+			await RenderingServer.frame_post_draw
+			_shoot_frame(pa, vp, "ease_%d" % i)
+		if not await _await_still(view, "ease_landed"): return
+		if not await _shoot(pa, vp, "ease_landed"): return
 
 	view.queue_free()
 	await get_tree().process_frame
@@ -245,8 +259,9 @@ func _shoot(pa: PlayArea, picture: SubViewport, tag: String) -> bool:
 #Entrance is doing while the view travels is the thing being photographed, and one still cannot
 #tell a row that stayed put from a row that had already finished moving.
 func _shoot_frame(pa: PlayArea, picture: SubViewport, tag: String) -> void:
-	print("[grid_zoom_shot] %s entrance x %.1f, travelled %.3f, row centre %.1f"
-			% [tag, pa.entrance_h_track.position.x, pa._entrance_slide,
+	print("[grid_zoom_shot] %s drawn zoom %.4f of %.4f, gap %.1f, ease %.3f, entrance x %.1f, travelled %.3f, row centre %.1f"
+			% [tag, pa.drawn_zoom, pa.board_zoom, pa._drawn_grid_gap, pa._view_ease,
+			pa.entrance_h_track.position.x, pa._entrance_slide,
 			pa.upper_zone_right.get_global_transform().origin.x
 			+ pa.upper_zone_right.get_global_transform().get_scale().x
 			* pa.upper_zone_right.size.x * 0.5])

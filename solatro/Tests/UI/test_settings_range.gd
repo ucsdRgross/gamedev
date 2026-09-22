@@ -99,7 +99,7 @@ func run_the_board_holds_its_shape_at_any_card_scale_test() -> void:
 		check(absf((lo - hi) - pitch) < 0.5,
 				"card_scale %.2f: consecutive cards sit one depth pitch apart, and the pitch "
 				% scale + "SCALED with the knob",
-				"gap %.1f vs pitch %.1f" % [lo - hi, pitch])
+				"gap %.1f vs pitch %.1f at zoom %.4f" % [lo - hi, pitch, pa.drawn_zoom])
 
 		# A row still shares one bottom line, whatever the scale did to the cell heights.
 		var left := pa.slot_center_global(BoardCoord.new(0, 0, 1, 0)).y
@@ -178,6 +178,10 @@ func _stand_up() -> PlayArea:
 	# written against, and the opening view stays the product's own decision everywhere else.
 	pa._show_view_opened = true
 	pa.open_zoomed_out()
+#⚠ AND IT ARRIVES ON THIS FRAME. A mode change EASES over the pan clock, so a latched view read
+#two frames later is read at the scale the board is leaving -- measured, drawn 2.5179 against a
+#board_zoom of 1.0000, and every length below carried that factor.
+	pa.snap_the_view_into_place()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	return pa

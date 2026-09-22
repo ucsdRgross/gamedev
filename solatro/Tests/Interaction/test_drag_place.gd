@@ -197,6 +197,7 @@ func _settle_layout() -> void:
 		await get_tree().physics_frame
 		await get_tree().process_frame
 		waited += get_process_delta_time()
+		if _pa._view_ease < 1.0: continue
 		var now := Vector3(_pa.entrance_h_track.position.x, _pa._entrance_slide,
 				_pa.top_level_vbox.global_position.x)
 		if now.is_equal_approx(last): return
@@ -1715,7 +1716,7 @@ func test_a_drag_pan_release_lands_on_the_grid_nearest_the_centre() -> void:
 
 #PART OF THE WAY TO GRID 1 AND NO FURTHER: the release is what has to finish the journey, so it is
 #let go while the board sits between two grids.
-	var travel := -_pa.grid_pitch_px() * 0.75 * _pa.board_zoom
+	var travel := -_pa.grid_pitch_px() * 0.75 * _pa.drawn_zoom
 	await _begin_pan(from, travel)
 	await _frames(2)
 	var mid := _nearest_drawn_grid()

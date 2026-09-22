@@ -1252,7 +1252,8 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 # ⚠ The pitch's MAGNITUDE is the mode's promise; its sign is which way the stack grows.
 	check(absf(absf(open_pitch) - pa._row_open_height()) < 1.0,
 			"...leaving a row pitch of EXACTLY the mode's opening (GAP-009) — no stray separation",
-			"pitch %.1f -> %.1f, mode asks for %.1f" % [closed_pitch, open_pitch, pa._row_open_height()])
+			"pitch %.1f -> %.1f, mode asks for %.1f at zoom %.4f"
+			% [closed_pitch, open_pitch, pa._row_open_height(), pa.drawn_zoom])
 # ⚠ AN ALREADY-OPEN ROW MUST FOLLOW A LIVE SETTINGS CHANGE. Every term in the opening is read live,
 # `separation` being a getter over card_scale and the card metrics static getters over the same, and
 # _row_open stores only the eased 0 to 1, never pixels.
@@ -1687,6 +1688,9 @@ func _stand_up_view() -> GameView:
 # stays the product's own decision everywhere else.
 	view.play_area._show_view_opened = true
 	view.play_area.open_zoomed_out()
+#⚠ AND IT ARRIVES ON THIS FRAME, for the reason the other stand-up gives: a mode change eases, and
+#a latched view read two frames later is read at the scale the board is leaving.
+	view.play_area.snap_the_view_into_place()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	return view
