@@ -36,9 +36,14 @@ PARSED OUT of `all_tests.gd` rather than restated, so the two gates cannot drift
 ### The two-tier loop — headless logic tier inside, full windowed run at the gate
 
 ```bash
-py solatro/Tools/run_tests.py --logic     # inner loop: 34 renderer-independent suites, ~65 s
-py solatro/Tools/run_tests.py             # the gate: all 48, windowed, ~190 s
+py solatro/Tools/run_tests.py --logic                              # inner loop: the renderer-independent suites, ~65 s
+py solatro/Tools/run_tests.py --timeout 900 --stall-timeout 900    # the gate: all 51, windowed, ~600 s on Box A
 ```
+
+⚠ **The gate is longer than the wrapper's default 600 s `--timeout`** (SIDEBAR alone runs
+~500 s), so a bare gate is killed while still passing and prints `NO SUITE BANNER`. Pass
+`--timeout 900`; a caller whose own tool call is capped at 600 s launches the wrapper detached
+and polls the log for the banner.
 
 The tier is a `logic` GROUP on the suite nodes in `Tests/all_tests.tscn`, not a list in the runner —
 the scene is the registry, so putting a suite in the tier is one scene edit. `--logic` forwards the
