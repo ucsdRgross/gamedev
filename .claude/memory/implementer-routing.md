@@ -30,10 +30,18 @@ read-only recon that names the writer first. So by step kind, from what actually
 | read-only recon (`Explore`) ahead of a step | every non-trivial row | `sonnet` | grep-and-cite; the implementer measures anyway - and it is what turns an Opus row into a Sonnet one |
 | `bloat-reviewer` per diff, adversarial review at the close | as `/plan-run` says | `fable`, read-only | owner ruling; a finding is a brief for an implementer |
 
-**Escalation:** a Sonnet step whose report the overseer rejects twice (a wrong diagnosis, a
-weakened row, a leak it cannot find) goes to Opus with the evidence so far — the tree, the logs,
-the rejected report — not a fresh brief. Never escalate on the first miss; the gate and the
-reviewers catch the same errors at either tier.
+**Escalation - by the KIND of miss, not a count.** A Sonnet report that names an unknown cause
+as a flake, or leaves a failure unexplained, goes to Opus on the FIRST such report, with the tree,
+the logs and the rejected report - not a fresh brief. A mechanical miss (a comment over the line
+limit, a shot taken mid-travel, a row not added to the dispatch list) is sent back once; it is
+cheap to fix and a stronger model would not have avoided it. Measured on the first Sonnet step
+(P38, playtest stream): the Sonnet pass spent 288k tokens over 185 tool calls (seven suite runs,
+five "waiting" rounds) before the two-rejection escalation, MORE tokens than a comparable Opus
+step (116k-238k) - so at a ~2.5x price ratio the handoff cost about what Opus-first would have,
+and the Opus takeover still had to re-read the tree. Escalation saves only when the step
+FINISHES on Sonnet (a knob, a sweep, a re-point); the moment a Sonnet report says "flake" or
+"unexplained", every further Sonnet run is spent. Also cap it: ONE filtered run per report; the
+overseer decides the next run.
 
 **Why:** Sonnet 5 is documented close to Opus 4.8 at $2/$10 per MTok against $5/$25
 ([Anthropic](https://www.anthropic.com/news/claude-sonnet-5)); the verification hierarchy in
