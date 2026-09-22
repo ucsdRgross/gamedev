@@ -1,18 +1,27 @@
 ---
 name: implementer-routing
-description: "Which model implements a step: Opus 5.5 pinned by full id, LOW effort for named-writer work and MEDIUM for the rest; Sonnet only for read-only recon; Fable only as the read-only reviewer"
+description: "Which model implements a step: Opus 5.5 medium or low, or Sonnet 5 low for mechanical work, effort set in each agent's frontmatter; Fable only as the read-only reviewer"
 metadata:
   type: feedback
 ---
 
-**A session caches an agent definition when it first loads it**: editing `model:` in the file did not change what a later dispatch in the same session sent (still `claude-opus-5-5`), and the two refused dispatches left `.claude/.subagent.lock` held - clear it by hand when nothing runs. Until the next session, dispatch `general-purpose` with `model: "opus"` (session effort inherited). **Opus 5.5 needs Claude Code 2.1.280 or newer** (a 400 from 2.1.275: "does not support this model"); until the app is updated both implementer definitions say `model: claude-opus-5`, same effort split - flip them back to `claude-opus-5-5` after `claude update`.
+**Owner, verbatim: "implementers will be opus 5.5 medium or low or sonnet 5 low."** Three
+definitions, effort set in each one's frontmatter (the docs' only per-subagent effort control;
+the `Agent` call cannot pass it): `plan-implementer` (claude-opus-5-5, medium),
+`plan-implementer-low` (claude-opus-5-5, low), `plan-implementer-sonnet` (claude-sonnet-5, low -
+mechanical steps only). ⚠ A definition naming a model the app cannot run is SUBSTITUTED by the
+session's model, and the owner saw that run at the session's effort (high) rather than the
+frontmatter's low. So name only a model the app supports, and have the owner confirm model and
+effort on the subagent's `/tasks` row after an edit. **A session caches an agent definition when it
+first loads it**: an edit takes effect in the NEXT session; a refused dispatch leaves
+`.claude/.subagent.lock` held - clear it by hand when nothing runs.
 
 **Implementers run Opus 5.5 (`model: claude-opus-5-5` in the agent frontmatter - the bare `opus`
 alias resolved to Opus 5 from a Fable session), and the lever is EFFORT, not the model family:
 `plan-implementer-low` (effort low) for a step whose writer and row the brief names,
 `plan-implementer` (effort medium) for the rest.** The overseer (Fable) writes no source.
-Owner ruling: costs were too high with every implementer on Opus 5; a Sonnet tier was tried
-and dropped (below).
+Owner ruling: costs were too high with every implementer on Opus 5. A Sonnet tier failed one
+non-mechanical step (below); it is back, low effort, for mechanical steps only.
 
 **The arithmetic (Anthropic's published prices, Sept 2026):** Sonnet 5 $2/$10 per MTok;
 Opus 5.5 $4/$20, cache reads $0.20; Opus 5 $5/$25, cache reads $0.50. Opus 5.5 is 2x Sonnet
@@ -23,7 +32,8 @@ spent 116k-238k and landed - at that token ratio Sonnet's 2x price edge is gone 
 escalation rework is counted. Effort is the cheaper lever: low effort on a named-writer step
 cuts the tokens without changing the model's judgement when the step turns out to need it.
 
-Route a step to **`plan-implementer-low`** when its brief already names the writer and the row (a
+Route a purely mechanical step (a sweep, a knob, a re-point, a re-shot) to **`plan-implementer-sonnet`**;
+route a step to **`plan-implementer-low`** when its brief already names the writer and the row (a
 knob, a one-site fix with a cited `file:line`, a comment sweep, a probe re-shot, a re-point of
 named tests, a recon-backed bug). Route to **`plan-implementer`** (medium) when the step designs
 a model the brief cannot fully specify: input routing across viewports, focus ownership, a modal/lock state machine, a

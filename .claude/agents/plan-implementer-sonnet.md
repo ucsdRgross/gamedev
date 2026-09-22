@@ -1,8 +1,8 @@
 ---
-name: plan-implementer-low
-description: The same implementer at LOW effort, for a step whose writer and row the brief already names - a knob, a comment sweep, a re-point of named tests, a probe re-shot, a one-site fix with its file:line. Never for an open-cause diagnosis or a model change.
+name: plan-implementer-sonnet
+description: The same implementer on Sonnet 5 at LOW effort, for purely mechanical work - a comment sweep, a knob, a re-point of named tests, a probe re-shot. Never for a bug fix, an open-cause diagnosis or a model change.
 tools: Read, Write, Edit, Grep, Glob, Bash, PowerShell
-model: claude-opus-5-5
+model: claude-sonnet-5
 effort: low
 maxTurns: 150
 color: green

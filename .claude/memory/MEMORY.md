@@ -30,7 +30,7 @@
 **Running a plan** (everything else lives in the `/plan-run` skill)
 - [Tests that prove nothing](tests-that-prove-nothing.md) — the ways a green test asserts nothing; prove every one red first
 - [Built but not wired](built-but-not-wired.md) — a done-when must name the call site, or the component ships with no caller
-- [Implementer routing](implementer-routing.md) — Opus 5.5 by full id, LOW effort for named-writer steps and MEDIUM for the rest, Sonnet only for recon; every reviewer is Fable and read-only
+- [Implementer routing](implementer-routing.md) — Opus 5.5 medium/low or Sonnet 5 low (mechanical only), effort in each agent's frontmatter; every reviewer is Fable and read-only
 - [One fix at a time](one-fix-at-a-time.md) — full suite between fixes; a crashing batch cannot be diagnosed
 
 **Design workflow** (everything else lives in the `/flowchart-design` skill)
