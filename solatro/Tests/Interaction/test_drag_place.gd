@@ -92,6 +92,8 @@ func _ready() -> void:
 	await test_a_drag_pan_needs_the_button_held()
 	await test_a_cancel_ends_a_latched_drag_pan()
 	await test_a_drag_pan_release_lands_on_the_grid_nearest_the_centre()
+	await test_a_drag_pan_release_focuses_an_entrance_card()
+	await test_a_key_pan_leaves_the_focus_where_it_was()
 	behavior_section("THE CANCEL LADDER STEPS OUT ONE LEVEL PER PRESS")
 	await test_the_second_button_cancels_one_rung_per_press()
 	await test_an_escape_with_something_to_spend_still_reaches_the_wall()
@@ -1797,6 +1799,118 @@ func test_a_drag_pan_release_lands_on_the_grid_nearest_the_centre() -> void:
 			+ "it", "nearest %d, %.2f px off centre"
 			% [_nearest_drawn_grid(), _grid_off_centre_px(1)])
 	await _end_fixture()
+
+#A DRAG PAN IS A POINTER GESTURE AND THE POINTER ENDS IT, so the release hands the keyboard a
+#place to carry on from: the Entrance card nearest where the button came up (owner ruling).
+func test_a_drag_pan_release_focuses_an_entrance_card() -> void:
+	await _start_fixture_grids(3)
+	_pa.focus_grid(0)
+	await _settle_layout()
+#THE LEFTMOST SLOT IS SPENT -- no card left in it and no stock under it -- so its own zone card is
+#still an arrow stop while holding nothing. That is the stop the focus must NOT settle on.
+	_empty_the_entrance_slot(0)
+	await _settle_layout()
+	var entrance := _entrance_controls()
+	var from := _bare_board_point()
+	check(entrance.size() >= 2 and not _is_a_card_in_hand(entrance[0])
+			and _is_a_card_in_hand(entrance[1]),
+			"precondition: the leftmost Entrance stop holds NO card and a stop further along does",
+			"%d stop(s), leftmost holds a card: %s" % [entrance.size(),
+			entrance.is_empty() or _is_a_card_in_hand(entrance[0])])
+	check(from != Vector2.INF, "precondition: a point on no card to press", str(from))
+	if entrance.size() < 2 or from == Vector2.INF or _is_a_card_in_hand(entrance[0]):
+		await _end_fixture()
+		return
+#THE RELEASE COMES UP OVER THE SPENT SLOT, so the nearest stop of all and the nearest stop HOLDING
+#A CARD are different controls -- which is the whole of what this row discriminates.
+	var at := _control_centre(entrance[0])
+	entrance[entrance.size() - 1].grab_focus()
+	await get_tree().process_frame
+	await _begin_pan(from, at.x - from.x)
+	await _push(_mouse_button(Vector2(at.x, from.y), false), _picture_viewport)
+	await _frames(2)
+	var owner := _pa.get_viewport().gui_get_focus_owner()
+	check(owner != null and _pa.ui_data.has(owner)
+			and _pa.upper_zone_right.is_ancestor_of(owner),
+			"the release puts the keyboard focus on an Entrance stop", _where_focus_is())
+	check(owner != null and _is_a_card_in_hand(owner),
+			"...one that HOLDS A CARD, so the first accept from there picks one up -- never the "
+			+ "spent slot the pointer came up over", _where_focus_is())
+	check(owner == entrance[1],
+			"...the nearest card-holding stop to the x the button came up at",
+			"%s, wanted stop 1 of %d, released at x %.1f"
+			% [_where_focus_is(), entrance.size(), at.x])
+	check(owner != null and owner.get_viewport() == _picture_viewport,
+			"...and it is focused in the PICTURE's own viewport, where the next arrow is read",
+			"%s" % [owner.get_viewport() if owner else null])
+
+#NO STOP HOLDS A CARD AT ALL -- the Entrance between its last placement and its refill. There is
+#nothing to prefer, so the chain's own leftmost stop takes the focus.
+	for slot : int in _game.state.upper_zone.size():
+		_empty_the_entrance_slot(slot)
+	await _settle_layout()
+	var spent := _entrance_controls()
+	check(not spent.is_empty() and not _is_a_card_in_hand(spent[0]),
+			"precondition: every Entrance stop is a spent slot now", "%d stop(s)" % spent.size())
+	if spent.is_empty():
+		await _end_fixture()
+		return
+	spent[spent.size() - 1].grab_focus()
+	await get_tree().process_frame
+	var back := _bare_board_point()
+	await _begin_pan(back, _control_centre(spent[spent.size() - 1]).x - back.x)
+	await _push(_mouse_button(Vector2(_control_centre(spent[0]).x, back.y), false),
+			_picture_viewport)
+	await _frames(2)
+	check(_pa.get_viewport().gui_get_focus_owner() == spent[0],
+			"with no card anywhere in the Entrance the LEFTMOST stop takes the focus, which is "
+			+ "where the arrow chain starts", _where_focus_is())
+	await _end_fixture()
+
+## Empties one Entrance slot the way a show does: its card played, and its stock run dry under it.
+func _empty_the_entrance_slot(slot: int) -> void:
+	_game.state.upper_zone[slot].datas.clear()
+	_game.state.entrance_stocks()[slot].datas.clear()
+	_pa.flush_rebuild()
+
+## Does this control draw a card the Entrance still HOLDS -- one an accept could pick up?
+func _is_a_card_in_hand(control: Control) -> bool:
+	var data : CardData = _pa.ui_data.get(control)
+	if data == null: return false
+	for column : ArrayCardData in _game.state.upper_zone:
+		if column.datas.has(data): return true
+	return false
+
+#A PAD OR KEY PAN IS NOT A POINTER GESTURE: the aim moves, the focus does not. `pan_by_grids` is
+#the whole of what `grid_pan_left`/`grid_pan_right` do.
+func test_a_key_pan_leaves_the_focus_where_it_was() -> void:
+	await _start_fixture_grids(3)
+	_pa.focus_grid(0)
+	await _settle_layout()
+	var entrance := _entrance_controls()
+	check(entrance.size() >= 2, "precondition: the Entrance offers two or more focus stops",
+			"%d stop(s)" % entrance.size())
+	if entrance.size() < 2:
+		await _end_fixture()
+		return
+	var held : Control = entrance[entrance.size() - 1]
+	held.grab_focus()
+	await get_tree().process_frame
+	_pa.pan_by_grids(1)
+	await _settle_layout()
+	check(_pa.get_viewport().gui_get_focus_owner() == held,
+			"a key pan re-aims the board and leaves the focus exactly where the player put it",
+			"%s, pan_grid %d" % [_where_focus_is(), _pa.pan_grid])
+	await _end_fixture()
+
+## Which control holds the board's focus, named for a failure message.
+func _where_focus_is() -> String:
+	var owner := _pa.get_viewport().gui_get_focus_owner()
+	if owner == null: return "focus owner: none"
+	var stops := _entrance_controls()
+	var at := stops.find(owner)
+	if at != -1: return "focus owner: Entrance stop %d of %d" % [at, stops.size()]
+	return "focus owner: %s" % owner.name
 
 ## How far grid `gi`'s cell block is from the middle of the board's window, drawn.
 func _grid_off_centre_px(gi: int) -> float:

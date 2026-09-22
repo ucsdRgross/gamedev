@@ -791,7 +791,8 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 #WITH EXACTLY ONE GRID THERE IS NOTHING TO CHOOSE, so the show commits as it opens: the Entrance
 #sits under its grid from the first frame and the first placement moves nothing (owner ruling).
 func commit_the_only_grid() -> void:
-	if state.grids.size() == 1: state.committed_grid = 0
+	assert(state.grids.size() == 1, "only the one-grid opening commits without a placement")
+	state.committed_grid = 0
 
 # The grid commitment lifts once the hand the player is holding has nowhere left to go on it -- an
 # emptied Entrance included. Its own step, ahead of the refill, so the next hand is free to commit

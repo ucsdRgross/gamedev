@@ -81,6 +81,9 @@ func _grow_the_board() -> void:
 	var view : GameView = _main._pictures[&"game"].screen_root as GameView
 	while view.game.state.grids.size() < GRID_COUNT:
 		Board.add_grid(view.game.state, GridData.new())
+#⚠ THE ONE-GRID DEAL ALREADY COMMITTED ITS GRID; a dealt board of two or more commits nothing
+#until a placement, which is the board these frames are about.
+	if view.game.state.grids.size() > 1: view.game.state.committed_grid = -1
 	pa.flush_rebuild()
 	pa.open_show_view()
 	print("PROBE grew the board to ", view.game.state.grids.size(), " grids under ", g.name)

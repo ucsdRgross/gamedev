@@ -1915,7 +1915,7 @@ func _input(event: InputEvent) -> void:
 				and not (_press_data in selected_cards))
 		if _consume_as_card_release(mouse_event):
 			get_viewport().set_input_as_handled()
-		_end_the_content_drag(panned)
+		_end_the_content_drag(panned, mouse_event.position.x)
 
 # ONLY A LIVE DRAG CARRIES A CARD: motion with no button down leaves a lifted card resting in its
 # slot. Crossing OUT of the held card's own cell closes the description, read before that, and
@@ -1993,17 +1993,44 @@ func grab_cards(datas:Array[CardData]) -> void:
 #`lands_on_a_grid` is true only for a gesture that TRAVELLED carrying no card -- a drag pan, which
 #the owner's rule ends on the grid nearest the middle of the window, as Left and Right do. A cancel
 #passes false: it undoes the gesture rather than acting on it.
-func _end_the_content_drag(lands_on_a_grid: bool) -> void:
+func _end_the_content_drag(lands_on_a_grid: bool, release_x: float) -> void:
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth or not smooth.input_handler.content_dragging: return
 	smooth.input_handler._end_content_drag()
-	if lands_on_a_grid: pan_to_grid(_grid_nearest_the_window_centre())
+	if not lands_on_a_grid: return
+#A DRAG PAN IS A POINTER GESTURE, so the keyboard carries on from where the pointer left off: the
+#Entrance CARD nearest the release takes the focus, the leftmost when no x names one.
+#⚠ GRAB BEFORE THE PAN. A focus change re-aims the scroller, so a later grab would undo the aim.
+
+#⚠ THE ENTRANCE IS EMPTY between the last placement and the refill, and a drag pan is not gated on
+#`game.processing`, so a release can land in that window with no stop to focus at all.
+	if not _entrance_stops.is_empty():
+#⚠ AN EMPTIED SLOT IS STILL AN ARROW STOP, and the focus the owner asked for is an Entrance CARD:
+#prefer the stops that HOLD one, and take the chain's own only when the Entrance holds none.
+		var state := CardEnvironment.get_current_game().state
+		var stops : Array[Control] = []
+		for stop : Control in _entrance_stops:
+			if _entrance_slot_holding(state, ui_data[stop]) != -1: stops.append(stop)
+		if stops.is_empty(): stops = _entrance_stops
+		var target := stops[0]
+		if is_finite(release_x):
+			var nearest := INF
+			for stop : Control in stops:
+				var dx := absf(stop.get_global_rect().get_center().x - release_x)
+				if dx >= nearest: continue
+				nearest = dx
+				target = stop
+		target.grab_focus()
+	pan_to_grid(_grid_nearest_the_window_centre())
+
+## A release with no pointer behind it: the Entrance's leftmost stop takes the focus instead.
+const NO_RELEASE_X := INF
 
 # THE SECOND BUTTON CANCELS ONE THING PER PRESS: the held card is let go first, so the description
 # it was read against survives that press, then the description, then the grid itself.
 func _cancel_one_step() -> void:
 	_end_the_gesture()
-	_end_the_content_drag(false)
+	_end_the_content_drag(false, NO_RELEASE_X)
 	if selected_cards:
 		ungrab_cards()
 		return
@@ -2029,7 +2056,7 @@ func _step_out_of_the_focused_grid() -> bool:
 # stepped out of a grid; otherwise the wall hears it and takes its own step out of the screen.
 func _cancel_everything() -> bool:
 	_end_the_gesture()
-	_end_the_content_drag(false)
+	_end_the_content_drag(false, NO_RELEASE_X)
 #⚠ READ BEFORE THE CANCEL SPENDS THEM. A press that let a card go or took a description down has
 #done its work, and the owner's one-press rule sends it on to the wall from there.
 	var spent := not selected_cards.is_empty() or locked_data != null
@@ -2644,9 +2671,13 @@ func _turn_the_entrance_over(game_state: GameData) -> void:
 
 ## Which Entrance slot holds this card, or the leftmost when it is not in the Entrance at all.
 func _entrance_slot_of(game_state: GameData, data: CardData) -> int:
+	return maxi(_entrance_slot_holding(game_state, data), 0)
+
+## Which Entrance slot HOLDS this card, or -1: a spent slot's zone card is an Entrance control too.
+func _entrance_slot_holding(game_state: GameData, data: CardData) -> int:
 	for i : int in game_state.upper_zone.size():
 		if game_state.upper_zone[i].datas.has(data): return i
-	return 0
+	return -1
 
 ## The wait before slot `slot` turns its drawn card over: one stagger per slot from the left, as a fraction of the game's own delay, so the flip rides the pacing like every other animation.
 func entrance_flip_delay(slot: int) -> float:
@@ -2817,15 +2848,18 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 # only its face-down card: the engine honours an explicit neighbour at every focus mode but
 # FOCUS_NONE, so a skipped slot must be left OUT of the chain, not relied on to refuse the focus.
 func _link_arrow_stops(hbox: HBoxContainer, slots: int) -> void:
-	var stops : Array[Control] = []
+	_entrance_stops.clear()
 	for i : int in slots:
 		var top := hbox.get_child(i).get_child(0) as Control
 		top.focus_neighbor_left = ^""
 		top.focus_neighbor_right = ^""
-		if not is_stock_control(top): stops.append(top)
-	for i : int in stops.size() - 1:
-		stops[i].focus_neighbor_right = stops[i + 1].get_path()
-		stops[i + 1].focus_neighbor_left = stops[i].get_path()
+		if not is_stock_control(top): _entrance_stops.append(top)
+	for i : int in _entrance_stops.size() - 1:
+		_entrance_stops[i].focus_neighbor_right = _entrance_stops[i + 1].get_path()
+		_entrance_stops[i + 1].focus_neighbor_left = _entrance_stops[i].get_path()
+
+## The Entrance's arrow stops, left to right: the chain above is the one home that decides them.
+var _entrance_stops : Array[Control] = []
 
 # ==============================================================================
 # THE GRID BOARD
