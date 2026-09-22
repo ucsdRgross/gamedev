@@ -1990,9 +1990,9 @@ func grab_cards(datas:Array[CardData]) -> void:
 #this board consumes is marked handled before the GUI pass, so `content_dragging` stayed latched
 #and bare motion went on panning until a later click fell through: the pan became a toggle.
 
-#`lands_on_a_grid` is true only for a gesture that TRAVELLED carrying no card -- a drag pan, which
-#the owner's rule ends on the grid nearest the middle of the window, as Left and Right do. A cancel
-#passes false: it undoes the gesture rather than acting on it.
+#`lands_on_a_grid` is true for a gesture that TRAVELLED carrying no card -- a drag pan, which the
+#owner's rule ends on the grid nearest the middle of the window, as Left and Right do -- and for a
+#CANCEL, which ends a latched pan the same way rather than leaving the board between two grids.
 func _end_the_content_drag(lands_on_a_grid: bool, release_x: float) -> void:
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth or not smooth.input_handler.content_dragging: return
@@ -2030,7 +2030,9 @@ const NO_RELEASE_X := INF
 # it was read against survives that press, then the description, then the grid itself.
 func _cancel_one_step() -> void:
 	_end_the_gesture()
-	_end_the_content_drag(false, NO_RELEASE_X)
+#THE LANDING IS NOT A RUNG: it rides the press and the ladder below still spends it, so a cancel
+#that also steps out lands first and the overview's own rest then supersedes the aim.
+	_end_the_content_drag(true, NO_RELEASE_X)
 	if selected_cards:
 		ungrab_cards()
 		return
@@ -2056,7 +2058,7 @@ func _step_out_of_the_focused_grid() -> bool:
 # stepped out of a grid; otherwise the wall hears it and takes its own step out of the screen.
 func _cancel_everything() -> bool:
 	_end_the_gesture()
-	_end_the_content_drag(false, NO_RELEASE_X)
+	_end_the_content_drag(true, NO_RELEASE_X)
 #⚠ READ BEFORE THE CANCEL SPENDS THEM. A press that let a card go or took a description down has
 #done its work, and the owner's one-press rule sends it on to the wall from there.
 	var spent := not selected_cards.is_empty() or locked_data != null

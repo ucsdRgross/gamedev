@@ -91,6 +91,7 @@ func _ready() -> void:
 	behavior_section("A DRAG PAN NEEDS THE BUTTON HELD, AND ENDS ON A GRID")
 	await test_a_drag_pan_needs_the_button_held()
 	await test_a_cancel_ends_a_latched_drag_pan()
+	await test_a_cancel_that_steps_out_lands_first_and_is_superseded()
 	await test_a_drag_pan_release_lands_on_the_grid_nearest_the_centre()
 	await test_a_drag_pan_release_focuses_an_entrance_card()
 	await test_a_key_pan_leaves_the_focus_where_it_was()
@@ -1743,21 +1744,89 @@ func test_a_drag_pan_needs_the_button_held() -> void:
 #release is, so without this the one thing that should stop a runaway pan cannot reach it.
 func test_a_cancel_ends_a_latched_drag_pan() -> void:
 	await _start_fixture_grids(3)
-	_pa.focus_grid(1)
+	_pa.focus_grid(0)
+	await _settle_layout()
+#A CARD IS LIFTED FIRST so the cancel's own first rung is the held card and the press never reaches
+#the step-out. The landing is then observable: a cancel that DOES step out lands too, but the
+#overview's rest supersedes the aim on the same press, so nothing could be read from it.
+	var held := await _lift_the_leftmost()
+	await _settle_layout()
+	var from := _bare_board_point()
+	check(held != null and from != Vector2.INF,
+			"precondition: a card in hand and a point on no card to press",
+			"held %s, at %s" % [held != null, from])
+	if held == null or from == Vector2.INF:
+		await _end_fixture()
+		return
+	var travel := -_pa.grid_pitch_px() * 0.75 * _pa.drawn_zoom
+	await _begin_pan(from, travel)
+	check(_content_dragging(), "precondition: the pan is live with the button down",
+			"content_dragging %s" % _content_dragging())
+	check(_nearest_drawn_grid() == 1 and _pa.pan_grid == 0,
+			"precondition: the drag carried grid 1 nearest the middle of the window while the "
+			+ "board is still AIMED at grid 0", "nearest %d, pan_grid %d"
+			% [_nearest_drawn_grid(), _pa.pan_grid])
+	await _right_click(from + Vector2(travel, 0.0), false)
+	await _frames(2)
+	check(not _content_dragging(),
+			"a right-click cancel ends a live drag pan",
+			"content_dragging %s" % _content_dragging())
+	check(_pa.selected_cards.is_empty() and _pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"...and spends its rung on the held card, so this press never reached the step-out",
+			"held %d, mode %d" % [_pa.selected_cards.size(), _pa.view_mode])
+	check(_pa.pan_grid == 1,
+			"...and the cancel LANDS the grid nearest the middle of the window, exactly as a "
+			+ "release does, rather than leaving the board stopped between two grids",
+			"pan_grid %d, nearest %d" % [_pa.pan_grid, _nearest_drawn_grid()])
+	await _settle_layout()
+	await _settle_scroll_x()
+	check(_nearest_drawn_grid() == 1 and _grid_off_centre_px(1) <= 1.0,
+			"...and the board comes to rest with that grid centred",
+			"nearest %d, %.2f px off centre" % [_nearest_drawn_grid(), _grid_off_centre_px(1)])
+	var owner := _pa.get_viewport().gui_get_focus_owner()
+	check(owner != null and _pa.ui_data.has(owner)
+			and _pa.upper_zone_right.is_ancestor_of(owner)
+			and owner.get_viewport() == _picture_viewport,
+			"...and the landing's focus SURVIVES the ungrab the same press does: an Entrance stop "
+			+ "in the picture's own viewport still holds the keyboard",
+			_where_focus_is())
+	await _end_fixture()
+
+#THE STEP-OUT SUPERSEDES THE LANDING ON THE SAME PRESS, and that is the order: the landing rides the
+#press first, then the ladder spends it, and the overview it steps out to rests where it rests.
+func test_a_cancel_that_steps_out_lands_first_and_is_superseded() -> void:
+	await _start_fixture_grids(3)
+	_pa.focus_grid(0)
 	await _settle_layout()
 	var from := _bare_board_point()
 	check(from != Vector2.INF, "precondition: a point on no card to press", str(from))
 	if from == Vector2.INF:
 		await _end_fixture()
 		return
-	await _begin_pan(from, -120.0)
-	check(_content_dragging(), "precondition: the pan is live with the button down",
-			"content_dragging %s" % _content_dragging())
-	await _right_click(from + Vector2(-120.0, 0.0), false)
+	var travel := -_pa.grid_pitch_px() * 0.75 * _pa.drawn_zoom
+	await _begin_pan(from, travel)
+	check(_content_dragging() and _pa.selected_cards.is_empty(),
+			"precondition: a live pan with nothing held and no description to dismiss",
+			"content_dragging %s, held %d" % [_content_dragging(), _pa.selected_cards.size()])
+	await _right_click(from + Vector2(travel, 0.0), false)
 	await _frames(2)
-	check(not _content_dragging(),
-			"a right-click cancel ends a live drag pan",
-			"content_dragging %s" % _content_dragging())
+	check(not _content_dragging() and _pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"with no higher rung to spend the same press ends the pan AND steps out to the "
+			+ "every-grid view -- the one-thing-per-press ladder is unchanged",
+			"content_dragging %s, mode %d" % [_content_dragging(), _pa.view_mode])
+	await _settle_layout()
+	await _settle_scroll_x()
+	check(_pa.pan_grid == _pa.resting_grid(),
+			"...and the overview rests where IT rests, so the landing the press made first is "
+			+ "superseded rather than fought over",
+			"pan_grid %d, resting %d" % [_pa.pan_grid, _pa.resting_grid()])
+	var owner := _pa.get_viewport().gui_get_focus_owner()
+	check(owner != null and _pa.ui_data.has(owner)
+			and _pa.upper_zone_right.is_ancestor_of(owner)
+			and owner.get_viewport() == _picture_viewport,
+			"...and stepping out leaves the landing's focus on an Entrance stop in the picture's "
+			+ "own viewport, never on a control the overview freed",
+			_where_focus_is())
 	await _end_fixture()
 
 #THE RELEASE LANDS ON A GRID, as if Left or Right had been pressed: the board does not stop wherever
