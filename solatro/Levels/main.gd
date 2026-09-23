@@ -86,17 +86,14 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(_on_window_resized)
 #A run already set means a suite mounted this Main, and a throwaway show would write into that run.
-	if RunManager.run == null: _warm_the_game_picture()
-
 #⚠ THE GAME PICTURE'S FIRST RENDER COMPILES ITS SHADERS: one frozen frame of ~0.35 s on Box A, once
-#per process (measured), so it is paid here, behind the start menu, and no flight pays it. Ended by
-#a connection, not an await: a suite frees a Main before its first frame draws.
-func _warm_the_game_picture() -> void:
-	var game_wp : WallPicture = _pictures[&"game"]
-	var current := CardEnvironment.CURRENT
-	game_wp.attach_screen(GAME_VIEW.instantiate())
-	game_wp.mark_for_rerender()
-	RenderingServer.frame_post_draw.connect(_end_the_warm_up.bind(current), CONNECT_ONE_SHOT)
+#per process (measured); paid here, behind the start menu, ended by a connection (not an await) so a suite can free Main before its first frame draws.
+	if RunManager.run == null:
+		var game_wp : WallPicture = _pictures[&"game"]
+		var current := CardEnvironment.CURRENT
+		game_wp.attach_screen(GAME_VIEW.instantiate())
+		game_wp.mark_for_rerender()
+		RenderingServer.frame_post_draw.connect(_end_the_warm_up.bind(current), CONNECT_ONE_SHOT)
 
 #Rendered once more without the throwaway show, so wall view never shows its deal in the frame.
 func _end_the_warm_up(current: CardEnvironment) -> void:

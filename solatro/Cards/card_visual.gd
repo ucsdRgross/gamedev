@@ -778,7 +778,8 @@ func on_stage_changed() -> void:
 				create_move_tween(func() -> Vector2: return target_pos).tween_callback(queue_free)
 
 #A move follows its anchor, and a rebuild can free that anchor mid-flight (a resumed show replaying
-#a placement does): the card then holds where it is until it is re-anchored or freed.
+#a placement does): the anchor is freed only for a visual already queued for deletion, so it holds
+#where it is for at most one more tween step before that queued `queue_free` lands.
 func _anchor_centre_or_here() -> Vector2:
 	if not is_instance_valid(control_anchor): return global_position
 	return get_card_control_center(control_anchor)
