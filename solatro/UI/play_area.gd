@@ -1418,6 +1418,7 @@ func _consume_as_view_action(event: InputEvent) -> bool:
 	if event.is_action_pressed(&"grid_pan_right"):
 		pan_by_grids(1)
 		return true
+#Back always takes this one step, even on a one-grid board; cancel there falls straight to the wall.
 	if event.is_action_pressed(&"wall_back"):
 		if view_mode != ViewMode.FOCUSED: return false
 		_zoom_out_grid = focused_grid
