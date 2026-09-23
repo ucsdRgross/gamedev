@@ -138,6 +138,7 @@ a lot of these issues are with lack of parity between different modal input opti
 - **Tenth round (verbatim), after P44 (5) was built on landing** (the deal animates unseen during the flight and its tail chases the slots through the opening). The deal: "a works, but it would probably be even better if everything started running after camera shows the game picture on screen and is zooming in. the camera flight time is used to hide the loading of the scene instead of running it instantly." When the picture starts drawing live: "b: a fixed point in flight". The board's own grow under a live zoom-in: "id say keep both. camera zooming in is necessary to hide the frame. the actual scene should be responsible for its own display." Card settle smoothing: "a: leave it". This moves the ninth round's "on landing" to the fixed flight point.
 - **Eleventh round (verbatim), P44 (5b) after its measurement** (the scene is built before the flight; the one cost left is the picture's FIRST live render, one frozen frame up to ~0.35 s on Box A, ~40 ms warm). Where that frame falls: "c: at app launch" - rendered once, hidden, behind the start menu or wall reveal, so no flight pays it. The live point: "zoom-in start, 0.65" - the start of the flight's existing zoom-in phase (WallTransition.phase_bounds()), no new knob.
 - **Twelfth round (verbatim), P44 (6) after its measurement** (the board is fitted to the sidebar's RESTING reserve before the picture is visible; a slide only shifts it). Ruling (6): "a: close as built" - the resting fit applies unseen, the slide shifts at one scale, the only visible ease on entry is the opening grow. An UNCOMMITTED Entrance during a slide: "a: slide with the set" - it shifts with the board as the committed one does, staying centred under the set.
+- **Thirteenth round (verbatim), P46.** Where the keyboard focus goes when a viewer closes on the game screen: "a: back to the opener" - as built; the board card the player left is reached with Right x3, undescribed until they move.
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -481,8 +482,8 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/UI/play_area.gd, solatro/Levels/game_view.gd, solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar UiViewers DragPlace'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'Measured: opening a viewer never leaves a board card focused (Deck takes it); the leak was GameView._rest_the_board_focus (cascade end, Undo rebuild) parking focus on a card behind the viewer - it read only its own viewport. It now also skips while a DeckViewer is its child. Red (HEAD game_view.gd): FILTERED 4 of 51: 2165 passed, 3 FAILED; green 2169; --logic 3014. Fable review 0 findings. Owner (thirteenth round): close returns to the opener, as built. Gate: ALL 51 SUITES: 6847 CHECKS PASSED.'
   notes: 'P41 notes name the publisher: PlayArea.highlight_info via on_control_focus_entered while a card holds focus. One home: the publisher asks whether a viewer is hosted (HudContainer._hosted_viewer) - or the viewer takes the board focus on open and gives it back on close (P33 _suspended_lock is the pattern) - measure which leaves the pad player somewhere sensible when the viewer closes (the focus must return to the card it left, assert the OWNER and viewport). Red: open the deck viewer on the game screen with a card focused - the sidebar shows the HUD, not that card.'
 - id: P47
   description: A pointer re-entering the card that holds the keyboard focus describes it again (a closed hover left the focus behind, so the second hover published nothing) - the focus rim stays (owner, eighth round, 8 = a with fix).
@@ -492,6 +493,14 @@ a lot of these issues are with lack of parity between different modal input opti
   status: pending
   evidence: ''
   notes: 'P34 measured it: hover publishes through grab_focus -> on_control_focus_entered, so a card already focused gets no focus_entered on re-hover. Publish on mouse_entered as well (one home: highlight_info) without moving the focus. Red: hover A, leave, hover A again - the sidebar describes A twice. sonnet.'
+- id: P48
+  description: Keyboard parity - arrow keys cannot move the focus from a focused grid onto the Entrance (Up and Down stay in the grid), so a keyboard-only player cannot pick up a card from the board (the standing one-device principle).
+  files_touched: [solatro/UI/play_area.gd, solatro/Tests/Interaction/test_drag_place.gd]
+  verification_command: 'run_tests.py --filter DragPlace Sidebar GridView Interaction'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Found by P46: its keyboard row had to place its card with the mouse. PlayArea._link_arrow_stops writes the arrow chain (the (2) Entrance stops are one list there); measure where Down from the grid bottom row goes today. Also unmeasured from P46: Right off the last sidebar control while an EMPTY viewer is open may reach the board through the exit route.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -557,7 +566,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - VISUAL LAYERS "one frame after the section changes, no circle has SNAPPED to its new card" failed 1 of 3 implementer nine-suite runs on the P44 (5b) tree, 0 of 1 overseer gates; the (5b) move-tween change is the one edit that reaches a bare GameView. Measure before naming a cause.
 
 ## Next up
-1. P46 (medium), P47 (low), P45 (low), P42 (low), P43 (medium), then the close per /plan-run. (P13 is in.) (frames invisible while focused), then P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+1. P47 (low), P45 (low), P43 (medium), P48 (medium, keyboard parity), then the close per /plan-run in a NEW session.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)

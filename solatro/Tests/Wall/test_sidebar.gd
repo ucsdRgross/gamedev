@@ -171,6 +171,8 @@ func _ready() -> void:
 	await test_the_deck_button_toggles_by_mouse_while_its_viewer_is_open()
 	await test_the_deck_button_toggles_by_pad_while_its_viewer_is_open()
 	await test_a_cancel_from_a_sticky_description_leaves_the_focus_in_the_sidebar()
+	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_mouse()
+	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys()
 	await test_the_chooser_covers_the_map_and_its_sidebar_offers_the_deck()
 	await test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser()
 	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
@@ -4595,6 +4597,85 @@ func test_a_cancel_from_a_sticky_description_leaves_the_focus_in_the_sidebar() -
 		check(landed != null and _container.is_ancestor_of(landed),
 				"...and the focus is in the sidebar, where the player can act", str(landed))
 	await _end_main_fixture()
+
+# An open viewer is the focus: the rebuild an Undo ends in must not rest the board's focus on a
+# card under it, which the booted viewport's own focus owner cannot see.
+func _check_the_board_is_not_the_focus(route: String) -> void:
+	var owner := _game_viewport.gui_get_focus_owner()
+	check(owner == null or not _play_area.ui_data.has(owner),
+			"an Undo under the open viewer rests no board card's focus (%s)" % route, str(owner))
+	check(_hud_is_up(), "...so the sidebar is the HUD, describing no board card (%s)" % route)
+
+## The mouse route: an Undo clicked under the open viewer leaves the board unfocused, the viewer's own card describes on hover, and a click outside hands the focus back to the opener.
+func test_an_undo_under_an_open_viewer_rests_no_board_card_by_mouse() -> void:
+	await _start_game_fixture()
+	var placed := await _lift_and_place_a_card()
+	check(placed != null, "sanity: a lifted card found a cell to land on")
+	var deck := _container.deck_ui.get_node(^"Button") as Button
+	check(await _click_button(deck, _booted_viewport), "a real click on Deck opened its viewer")
+	check(await _click_button(_container.undo_button, _booted_viewport),
+			"a real click on Undo under the viewer pressed it")
+	await _await_the_board_idle()
+	await _await_the_rest()
+	_check_the_board_is_not_the_focus("mouse")
+	var cards := _listed_viewer_cards()
+	check(not cards.is_empty(), "sanity: the deck viewer lists cards", str(cards.size()))
+	if not cards.is_empty():
+		var title : Label = _panel.get_node(^"%Title")
+		_hover(cards[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		check(_container.showing_description()
+				and title.text == _expected_text(cards[0].child.data)[0],
+				"...and a hover in the viewer describes the viewer's card", title.text)
+	await _click(Vector2(_game_viewport.size) - Vector2(2, 2), _game_viewport)
+	check(not is_instance_valid(DeckViewer._open), "a click outside closed the viewer")
+	check(_hud_is_up() and deck.has_focus(),
+			"...leaving the HUD, with the focus on the button that opened it",
+			str(_booted_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+## The keyboard route, no pointer past the placement that gives Undo its rewind: an Undo accepted under the open viewer leaves the board unfocused, so the first arrow into the viewer describes its first card, and cancel hands the focus back to the opener.
+func test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys() -> void:
+	await _start_game_fixture()
+	var placed := await _lift_and_place_a_card()
+	check(placed != null, "sanity: a lifted card found a cell to land on, giving Undo a rewind")
+	var deck := _container.deck_ui.get_node(^"Button") as Button
+	await _tap_until(KEY_LEFT, func() -> bool: return _booted_viewport.gui_get_focus_owner() != null, 12)
+	await _tap_until(KEY_DOWN, deck.has_focus, 8)
+	check(deck.has_focus(), "sanity: the keys reached the Deck button",
+			str(_booted_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_ENTER)
+	check(is_instance_valid(DeckViewer._open), "accept on Deck opened its viewer")
+	await _tap_until(KEY_TAB, _container.undo_button.has_focus, 12)
+	check(_container.undo_button.has_focus(), "sanity: the keys reached Undo under the viewer",
+			str(_booted_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_ENTER)
+	await _await_the_board_idle()
+	await _await_the_rest()
+	_check_the_board_is_not_the_focus("keys")
+	var cards := _listed_viewer_cards()
+	check(not cards.is_empty(), "sanity: the deck viewer lists cards", str(cards.size()))
+	if not cards.is_empty():
+		var title : Label = _panel.get_node(^"%Title")
+		await _tap_key(KEY_RIGHT)
+		check(cards[0].has_focus(), "the first arrow enters the viewer's first card",
+				str(_game_viewport.gui_get_focus_owner()))
+		check(_container.showing_description()
+				and title.text == _expected_text(cards[0].child.data)[0],
+				"...and the sidebar describes THAT card, not the HUD a board focus leaving put back",
+				title.text if _container.showing_description() else "HUD")
+	await _tap_key(KEY_ESCAPE)
+	check(not is_instance_valid(DeckViewer._open), "cancel closed the viewer")
+	check(_hud_is_up() and deck.has_focus(),
+			"...leaving the HUD, with the focus on the button that opened it",
+			str(_booted_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+# The board rests its focus once its visuals are ready, which can be frames after the rebuild.
+func _await_the_rest() -> void:
+	if not _play_area.visuals_ready(): await _play_area.board_visuals_ready
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 ## The chooser is the new focus until Take: opaque over the whole map picture, beside the sidebar band, and its sidebar offers a look at the deck the cards are joining.
 func test_the_chooser_covers_the_map_and_its_sidebar_offers_the_deck() -> void:

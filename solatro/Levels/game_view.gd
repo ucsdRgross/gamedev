@@ -399,10 +399,17 @@ func rebuild() -> void:
 # picture holding the focus takes it back -- the opening deal, and any rebuild that freed the
 # control that had it. It waits for the visuals, and never takes the focus off the player.
 func _rest_the_board_focus() -> void:
-	if get_viewport().gui_get_focus_owner(): return
+	if _the_focus_is_elsewhere(): return
 	if not play_area.visuals_ready(): await play_area.board_visuals_ready
-	if get_viewport().gui_get_focus_owner(): return
+	if _the_focus_is_elsewhere(): return
 	play_area.rest_focus_on_board()
+
+# ⚠ AN OPEN VIEWER IS THE FOCUS, and the button that opened it holds the key focus in the sidebar's
+# viewport, which this one's owner never reports: a rest under it would walk the board unseen and
+# its lost focus would clear the first card the viewer describes.
+func _the_focus_is_elsewhere() -> bool:
+	return get_viewport().gui_get_focus_owner() != null \
+			or get_children().any(func(child: Node) -> bool: return child is DeckViewer)
 
 ## Deal the opening plan onto the board cell by cell (show start only).
 func reveal_plan() -> void:
