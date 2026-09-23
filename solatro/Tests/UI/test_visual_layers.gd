@@ -29,9 +29,9 @@ const WATCHDOG_SECS := 10.0
 func suite_name() -> String:
 	return "VISUAL LAYERS"
 
+#This suite shares CardEnvironment.CURRENT, so it waits for every sibling that writes it too;
+#TestSuite.await_siblings_except carries the DEADLOCK RULE this list has to obey.
 func _ready() -> void:
-	# Runs after UI PROPS (shares CardEnvironment.CURRENT) and before E2E. Excludes only E2E (which
-	# waits on everything). See TestSuite.await_siblings_except and its DEADLOCK RULE.
 	await await_siblings_except(["GRID LAYOUT", "GRID VIEW", "SIDEBAR", "SETTINGS RANGE",
 			"DRAG PLACE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ VISUAL LAYERS TEST PASS ============")
@@ -256,12 +256,15 @@ func make_play_area() -> PlayArea:
 # overview's scale. The opening view stays the product's own decision everywhere else.
 	pa._show_view_opened = true
 	pa.open_zoomed_out()
+	_latch_the_unfitted_scale(pa)
+	return pa
+
 #⚠ AT THE UNFITTED SCALE, AND SAID OUT LOUD. These checks are the board's LAYOUT ARITHMETIC,
-#which is authored at scale 1; the all-grids view now FITS the set it has, so "the overview's
-#scale" is no longer 1 and every length below would carry the fit.
+#which is authored at scale 1; the all-grids view FITS the set it has, and re-fits on every
+#`card_scale` change, so a fixture that changes one latches again after it.
+func _latch_the_unfitted_scale(pa: PlayArea) -> void:
 	pa.board_zoom = PlayArea.DEFAULT_BOARD_ZOOM
 	pa.snap_the_view_into_place()
-	return pa
 
 
 func settle(pa: PlayArea) -> void:
@@ -1268,6 +1271,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 # someone adds an early-out. Changing the scale MID-REVEAL is the input that tests it.
 	var prev_scale : float = SettingsManager.settings.card_scale
 	SettingsManager.settings.card_scale = prev_scale * 1.5
+	_latch_the_unfitted_scale(pa)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var top_y := pa.slot_center_global(BoardCoord.new(0, (Vector3i(below.x, below.y, 0)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(below.x, below.y, 0)).z)).y
@@ -1279,6 +1283,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 			"...and the OPEN row re-derives to the mode's new opening — nothing was captured at spawn",
 			"pitch %.1f, mode now asks for %.1f" % [scaled_pitch, pa._row_open_height()])
 	SettingsManager.settings.card_scale = prev_scale
+	_latch_the_unfitted_scale(pa)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	check(absf((pa.slot_center_global(BoardCoord.new(0, (below).y, BoardCoord.ENTRANCE_ROW, (below).z)).y
@@ -1479,7 +1484,6 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 		if t > 0.05 and t < 0.95: saw_partial = true
 		var want := _centre_for(view, mover)
 		moved = maxf(moved, start_centre.distance_to(want))
-		# Some light must be sitting on this card's CURRENT art square, not the one it left.
 		worst = maxf(worst, _nearest_light_offset(layer, want))
 		if elapsed > 2.5 and not pa._row_open_wanted.is_empty():
 			view.game.spotlight_section_changed.emit([] as Array[CardData])
@@ -1533,6 +1537,7 @@ func test_lights_track_a_scrolled_board() -> void:
 # ⚠ The board's window is as wide as the game picture, so a scale that used to overflow a
 # window-shaped one no longer does: measured, 5.0 gave 1041 px of content against 1152.
 	SettingsManager.settings.card_scale = 8.0
+	_latch_the_unfitted_scale(pa)
 	pa.flush_rebuild()
 	for _i : int in 3: await _tick_seconds()
 
@@ -1695,8 +1700,7 @@ func _stand_up_view() -> GameView:
 	view.play_area.open_zoomed_out()
 #⚠ AND IT ARRIVES ON THIS FRAME, for the reason the other stand-up gives: a mode change eases, and
 #a latched view read two frames later is read at the scale the board is leaving.
-	view.play_area.board_zoom = PlayArea.DEFAULT_BOARD_ZOOM
-	view.play_area.snap_the_view_into_place()
+	_latch_the_unfitted_scale(view.play_area)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	return view

@@ -54,6 +54,7 @@ func _ready() -> void:
 	await run_a_fresh_show_opens_live_on_the_zoom_in_test()
 	await run_a_resumed_show_lands_at_rest_test()
 	await run_a_show_attached_to_the_live_picture_starts_test()
+	await run_the_board_rests_in_the_window_beside_the_sidebar_test()
 	await run_a_non_focused_grid_paints_nothing_outside_the_window_test()
 	await run_the_board_edge_does_not_move_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
@@ -3285,6 +3286,109 @@ func run_a_show_attached_to_the_live_picture_starts_test() -> void:
 			"scene process mode %d, opening owed %s"
 			% [view.scene_root.process_mode, view.play_area._opening_ease_owed])
 	await _tear_down_main(main)
+
+#THE BOARD RESTS IN THE WINDOW THE SIDEBAR LEAVES, the set centred there (R8), and the sidebar's
+#slide only SHIFTS it (R1): the resting reserve reaches the fit before the picture goes live, so no
+#slide re-fits the board, and no slide starts more than one ease of it.
+func run_the_board_rests_in_the_window_beside_the_sidebar_test() -> void:
+	behavior_section("THE BOARD RESTS IN THE WINDOW BESIDE THE SIDEBAR")
+	for deck : Array[CardData] in [TestDecks.deck_standard_52(), TestDecks.deck_53(),
+			TestDecks.deck_105()]:
+		var main := await _boot_main_on_the_map(deck)
+		var arriving := await _sample_through_the_slide(main, main.enter_game, 1.0)
+		var pa := _main_game_view(main).play_area
+		var grids := pa.grid_container.get_child_count()
+		var fit := pa.overview_board_zoom() if pa.view_mode == PlayArea.ViewMode.OVERVIEW 				else pa.focused_board_zoom(pa.focused_grid)
+		var pair := _set_and_window(pa)
+		var span := pair[0]
+		var win := pair[1]
+		check(absf(win.position.x - pa.board_inset_left) <= 1.0
+				and absf(win.end.x - (pa.size.x - pa.board_visible_crop.x)) <= 1.0,
+				"precondition: the %d-grid board's window is the one left beside the resting sidebar"
+				% grids, "window %s, inset %.1f, crop %s"
+				% [win, pa.board_inset_left, pa.board_visible_crop])
+		check(span.position.x >= win.position.x - 1.0 and span.end.x <= win.end.x + 1.0,
+				"once the sidebar has settled, the whole set of %d is inside that window" % grids,
+				"set %s vs window %s at zoom %.4f, the fit %.4f" % [span, win, pa.board_zoom, fit])
+		var off_centre := span.get_center().x - win.get_center().x
+#⚠ THREE GRIDS REST 4.0 AUTHORED PX RIGHT OF CENTRE, the filed defect the overview-fit row pins too;
+#pinned here at the drawn zoom so its fix turns this row RED as well.
+		var expected_off := 4.0 * pa.drawn_zoom if grids == 3 else 0.0
+		check(absf(off_centre - expected_off) <= 1.0,
+				"...and centred in it to the pixel (%d grids; three carry the filed 4 px)" % grids,
+				"set centre %.2f px off the window's, expected %.2f" % [off_centre, expected_off])
+		if grids == 1:
+			check(is_equal_approx(pa.board_zoom, pa.focused_board_zoom(0)),
+					"one grid rests at the focused fit of the window beside the sidebar, as before",
+					"zoom %.4f, fit %.4f" % [pa.board_zoom, pa.focused_board_zoom(0)])
+		_check_the_slide_only_shifts(arriving, fit, 1.0, grids)
+		var leaving := await _sample_through_the_slide(main, main._go_to_wall_view, 0.0)
+		_check_the_slide_only_shifts(leaving, fit, 0.0, grids)
+		await _tear_down_main(main)
+
+## Column of `_sample_through_the_slide`'s rows: the sidebar's slid fraction.
+const SLID := 0
+## Column: the board's fit, `board_zoom`.
+const FIT := 1
+## Column: the scale the board is drawn at, the opening's grow included.
+const DRAWN := 2
+## Column: the instance id of the view's live ease, 0 while none runs.
+const EASE_ID := 3
+
+#From the last frame the sidebar sits furthest from `slid` to the last frame of whatever ease runs
+#once it has settled there: the fit held, the drawn scale never falling and ending on the fit, and
+#at most one ease.
+func _check_the_slide_only_shifts(rows: Array[PackedFloat64Array], fit: float, slid: float,
+		grids: int) -> void:
+	var leg := "arriving" if slid > 0.5 else "leaving"
+	var start := 0
+	for k : int in rows.size():
+		if absf(rows[k][SLID] - slid) >= absf(rows[start][SLID] - slid) - 0.000001: start = k
+	var last : PackedFloat64Array = rows.back()
+	var fits_held := true
+	var falling := 0
+	var eases : Array[float] = []
+	for k : int in range(start, rows.size()):
+		fits_held = fits_held and is_equal_approx(rows[k][FIT], fit)
+		if k > start and rows[k][DRAWN] < rows[k - 1][DRAWN] - 0.000001: falling += 1
+		if rows[k][EASE_ID] != 0.0 and not eases.has(rows[k][EASE_ID]):
+			eases.append(rows[k][EASE_ID])
+	check(rows.size() - start >= 3,
+			"precondition: the sidebar was sampled %s over the %d-grid board" % [leg, grids],
+			"%d frames from the slide's start" % (rows.size() - start))
+	check(fits_held and falling == 0 and is_equal_approx(last[DRAWN], fit),
+			"the %d-grid board keeps its fit while the sidebar is %s, never shrinks, and ends "
+			% [grids, leg] + "exactly on the fit",
+			"fit held %s, %d falling frames, last drawn %.4f vs the fit %.4f"
+			% [fits_held, falling, last[DRAWN], fit])
+	check(eases.size() <= 1,
+			"...and at most one ease of the board runs over the slide (%s, %d grids)" % [leg, grids],
+			"%d eases" % eases.size())
+
+#Every DRAWN frame of `move` (an async Main route), until it has returned, the sidebar has settled on
+#`slid` and the view's ease has finished. Columns: SLID through EASE_ID.
+func _sample_through_the_slide(main: Main, move: Callable, slid: float) -> Array[PackedFloat64Array]:
+	var wp : WallPicture = main._pictures[&"game"]
+	var moved : Array[bool] = [false]
+	var run := func() -> void:
+		await move.call()
+		moved[0] = true
+	run.call()
+	var rows : Array[PackedFloat64Array] = []
+	var waited := 0.0
+	while waited < 10.0:
+		await RenderingServer.frame_post_draw
+		waited += get_process_delta_time()
+		var view := wp.screen_root as GameView
+		var pa := view.play_area
+		var ease_id := 0.0
+		if pa._view_tween and pa._view_tween.is_valid():
+			ease_id = float(pa._view_tween.get_instance_id())
+		rows.append(PackedFloat64Array([view.hud_container.slid_fraction(), pa.board_zoom,
+				pa.drawn_zoom * pa.scale.x, ease_id]))
+		if moved[0] and is_equal_approx(view.hud_container.slid_fraction(), slid) 				and pa._view_ease >= 1.0: break
+	CardEnvironment.CURRENT = (wp.screen_root as GameView).game
+	return rows
 
 #A real Main on the map picture with a run of `deck`, booted the way the game launches: with no run,
 #so the launch warm-up renders the game picture once, and the run arriving after it.

@@ -92,13 +92,15 @@ func board_card_picture_px() -> Vector2:
 func board_card_window_px() -> Vector2:
 	return board_card_picture_px() * picture_to_window_scale
 
-# ⚠ **THE RESERVE ARRIVES AFTER THE SHOW HAS ALREADY OPENED**, against a focused grid already
-# fitted to an inset of zero, so re-fitting here (unconditionally, before any zoom check) is what
-# makes the arriving reserve reach the zoom instead of leaving the board centred on the screen.
+# ⚠ **THE RESERVE ARRIVES AFTER THE SHOW HAS ALREADY OPENED**, against a view fitted to an inset of
+# zero, so both views re-fit here or the board keeps the whole picture's fit. It lands before the
+# picture goes live (measured), so the snap is unseen and no sidebar slide ever reaches here.
 func _re_fit_after_inset_change() -> void:
 	_apply_entrance_strip_height()
 	if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
 		focus_grid(focused_grid)
+	elif view_mode == ViewMode.OVERVIEW:
+		_zoom_board_to(overview_board_zoom())
 	snap_the_view_into_place()
 
 ## The view mode changed. Carries the mode and the grid it focuses (`NO_GRID` in the overview).
@@ -1038,8 +1040,8 @@ func _snap_the_entrance_home() -> void:
 #change the PLAYER asked for and to a fresh show going live, and nothing else may spend the pan clock.
 
 #⚠ A RE-FIT IS NOT A MODE CHANGE, and neither is a suite latching the view its checks were written
-#against. The sidebar's reserve re-fits the zoom on every frame of its slide; eased, each of those
-#restarted the clock and the board never reached its scale at all (measured).
+#against. A re-fit issued every frame restarts an eased clock each time, and the board never
+#reached its scale at all (measured).
 func snap_the_view_into_place() -> void:
 	_land_the_opening()
 	if _view_tween and _view_tween.is_valid(): _view_tween.kill()
