@@ -51,7 +51,8 @@ func _ready() -> void:
 	await run_the_overview_fits_the_set_it_has_test()
 	await run_the_overview_gap_cannot_go_below_the_score_gutters_test()
 	await run_a_mode_change_eases_into_place_test()
-	await run_the_opening_view_does_not_ease_test()
+	await run_a_fresh_show_eases_in_on_landing_test()
+	await run_a_resumed_show_lands_at_rest_test()
 	await run_a_non_focused_grid_paints_nothing_outside_the_window_test()
 	await run_the_board_edge_does_not_move_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
@@ -3144,26 +3145,139 @@ func run_a_mode_change_eases_into_place_test() -> void:
 		picture_vp.queue_free()
 		await get_tree().process_frame
 
-#THE OPENING VIEW IS NOT A MODE CHANGE THE PLAYER MADE, so it is already at its scale and its gap on
-#the first frame -- the same rule the Entrance's own slide follows.
-func run_the_opening_view_does_not_ease_test() -> void:
-	behavior_section("THE OPENING VIEW DOES NOT EASE")
-	var design := PlayArea.game_picture_design_size(SettingsManager.settings)
-	var picture_vp := SubViewport.new()
-	picture_vp.size = design
-	add_child(picture_vp)
-	var view := await _stand_up_grids(1, picture_vp)
-	var pa := view.play_area
-	pa._show_view_opened = false
-	pa.open_show_view()
-	check(pa.view_mode == PlayArea.ViewMode.FOCUSED,
-			"precondition: a one-grid show opens focused on its only grid", "mode %d" % pa.view_mode)
-	check(is_equal_approx(pa.drawn_zoom, pa.board_zoom) and pa._view_ease >= 1.0,
-			"the show's opening frame is already at the view's own scale: nothing eases into it",
-			"drawn %.6f vs %.6f, ease %.3f" % [pa.drawn_zoom, pa.board_zoom, pa._view_ease])
-	await _tear_down(view)
-	picture_vp.queue_free()
+#A FRESH SHOW EASES IN ON THE FRAME THE CAMERA LANDS, from a fixed fraction of its rest scale, and
+#comes to rest exactly where the opening view put it (owner ruling). One grid opens focused, three
+#open on the overview.
+func run_a_fresh_show_eases_in_on_landing_test() -> void:
+	behavior_section("A FRESH SHOW EASES IN ON LANDING")
+	for deck : Array[CardData] in [TestDecks.deck_standard_52(), TestDecks.deck_105()]:
+		var main := await _boot_main_on_the_map(deck)
+		var landed := await _enter_the_game_sampling(main)
+		var before : PackedFloat64Array = landed.pop_front()
+		var grids := _main_game_view(main).play_area.grid_container.get_child_count()
+		check(is_equal_approx(before[0], before[1]) and landed.size() > 1,
+				"precondition: the %d-grid show opened at rest before the camera landed" % grids,
+				"drawn %.4f of %.4f, %d landed frames" % [before[0], before[1], landed.size()])
+		check(is_equal_approx(landed[0][0], PlayArea.OPENING_ZOOM_FRACTION * before[1]),
+				"the landing frame draws the %d-grid board at the opening fraction of its rest scale"
+				% grids, "drawn %.4f, rest %.4f" % [landed[0][0], before[1]])
+		var rising := true
+		var between := 0
+		var worst_drift := 0.0
+#⚠ THE REST IS THE LAST FRAME, NOT THE ONE BEFORE THE LANDING: the landing's resize re-sorts a
+#three-grid set 7 px along (measured), whatever the ease does.
+		var rest_focal := Vector2(landed[-1][4], landed[-1][5])
+		for k : int in landed.size():
+			worst_drift = maxf(worst_drift,
+					(Vector2(landed[k][4], landed[k][5]) - rest_focal).length())
+			if k == 0: continue
+			rising = rising and landed[k][0] >= landed[k - 1][0] - 0.000001
+			if landed[k][0] > landed[0][0] + 0.0001 and landed[k][0] < before[1] - 0.0001:
+				between += 1
+		check(rising and between >= 3,
+				"...and rises to its rest monotonically, through the frames between (%d grids)" % grids,
+				"%d frames strictly between the two ends" % between)
+#⚠ LESS THE SIDEBAR'S SLIDE, which moves the whole window and is not the ease's to hold.
+		check(worst_drift <= 1.0,
+				"...growing IN PLACE: the point the rest view centres is drawn where it rests on "
+				+ "every frame (%d grids)" % grids,
+				"worst %.2f px from %s" % [worst_drift, rest_focal])
+#A COMMITTED ENTRANCE GROWS WITH ITS GRID: its offset from the grid is the rest offset at the scale
+#drawn on that frame. An uncommitted one is centred in the window, which the sidebar slides past.
+		var worst_entrance := 0.0
+		var rest_row := landed[-1]
+		for row : PackedFloat64Array in landed:
+			worst_entrance = maxf(worst_entrance, absf(row[6] - rest_row[6] * row[0] / rest_row[0]))
+		if _main_game_view(main).game.state.committed_grid != -1:
+			check(worst_entrance <= 1.0,
+					"...and the committed Entrance grows with its grid, keeping its rest offset from "
+					+ "it at the drawn scale (%d grids)" % grids,
+					"worst %.2f px, rest offset %.2f" % [worst_entrance, rest_row[6]])
+		var last := landed.back() as PackedFloat64Array
+		check(is_equal_approx(last[0], before[1]) and is_equal_approx(last[1], before[1])
+				and is_equal_approx(last[2], before[2]) and is_equal_approx(last[3], before[3]),
+				"...and ends exactly at the rest the opening view chose: scale and scroll (%d grids)"
+				% grids, "landed on %s, the opening rest %s" % [last, before])
+		await _tear_down_main(main)
+
+#A RESUMED SHOW IS NOT AN OPENING: re-entering a frozen show lands at rest (owner ruling).
+func run_a_resumed_show_lands_at_rest_test() -> void:
+	behavior_section("A RESUMED SHOW LANDS AT REST")
+	var main := await _boot_main_on_the_map(TestDecks.deck_standard_52())
+	var rest := (await _enter_the_game_sampling(main)).front() as PackedFloat64Array
+	await main._focus_picture(&"map")
+	check(main._current_focus == &"map",
+			"precondition: the player left the show for another picture", str(main._current_focus))
+	var resumed := await _enter_the_game_sampling(main)
+	resumed.remove_at(0)
+	var off := 0
+	for row : PackedFloat64Array in resumed:
+		if not is_equal_approx(row[0], rest[1]): off += 1
+	check(not resumed.is_empty() and off == 0,
+			"every frame of the resumed show's landing is drawn at its rest scale",
+			"%d of %d frames off %.4f" % [off, resumed.size(), rest[1]])
+	await _tear_down_main(main)
+
+#A real Main on the map picture with a run of `deck`, the route a show is entered by.
+func _boot_main_on_the_map(deck: Array[CardData]) -> Main:
+	backup_real_save(suite_tag())
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	var run := RunManager.new_run(deck, TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1_000_000_000
+	run.pending_node_id = 2
+	seed(20260829)
+	var main := TestMainHost.mount(self, self, MAIN_SCENE) as Main
 	await get_tree().process_frame
+	await get_tree().process_frame
+	await main._focus_picture(&"map")
+	return main
+
+#Every DRAWN frame of one entry into the game picture, the last one before the landing first: drawn
+#scale, board zoom, scroll x, scroll y, focal x, focal y (less the sidebar's slide), and the Entrance
+#row's drawn centre x less the focal point's drawn x.
+func _enter_the_game_sampling(main: Main) -> Array[PackedFloat64Array]:
+	var wp : WallPicture = main._pictures[&"game"]
+	var entered : Array[bool] = [false]
+	var enter := func() -> void:
+		await main.enter_game()
+		entered[0] = true
+	enter.call()
+	var frames : Array[PackedFloat64Array] = [PackedFloat64Array()]
+	var waited := 0.0
+	while waited < 10.0:
+		await RenderingServer.frame_post_draw
+		waited += get_process_delta_time()
+		var pa := (wp.screen_root as GameView).play_area
+		var pos := _scroller(pa).pos
+		var focal := _rest_focal(pa)
+		var track := pa.entrance_h_track
+		var track_xf := track.get_global_transform()
+		var entrance_x := (pa.get_parent_control().get_global_transform().affine_inverse()
+				* (track_xf.origin + track_xf.basis_xform(track.size * 0.5))).x
+		var row := PackedFloat64Array([pa.drawn_zoom * pa.scale.x, pa.board_zoom, pos.x, pos.y,
+				focal.x, focal.y, entrance_x - (focal.x + pa.board_slide_offset.x)])
+		if not wp.is_focused:
+			frames[0] = row
+			continue
+		frames.append(row)
+		if entered[0] and pa._view_ease >= 1.0: break
+	CardEnvironment.CURRENT = (wp.screen_root as GameView).game
+	return frames
+
+#Where the point the rest view centres is DRAWN, in the board's parent's pixels less the sidebar's
+#slide: the focused grid's cell block centre, or the centre of the whole set in the overview.
+func _rest_focal(pa: PlayArea) -> Vector2:
+	var span := Rect2()
+	for gi : int in pa.grid_container.get_child_count():
+		if pa.view_mode == PlayArea.ViewMode.FOCUSED and gi != pa.focused_grid: continue
+		var cells := pa._cells_root(pa.grid_container.get_child(gi) as Control)
+		var xf := cells.get_global_transform()
+		var drawn := Rect2(xf.origin, xf.basis_xform(cells.size))
+		span = drawn if span.size == Vector2.ZERO else span.merge(drawn)
+	var to_parent := pa.get_parent_control().get_global_transform().affine_inverse()
+	return to_parent * span.get_center() - pa.board_slide_offset
 
 # ==============================================================================
 # THE OVERVIEW FITS THE SET IT HAS.

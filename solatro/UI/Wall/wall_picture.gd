@@ -23,6 +23,9 @@ static func settings() -> PlayerSettings:
 ## The SubViewport `build()` creates, public so a caller can free it: it lives under `viewports_parent`, not under this node.
 var viewport : SubViewport = null
 
+## Emitted by `focus()`: the camera has landed and this picture draws live from this frame.
+signal focused
+
 ## Whether this is the live picture. `build()` leaves it false -- construction is "never yet rendered", not "focused".
 var is_focused : bool = false
 
@@ -175,6 +178,7 @@ func focus() -> void:
 		screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
 	update_filter(false)
 	set_screen_alpha(1.0)
+	focused.emit()
 
 # The full-`design_size` render target, restored when a move toward this picture STARTS and again by
 # `focus()`. ⚠ A SubViewport resized on the frame it is first shown focused is drawn from the OLD

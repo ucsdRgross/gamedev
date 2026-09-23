@@ -990,6 +990,14 @@ func _settle_entrance_x(pa: PlayArea) -> void:
 		if now.is_equal_approx(last): return
 		last = now
 
+#A fresh show eases in from its landing, so a board read as soon as `enter_game()` returns is read
+#part way to its scale.
+func _await_the_opening_ease(pa: PlayArea) -> void:
+	var waited := 0.0
+	while waited < 3.0 and pa._view_ease < 1.0:
+		await get_tree().physics_frame
+		waited += get_physics_process_delta_time()
+
 func _settle_scroll_x(pa: PlayArea) -> void:
 	var last := INF
 	var waited := 0.0
@@ -1015,6 +1023,7 @@ func test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement(
 	var view := game_wp.screen_root as GameView
 	CardEnvironment.CURRENT = view.game
 	var pa := view.play_area
+	await _await_the_opening_ease(pa)
 	pa.flush_rebuild()
 	await _settle_scroll_x(pa)
 
@@ -1837,6 +1846,7 @@ func _enter_game_fixture() -> void:
 	CardEnvironment.CURRENT = view.game
 	_play_area = view.play_area
 	_game_viewport = _main._pictures[&"game"].viewport
+	await _await_the_opening_ease(_play_area)
 
 func _end_main_fixture() -> void:
 	await _free_booted_main(_booted_viewport, _main)

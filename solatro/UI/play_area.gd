@@ -77,13 +77,17 @@ var board_slide_offset : Vector2 = Vector2.ZERO:
 		board_slide_offset = value
 		if not is_instance_valid(scroll_container): return
 		_apply_board_zoom_rect()
+#The slide moves the grid the Entrance sits under and the point an opening grows about on EVERY
+#frame of it; left to the physics tick, the Entrance trailed its grid by ~45 px (measured).
+		_sync_entrance_x()
+		_re_pin_the_opening()
 
 ## How many WINDOW pixels one of this picture's own pixels is drawn at, published by `GameView` -- the same boundary `board_inset_*` crosses the other way.
 var picture_to_window_scale : float = 1.0
 
-## The size a board card occupies in THIS picture's own pixels: its card size at the live zoom.
+## The size a board card occupies in THIS picture's own pixels: its card size at the scale it is drawn.
 func board_card_picture_px() -> Vector2:
-	return CardVisual.card_size_play * drawn_zoom
+	return CardVisual.card_size_play * _content_scale_on_screen()
 
 ## The size a board card is DRAWN at on the player's screen: this board's card size, at its live zoom, in window pixels.
 func board_card_window_px() -> Vector2:
@@ -685,16 +689,20 @@ func _sync_entrance_x() -> void:
 #The Entrance's own minimum is read, never the container's own width, which would fold in last
 #call's answer and could then only ever grow.
 	grid_container.custom_minimum_size.x = upper_zone_right.get_combined_minimum_size().x
-	var columns_x := grid_container.global_position.x
+#⚠ READ IN THE STRIP'S OWN SPACE, NOT AS A GLOBAL DIFFERENCE: a fresh show's opening scales the
+#whole board, and a global difference is that scale times the offset the track is written in.
+	var to_strip := entrance_strip.get_global_transform().affine_inverse()
+	var columns_x := (to_strip * grid_container.global_position).x
 	var columns_w := grid_container.size.x
 	var home := entrance_home_grid()
 	var cells := _grid_cells(pan_grid if home == NO_GRID else home)
 	if cells:
-		columns_x = cells.global_position.x
-		columns_w = cells.size.x * maxf(drawn_zoom, 0.0001)
+		var xf := to_strip * cells.get_global_transform()
+		columns_x = xf.origin.x
+		columns_w = xf.basis_xform(cells.size).x
 #The strip already starts at the board window's left edge, so the centred position is the spare
 #width either side of the row, halved.
-	var under_the_grid := columns_x - entrance_strip.global_position.x
+	var under_the_grid := columns_x
 	var centred := (_board_width_left() - columns_w) * 0.5
 	entrance_h_track.position.x = lerpf(centred, under_the_grid, _entrance_slide)
 	entrance_h_track.size.x = columns_w
@@ -1025,18 +1033,72 @@ func _snap_the_entrance_home() -> void:
 	snap_the_view_into_place()
 
 #THE BOARD IS AT ITS SCALE AND ITS GAP ON THIS FRAME, with no travel: the ease belongs to a mode
-#change the PLAYER asked for, and nothing else may spend the pan clock.
+#change the PLAYER asked for and to a fresh show's landing, and nothing else may spend the pan clock.
 
 #⚠ A RE-FIT IS NOT A MODE CHANGE, and neither is a suite latching the view its checks were written
 #against. The sidebar's reserve re-fits the zoom on every frame of its slide; eased, each of those
 #restarted the clock and the board never reached its scale at all (measured).
 func snap_the_view_into_place() -> void:
+	_land_the_opening()
 	if _view_tween and _view_tween.is_valid(): _view_tween.kill()
 	_view_ease = 1.0
 	drawn_zoom = board_zoom
 	_drawn_grid_gap = _grid_gap_target()
 	_apply_entrance_strip_height()
 	_apply_grid_buffer()
+
+## The fraction of its rest scale a fresh show's board is drawn at on the frame it is first seen.
+const OPENING_ZOOM_FRACTION := 0.6
+
+#THE ONE OWNER OF "FRESH": a PlayArea is one show, so it owes the opening ease from birth and the
+#first landing spends it. A resumed show lands at rest (owner ruling).
+var _opening_ease_owed := true
+
+## True from a fresh show's landing until its board has grown to rest or a view change took over.
+var _opening_in_flight := false
+
+#⚠ ON THE LANDING, NOT AT OPEN: the picture draws no board until the camera lands, ~38 frames after
+#`open_show_view` (measured), so an ease begun at open is spent unseen.
+func ease_the_opening_in() -> void:
+	if not _opening_ease_owed: return
+	assert(_show_view_opened, "a show lands after its opening view was chosen")
+	_opening_ease_owed = false
+	_opening_in_flight = true
+	_grow_the_opening_to(0.0)
+#⚠ PINNED AGAIN JUST BEFORE THE LANDING FRAME DRAWS: the picture's resize re-sorts the board after
+#this call, and the pin taken here was 6 px off at three grids (measured).
+	RenderingServer.frame_pre_draw.connect(_re_pin_the_opening, CONNECT_ONE_SHOT)
+#⚠ THE CLOCK STARTS A FRAME LATE: the landing frame renders the whole picture for the first time
+#(~300 ms, measured), and a clock already running pays that debt in 8 physics steps -- 38% of the
+#ease gone in the first visible frame.
+	await get_tree().process_frame
+	if _opening_in_flight: _start_the_view_ease()
+
+#⚠ THE WHOLE BOARD SCALES ABOUT THE POINT ITS REST VIEW CENTRES, with its layout left at rest. A
+#smaller `drawn_zoom` re-lays the content inside a larger window and the scroll clamps at zero, so
+#the board grew from the top-left corner (measured: 215 px of drift at one grid).
+func _grow_the_opening_to(t: float) -> void:
+	_re_pin_the_opening()
+	scale = Vector2.ONE * lerpf(OPENING_ZOOM_FRACTION, 1.0, t)
+	if t >= 1.0: _opening_in_flight = false
+
+#The pivot is the point the rest view centres, in this board's own unscaled pixels: the focused
+#grid's cell block, or the whole set's in the overview.
+func _re_pin_the_opening() -> void:
+	if not _opening_in_flight: return
+	var to_local := get_global_transform().affine_inverse()
+	var span := Rect2()
+	for gi : int in grid_container.get_child_count():
+		if view_mode == ViewMode.FOCUSED and gi != focused_grid: continue
+		var cells := _cells_root(grid_container.get_child(gi) as Control)
+		var xf := to_local * cells.get_global_transform()
+		var drawn := Rect2(xf.origin, xf.basis_xform(cells.size))
+		span = drawn if span.size == Vector2.ZERO else span.merge(drawn)
+	pivot_offset = span.get_center()
+
+#A view change or a snap takes over from an opening part way through, so the board is put at scale.
+func _land_the_opening() -> void:
+	if _opening_in_flight: _grow_the_opening_to(1.0)
 
 #True once the opening view has been settled against the grids that actually EXIST.
 
@@ -1112,7 +1174,7 @@ func _grid_nearest_the_window_centre() -> int:
 #⚠ DRAWN ON BOTH SIDES. This answers what the PLAYER is looking at on this frame -- a pickup, a
 #drag release, the ease's own re-aim -- so the window it measures against is the drawn one, not the
 #one the board is travelling to. Mixed, a pickup mid-ease named the grid the board had left.
-	var z := maxf(scroll_container.scale.x, 0.0001)
+	var z := _content_scale_on_screen()
 	var centre := _board_window_at(drawn_zoom).x * 0.5
 	var best := NO_GRID
 	var best_dx := INF
@@ -1254,6 +1316,11 @@ func _zoom_board_to(z: float) -> void:
 #change snap, which is the thing this ease exists to stop.
 	if is_equal_approx(board_zoom, target) and is_equal_approx(drawn_zoom, target) 			and is_equal_approx(_drawn_grid_gap, _grid_gap_target()): return
 	board_zoom = target
+	_land_the_opening()
+	_start_the_view_ease()
+
+#Travel from the drawn scale and gap to `board_zoom` and the mode's gap over the pan clock.
+func _start_the_view_ease() -> void:
 	if _view_tween and _view_tween.is_valid(): _view_tween.kill()
 	_view_ease = 0.0
 	_ease_from = Vector2(drawn_zoom, _drawn_grid_gap)
@@ -1284,6 +1351,7 @@ var _view_tween : Tween = null
 #the gap from here; the scale has to be pushed, because nothing else re-applies the rect.
 func _travel_the_view_ease(t: float) -> void:
 	_view_ease = t
+	if _opening_in_flight: _grow_the_opening_to(t)
 	drawn_zoom = lerpf(_ease_from.x, board_zoom, t)
 	_drawn_grid_gap = lerpf(_ease_from.y, _grid_gap_target(), t)
 	_apply_entrance_strip_height()
@@ -1294,12 +1362,16 @@ func _travel_the_view_ease(t: float) -> void:
 	_apply_grid_buffer()
 	_aim_the_board_at(pan_grid, PlayArea.settings().grid_pan_duration * (1.0 - t))
 
+#How many global pixels one content pixel is drawn at: the zoom, and the opening's grow above it.
+func _content_scale_on_screen() -> float:
+	return maxf(scroll_container.get_global_transform().get_scale().x, 0.0001)
+
 #Where the scroller puts the content at `pos` zero: the margin offset it centres with, measured
 #rather than restated, so an aim is expressed in the same units the scroller stores.
 func _board_content_origin() -> Vector2:
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth: return Vector2.ZERO
-	var z := maxf(scroll_container.scale.x, 0.0001)
+	var z := _content_scale_on_screen()
 	return (top_level_vbox.global_position - scroll_container.global_position) / z - smooth.pos
 
 
@@ -1417,10 +1489,10 @@ func _aim_the_board_at(gi: int, dur: float) -> void:
 	smooth.scroll_y_to(window.y - (local.position.y + local.size.y) - origin.y, dur)
 
 #A board control's rect in the CONTENT's own unzoomed space. ⚠ `global_position` already carries the
-#zoom while `size` never does, so the two cannot be mixed: everything an aim is built from is
+#scale while `size` never does, so the two cannot be mixed: everything an aim is built from is
 #divided back out here, and the target zoom is applied once, at the end.
 func _board_local_rect(c: Control) -> Rect2:
-	var z := maxf(scroll_container.scale.x, 0.0001)
+	var z := _content_scale_on_screen()
 	return Rect2((c.global_position - top_level_vbox.global_position) / z, c.size)
 
 #The edge push-back. FOCUSED keeps the scroll container's OWN overdrag, which supplies the
@@ -3009,12 +3081,12 @@ func _recentre_probe() -> Vector3:
 #is written only when the value changes, so a settled board stops re-sorting, and every quantity
 #here is panel-RELATIVE, so it cannot feed back the way the per-panel floor code did.
 
-#The widest score gutter on each side, in BOARD px -- divided by the zoom, since the positions they
-#are measured from are screen ones. `Vector2.ZERO` while no panel carries cells yet.
+#The widest score gutter on each side, in BOARD px -- divided by the on-screen scale, since the
+#positions they are measured from are screen ones. `Vector2.ZERO` while no panel carries cells yet.
 func _grid_gutters() -> Vector2:
 	var left := 0.0
 	var right := 0.0
-	var z := maxf(drawn_zoom, 0.0001)
+	var z := _content_scale_on_screen()
 	for i : int in grid_container.get_child_count():
 		var panel := grid_container.get_child(i) as Control
 		if not panel: continue

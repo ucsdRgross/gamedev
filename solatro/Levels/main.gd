@@ -540,6 +540,7 @@ func enter_game() -> void:
 		new_view.bind_wall_camera(wall.get_node(^"%Camera2D") as Camera2D,
 				func() -> float: return _rects[&"game"].centre.x)
 		game_wp.attach_screen(new_view)
+		game_wp.focused.connect(new_view.play_area.ease_the_opening_in)
 	await _focus_picture(&"game")
 
 # Won game handing back: the show is genuinely OVER, not frozen — detach and free the GameView,
