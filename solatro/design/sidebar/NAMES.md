@@ -118,6 +118,8 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `GameView` | `func _on_outcome_undo_pressed() -> void` | The outcome row's Undo: the shared `_on_undo_pressed`, then a board rest of the picture viewport's focus, which the HUD's Undo (a root-viewport press) must not do (J13, `GAP-009`=b) |
 | `TestGridFixtures` | `static func lit_cell_count(...) -> int` | Test support: the cells whose face is DRAWN at `highlight_glow` — one expected value, the focus being an outline that brightens nothing — the one counter `TestSidebar`, `TestDragPlace` and the snapshot share |
 | `TestGridFixtures` | `static func leftmost_entrance_slot() -> int` | Test support: the leftmost Entrance slot holding a card, or -1, off the current game's state — the one query `TestSidebar` and `TestDragPlace` share |
+| `HudContainer` | `func set_card_in_hand(held: bool) -> void` | Added during execution: relayed from `PlayArea.hand_changed`; while the game screen holds a card, Up and Down reach the board instead of scrolling the stuck description or climbing to its X |
+| `TestGridFixtures` | `static func arrow_keys_to_a_legal_cell(from: BoardCoord, card: CardData) -> Array[Key]` | Test support (added during execution): the arrows from `from` to a cell of its own grid `card` may land on, across then up or down, never off the bottom row — the one keyboard walk `TestSidebar` and `TestDragPlace` share |
 | `TestGridFixtures` | `static func brightness_of(poly: Polygon2D) -> float` | Test support: the `u_brighten` one card polygon is drawn at; an unset uniform reads back as the shader's 1.0 |
 | `PipSuit` | `func get_plural_str() -> String` | The suit's name in the plural, read by the card title alone ("King of Knives", and "Knives" for a card with a suit and no rank); every other surface, the suit's own description block included, names it through `get_str()` |
 | `CardOutline` | `static func set_brightness(poly: Polygon2D, brightness: float) -> void` | The per-element highlight channel: an equal-channel multiplier on this polygon's drawn BODY, never its rim, 1.0 unlit |
@@ -199,6 +201,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `description_dismissed` | B10 |
 | `PlayArea` | `sidebar_requested` | A left press off the board's own left edge; `GameView` hands it to `HudContainer.focus_sidebar()` |
 | `WorldMapController` | `sidebar_requested` | A left press with no node picked; `Map` hands it to `HudContainer.focus_sidebar()` |
+| `PlayArea` | `hand_changed(held: bool)` | Added during execution: the hand went from empty to holding or back, emitted by the `selected_cards` setter; `GameView` hands it to `HudContainer.set_card_in_hand()` |
 
 ## 8. Test suites
 

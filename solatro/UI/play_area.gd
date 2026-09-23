@@ -21,6 +21,9 @@ signal highlight_cleared
 ## The player asked to close the description: a cancel press, or a press on bare board.
 signal description_dismiss_requested
 
+## Emitted on every write of `selected_cards`, `held` true when it holds a card: the sidebar leaves Up and Down to the board while one is held.
+signal hand_changed(held: bool)
+
 ## A navigation key reached the BOARD'S OWN LEFT EDGE: the sidebar is the only place left to go, and it is in another viewport, so nothing here can take the focus there.
 signal sidebar_requested
 #A CardVisual enters the tree through call_deferred, so right after set_card_zones it is mapped
@@ -117,7 +120,10 @@ var focused_grid : int = 0
 
 var focused_control : Control = null
 var moused_hovered_control : Control = null
-var selected_cards : Array[CardData] = []
+var selected_cards : Array[CardData] = []:
+	set(value):
+		selected_cards = value
+		hand_changed.emit(not value.is_empty())
 
 #The board's inter-card gap in ART units, before `card_scale`. One number, so the board and the
 #picture that has to hold it cannot disagree about the pitch.
@@ -1599,6 +1605,10 @@ func _cell_focus_control(coord: BoardCoord) -> Control:
 
 #⚠ CROSSING CARRIES THE VIEW WITH IT, or the selection would walk off screen: the landing grid is
 #focused, which also centres it.
+
+#DOWN OFF THE BOTTOM ROW IS THE ENTRANCE'S DOOR with nothing in hand: the stop nearest the column,
+#or, when the Entrance sits under ANOTHER grid, its leftmost card with the view carried there.
+#With a card in hand the aim stays on the grid, and the press moves nothing.
 func _consume_as_cell_move(event: InputEvent, control: Control) -> bool:
 	if view_mode != ViewMode.FOCUSED: return false
 	var d := _arrow_delta(event)
@@ -1608,7 +1618,16 @@ func _consume_as_cell_move(event: InputEvent, control: Control) -> bool:
 	var game := CardEnvironment.get_current_game()
 	if not game: return false
 	var to := from.step(d.x, d.y, _grid_widths())
-	if not game.state.has_cell(to): return true
+	if not game.state.has_cell(to):
+		if (d == Vector2i.DOWN and selected_cards.is_empty()
+				and to.y >= game.state.grids[to.grid].grid_height):
+			var home := entrance_home_grid()
+			var elsewhere := home not in [NO_GRID, to.grid]
+			var stop := _entrance_stop_nearest(
+					NO_RELEASE_X if elsewhere else control.get_global_rect().get_center().x)
+			if stop: stop.grab_focus()
+			if stop and elsewhere: focus_grid(home)
+		return true
 	var target := _cell_focus_control(to)
 	if not target: return true
 	target.grab_focus()
@@ -1757,6 +1776,8 @@ var _touch_press_msec : int = 0
 var _touch_press_depth : int = 0
 ## When the last accept press on a board card landed, in milliseconds.
 var _accept_press_msec : int = 0
+## The card the last accept press landed on: a pair is two presses on ONE card, as a click pair is.
+var _accept_press_data : CardData = null
 
 # A press only ARMS the gesture -- which card, where, and at what size -- so the release can tell a
 # click from a drag. A FINGER ARMS IT TOO: `emulate_mouse_from_touch` gives every touch its mouse
@@ -1825,10 +1846,16 @@ func _consume_as_touch_tap(event: InputEvent) -> bool:
 
 # Two accept presses inside the tap window are a tap, which is how a keyboard or pad reaches one
 # without the bound action. The OPENING press is the one whose committed depth a refusal reads.
+
+#⚠ ON THE SAME CARD: a lift, one arrow and an accept on a cell fit inside the window (measured
+#~300 ms), and pairing them tapped the lifted card back instead of placing it.
 func _accept_press_pairs() -> bool:
 	var now := Time.get_ticks_msec()
-	var paired := now - _accept_press_msec <= PlayArea.settings().card_tap_window_ms
+	var data : CardData = ui_data[focused_control]
+	var paired := (data == _accept_press_data
+			and now - _accept_press_msec <= PlayArea.settings().card_tap_window_ms)
 	_accept_press_msec = now
+	_accept_press_data = data
 	if not paired: _depth_when_pressed = _committed_depth()
 	return paired
 
@@ -2063,26 +2090,29 @@ func _end_the_content_drag(lands_on_a_grid: bool, release_x: float) -> void:
 #Entrance CARD nearest the release takes the focus, the leftmost when no x names one.
 #⚠ GRAB BEFORE THE PAN. A focus change re-aims the scroller, so a later grab would undo the aim.
 
-#⚠ THE ENTRANCE IS EMPTY between the last placement and the refill, and a drag pan is not gated on
-#`game.processing`, so a release can land in that window with no stop to focus at all.
-	if not _entrance_stops.is_empty():
-#⚠ AN EMPTIED SLOT IS STILL AN ARROW STOP, and the focus the owner asked for is an Entrance CARD:
-#prefer the stops that HOLD one, and take the chain's own only when the Entrance holds none.
-		var state := CardEnvironment.get_current_game().state
-		var stops : Array[Control] = []
-		for stop : Control in _entrance_stops:
-			if _entrance_slot_holding(state, ui_data[stop]) != -1: stops.append(stop)
-		if stops.is_empty(): stops = _entrance_stops
-		var target := stops[0]
-		if is_finite(release_x):
-			var nearest := INF
-			for stop : Control in stops:
-				var dx := absf(stop.get_global_rect().get_center().x - release_x)
-				if dx >= nearest: continue
-				nearest = dx
-				target = stop
-		target.grab_focus()
+	var target := _entrance_stop_nearest(release_x)
+	if target: target.grab_focus()
 	pan_to_grid(_grid_nearest_the_window_centre())
+
+#The Entrance CARD nearest `x`, or the leftmost when `x` is not finite; null while the Entrance is
+#empty, between the last placement and the refill, which neither a drag pan nor an arrow waits out.
+#⚠ AN EMPTIED SLOT IS STILL AN ARROW STOP: the stops that HOLD a card win, the rest only when none do.
+func _entrance_stop_nearest(x: float) -> Control:
+	if _entrance_stops.is_empty(): return null
+	var state := CardEnvironment.get_current_game().state
+	var stops : Array[Control] = []
+	for stop : Control in _entrance_stops:
+		if _entrance_slot_holding(state, ui_data[stop]) != -1: stops.append(stop)
+	if stops.is_empty(): stops = _entrance_stops
+	var target := stops[0]
+	if not is_finite(x): return target
+	var nearest := INF
+	for stop : Control in stops:
+		var dx := absf(stop.get_global_rect().get_center().x - x)
+		if dx >= nearest: continue
+		nearest = dx
+		target = stop
+	return target
 
 ## A release with no pointer behind it: the Entrance's leftmost stop takes the focus instead.
 const NO_RELEASE_X := INF

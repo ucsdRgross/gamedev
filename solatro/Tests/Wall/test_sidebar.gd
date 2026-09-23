@@ -128,6 +128,7 @@ func _ready() -> void:
 	behavior_section("A SCREEN'S STATE BELONGS TO ITS OWN CONTENT")
 	await test_a_finished_show_leaves_no_cascade_flag_for_the_next_one()
 	await test_a_new_run_does_not_inherit_the_last_shows_lock()
+	await test_a_new_run_does_not_inherit_the_last_shows_hand()
 	await test_a_new_run_does_not_inherit_the_maps_last_description()
 	await test_leaving_while_locked_keeps_the_whole_lock_alive()
 	await test_zooming_out_with_a_focused_card_keeps_the_lock()
@@ -176,6 +177,7 @@ func _ready() -> void:
 	await test_a_cancel_from_a_sticky_description_leaves_the_focus_in_the_sidebar()
 	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_mouse()
 	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys()
+	await test_right_off_the_sidebar_never_reaches_the_board_behind_an_empty_viewer()
 	await test_the_chooser_covers_the_map_and_its_sidebar_offers_the_deck()
 	await test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser()
 	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
@@ -3769,6 +3771,32 @@ func test_a_new_run_does_not_inherit_the_last_shows_lock() -> void:
 		check(_play_area.locked_data == null, "...and no card marked on the fresh board")
 	await _end_main_fixture()
 
+## A show left with a card in hand hands its hand back too: in the next show's stuck description, Up reaches the X again.
+func test_a_new_run_does_not_inherit_the_last_shows_hand() -> void:
+	await _start_game_fixture()
+	var on_the_entrance := func() -> bool:
+		var owner := _game_viewport.gui_get_focus_owner()
+		return owner != null and _play_area.upper_zone_right.is_ancestor_of(owner)
+	await _tap_until(KEY_DOWN, on_the_entrance, 8)
+	await _tap_key(KEY_ENTER)
+	check(not _play_area.selected_cards.is_empty(),
+			"sanity: the keys lifted an Entrance card, so the show is left with a card in hand")
+	await _main._on_new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	await _restart_the_show()
+	await _hoverable_card_controls()
+	var described := _game_viewport.gui_get_focus_owner()
+	check(_play_area.ui_data.has(described),
+			"sanity: the new show rests the focus on a board card", str(described))
+	await _tap_key(KEY_ENTER)
+	check(_container.is_locked() and _play_area.selected_cards.is_empty(),
+			"sanity: accept on that card sticks its description with nothing in hand",
+			str(_play_area.selected_cards.size()))
+	await _tap_key(KEY_UP)
+	check(_exit_button().has_focus(),
+			"...so Up climbs to the X, the last show's hand not inherited",
+			str(_booted_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
 ## The map persists across runs, so its remembered description is the RUN's: a new run's map opens on its own HUD, not the last run's pack.
 func test_a_new_run_does_not_inherit_the_maps_last_description() -> void:
 	await _start_map_fixture()
@@ -4734,10 +4762,10 @@ func test_an_undo_under_an_open_viewer_rests_no_board_card_by_mouse() -> void:
 			str(_booted_viewport.gui_get_focus_owner()))
 	await _end_main_fixture()
 
-## The keyboard route, no pointer past the placement that gives Undo its rewind: an Undo accepted under the open viewer leaves the board unfocused, so the first arrow into the viewer describes its first card, and cancel hands the focus back to the opener.
+## The keyboard route, no pointer anywhere, the placement that gives Undo its rewind included: an Undo accepted under the open viewer leaves the board unfocused, so the first arrow into the viewer describes its first card, and cancel hands the focus back to the opener.
 func test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys() -> void:
 	await _start_game_fixture()
-	var placed := await _lift_and_place_a_card()
+	var placed := await _lift_and_place_a_card_by_keys()
 	check(placed != null, "sanity: a lifted card found a cell to land on, giving Undo a rewind")
 	var deck := _container.deck_ui.get_node(^"Button") as Button
 	await _tap_until(KEY_LEFT, func() -> bool: return _booted_viewport.gui_get_focus_owner() != null, 12)
@@ -4769,6 +4797,30 @@ func test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys() -> void:
 	check(_hud_is_up() and deck.has_focus(),
 			"...leaving the HUD, with the focus on the button that opened it",
 			str(_booted_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+## An EMPTY viewer lists nothing for the first arrow to enter, and still it is the focus: Right off the sidebar's last control stays out of the board behind it.
+func test_right_off_the_sidebar_never_reaches_the_board_behind_an_empty_viewer() -> void:
+	await _start_game_fixture()
+	var discard := _container.discard_ui.get_node(^"Button") as Button
+	await _tap_until(KEY_LEFT, func() -> bool: return _booted_viewport.gui_get_focus_owner() != null, 12)
+	await _tap_until(KEY_RIGHT, discard.has_focus, 8)
+	check(discard.has_focus(), "sanity: the keys reached the Discard button",
+			str(_booted_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_ENTER)
+	check(is_instance_valid(DeckViewer._open) and _listed_viewer_cards().is_empty(),
+			"sanity: accept on Discard opened a viewer of the show's empty discard pile",
+			str(_listed_viewer_cards().size()) if is_instance_valid(DeckViewer._open) else "closed")
+	for _press : int in 8:
+		await _tap_key(KEY_RIGHT)
+	var board_owner := _game_viewport.gui_get_focus_owner()
+	check(board_owner == null or not _play_area.ui_data.has(board_owner),
+			"Right off the sidebar's last control focuses no board card behind the open viewer",
+			str(board_owner))
+	var owner := _booted_viewport.gui_get_focus_owner()
+	check(owner != null and _container.is_ancestor_of(owner),
+			"...and the focus stays in the sidebar", str(owner))
+	check(is_instance_valid(DeckViewer._open), "...with the viewer still open")
 	await _end_main_fixture()
 
 # The board rests its focus once its visuals are ready, which can be frames after the rebuild.
@@ -5490,6 +5542,28 @@ func _lift_and_place_a_card() -> CardData:
 	if entrance.is_empty(): return null
 	await _click_card(entrance[0])
 	return await _place_the_held_card()
+
+# The same placement by keys alone: Down onto an Entrance card, accept to lift it, Up into the grid,
+# the arrows to a cell that takes it, accept.
+func _lift_and_place_a_card_by_keys() -> CardData:
+	var on_the_entrance := func() -> bool:
+		var owner := _game_viewport.gui_get_focus_owner()
+		return owner != null and _play_area.upper_zone_right.is_ancestor_of(owner)
+	await _tap_until(KEY_DOWN, on_the_entrance, 8)
+	if not on_the_entrance.call(): return null
+	var card : CardData = _play_area.ui_data[_game_viewport.gui_get_focus_owner()]
+	for key : Key in [KEY_ENTER, KEY_UP] as Array[Key]:
+		await _tap_key(key)
+	var keys := await TestGridFixtures.arrow_keys_to_a_legal_cell(
+			_play_area._coord_of_control(_game_viewport.gui_get_focus_owner()), card)
+	for key : Key in keys:
+		await _tap_key(key)
+	await _tap_key(KEY_ENTER)
+	await _await_the_board_idle()
+	var state := CardEnvironment.get_current_game().state
+	var landed := (_play_area.selected_cards.is_empty()
+			and _play_area._entrance_slot_holding(state, card) == -1)
+	return card if landed else null
 
 # Undo is pressed by hand here: a real click in the window's viewport, on Undo or on the exit X,
 # empties the game picture's focus owner (measured), which is the one reading this row makes.

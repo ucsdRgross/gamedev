@@ -141,6 +141,7 @@ a lot of these issues are with lack of parity between different modal input opti
 - **Thirteenth round (verbatim), P46.** Where the keyboard focus goes when a viewer closes on the game screen: "a: back to the opener" - as built; the board card the player left is reached with Right x3, undescribed until they move.
 - **Fourteenth round (verbatim), P45.** After the measurement (Godot omits a setting equal to its default from a saved .tres, so every file saved under the old 0.45 default loads the new 0.15): "a: close, already done".
 - **Fifteenth round (verbatim), P43.** The board scroller's draw_focus_border (the two white lines across the board while a card holds focus, and the 4 px content inset that pushes 3 grids off centre): "a: remove them". Then the 8 authored px horizontal-scrollbar band SHOW_NEVER does not keep (the border's margin had filled it): "a: remove the band" - everywhere, the static furniture height included, so the game picture's design size moves.
+- **Sixteenth round (verbatim), P48 keyboard route.** Up after a key lift: "b: Up stays on board" - while a card is in hand Up goes to the grid, the X is reached by Left into the sidebar. Down from the bottom row of a grid the committed Entrance is not under: "b: go to the Entrance" - focus it and bring the view to its grid. Down from an Entrance card: "a: nothing". Up/Down in the 2-grid overview: "a: screen geometry". Down on the bottom row while HOLDING a card: "a: nothing" - the aim stays on the grid. A focused Entrance card's mark: "a: same rim as a cell".
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -500,9 +501,17 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/UI/play_area.gd, solatro/Tests/Interaction/test_drag_place.gd]
   verification_command: 'run_tests.py --filter DragPlace Sidebar GridView Interaction'
   verification_kind: suite
+  status: done
+  evidence: 'Keys alone now lift, place and cancel at 1 and 2 grids. Measured: Down on a bottom row was swallowed by PlayArea._consume_as_cell_move before any neighbour was read (the fix site, not _link_arrow_stops); _entrance_stop_nearest is shared with the drag-pan release. Sixteenth-round rulings built: while a card is in hand Up/Down pass HudContainer._input to the board (PlayArea.hand_changed -> HudContainer.set_card_in_hand, reset on release_screen); Down while holding does nothing; Down under another grid focuses the Entrance and focus_grid()s its grid. A key accept pair now needs the same card (a lift and a placement 299-317 ms apart paired as a tap: the gate failure). An EMPTY viewer no longer leaks Right-off-the-sidebar to the board. Red: partial reverts B/C (4 and 9 FAILED); the new SIDEBAR hand-reset row 1 FAILED without the reset. Green: FILTERED 10 of 51: 3443 (+TP-92); after review fixes FILTERED 2 of 51 [DragPlace Sidebar]: 2133. Fable reviews x2. Gate: ALL 51 SUITES: 6937 CHECKS PASSED.'
+  notes: 'Found by P46: its keyboard row had to place its card with the mouse. PlayArea._link_arrow_stops writes the arrow chain (the (2) Entrance stops are one list there); measure where Down from the grid bottom row goes today. Also unmeasured from P46: Right off the last sidebar control while an EMPTY viewer is open may reach the board through the exit route.'
+- id: P49
+  description: A focused Entrance card wears the same clear focus rim as a focused grid cell (sixteenth round); today its paper brightens a shade with a faint pale edge (P48 frames p48_1_down_on_entrance vs p48_1_up_on_cell).
+  files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd]
+  verification_command: 'run_tests.py --filter DragPlace Sidebar VisualLayers SettingsRange UiProps; by eye'
+  verification_kind: snapshot
   status: pending
   evidence: ''
-  notes: 'Found by P46: its keyboard row had to place its card with the mouse. PlayArea._link_arrow_stops writes the arrow chain (the (2) Entrance stops are one list there); measure where Down from the grid bottom row goes today. Also unmeasured from P46: Right off the last sidebar control while an EMPTY viewer is open may reach the board through the exit route.'
+  notes: 'R6 and its follow-ups own the focus look: the outer outline changes on focus (fourth round: the rim ink is option a; black before focus), no difference between the focus outline and the mark outline, brightness on the Type polygon only. Find why an Entrance card (a CardVisual in the Entrance strip, not a grid cell control) draws the weaker form - measure both paths first.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -570,9 +579,11 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - A freed-instance SCRIPT ERROR x20 at PlayArea._deal_next_mark ("Trying to assign invalid previously freed instance") during the WALL FOCUS soak: 1 of 3 runs on the P43 tree (2 implementer combined runs + 1 overseer gate), 0 of 5 overseer gates between P44 (5b) and P47. The plan-mark deal is released at go-live since (5b); suspect a Main freed mid-deal by the soak. Measure before naming a cause.
 - GRID VIEW TP-138 "the board at rest is already where an explicit pan puts it" (rest -445.7 vs pan -443.3, 1 px bound): 1 of 5 runs on the P43 tree.
 - FOR /docs AT THE CLOSE: the design records still quote the pre-P43 picture (1576x887, inset 394, 262.7, 733.808, the 27+8 band): design/sidebar/{DESIGN,PLAN,TEST_PLAN,ASSUMPTIONS}.md, gaps GAP-001/GAP-002, design/poker-patience/gaps/GAP-039.md, Tests/Visual/grid_zoom_shot.gd ~214, todo.md ~107; test_grid_layout.gd ~1709 has a tab-joined line.
+- PLAN VISUALS TP-92 failed 3 of 4 runs on the P48 tree (all three in the implementer's filtered runs, passed the overseer gate) against ~1 of 3 gates before; a wall-clock stagger row. Measure before naming a cause.
+- Latent, recorded by the P48 review: HudContainer._leaves_the_sidebar_for_the_picture reads the container-global _hosted_viewer (the existing per-screen bug above gains a reader); a Down pressed within a pan's ease picks the Entrance stop from a mid-flight x.
 
 ## Next up
-1. P48 (medium, keyboard parity), then the close per /plan-run in a NEW session.
+1. P49 (the Entrance focus rim), then the close per /plan-run in a NEW session.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)

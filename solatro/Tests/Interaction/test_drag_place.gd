@@ -100,6 +100,13 @@ func _ready() -> void:
 	await test_an_escape_with_something_to_spend_still_reaches_the_wall()
 	await test_an_escape_with_nothing_to_spend_steps_out_of_the_grid_first()
 	await test_a_one_grid_board_has_no_grid_to_step_out_of()
+	behavior_section("THE KEYS ALONE CARRY A CARD FROM THE ENTRANCE TO THE GRID")
+	await test_the_keys_reach_the_entrance_and_come_back()
+	await test_the_keys_alone_lift_place_and_cancel()
+	await test_up_with_a_card_in_hand_stays_on_the_board()
+	await test_down_with_a_card_in_hand_moves_nothing()
+	await test_down_under_another_grid_carries_the_view_to_the_entrance()
+	await test_a_lift_and_a_quick_placement_never_pair_into_a_tap()
 	finish()
 
 # ==============================================================================
@@ -2144,3 +2151,237 @@ func test_a_one_grid_board_has_no_grid_to_step_out_of() -> void:
 			"...and Escape still reaches the wall from it, never kept by a level that is not there",
 			"mode %d, wall view entered %s" % [_pa.view_mode, left[0]])
 	await _end_fixture()
+
+# ==============================================================================
+# THE KEYS ALONE — every press a real key pushed into the booted window, no pointer anywhere.
+# ==============================================================================
+
+#DOWN OFF THE BOTTOM ROW IS THE ENTRANCE'S DOOR and Up is the way back, at one grid and at two: a
+#keyboard player has no other way onto an Entrance card, so without it nothing can be lifted.
+func test_the_keys_reach_the_entrance_and_come_back() -> void:
+	for n : int in [1, 2]:
+		await _open_a_grid_by_keys(n)
+		await _tap_to_the_bottom_row()
+		await _tap(KEY_RIGHT)
+		await _tap(KEY_RIGHT)
+		var from := _focus_owner()
+		var cell := _pa._coord_of_control(from)
+		check(not cell.is_nowhere() and cell.y == _game.state.grids[cell.grid].grid_height - 1,
+				"precondition (%d grid(s)): the keys put the focus on a bottom-row cell" % n,
+				_where_focus_is())
+		var column_x := _control_centre(from).x
+		await _tap(KEY_DOWN)
+		var landed := _focus_owner()
+		check(landed != null and landed == _nearest_card_holding_stop(column_x),
+				"Down off the bottom row lands on the Entrance card nearest the column (%d grid(s))"
+				% n, _where_focus_is())
+		await _tap(KEY_UP)
+		check(_focus_owner() == from,
+				"...and Up from that card comes back to the cell above it (%d grid(s))" % n,
+				_where_focus_is())
+		if landed != null and _pa.ui_data.has(landed):
+			_empty_the_entrance_slot(_pa._entrance_slot_holding(_game.state, _pa.ui_data[landed]))
+			await _settle_layout()
+			await _tap(KEY_DOWN)
+			var holding := _focus_owner()
+			check(holding != null and _is_a_card_in_hand(holding)
+					and holding == _nearest_card_holding_stop(column_x),
+					"...and with the slot under the column spent, Down takes the nearest stop that "
+					+ "still HOLDS a card (%d grid(s))" % n, _where_focus_is())
+		await _end_fixture()
+
+#THE WHOLE ROUTE BY KEYS: onto the Entrance, lift, into the grid, onto a legal cell, place -- then
+#lift again and cancel.
+func test_the_keys_alone_lift_place_and_cancel() -> void:
+	for n : int in [1, 2]:
+		await _open_a_grid_by_keys(n)
+		var card := await _lift_by_keys()
+		check(card != null and _held_card() == card,
+				"the keys reach an Entrance card and accept lifts it (%d grid(s))" % n,
+				"%s, %s" % [_where_focus_is(), _hand_str()])
+		if card == null:
+			await _end_fixture()
+			continue
+		var placed_before := _placed_cards().size()
+		await _place_by_keys(card)
+		check(_held_card() == null and _placed_cards().has(card)
+				and _placed_cards().size() == placed_before + 1,
+				"Up, the arrows and accept on a cell place the lifted card (%d grid(s))" % n,
+				_hand_str())
+		var lifted := await _lift_by_keys()
+		check(lifted != null and _held_card() == lifted,
+				"the keys reach the Entrance again and lift the next card (%d grid(s))" % n,
+				_hand_str())
+		await _tap(KEY_ESCAPE)
+		check(_held_card() == null and _pa._entrance_slot_holding(_game.state, lifted) != -1,
+				"...and cancel lets it go, back in the Entrance (%d grid(s))" % n, _hand_str())
+		await _end_fixture()
+
+#A CARD IN HAND IS AIMED WITH THE ARROWS: Up from the Entrance goes into the grid and leaves the
+#stuck description standing; the X is reached by Left into the sidebar (owner ruling).
+func test_up_with_a_card_in_hand_stays_on_the_board() -> void:
+	await _open_a_grid_by_keys(1)
+	var card := await _lift_by_keys()
+	check(card != null and _container.is_locked(),
+			"precondition: a key lift holds the card and sticks its description", _hand_str())
+	await _tap(KEY_UP)
+	var into := _pa._coord_of_control(_focus_owner())
+	check(not into.is_nowhere() and not into.is_entrance() and _held_card() == card,
+			"Up with a card in hand lands on a grid cell, the card still held",
+			"%s, %s" % [_where_focus_is(), _hand_str()])
+	check(_viewport.gui_get_focus_owner() == null and _container.is_locked(),
+			"...never on the X, and the description stays stuck",
+			str(_viewport.gui_get_focus_owner()))
+	for _i : int in _grid_width_sum() + 1:
+		if _viewport.gui_get_focus_owner() != null: break
+		await _tap(KEY_LEFT)
+	check(_viewport.gui_get_focus_owner() == _container.get_node(^"%ExitX"),
+			"...and Left off the grid's edge reaches the X", str(_viewport.gui_get_focus_owner()))
+	await _end_fixture()
+
+#WITH A CARD IN HAND THE AIM STAYS ON THE GRID: Down off the bottom row moves nothing, so the next
+#accept still places the held card instead of picking up an Entrance card (owner ruling).
+func test_down_with_a_card_in_hand_moves_nothing() -> void:
+	await _open_a_grid_by_keys(1)
+	var card := await _lift_by_keys()
+	await _tap(KEY_UP)
+	var bottom := _focus_owner()
+	var cell := _pa._coord_of_control(bottom)
+	check(card != null and not cell.is_nowhere() and not cell.is_entrance()
+			and cell.y == _game.state.grids[cell.grid].grid_height - 1,
+			"precondition: a card in hand and the focus on a bottom-row cell", _where_focus_is())
+	await _tap(KEY_DOWN)
+	check(_focus_owner() == bottom and _held_card() == card,
+			"Down off the bottom row with a card in hand leaves the focus on the cell",
+			"%s, %s" % [_where_focus_is(), _hand_str()])
+	await _end_fixture()
+
+#THE ENTRANCE UNDER ANOTHER GRID IS STILL THE DOOR: Down off this grid's bottom row focuses it and
+#brings the view to the grid it is committed to (owner ruling).
+func test_down_under_another_grid_carries_the_view_to_the_entrance() -> void:
+	await _open_a_grid_by_keys(2)
+	var card := await _lift_by_keys()
+	if card != null: await _place_by_keys(card)
+	check(_game.state.committed_grid == 0 and _held_card() == null,
+			"precondition: a key placement committed the Entrance to grid 0",
+			"committed %d, %s" % [_game.state.committed_grid, _hand_str()])
+	await _tap_until_in_grid(1, KEY_RIGHT)
+	await _tap_to_the_bottom_row()
+	check(_pa.focused_grid == 1 and _pa._coord_of_control(_focus_owner()).grid == 1,
+			"precondition: the keys carried the focus onto grid 1's bottom row", _where_focus_is())
+	await _tap(KEY_DOWN)
+	await _settle_scroll_x()
+	var leftmost : Control = null
+	for stop : Control in _entrance_controls():
+		if _is_a_card_in_hand(stop):
+			leftmost = stop
+			break
+	check(leftmost != null and _focus_owner() == leftmost,
+			"Down off grid 1's bottom row focuses the Entrance's leftmost card", _where_focus_is())
+	check(_pa.focused_grid == 0 and _pa.pan_grid == 0 and _grid_off_centre_px(0) <= 1.0,
+			"...and the view comes to rest on grid 0, the grid the Entrance is committed to",
+			"focused %d, pan_grid %d, grid 0 %.2f px off centre"
+			% [_pa.focused_grid, _pa.pan_grid, _grid_off_centre_px(0)])
+	await _end_fixture()
+
+#A PAIR IS TWO ACCEPTS ON ONE CARD: a lift and a placement on a cell land inside the tap window when
+#played quickly, and they must place, never tap the lifted card back.
+func test_a_lift_and_a_quick_placement_never_pair_into_a_tap() -> void:
+	await _open_a_grid_by_keys(1)
+	var window := PlayArea.settings().card_tap_window_ms
+	PlayArea.settings().card_tap_window_ms = PUSHED_PAIR_WINDOW_MS
+	var stop := await _tap_down_to_the_entrance()
+	var card : CardData = _pa.ui_data[stop] if stop and _is_a_card_in_hand(stop) else null
+	var elapsed := INF
+	if card != null:
+		var lifted_at := Time.get_ticks_msec()
+		await _tap(KEY_ENTER)
+		await _tap(KEY_UP)
+		await _tap_to_a_legal_cell(card)
+		elapsed = float(Time.get_ticks_msec() - lifted_at)
+		await _tap(KEY_ENTER)
+		await _await_the_deal()
+	PlayArea.settings().card_tap_window_ms = window
+	check(card != null and elapsed <= PUSHED_PAIR_WINDOW_MS and _held_card() == null
+			and _placed_cards().has(card) and _taps.is_empty(),
+			"a lift and a placement inside the tap window place the card and tap nothing",
+			"%.0f ms between the accepts (window %.0f), %s, %d tap(s)"
+			% [elapsed, PUSHED_PAIR_WINDOW_MS, _hand_str(), _taps.size()])
+	await _end_fixture()
+
+## Down onto the Entrance and accept: the card now in hand, or null when the keys never reached one.
+func _lift_by_keys() -> CardData:
+	var stop := await _tap_down_to_the_entrance()
+	if stop == null or not _is_a_card_in_hand(stop): return null
+	var card : CardData = _pa.ui_data[stop]
+	await _tap(KEY_ENTER)
+	return card
+
+## Up into the grid, the arrows to a cell `card` may land on, and accept.
+func _place_by_keys(card: CardData) -> void:
+	await _tap(KEY_UP)
+	await _tap_to_a_legal_cell(card)
+	await _tap(KEY_ENTER)
+	await _await_the_deal()
+
+func _tap_until_in_grid(gi: int, code: Key) -> void:
+	for _i : int in _grid_width_sum():
+		if _pa._coord_of_control(_focus_owner()).grid == gi: return
+		await _tap(code)
+
+func _tap(code: Key) -> void:
+	_viewport.push_input(_key(code, true))
+	await get_tree().process_frame
+	_viewport.push_input(_key(code, false))
+	await _frames(3)
+	await _settle_layout()
+
+func _focus_owner() -> Control:
+	return _picture_viewport.gui_get_focus_owner()
+
+## A fresh show on `n` grids, left on grid 0 focused the way a keyboard player gets there.
+func _open_a_grid_by_keys(n: int) -> void:
+	if n == 1:
+		await _start_fixture()
+		return
+	await _start_fixture_grids(n)
+	await _tap(KEY_ENTER)
+	check(_pa.view_mode == PlayArea.ViewMode.FOCUSED and _pa.focused_grid == 0,
+			"precondition: accept in the overview focuses the selected grid",
+			"mode %d, focused %d" % [_pa.view_mode, _pa.focused_grid])
+
+func _tap_to_the_bottom_row() -> void:
+	for _i : int in _game.state.grids[0].grid_height:
+		var cell := _pa._coord_of_control(_focus_owner())
+		if cell.is_nowhere() or cell.y == _game.state.grids[cell.grid].grid_height - 1: return
+		await _tap(KEY_DOWN)
+
+func _tap_down_to_the_entrance() -> Control:
+	for _i : int in _game.state.grids[0].grid_height + 1:
+		if _entrance_controls().has(_focus_owner()): return _focus_owner()
+		await _tap(KEY_DOWN)
+	return _focus_owner() if _entrance_controls().has(_focus_owner()) else null
+
+## The Entrance stop holding a card whose centre is nearest `x`: the test's own answer.
+func _nearest_card_holding_stop(x: float) -> Control:
+	var best : Control = null
+	var best_dx := INF
+	for stop : Control in _entrance_controls():
+		if not _is_a_card_in_hand(stop): continue
+		var dx := absf(_control_centre(stop).x - x)
+		if dx >= best_dx: continue
+		best_dx = dx
+		best = stop
+	return best
+
+func _tap_to_a_legal_cell(card: CardData) -> void:
+	var keys := await TestGridFixtures.arrow_keys_to_a_legal_cell(
+			_pa._coord_of_control(_focus_owner()), card)
+	for key : Key in keys:
+		await _tap(key)
+
+func _grid_width_sum() -> int:
+	var total := 0
+	for grid : GridData in _game.state.grids:
+		total += grid.grid_width
+	return total

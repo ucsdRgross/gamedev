@@ -286,6 +286,20 @@ static func leftmost_entrance_slot() -> int:
 		if not state.upper_zone[slot].datas.is_empty(): return slot
 	return -1
 
+# Across then up or down, inside `from`'s own grid, so the walk never steps off the bottom row onto
+# the Entrance. Empty when `from` is already a cell `card` may land on, or when its grid has none.
+static func arrow_keys_to_a_legal_cell(from: BoardCoord, card: CardData) -> Array[Key]:
+	var game := CardEnvironment.get_current_game()
+	var keys : Array[Key] = []
+	var legal := await game.legal_cells_for([card] as Array[CardData], game.state.grids)
+	for zone : CardData in legal:
+		var to := game.state.cell_type_coord(zone)
+		if to.grid != from.grid: continue
+		for _i : int in absi(to.x - from.x): keys.append(KEY_RIGHT if to.x > from.x else KEY_LEFT)
+		for _i : int in absi(to.y - from.y): keys.append(KEY_DOWN if to.y > from.y else KEY_UP)
+		return keys
+	return keys
+
 # How many of the board's cells are DRAWN wearing the drop map, never the `on_drop_map` field it is
 # derived from. ONE expected value: the focus is an outline and adds nothing to the brightening, so
 # a focused cell on the map is drawn at exactly the same glow as any other.

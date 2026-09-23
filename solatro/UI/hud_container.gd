@@ -519,7 +519,7 @@ func _release_remembered_entry(screen: StringName, keeping: InfoEntry) -> void:
 
 # ⚠ A SCREEN'S CONTAINER STATE BELONGS TO THE CONTENT THAT PUBLISHED IT, NOT TO THE SCREEN ID:
 # `Main` reuses one id for every show, so a show that is torn down has to hand back its memory,
-# its lock and its cascade flag or the next one inherits them.
+# its lock, its cascade flag and its hand, or the next one inherits them.
 func release_screen(screen: StringName) -> void:
 	if screen == _active_screen:
 		_release_shown_entry()
@@ -527,7 +527,9 @@ func release_screen(screen: StringName) -> void:
 		_release_what_the_viewer_covered()
 	_release_remembered_entry(screen, null)
 	_release_locked_entry(screen)
-	if screen == GAME_SCREEN: _game_processing = false
+	if screen != GAME_SCREEN: return
+	_game_processing = false
+	_game_card_in_hand = false
 
 # ⚠ WHAT A VIEWER COVERS IS IN NEITHER DICTIONARY: `host_viewer` takes the screen's lock out of
 # `_locked_entry_by_screen` to hold it here, so every other release walks straight past it and its
@@ -565,6 +567,13 @@ func set_processing(busy: bool) -> void:
 	_game_processing = busy
 	if _screen_is_processing(): show_hud()
 
+## Whether the game screen's player holds a card -- relayed by `GameView`, like `_game_processing`.
+var _game_card_in_hand : bool = false
+
+## Relayed by `GameView` from `PlayArea.hand_changed`: while a card is in hand, Up and Down aim it on the board.
+func set_card_in_hand(held: bool) -> void:
+	_game_card_in_hand = held
+
 ## Whether the screen now showing is the one mid-cascade -- any other screen's container behaves as it always does.
 func _screen_is_processing() -> bool:
 	return _game_processing and _active_screen == GAME_SCREEN
@@ -572,6 +581,9 @@ func _screen_is_processing() -> bool:
 # THE SIDEBAR READS ITS KEYS IN `_input`, BEFORE THE GUI PASS: the viewport's focus-neighbour
 # search consumes any arrow that finds a neighbour, so an arrow read any later never arrives while
 # a board cell holds the focus. Page keys scroll whenever the description shows, arrows once locked.
+
+# ⚠ A CARD IN HAND IS AIMED WITH UP AND DOWN, so neither scrolls the stuck description nor climbs to
+# its X then; Left into the sidebar still reaches the X.
 func _input(event: InputEvent) -> void:
 	if _enters_the_hosted_viewer(event):
 		get_viewport().set_input_as_handled()
@@ -583,6 +595,8 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if not showing_description(): return
+	if (_game_card_in_hand and _active_screen == GAME_SCREEN
+			and (event.is_action(&"ui_up") or event.is_action(&"ui_down"))): return
 	var stick := event as InputEventJoypadMotion
 	if stick and stick.is_action(&"sidebar_scroll"):
 		_aim_scroll_stick(stick.axis_value)
@@ -626,7 +640,11 @@ func focus_sidebar() -> void:
 # ⚠ THE PICTURE IS IN ANOTHER VIEWPORT, so the engine's neighbour search can never step back into
 # it and the last control in the row would strand a pad player. Which control is last is asked of
 # that same search rather than written down here, so the two can never disagree.
+
+# ⚠ A HOSTED VIEWER IS THE FOCUS, so the board behind it is no door; an EMPTY one lists nothing
+# for `_enters_the_hosted_viewer` to take the press into, and it would reach the board here.
 func _leaves_the_sidebar_for_the_picture(event: InputEvent) -> bool:
+	if _hosted_viewer != null: return false
 	if not event.is_action_pressed(&"ui_right", true): return false
 	var owner := get_viewport().gui_get_focus_owner()
 	if owner == null or not is_ancestor_of(owner): return false
