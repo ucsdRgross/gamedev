@@ -231,11 +231,12 @@ func _on_node_selected(node: WorldGraphNode) -> void:
 	if not controller.auto_picking: await _open_possible_cards_once(node)
 
 # Back to the basic view: the HUD, with its own Deck button, and no row of the description's buttons
-# left in anyone's focus chain.
+# left in anyone's focus chain. ⚠ The map's own memory goes too, whichever screen is up -- a pick
+# dropped by leaving would otherwise come back as a description of nothing picked.
 func _on_selection_cleared() -> void:
 	selection_buttons.visible = false
 	name_popup.hide_name()
-	if hud_container.showing_description(): hud_container.show_hud()
+	hud_container.release_screen(HudContainer.MAP_SCREEN)
 
 ## The pack nodes whose contents have already been shown where the token stands -- cleared by travelling and by a new run, which is what "before travelling" means.
 var _packs_shown : Dictionary[int, bool] = {}

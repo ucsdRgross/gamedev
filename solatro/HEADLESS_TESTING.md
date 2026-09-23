@@ -359,8 +359,7 @@ helper in `Tests/UI/test_interaction.gd`; reuse that pattern for any future synt
   freed a `Main` with the world generator still running - `TestMainHost.await_world_settled`. The counts are a
   FINGERPRINT, not a budget: a change to either is a new leak to explain, not a number to edit.
 - Known flakes, each seen once or twice and never twice in a row — rerun once: a TEARDOWN crash
-  (0xC0000005) after a passing banner (wrapper exit 3); a map Deck-button click failure right after
-  a viewport resize; `PIXELS: card_scale 1.5` (1 of 6 full runs, passes 2 of 2 filtered); a GRID
+  (0xC0000005) after a passing banner (wrapper exit 3); `PIXELS: card_scale 1.5` (1 of 6 full runs, passes 2 of 2 filtered); a GRID
   VIEW pan-right real-key-press check (1 of 12). Every one of them passes when its suite runs
   alone, which is what tells a flake from a defect.
 - ⚠ **A windowed suite on Box B runs at ~660 fps.** A wait of N process frames is a frame-rate

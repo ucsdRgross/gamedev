@@ -251,6 +251,7 @@ func _ready() -> void:
 	await test_the_decks_viewer_comes_back_to_the_same_pick()
 	await test_the_picks_buttons_never_show_on_another_screen()
 	await test_cancel_drops_the_pick_before_it_leaves_the_picture()
+	await test_a_dropped_pick_leaves_the_map_nothing_to_come_back_to()
 	await test_every_new_button_is_written_in_the_locale()
 	await test_a_pack_lists_its_possible_cards_on_the_first_pick_only()
 	await test_travelling_lets_a_pack_list_itself_again()
@@ -6697,6 +6698,22 @@ func test_cancel_drops_the_pick_before_it_leaves_the_picture() -> void:
 	check(_hud_is_up(), "...back to the basic view")
 	check(_main._current_focus == &"map", "...and stays inside the map picture",
 			str(_main._current_focus))
+	await _end_main_fixture()
+
+## A pick dropped on the map, or dropped by leaving it, is not what the map comes back to: the HUD is, with its own Deck button.
+func test_a_dropped_pick_leaves_the_map_nothing_to_come_back_to() -> void:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_GAME))
+	_map.controller.clear_selection()
+	await _main.enter_game()
+	await _main._focus_picture(&"map")
+	check(_hud_is_up() and _container.map_deck_button.is_visible_in_tree(),
+			"a pick dropped on the map is not re-shown on returning to it")
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_GAME))
+	await _main.enter_game()
+	await _main._focus_picture(&"map")
+	check(_hud_is_up() and _container.map_deck_button.is_visible_in_tree(),
+			"a pick dropped by leaving the map is not re-shown on returning to it")
 	await _end_main_fixture()
 
 # A KEY THAT IS NOT IN THE CSV COMES BACK AS ITSELF, so a button showing its own key looks like a
