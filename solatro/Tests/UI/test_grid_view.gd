@@ -51,8 +51,9 @@ func _ready() -> void:
 	await run_the_overview_fits_the_set_it_has_test()
 	await run_the_overview_gap_cannot_go_below_the_score_gutters_test()
 	await run_a_mode_change_eases_into_place_test()
-	await run_a_fresh_show_eases_in_on_landing_test()
+	await run_a_fresh_show_opens_live_on_the_zoom_in_test()
 	await run_a_resumed_show_lands_at_rest_test()
+	await run_a_show_attached_to_the_live_picture_starts_test()
 	await run_a_non_focused_grid_paints_nothing_outside_the_window_test()
 	await run_the_board_edge_does_not_move_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
@@ -3145,31 +3146,54 @@ func run_a_mode_change_eases_into_place_test() -> void:
 		picture_vp.queue_free()
 		await get_tree().process_frame
 
-#A FRESH SHOW EASES IN ON THE FRAME THE CAMERA LANDS, from a fixed fraction of its rest scale, and
-#comes to rest exactly where the opening view put it (owner ruling). One grid opens focused, three
-#open on the overview.
-func run_a_fresh_show_eases_in_on_landing_test() -> void:
-	behavior_section("A FRESH SHOW EASES IN ON LANDING")
+#A FRESH SHOW GOES LIVE AT THE START OF THE CAMERA'S ZOOM-IN, and from that frame the deal runs and
+#the board grows from a fixed fraction of its rest scale to exactly where the opening view put it
+#(owner rulings). One grid opens focused, three open on the overview.
+func run_a_fresh_show_opens_live_on_the_zoom_in_test() -> void:
+	behavior_section("A FRESH SHOW OPENS LIVE ON THE ZOOM-IN")
+	var live_fraction := WallTransition.live_fraction(SettingsManager.settings)
 	for deck : Array[CardData] in [TestDecks.deck_standard_52(), TestDecks.deck_105()]:
 		var main := await _boot_main_on_the_map(deck)
-		var landed := await _enter_the_game_sampling(main)
-		var before : PackedFloat64Array = landed.pop_front()
+		var frames := await _enter_the_game_sampling(main)
 		var grids := _main_game_view(main).play_area.grid_container.get_child_count()
-		check(is_equal_approx(before[0], before[1]) and landed.size() > 1,
-				"precondition: the %d-grid show opened at rest before the camera landed" % grids,
-				"drawn %.4f of %.4f, %d landed frames" % [before[0], before[1], landed.size()])
+		var first_live := -1
+		var landing := -1
+		for k : int in frames.size():
+			if first_live < 0 and frames[k][LIVE] > 0.5: first_live = k
+			if landing < 0 and frames[k][FOCUSED] > 0.5: landing = k
+		check(first_live > 0 and landing >= first_live,
+				"precondition: the %d-grid picture went live, and landed no earlier" % grids,
+				"first live frame %d, landing frame %d" % [first_live, landing])
+		var dark_after := 0
+		for k : int in range(first_live, landing + 1):
+			if frames[k][LIVE] < 0.5: dark_after += 1
+#The fraction is the camera's own last sample, so the first live frame is the first one drawn at or
+#past the zoom-in's start; a frame lasts about a twentieth of the flight.
+		check(frames[first_live][FLIGHT] >= live_fraction
+				and frames[first_live - 1][FLIGHT] < live_fraction and dark_after == 0,
+				"the %d-grid picture draws live from the zoom-in's start to the landing" % grids,
+				"first live at %.2f of the flight (zoom-in starts at %.2f), %d dark frames after"
+				% [frames[first_live][FLIGHT], live_fraction, dark_after])
+		var before := frames[first_live - 1]
+		var landed : Array[PackedFloat64Array] = frames.slice(first_live)
+		check(is_equal_approx(before[0], before[1]),
+				"precondition: the %d-grid show opened at rest before it went live" % grids,
+				"drawn %.4f of %.4f" % [before[0], before[1]])
 		check(is_equal_approx(landed[0][0], PlayArea.OPENING_ZOOM_FRACTION * before[1]),
-				"the landing frame draws the %d-grid board at the opening fraction of its rest scale"
-				% grids, "drawn %.4f, rest %.4f" % [landed[0][0], before[1]])
+				"the first live frame draws the %d-grid board at the opening fraction of its rest "
+				% grids + "scale", "drawn %.4f, rest %.4f" % [landed[0][0], before[1]])
 		var rising := true
 		var between := 0
 		var worst_drift := 0.0
-#⚠ THE REST IS THE LAST FRAME, NOT THE ONE BEFORE THE LANDING: the landing's resize re-sorts a
-#three-grid set 7 px along (measured), whatever the ease does.
+		var grown := -1
+		var worst_raw := 0.0
 		var rest_focal := Vector2(landed[-1][4], landed[-1][5])
 		for k : int in landed.size():
+			var focal := Vector2(landed[k][4], landed[k][5])
+			worst_raw = maxf(worst_raw, (focal - rest_focal).length())
 			worst_drift = maxf(worst_drift,
-					(Vector2(landed[k][4], landed[k][5]) - rest_focal).length())
+					(focal - Vector2(landed[k][UNSCALED_X], landed[k][UNSCALED_Y])).length())
+			if grown < 0 and is_equal_approx(landed[k][0], before[1]): grown = k
 			if k == 0: continue
 			rising = rising and landed[k][0] >= landed[k - 1][0] - 0.000001
 			if landed[k][0] > landed[0][0] + 0.0001 and landed[k][0] < before[1] - 0.0001:
@@ -3177,15 +3201,28 @@ func run_a_fresh_show_eases_in_on_landing_test() -> void:
 		check(rising and between >= 3,
 				"...and rises to its rest monotonically, through the frames between (%d grids)" % grids,
 				"%d frames strictly between the two ends" % between)
-#⚠ LESS THE SIDEBAR'S SLIDE, which moves the whole window and is not the ease's to hold.
+#⚠ AGAINST THE SAME FRAME'S LAYOUT UNGROWN, not against the rest: the layout itself moves in flight,
+#an overflowing set dropping the scroller's 4 px centring margin until the landing re-sorts it
+#(measured: up to 6.91 px at three grids, the margin at zoom 1.728), and that is no grow's to hold.
 		check(worst_drift <= 1.0,
-				"...growing IN PLACE: the point the rest view centres is drawn where it rests on "
-				+ "every frame (%d grids)" % grids,
-				"worst %.2f px from %s" % [worst_drift, rest_focal])
+				"...growing IN PLACE: the point the rest view centres is drawn where the ungrown board "
+				+ "puts it, on every frame (%d grids)" % grids,
+				"worst %.2f px (%.2f px from the final rest %s)" % [worst_drift, worst_raw, rest_focal])
+#⚠ EVERY LIVE FRAME, not only once grown: a card is drawn off its slot the moment the player can
+#see it, and the held deal's cards drew ~400 px off mid zoom-in (measured by eye and by row).
+		var worst_lag := 0.0
+		var worst_lag_frame := -1
+		for k : int in landed.size():
+			if landed[k][CARD_LAG] <= worst_lag: continue
+			worst_lag = landed[k][CARD_LAG]
+			worst_lag_frame = k
+		check(grown >= 0 and worst_lag <= 1.0,
+				"...and the deal's cards sit on their slots on every live frame (%d grids)" % grids,
+				"worst card %.2f px off its slot on live frame %d" % [worst_lag, worst_lag_frame])
 #A COMMITTED ENTRANCE GROWS WITH ITS GRID: its offset from the grid is the rest offset at the scale
 #drawn on that frame. An uncommitted one is centred in the window, which the sidebar slides past.
 		var worst_entrance := 0.0
-		var rest_row := landed[-1]
+		var rest_row : PackedFloat64Array = landed[-1]
 		for row : PackedFloat64Array in landed:
 			worst_entrance = maxf(worst_entrance, absf(row[6] - rest_row[6] * row[0] / rest_row[0]))
 		if _main_game_view(main).game.state.committed_grid != -1:
@@ -3198,45 +3235,95 @@ func run_a_fresh_show_eases_in_on_landing_test() -> void:
 				and is_equal_approx(last[2], before[2]) and is_equal_approx(last[3], before[3]),
 				"...and ends exactly at the rest the opening view chose: scale and scroll (%d grids)"
 				% grids, "landed on %s, the opening rest %s" % [last, before])
+#⚠ MEANINGFUL ONLY AS A PROCESS'S FIRST ENTRY: a suite run has compiled the picture's shaders long
+#before this row, so here it guards the warm-up's route. The bound sits between the warmed worst
+#(37-60 ms) and the unwarmed go-live frame (536-587 ms), both measured in fresh processes on Box A.
+		var worst_frame := 0.0
+		for k : int in landing + 1:
+			if frames[k][FLIGHT] >= 0.0: worst_frame = maxf(worst_frame, frames[k][FRAME_MS])
+		check(worst_frame < FIRST_FLIGHT_FRAME_BOUND_MS,
+				"...and no frame of the flight stalls: the first render was paid at launch (%d grids)"
+				% grids, "worst %.1f ms" % worst_frame)
 		await _tear_down_main(main)
 
 #A RESUMED SHOW IS NOT AN OPENING: re-entering a frozen show lands at rest (owner ruling).
 func run_a_resumed_show_lands_at_rest_test() -> void:
 	behavior_section("A RESUMED SHOW LANDS AT REST")
 	var main := await _boot_main_on_the_map(TestDecks.deck_standard_52())
-	var rest := (await _enter_the_game_sampling(main)).front() as PackedFloat64Array
+	var fresh := await _enter_the_game_sampling(main)
+	var rest : float = fresh.back()[1]
 	await main._focus_picture(&"map")
 	check(main._current_focus == &"map",
 			"precondition: the player left the show for another picture", str(main._current_focus))
 	var resumed := await _enter_the_game_sampling(main)
-	resumed.remove_at(0)
 	var off := 0
+	var live := 0
 	for row : PackedFloat64Array in resumed:
-		if not is_equal_approx(row[0], rest[1]): off += 1
-	check(not resumed.is_empty() and off == 0,
-			"every frame of the resumed show's landing is drawn at its rest scale",
-			"%d of %d frames off %.4f" % [off, resumed.size(), rest[1]])
+		if row[LIVE] < 0.5: continue
+		live += 1
+		if not is_equal_approx(row[0], rest): off += 1
+	check(live > 0 and off == 0,
+			"every live frame of the resumed show is drawn at its rest scale",
+			"%d of %d live frames off %.4f" % [off, live, rest])
 	await _tear_down_main(main)
 
-#A real Main on the map picture with a run of `deck`, the route a show is entered by.
+#A SHOW ATTACHED TO THE GAME PICTURE WHILE IT IS ALREADY FOCUSED STARTS AT ONCE: no move is coming
+#to take the picture live, so a show held for one would stay frozen (a restarted show takes this).
+func run_a_show_attached_to_the_live_picture_starts_test() -> void:
+	behavior_section("A SHOW ATTACHED TO THE LIVE GAME PICTURE STARTS")
+	var main := await _boot_main_on_the_map(TestDecks.deck_standard_52())
+	await _enter_the_game_sampling(main)
+	var wp : WallPicture = main._pictures[&"game"]
+	check(main._current_focus == &"game" and wp.is_live,
+			"precondition: the game picture is focused and live", str(main._current_focus))
+	wp.detach_screen()
+	await main.enter_game()
+	var view := _main_game_view(main)
+	CardEnvironment.CURRENT = view.game
+	check(view.scene_root.can_process() and not view.play_area._opening_ease_owed,
+			"the show attached onto the live picture runs and has started its opening",
+			"scene process mode %d, opening owed %s"
+			% [view.scene_root.process_mode, view.play_area._opening_ease_owed])
+	await _tear_down_main(main)
+
+#A real Main on the map picture with a run of `deck`, booted the way the game launches: with no run,
+#so the launch warm-up renders the game picture once, and the run arriving after it.
 func _boot_main_on_the_map(deck: Array[CardData]) -> Main:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
 	_prev_save_info = Main.save_info
+	RunManager.run = null
+	Main.save_info = RunState.new()
+	var main := TestMainHost.mount(self, self, MAIN_SCENE) as Main
+	for _i : int in 3:
+		await RenderingServer.frame_post_draw
 	var run := RunManager.new_run(deck, TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1_000_000_000
 	run.pending_node_id = 2
 	seed(20260829)
-	var main := TestMainHost.mount(self, self, MAIN_SCENE) as Main
-	await get_tree().process_frame
-	await get_tree().process_frame
 	await main._focus_picture(&"map")
 	return main
 
-#Every DRAWN frame of one entry into the game picture, the last one before the landing first: drawn
-#scale, board zoom, scroll x, scroll y, focal x, focal y (less the sidebar's slide), and the Entrance
-#row's drawn centre x less the focal point's drawn x.
+## Upper bound on any frame of a first flight into the game picture, in ms; see its row for why.
+const FIRST_FLIGHT_FRAME_BOUND_MS := 200.0
+## Column of `_enter_the_game_sampling`'s rows: 1 while the game picture draws live.
+const LIVE := 7
+## Column: 1 once the camera has landed on the game picture.
+const FOCUSED := 8
+## Column: how far through the flight the frame is, 0..1, or -1 off the flight.
+const FLIGHT := 9
+## Column: the frame's own duration, in ms.
+const FRAME_MS := 10
+## Column: how far the card drawn furthest from its slot is, in the picture's pixels.
+const CARD_LAG := 11
+## Columns: where the focal point would be drawn on the same frame were the board not grown.
+const UNSCALED_X := 12
+const UNSCALED_Y := 13
+
+#Every DRAWN frame of one entry into the game picture, from the call until the picture has landed
+#and its view is at rest. Columns: drawn scale, board zoom, scroll x, y, focal x, y (less the slide),
+#the Entrance's centre x less the focal's, then LIVE through UNSCALED_Y.
 func _enter_the_game_sampling(main: Main) -> Array[PackedFloat64Array]:
 	var wp : WallPicture = main._pictures[&"game"]
 	var entered : Array[bool] = [false]
@@ -3244,27 +3331,50 @@ func _enter_the_game_sampling(main: Main) -> Array[PackedFloat64Array]:
 		await main.enter_game()
 		entered[0] = true
 	enter.call()
-	var frames : Array[PackedFloat64Array] = [PackedFloat64Array()]
+	var frames : Array[PackedFloat64Array] = []
 	var waited := 0.0
+	var last_usec := Time.get_ticks_usec()
 	while waited < 10.0:
 		await RenderingServer.frame_post_draw
 		waited += get_process_delta_time()
+		var now := Time.get_ticks_usec()
+		var transition := main._active_transition
+		var flight := -1.0
+		if transition: flight = transition._elapsed / transition._total
 		var pa := (wp.screen_root as GameView).play_area
 		var pos := _scroller(pa).pos
 		var focal := _rest_focal(pa)
+		var ungrown := _ungrown(pa, focal)
 		var track := pa.entrance_h_track
 		var track_xf := track.get_global_transform()
 		var entrance_x := (pa.get_parent_control().get_global_transform().affine_inverse()
 				* (track_xf.origin + track_xf.basis_xform(track.size * 0.5))).x
-		var row := PackedFloat64Array([pa.drawn_zoom * pa.scale.x, pa.board_zoom, pos.x, pos.y,
-				focal.x, focal.y, entrance_x - (focal.x + pa.board_slide_offset.x)])
-		if not wp.is_focused:
-			frames[0] = row
-			continue
-		frames.append(row)
-		if entered[0] and pa._view_ease >= 1.0: break
+		frames.append(PackedFloat64Array([pa.drawn_zoom * pa.scale.x, pa.board_zoom, pos.x, pos.y,
+				focal.x, focal.y, entrance_x - (focal.x + pa.board_slide_offset.x),
+				1.0 if wp.is_live else 0.0, 1.0 if wp.is_focused else 0.0, flight,
+				float(now - last_usec) / 1000.0, _worst_card_lag(pa),
+				ungrown.x, ungrown.y]))
+		last_usec = now
+		if entered[0] and wp.is_focused and pa._view_ease >= 1.0: break
 	CardEnvironment.CURRENT = (wp.screen_root as GameView).game
 	return frames
+
+#Where `focal` (in the board's parent's pixels, less the slide) would be drawn were the board's own
+#scale 1 on this frame: its point in the board's space, put back through the board's position alone.
+func _ungrown(pa: PlayArea, focal: Vector2) -> Vector2:
+	var drawn := pa.get_parent_control().get_global_transform() * (focal + pa.board_slide_offset)
+	var in_board := pa.get_global_transform().affine_inverse() * drawn
+	return pa.position + in_board - pa.board_slide_offset
+
+#How far the card drawn furthest from its slot is, in the picture's pixels.
+func _worst_card_lag(pa: PlayArea) -> float:
+	var worst := 0.0
+	for data : CardData in pa.data_card:
+		var visual : CardVisual = pa.data_card[data]
+		if not is_instance_valid(visual) or not is_instance_valid(visual.control_anchor): continue
+		worst = maxf(worst, (visual.global_position
+				- visual.get_card_control_center(visual.control_anchor)).length())
+	return worst
 
 #Where the point the rest view centres is DRAWN, in the board's parent's pixels less the sidebar's
 #slide: the focused grid's cell block centre, or the centre of the whole set in the overview.

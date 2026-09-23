@@ -23,8 +23,11 @@ static func settings() -> PlayerSettings:
 ## The SubViewport `build()` creates, public so a caller can free it: it lives under `viewports_parent`, not under this node.
 var viewport : SubViewport = null
 
-## Emitted by `focus()`: the camera has landed and this picture draws live from this frame.
-signal focused
+## Emitted by `go_live()`: this picture draws and runs live from this frame, landed or still zooming in.
+signal went_live
+
+## Whether this picture draws live: from `go_live()` until `unfocus()`.
+var is_live : bool = false
 
 ## Whether this is the live picture. `build()` leaves it false -- construction is "never yet rendered", not "focused".
 var is_focused : bool = false
@@ -136,6 +139,11 @@ func attach_screen(live_screen: Node) -> void:
 	screen_root = live_screen
 	screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
 	viewport.add_child(screen_root)
+#A screen attached to a picture that is ALREADY live starts at once: no move is coming to take it
+#live, and a held show would stay held (a show restarted onto the focused game picture).
+	if is_live:
+		is_live = false
+		go_live()
 
 ## Frees `screen_root`, leaving the authored background -- or, with none, the "registered but unbuilt" rendering.
 func detach_screen() -> void:
@@ -172,13 +180,20 @@ func _hide_background() -> void:
 func focus() -> void:
 	is_focused = true
 	_apply_position()
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	prepare_to_focus()
-	if screen_root:
-		screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
+	go_live()
 	update_filter(false)
 	set_screen_alpha(1.0)
-	focused.emit()
+
+#A move toward a picture takes it live at the start of its ZOOM-IN, before the landing: the scene is
+#responsible for its own display (owner ruling). `focus()` goes live too, so every route does.
+func go_live() -> void:
+	if is_live: return
+	is_live = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	if screen_root:
+		screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
+	went_live.emit()
 
 # The full-`design_size` render target, restored when a move toward this picture STARTS and again by
 # `focus()`. ⚠ A SubViewport resized on the frame it is first shown focused is drawn from the OLD
@@ -215,6 +230,7 @@ func _apply_design_render_size() -> void:
 # never left mid-fade from a reduced-motion cross-fade.
 func unfocus(footprint_px: Vector2) -> void:
 	is_focused = false
+	is_live = false
 	_apply_position()
 	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	update_wall_view_size(footprint_px)
@@ -282,10 +298,10 @@ func _rescale_screen() -> void:
 	_shadow.scale = view_scale
 
 # Re-renders a FROZEN texture at unchanged size, for a window restored from minimise -- the GPU
-# may have discarded it. ⚠ A FOCUSED picture is NOT frozen and must never be forced to
+# may have discarded it. ⚠ A LIVE picture is NOT frozen and must never be forced to
 # UPDATE_ONCE; guarded here, not at the call site -- PICTURE_WALL.md "Landmines".
 func mark_for_rerender() -> void:
-	if is_focused: return
+	if is_live: return
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 ## Crisp NEAREST at rest, LINEAR only while zoom is changing THIS FRAME -- a pure pan must never flip it. Meaningful only while focused.

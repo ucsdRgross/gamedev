@@ -24,6 +24,7 @@ const CONTINUE_OFFSET_Y := 220.0
 
 var game : Game = null
 
+@onready var scene_root: Control = $SceneRoot
 @onready var play_container: Control = %PlayContainer
 @onready var play_area: PlayArea = %PlayArea
 @onready var win_screen: Label = %WinScreen
@@ -60,6 +61,12 @@ var _wall_rect_centre_x : Callable = Callable()
 # lights' own section signal, so the two can never disagree which section is up.
 func _ready() -> void:
 	_bind_hud_container()
+#⚠ A PICTURE-HOSTED SHOW HOLDS ITS SCENE UNTIL THE PICTURE GOES LIVE, so the deal and the board's
+#grow start where the player first sees them, on the zoom-in (owner ruling). A standalone view has
+#no picture and runs at once.
+	if wall_picture:
+		scene_root.process_mode = Node.PROCESS_MODE_DISABLED
+		wall_picture.went_live.connect(_start_on_screen)
 	game = Game.new()
 	game.view = self
 	game.processing_changed.connect(_on_processing_changed)
@@ -122,6 +129,10 @@ func _ready() -> void:
 #resumed score shows immediately.
 	_refresh_hud.call_deferred()
 	_publish_board_inset()
+
+func _start_on_screen() -> void:
+	scene_root.process_mode = Node.PROCESS_MODE_INHERIT
+	play_area.ease_the_opening_in()
 
 # ⚠ THE SHOW'S CONTAINER STATE DIES WITH THE SHOW: `Main` reuses one screen id for every show, so
 # the view leaving the tree hands back its memory, its lock and its cascade flag.

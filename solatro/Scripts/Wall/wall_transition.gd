@@ -1,24 +1,8 @@
 class_name WallTransition
 extends RefCounted
-## The camera tween and its phase clock.
-##
-## `sample_at()` is the pure core: camera position/zoom plus the RAW, unlatched geometric facts a
-## caller uses to decide the pause/unpause/input-unlock boundaries. No waiting, no Tween, callable
-## at ANY elapsed time — so it can be sampled as a synchronous scan rather than over real frames.
-##
-## `request()` wires exactly ONE real Tween, bound to the camera node (`PROCESS_MODE_ALWAYS`, so it
-## keeps running under the wall's global pause), which calls `sample_at()` every frame, applies the
-## camera state, and LATCHES each boundary the instant its condition first holds. Every boundary is
-## a one-way crossing: none un-latches mid-transition.
-##
-## ⚠ The destination screen must already be BUILT before `request()` is called — this class owns
-## the camera's tween and clock, never screen construction. `request()` performs no `await` before
-## starting the tween, so building the destination immediately before calling it lands that build
-## inside the zoom-out phase.
-##
-## OUT OF SCOPE here: `SubViewport.render_target_update_mode` and `%Screen.texture_filter`. On
-## landing this class leaves the destination mid-focus (screen_root ALWAYS, viewport untouched);
-## `Main._focus_picture()` does the full focus()/unfocus() handoff.
+#The camera's move between two pictures and its phase clock. `sample_at()` is the pure core; one
+#Tween bound to the ALWAYS camera drives it and LATCHES each boundary one way. The destination must
+#already be BUILT before `request()`, which never awaits. `Main._focus_picture()` owns the pictures.
 
 ## One frame's worth of camera state plus the raw geometric facts at that instant.
 class Sample:
@@ -31,72 +15,66 @@ class Sample:
 	## The DESTINATION's frame outer rect is ENTIRELY inside the visible rect right now.
 	var dest_frame_in_view : bool
 
-## True while a tween is running toward `_dest_id`. A `request()` while this is true is ignored
-## outright — never retargeted, extended or restarted. `retarget()` is the one exception, and it
-## changes only geometry, never `_dest_id` or the elapsed clock.
+#A `request()` while a move is running is ignored outright; `retarget()` is the one exception, and
+#it changes only geometry, never `_dest_id` or the elapsed clock.
 var is_active : bool = false
 var _dest_id : StringName = &""
 var _source_paused := false
 var _dest_unpaused := false
 var _input_unlocked := false
+var _dest_live := false
+## How far into the move the camera's last applied sample was, in seconds.
+var _elapsed : float = 0.0
 
-## The live geometry `sample_at()` reads EVERY FRAME via the tween callback. Instance fields
-## rather than closure-captured locals, so `retarget()` can swap them in place while the same Tween
-## keeps running. Only meaningful while `is_active`.
+#Instance fields rather than closure-captured locals, so `retarget()` can swap them in place while
+#the same Tween keeps reading them every frame.
 var _source_rect : PictureRect
 var _dest_rect : PictureRect
 var _window_size : Vector2
 var _settings : PlayerSettings
 var _total : float
 
-## The elapsed instant (seconds) at which the source pauses, computed once per
-## `request()`/`retarget()`.
-## ⚠ Must NOT be a per-frame re-check of `source_frame_in_view`: that condition is TRANSIENT, not
-## monotonic — it opens and CLOSES again well before landing — so sparse real frames can step over
-## the window entirely and never see it true. A precomputed TIME is frame-rate independent: any
-## frame whose `elapsed` has caught up latches the pause, and the tween always reaches `_total`.
+## The elapsed instant at which the destination goes live, `live_fraction()` of the move.
+var _live_time : float = 0.0
+#⚠ A PRECOMPUTED TIME, NOT A PER-FRAME RE-CHECK of `source_frame_in_view`: that condition opens and
+#CLOSES again well before landing, so sparse frames can step over it; a time is always caught up.
 var _source_pause_time : float = 0.0
-## The precomputed elapsed instant at which input comes back. A TIME rather than a per-frame
-## geometric re-check, for the same reason `_source_pause_time` is one.
+## When input comes back: a time, for the same reason `_source_pause_time` is one.
 var _input_unlock_time : float = 0.0
 ## Fired once, when the tween completes and lands on the requested picture.
 signal landed(picture_id: StringName)
 ## Fired once, the instant input comes back. Callers listen rather than polling `is_active`.
 signal input_unlocked
+## Fired once, at `live_fraction()` of the move: the destination draws and runs live from here.
+signal destination_live
 
-## `base_delay` times the wall's own `wall_transition_delay`.
-## ⚠ NEVER `Game.get_delay()`, which compresses to 0.0 on an act cancel.
+#⚠ NEVER `Game.get_delay()`, which compresses to 0.0 on an act cancel.
 static func total_duration(settings: PlayerSettings) -> float:
 	return settings.base_delay * settings.wall_transition_delay
 
-## The zoom-out plateau: the "fit" zoom — MIN of the two axis ratios, mirroring
-## `WallPicture.focused_scale()`'s "fill" MAX — at which the SOURCE picture's whole frame fits the
-## window, plus a margin sized as a fraction of that picture.
-##
-## ⚠ **THE SOURCE ONLY. Fitting BOTH frames zooms out to most of the wall on a far jump**, which is
-## what a distance-derived zoom means and is not what leaving a picture should look like. The
-## destination is reached by TRAVEL at this same plateau, not by widening the view until it is
-## already on screen. Duration is fixed regardless of distance, so a far jump reads as a longer
-## slide rather than a bigger zoom.
+#The destination draws and runs live from the start of its zoom-in, when the camera shows the
+#picture and closes on it (owner ruling). Every route into a picture reads this one fraction.
+static func live_fraction(settings: PlayerSettings) -> float:
+	var zoom_in_start : float = phase_bounds(settings)["zoom_in_start"]
+	return zoom_in_start
+
+#The zoom-out plateau fits the SOURCE's frame alone, plus a margin: fitting both frames zoomed a far
+#jump out to most of the wall. The destination is reached by travel at this plateau, so a far jump
+#reads as a longer slide, not a bigger zoom.
 static func _wide_zoom(source_rect: PictureRect, window_size: Vector2,
 		margin_fraction: float) -> float:
 	var source_frame := WallPacker.frame_outer_rect(source_rect)
 	var needed := source_frame.size + source_rect.size * margin_fraction
 	return minf(window_size.x / needed.x, window_size.y / needed.y)
 
-## The camera's visible rect in wall space at a given position/zoom. PRODUCT API — the one home
-## for "what is the camera showing right now", reused by any caller (product or test) that needs
-## an on-screen/off-screen judgement instead of reconstructing the rect by hand.
-## ⚠ `Camera2D.zoom` is DIRECT MAGNIFICATION: the visible span is `window_size / zoom`, never
-## `window_size * zoom`.
+#The one home for "what is the camera showing right now". ⚠ `Camera2D.zoom` is DIRECT
+#MAGNIFICATION: the visible span is `window_size / zoom`, never `window_size * zoom`.
 static func visible_rect(position: Vector2, zoom: float, window_size: Vector2) -> Rect2:
 	var size := window_size / zoom
 	return Rect2(position - size * 0.5, size)
 
-## The four phase-boundary fractions of the total duration, 0..1. The three authored fractions sum
-## PAST 1.0 on purpose; the excess is split evenly across the two boundaries so zoom-in always lands
-## exactly at 1.0. Public so callers that need to know WHEN a phase starts or ends read it rather
-## than re-deriving it.
+#The three authored fractions sum PAST 1.0 on purpose; the excess is split across the two
+#boundaries so zoom-in always lands exactly at 1.0.
 static func phase_bounds(settings: PlayerSettings) -> Dictionary:
 	var overlap := (settings.wall_zoom_out_fraction + settings.wall_travel_fraction
 			+ settings.wall_zoom_in_fraction - 1.0) * 0.5
@@ -107,12 +85,9 @@ static func phase_bounds(settings: PlayerSettings) -> Dictionary:
 	return {"zoom_out_end": zoom_out_end, "travel_start": travel_start, "travel_end": travel_end,
 			"zoom_in_start": zoom_in_start}
 
-## The FIRST elapsed instant at which `source_frame_in_view` goes true, found by a linear scan of
-## the pure `sample_at()`. Run once per `request()`/`retarget()`, never per frame.
-## ⚠ A SCAN, not a bisection: the condition is transient, opening then closing again, so it is not
-## the false->true step function a bisection would assume.
-## BACKSTOP: with no crossing at all for this geometry, pause by the end of the zoom-out phase
-## anyway — "exactly one screen root is ALWAYS" outranks hitting the precise instant.
+#⚠ A SCAN, NOT A BISECTION: the crossing opens and closes again, so it is no step function.
+#BACKSTOP: with no crossing at all, pause by the end of the zoom-out -- "exactly one screen root is
+#ALWAYS" outranks hitting the precise instant.
 const _CROSSING_SCAN_STEPS := 500
 
 static func _find_source_pause_time(total: float, source_rect: PictureRect, dest_rect: PictureRect,
@@ -126,13 +101,9 @@ static func _find_source_pause_time(total: float, source_rect: PictureRect, dest
 	var zoom_out_end : float = bounds["zoom_out_end"]
 	return zoom_out_end * total
 
-## The FIRST elapsed instant at which the DESTINATION's frame is fully in view, precomputed once
-## per `request()`/`retarget()` — same shape and same reason as `_find_source_pause_time()`.
-## ⚠ Must NOT be a per-frame `s.dest_frame_in_view` check: the window in which the destination's
-## whole frame fits opens in the wide middle of the transition and CLOSES again before landing,
-## because a focused picture OVERFILLS the window at rest and its frame is off-screen by
-## construction. Sparse frames, or a short transition, step over it and never unlock.
-## BACKSTOP: `total`. Input must never stay locked longer than the move itself.
+#⚠ The destination's whole frame fits only in the wide middle of the move -- a focused picture
+#overfills the window at rest -- so a per-frame check can step over it. BACKSTOP `total`: input
+#never stays locked longer than the move itself.
 static func _find_input_unlock_time(total: float, source_rect: PictureRect, dest_rect: PictureRect,
 		window_size: Vector2, settings: PlayerSettings) -> float:
 	for i : int in (_CROSSING_SCAN_STEPS + 1):
@@ -142,30 +113,17 @@ static func _find_input_unlock_time(total: float, source_rect: PictureRect, dest
 			return elapsed
 	return total
 
-## The pure core (see the class doc comment). `total` is `total_duration()`'s own return value,
-## passed in rather than re-derived so a caller/test can hold it fixed across many samples.
-##
-## ⚠ Under `wall_reduced_motion` there is NO CAMERA MOVE AT ALL: the camera holds the SOURCE's
-## resting pose for the whole duration while the two screens cross-fade in place, and
-## `Main._focus_picture()` CUTS it to the destination's resting pose once the fade completes. A
-## fixed zoom and "no frame is ever visible at rest" cannot both hold across a move between
-## differently-sized pictures, so the discontinuity is spent on one cut at the end.
-## The arrival is therefore NOT in this function. The cross-fade itself is driven by `_apply()`
-## from the same `elapsed`/`total` pair — `sample_at()` stays pure and engine-free.
+#Pure and engine-free, so it can be scanned synchronously. ⚠ Under `wall_reduced_motion` the camera
+#holds the SOURCE's pose while the screens cross-fade (`_apply()`), and `Main._focus_picture()` cuts
+#to the destination at the end: the arrival is NOT in this function.
 static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 		dest_rect: PictureRect, window_size: Vector2, settings: PlayerSettings) -> Sample:
 	var s := Sample.new()
 
 	if settings.wall_reduced_motion:
-		# The camera does not move: the source's resting pose for every `elapsed`, and Main cuts
-		# it to the destination on landing.
 		s.camera_position = source_rect.centre
 		s.camera_zoom = WallPicture.focused_scale(source_rect.size, window_size,
 				settings.wall_overfill_margin)
-		# ⚠ NOT derived from a visible-rect test. The source overfills the window at rest, so a
-		# geometric test would call the destination never visible and never unlock input or unpause
-		# its screen. A cross-fade has no travel to wait through and the destination is visibly
-		# fading in, so all three are true by construction from the first frame.
 		s.source_frame_in_view = true
 		s.dest_visible = true
 		s.dest_frame_in_view = true
@@ -179,8 +137,6 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 
 	var t := 0.0 if total <= 0.0 else clampf(elapsed / total, 0.0, 1.0)
 
-	# Position: travel is the ONLY phase that moves it. Straight line, on the authored travel
-	# curve (`wall_travel_trans`/`_ease`).
 	if t <= travel_start:
 		s.camera_position = source_rect.centre
 	elif t >= travel_end:
@@ -191,11 +147,6 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 				settings.wall_travel_trans, settings.wall_travel_ease)
 		s.camera_position = source_rect.centre.lerp(dest_rect.centre, eased)
 
-	# Zoom: zoom-out and zoom-in are the only phases that move it, composed in sequence -- the
-	# zoom-out leg lerps start_zoom -> wide_zoom on `wall_zoom_trans`/`wall_zoom_out_ease`, then the
-	# zoom-in leg lerps THAT result -> dest_zoom on `wall_zoom_in_ease`. Flat at wide_zoom for the pure-travel
-	# window between the two, since both progresses clamp to their resting value outside their own
-	# window.
 	var start_zoom := WallPicture.focused_scale(source_rect.size, window_size,
 			settings.wall_overfill_margin)
 	var dest_zoom := WallPicture.focused_scale(dest_rect.size, window_size,
@@ -218,8 +169,7 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 	s.dest_frame_in_view = visible.encloses(WallPacker.frame_outer_rect(dest_rect))
 	return s
 
-## Starts a transition from `source` to `dest`, animating `camera`. A no-op — no tween at all — if
-## `dest` is already the current picture, or if a transition is already active.
+## Starts a move from `source` to `dest`; a no-op onto the current picture or while one is active.
 func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, dest: WallPicture,
 		dest_rect: PictureRect, window_size: Vector2, settings: PlayerSettings) -> void:
 	if dest_rect.id == source_rect.id: return
@@ -229,11 +179,13 @@ func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, de
 	_source_paused = false
 	_dest_unpaused = false
 	_input_unlocked = false
+	_dest_live = false
 	_source_rect = source_rect
 	_dest_rect = dest_rect
 	_window_size = window_size
 	_settings = settings.duplicate()
 	_total = total_duration(settings)
+	_live_time = live_fraction(_settings) * _total
 	_source_pause_time = _find_source_pause_time(_total, _source_rect, _dest_rect, _window_size,
 			_settings)
 	_input_unlock_time = _find_input_unlock_time(_total, _source_rect, _dest_rect, _window_size,
@@ -249,14 +201,9 @@ func request(camera: Camera2D, source: WallPicture, source_rect: PictureRect, de
 				is_active = false
 				landed.emit(_dest_id))
 
-## Points a mid-flight transition at new geometry and continues — never restarts, never cuts the
-## tween short, never touches `_dest_id`, `_total` or any latched boundary. A no-op while inactive.
-## Because the tween callback reads the geometry fields fresh every frame, swapping them here means
-## the next `_apply()` already samples the new geometry; the resulting discontinuity is bounded by
-## the resize's own shift, never a snap back to the source.
-##
-## Also RECOMPUTES both crossing times: a time computed against the OLD rects is meaningless once
-## they change. Harmless after a latch has already fired, since that check is then skipped.
+#Points a move in flight at new geometry and carries on: never restarts, never touches `_dest_id`,
+#`_total` or a latch. The crossing times are recomputed, since a time against the OLD rects is
+#meaningless; harmless once a latch has fired.
 func retarget(new_source_rect: PictureRect, new_dest_rect: PictureRect,
 		new_window_size: Vector2) -> void:
 	if not is_active: return
@@ -268,19 +215,12 @@ func retarget(new_source_rect: PictureRect, new_dest_rect: PictureRect,
 	_input_unlock_time = _find_input_unlock_time(_total, _source_rect, _dest_rect, _window_size,
 			_settings)
 
-## Applies one Sample to the camera and latches each pause/unpause/input-unlock boundary the
-## instant its condition first holds. Every latch is one-way.
-## The source latch fires on `elapsed >= _source_pause_time` — a precomputed TIME, not a re-check
-## of `s.source_frame_in_view` — so sparse real-frame sampling cannot skip it: the tween always
-## reaches `_total`, and `_source_pause_time <= _total` by that function's backstop.
-##
-## Under `wall_reduced_motion` this is also where the cross-fade lives: `source`/`dest` are already
-## in scope for the pause/unpause handoff, so screen opacity needs no second path in `Main`. Linear
-## in `elapsed/_total`, reaching exactly (0, 1) as the tween lands. `focus()`/`unfocus()` reset both
-## screens to fully opaque regardless, so a run with or without reduced motion leaves the same
-## resting alpha.
+#Every latch is one-way. Under `wall_reduced_motion` this is also the cross-fade, linear in
+#`elapsed/_total` and reaching exactly (0, 1) as the tween lands; `focus()`/`unfocus()` reset both
+#screens to opaque regardless.
 func _apply(camera: Camera2D, source: WallPicture, dest: WallPicture, s: Sample,
 		elapsed: float) -> void:
+	_elapsed = elapsed
 	camera.position = s.camera_position
 	camera.zoom = Vector2.ONE * s.camera_zoom
 	if _settings.wall_reduced_motion:
@@ -293,6 +233,9 @@ func _apply(camera: Camera2D, source: WallPicture, dest: WallPicture, s: Sample,
 	if s.dest_visible and not _dest_unpaused:
 		_dest_unpaused = true
 		if dest.screen_root: dest.screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
+	if elapsed >= _live_time and not _dest_live:
+		_dest_live = true
+		destination_live.emit()
 	if elapsed >= _input_unlock_time and not _input_unlocked:
 		_input_unlocked = true
 		input_unlocked.emit()

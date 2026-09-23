@@ -766,17 +766,22 @@ func on_stage_changed() -> void:
 	match data.stage:
 		data.Stage.PLAY, data.Stage.ZONE:
 			if not control_anchor or not is_instance_valid(control_anchor): return
-			var target_pos := get_card_control_center(control_anchor)
-			create_move_tween(target_pos)
+			create_move_tween(_anchor_centre_or_here)
 			await move_tween.finished
 		data.Stage.DISCARD:
 			if _game_view():
 				var target_pos := _game_view().pile_center(_game_view().discard_ui)
-				create_move_tween(target_pos).tween_callback(queue_free)
+				create_move_tween(func() -> Vector2: return target_pos).tween_callback(queue_free)
 		data.Stage.RULES:
 			if _game_view():
 				var target_pos := _game_view().pile_center(_game_view().rules_ui)
-				create_move_tween(target_pos).tween_callback(queue_free)
+				create_move_tween(func() -> Vector2: return target_pos).tween_callback(queue_free)
+
+#A move follows its anchor, and a rebuild can free that anchor mid-flight (a resumed show replaying
+#a placement does): the card then holds where it is until it is re-anchored or freed.
+func _anchor_centre_or_here() -> Vector2:
+	if not is_instance_valid(control_anchor): return global_position
+	return get_card_control_center(control_anchor)
 
 # Null when headless, and every caller null-checks, so those visual moves simply skip.
 
@@ -883,16 +888,26 @@ func reset_tween(tween:Tween) -> void:
 	if tween and tween.is_running():
 		tween.custom_step(INF)
 
-func create_move_tween(target_pos:Vector2) -> Tween:
+#⚠ THE TARGET IS READ ON EVERY STEP AND THE START IS HELD IN THE PARENT'S SPACE: a board that
+#grows or slides under a card carries both, where a captured global start sent a held opening deal's
+#cards ~400 px from where they sat (measured) and a captured target left them ~238 px off.
+func create_move_tween(target: Callable) -> Tween:
 	reset_tween(move_tween)
 	var delay := CardEnvironment.CURRENT.get_delay()
+	var from := position
+	var target_pos : Vector2 = target.call()
 	move_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)
-	move_tween.tween_property(self, "global_position", target_pos, delay*0.3)
+	move_tween.tween_method(func(t: float) -> void:
+			var to : Vector2 = target.call()
+			var parent_space := (get_parent() as CanvasItem).get_global_transform().affine_inverse()
+			position = from.lerp(parent_space * to, t), 0.0, 1.0, delay*0.3)
 	if target_pos.x - global_position.x > 10:
 		move_tween.parallel().tween_property(self, "rotation_degrees", 10, delay*0.2)
 	elif global_position.x - target_pos.x > 10:
 		move_tween.parallel().tween_property(self, "rotation_degrees", -10, delay*0.2)
 	move_tween.tween_property(self, "rotation_degrees", 0, delay*0.1)
+	move_tween.parallel().tween_method(func(_t: float) -> void: global_position = target.call(),
+			0.0, 1.0, delay*0.1)
 	return move_tween
 
 # `offset` is @onready and null until this visual's _ready runs, and a freshly built board adds its

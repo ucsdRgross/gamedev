@@ -85,6 +85,25 @@ func _ready() -> void:
 	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 
 	get_viewport().size_changed.connect(_on_window_resized)
+#A run already set means a suite mounted this Main, and a throwaway show would write into that run.
+	if RunManager.run == null: _warm_the_game_picture()
+
+#⚠ THE GAME PICTURE'S FIRST RENDER COMPILES ITS SHADERS: one frozen frame of ~0.35 s on Box A, once
+#per process (measured), so it is paid here, behind the start menu, and no flight pays it. Ended by
+#a connection, not an await: a suite frees a Main before its first frame draws.
+func _warm_the_game_picture() -> void:
+	var game_wp : WallPicture = _pictures[&"game"]
+	var current := CardEnvironment.CURRENT
+	game_wp.attach_screen(GAME_VIEW.instantiate())
+	game_wp.mark_for_rerender()
+	RenderingServer.frame_post_draw.connect(_end_the_warm_up.bind(current), CONNECT_ONE_SHOT)
+
+#Rendered once more without the throwaway show, so wall view never shows its deal in the frame.
+func _end_the_warm_up(current: CardEnvironment) -> void:
+	var game_wp : WallPicture = _pictures[&"game"]
+	game_wp.detach_screen()
+	game_wp.mark_for_rerender()
+	CardEnvironment.CURRENT = current
 
 # Packs `Wall.load_layout()` and builds every UNLOCKED picture, reparenting the already-
 # instantiated `menu_scene`/`map_scene` as their `screen_root`. `deck` and `game` start with no
@@ -277,7 +296,7 @@ func _footprint(rect: PictureRect) -> Vector2:
 # `duration_scale` multiplies the transition clock: 1.0 for every ordinary move, and
 # `wall_reveal_delay_scale` only for the one-off opening reveal.
 func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centre: Vector2,
-		audio_dest_centre: Vector2, audio_dest_entry: PictureEntry,
+		audio_dest_centre: Vector2, audio_dest_entry: PictureEntry, dest: WallPicture,
 		duration_scale: float = 1.0) -> void:
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
 	var settings := SettingsManager.settings
@@ -299,6 +318,9 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 	tween.tween_method(func(_progress: float) -> void:
 			wall.update_travel_music(audio_source_centre, audio_dest_centre, camera.position),
 			0.0, 1.0, duration)
+#Null when the move is to wall view, which has no picture to take live.
+	if dest:
+		tween.tween_callback(dest.go_live).set_delay(WallTransition.live_fraction(settings) * duration)
 	await tween.finished
 	wall.finish_music_crossfade()
 
@@ -369,6 +391,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 # The wall answers input again the instant the destination and its frame are fully in
 # view, which is strictly BEFORE landing.
 		transition.input_unlocked.connect(wall.unlock_input)
+		transition.destination_live.connect(dest_wp.go_live)
 # Cross-fades from the source's music toward the destination's over the SAME real camera
 # motion the transition is driving -- see `Wall.update_travel_music()`.
 		wall.begin_music_crossfade(_entries[id])
@@ -387,7 +410,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	else:
 		var rest := WallPicture.resting_state(dest_rect, _window_size, settings)
 		await _animate_camera(rest["position"] as Vector2, rest["zoom"] as float,
-				wall.wall_view_centre(), dest_rect.centre, _entries[id])
+				wall.wall_view_centre(), dest_rect.centre, _entries[id], dest_wp)
 	dest_wp.focus()
 # The zoom-in has landed, so every frame goes out and stays out -- including through a later
 # picture-to-picture move, which is not wall view.
@@ -432,7 +455,7 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 # Wall view has no picture of its own, so there is nothing to fade music IN to -- a null
 # dest entry fades the current track out over the same move.
 		await _animate_camera(wall.wall_view_centre(), wall.wall_view_zoom(_window_size),
-				source_rect.centre, wall.wall_view_centre(), null, duration_scale)
+				source_rect.centre, wall.wall_view_centre(), null, null, duration_scale)
 # The LANDED rect: a resize mid-move re-packs the wall, so the rect captured before the
 # await no longer says where this picture is or how big its footprint should be.
 		source_wp.unfocus(_footprint(_rects[_current_focus]))
@@ -540,7 +563,6 @@ func enter_game() -> void:
 		new_view.bind_wall_camera(wall.get_node(^"%Camera2D") as Camera2D,
 				func() -> float: return _rects[&"game"].centre.x)
 		game_wp.attach_screen(new_view)
-		game_wp.focused.connect(new_view.play_area.ease_the_opening_in)
 	await _focus_picture(&"game")
 
 # Won game handing back: the show is genuinely OVER, not frozen — detach and free the GameView,

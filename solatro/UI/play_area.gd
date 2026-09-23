@@ -77,10 +77,9 @@ var board_slide_offset : Vector2 = Vector2.ZERO:
 		board_slide_offset = value
 		if not is_instance_valid(scroll_container): return
 		_apply_board_zoom_rect()
-#The slide moves the grid the Entrance sits under and the point an opening grows about on EVERY
-#frame of it; left to the physics tick, the Entrance trailed its grid by ~45 px (measured).
+#The slide moves the grid the Entrance sits under on EVERY frame of it; left to the physics tick,
+#the Entrance trailed its grid by ~45 px (measured).
 		_sync_entrance_x()
-		_re_pin_the_opening()
 
 ## How many WINDOW pixels one of this picture's own pixels is drawn at, published by `GameView` -- the same boundary `board_inset_*` crosses the other way.
 var picture_to_window_scale : float = 1.0
@@ -622,9 +621,9 @@ func _physics_process(delta: float) -> void:
 #`CellSlot` would add its own height to the cell, and `_measure_grid_row_height` would have to know
 #about it. Riding `slot_center_global` instead makes the label follow the stack for free.
 
-#⚠ `at` IS A MEASURED GLOBAL, ALREADY SCALED BY `drawn_zoom`; THE CARD AND LABEL SIZES ARE NOT.
-#Both live in `card_layer`, so their local magnitudes must be taken into screen pixels by
-#`drawn_zoom` before being subtracted from `at`.
+#⚠ `at` IS A MEASURED GLOBAL, ALREADY SCALED ON SCREEN; THE CARD AND LABEL SIZES ARE NOT. Both
+#live in `card_layer`, so their local magnitudes are taken into screen pixels by
+#`_content_scale_on_screen()` before being subtracted from `at`.
 func _sync_cell_score_labels() -> void:
 	if not is_inside_tree() or not is_instance_valid(card_layer): return
 	var game := CardEnvironment.get_current_game()
@@ -634,6 +633,7 @@ func _sync_cell_score_labels() -> void:
 		_cell_score_labels.clear()
 		return
 	var state := game.state
+	var z := _content_scale_on_screen()
 	var live : Dictionary[Vector3i, bool] = {}
 	for key : Vector3i in state.scores_cell:
 #Resolved through the ZONE that owns the row, never by reaching into `grids` -- a row past a grid's
@@ -658,8 +658,8 @@ func _sync_cell_score_labels() -> void:
 #only the coordinate lookup knows which zone this is.
 		var top := state.coord_for_banked_cell(key.x, key.y, key.z, depth - 1)
 		var at := slot_center_global(top)
-		label.global_position = Vector2(at.x - label.size.x * drawn_zoom * 0.5,
-				at.y - CardVisual.card_size_play.y * drawn_zoom * 0.5 - label.size.y * drawn_zoom)
+		label.global_position = Vector2(at.x - label.size.x * z * 0.5,
+				at.y - CardVisual.card_size_play.y * z * 0.5 - label.size.y * z)
 	for key : Vector3i in _cell_score_labels.keys():
 		if live.has(key): continue
 		var doomed : BigNumberLabel = _cell_score_labels[key]
@@ -892,7 +892,8 @@ func _give_the_board_a_floor(strip_h: float) -> void:
 #against a real 244). `resized` is enough here because this control only changes with the WINDOW.
 func _publish_board_floor() -> void:
 	if not is_instance_valid(top_level_vbox): return
-	_board_floor_y = top_level_vbox.global_position.y + top_level_vbox.size.y * drawn_zoom
+	var z := _content_scale_on_screen()
+	_board_floor_y = top_level_vbox.global_position.y + top_level_vbox.size.y * z
 	_publish_cell_rects()
 
 #⚠ THE ARITHMETIC FOLLOWS THE CELLS, NOT THE PANEL. Once the panel carries score gutters the two
@@ -902,6 +903,7 @@ func _publish_board_floor() -> void:
 #Refreshed on this same tick, and safe for the same reason: nothing writes these rects per frame.
 func _publish_cell_rects() -> void:
 	if not is_instance_valid(grid_container): return
+	var z := _content_scale_on_screen()
 	for i : int in grid_container.get_child_count():
 		var panel := grid_container.get_child(i) as Control
 		if not panel or panel.is_queued_for_deletion(): continue
@@ -910,7 +912,7 @@ func _publish_cell_rects() -> void:
 		_grid_cells_origin[i] = cells.global_position
 #⚠ A GLOBAL origin plus a LOCAL size is not a global edge once the board is zoomed --
 #`global_position` carries the zoom and `size` never does.
-		_grid_cells_bottom[i] = cells.global_position.y + cells.size.y * drawn_zoom
+		_grid_cells_bottom[i] = cells.global_position.y + cells.size.y * z
 
 #The scroll range the board last had. -1 until a tick has seen one, so a rebuild re-baselines
 #rather than treating the whole range as fresh growth.
@@ -1033,7 +1035,7 @@ func _snap_the_entrance_home() -> void:
 	snap_the_view_into_place()
 
 #THE BOARD IS AT ITS SCALE AND ITS GAP ON THIS FRAME, with no travel: the ease belongs to a mode
-#change the PLAYER asked for and to a fresh show's landing, and nothing else may spend the pan clock.
+#change the PLAYER asked for and to a fresh show going live, and nothing else may spend the pan clock.
 
 #⚠ A RE-FIT IS NOT A MODE CHANGE, and neither is a suite latching the view its checks were written
 #against. The sidebar's reserve re-fits the zoom on every frame of its slide; eased, each of those
@@ -1051,28 +1053,24 @@ func snap_the_view_into_place() -> void:
 const OPENING_ZOOM_FRACTION := 0.6
 
 #THE ONE OWNER OF "FRESH": a PlayArea is one show, so it owes the opening ease from birth and the
-#first landing spends it. A resumed show lands at rest (owner ruling).
+#first time its picture goes live spends it. A resumed show lands at rest (owner ruling).
 var _opening_ease_owed := true
 
-## True from a fresh show's landing until its board has grown to rest or a view change took over.
+## True from a fresh show going live until its board has grown to rest or a view change took over.
 var _opening_in_flight := false
 
-#⚠ ON THE LANDING, NOT AT OPEN: the picture draws no board until the camera lands, ~38 frames after
+#⚠ WHEN THE PICTURE GOES LIVE, NOT AT OPEN: the picture draws no board before then, ~30 frames after
 #`open_show_view` (measured), so an ease begun at open is spent unseen.
 func ease_the_opening_in() -> void:
 	if not _opening_ease_owed: return
 	assert(_show_view_opened, "a show lands after its opening view was chosen")
 	_opening_ease_owed = false
 	_opening_in_flight = true
+#⚠ PINNED JUST BEFORE EVERY DRAW: the scroller moves the layout in its own `_process`, after the
+#ease's physics tick, and a pin taken there drew the focal point 2.39 px off at 3 grids (measured).
+	RenderingServer.frame_pre_draw.connect(_re_pin_the_opening)
 	_grow_the_opening_to(0.0)
-#⚠ PINNED AGAIN JUST BEFORE THE LANDING FRAME DRAWS: the picture's resize re-sorts the board after
-#this call, and the pin taken here was 6 px off at three grids (measured).
-	RenderingServer.frame_pre_draw.connect(_re_pin_the_opening, CONNECT_ONE_SHOT)
-#⚠ THE CLOCK STARTS A FRAME LATE: the landing frame renders the whole picture for the first time
-#(~300 ms, measured), and a clock already running pays that debt in 8 physics steps -- 38% of the
-#ease gone in the first visible frame.
-	await get_tree().process_frame
-	if _opening_in_flight: _start_the_view_ease()
+	_start_the_view_ease()
 
 #⚠ THE WHOLE BOARD SCALES ABOUT THE POINT ITS REST VIEW CENTRES, with its layout left at rest. A
 #smaller `drawn_zoom` re-lays the content inside a larger window and the scroll clamps at zero, so
@@ -1080,7 +1078,9 @@ func ease_the_opening_in() -> void:
 func _grow_the_opening_to(t: float) -> void:
 	_re_pin_the_opening()
 	scale = Vector2.ONE * lerpf(OPENING_ZOOM_FRACTION, 1.0, t)
-	if t >= 1.0: _opening_in_flight = false
+	if t < 1.0: return
+	_opening_in_flight = false
+	RenderingServer.frame_pre_draw.disconnect(_re_pin_the_opening)
 
 #The pivot is the point the rest view centres, in this board's own unscaled pixels: the focused
 #grid's cell block, or the whole set's in the overview.
@@ -2287,10 +2287,11 @@ func card_layer_for(coord: BoardCoord) -> Node2D:
 #⚠ EVERY LENGTH HERE IS A BOARD LENGTH AND THE ORIGIN IS A SCREEN POINT. The board draws at
 #`drawn_zoom`, so each is taken into screen pixels before it is added to a measured global.
 func _stack_slot_center(origin_x: float, floor_y: float, column: int, h: int) -> Vector2:
-	var width := CardVisual.card_size_play.x * drawn_zoom
-	var sep := float(separation) * drawn_zoom
+	var z := _content_scale_on_screen()
+	var width := CardVisual.card_size_play.x * z
+	var sep := float(separation) * z
 	var x := origin_x + float(column) * (width + sep) + width * 0.5
-	var y := floor_y - _depth_pitch_px() * drawn_zoom * float(h) 			- CardVisual.card_size_play.y * drawn_zoom * 0.5
+	var y := floor_y - _depth_pitch_px() * z * float(h) 			- CardVisual.card_size_play.y * z * 0.5
 	return Vector2(x, y)
 
 #⚠ NO SEPARATION: a `VBoxContainer` gives even a zero-height child one and the row grew at its
@@ -2405,12 +2406,13 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 		for i : int in game.state.upper_zone.size():
 			deepest = maxi(deepest, game.state.upper_zone[i].datas.size())
 	var resting_h := CardVisual.card_size_play.y 			+ float(maxi(deepest - 1, 0)) * _depth_pitch_px()
-	var floor_y := upper_zone_right.global_position.y + resting_h * drawn_zoom
+	var z := _content_scale_on_screen()
+	var floor_y := upper_zone_right.global_position.y + resting_h * z
 	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h)
 #⚠ THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS. A reveal grows one
 #layer's strip and lifts every layer above it by an amount the pitch does not describe. The offset
 #comes from the same eased numbers that size the controls, so geometry outlives relayout timing.
-	at.y -= _row_open_offset(coord) * drawn_zoom
+	at.y -= _row_open_offset(coord) * z
 	return at
 
 #A grid cell: column and row come from the DATA, height from the cell's own stack. The panel's
@@ -2427,20 +2429,21 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 	var origin : Vector2 = _grid_cells_origin.get(coord.grid,
 			_grid_panel_origin.get(coord.grid, Vector2.ZERO))
-#⚠ EVERY LENGTH HERE IS A BOARD LENGTH AND THE ORIGIN IS A SCREEN POINT. The board is drawn at
-#`drawn_zoom`, so each of them is taken into screen pixels before it is added to a measured global
-#origin; leaving one unscaled puts the card a growing fraction of a cell off.
-	var width := CardVisual.card_size_play.x * drawn_zoom
-	var full := CardVisual.card_size_play.y * drawn_zoom
-	var sep := float(separation) * drawn_zoom
-	var depth_pitch := (float(CardVisual.card_separation_play_custom) + float(separation)) * drawn_zoom
+#⚠ EVERY LENGTH HERE IS A BOARD LENGTH AND THE ORIGIN IS A SCREEN POINT. Each is taken into screen
+#pixels by `_content_scale_on_screen()` before it is added to a measured global origin; leaving one
+#unscaled puts the card a growing fraction of a cell off.
+	var z := _content_scale_on_screen()
+	var width := CardVisual.card_size_play.x * z
+	var full := CardVisual.card_size_play.y * z
+	var sep := float(separation) * z
+	var depth_pitch := (float(CardVisual.card_separation_play_custom) + float(separation)) * z
 	var x := origin.x + float(coord.x) * (width + sep) + width * 0.5
 #⚠ THE ROW BOTTOMS ARE MEASURED FROM THE BOARD'S FLOOR, NOT FROM THIS PANEL. Every panel is
 #bottom-aligned against that one line and it does not move when a stack deepens. Do NOT refresh a
 #rect cache from `_physics_process` instead: that feeds the relayout the floor code writes into.
 	var bottom : float = _grid_cells_bottom.get(coord.grid, _board_floor_y)
 	for r : int in range(coord.y + 1, _grid_rows(coord.grid)):
-		bottom -= (_grid_row_height(coord.grid, r) + float(separation)) * drawn_zoom
+		bottom -= (_grid_row_height(coord.grid, r) + float(separation)) * z
 #⚠ THE STACK STARTS ON THE ROW'S BOTTOM LINE, NOT ONE SEPARATION ABOVE IT. A covered cell frame is
 #HIDDEN rather than flattened, so it takes no separation under the stack any more — the height-0
 #card's bottom edge IS the row's bottom line, exactly where the frame's was.
