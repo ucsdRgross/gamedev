@@ -82,6 +82,9 @@ func _ready() -> void:
 	await test_the_preview_is_drawn_at_the_one_preview_size()
 	await test_the_preview_follows_a_resize_to_the_new_preview_size()
 	await test_a_hover_describes_a_board_card_without_sticking_it()
+	await test_re_hovering_the_focused_card_describes_it_again()
+	await test_a_hover_that_moves_the_focus_publishes_once()
+	await test_re_hovering_a_stuck_card_keeps_it_stuck()
 	await test_a_pad_focus_describes_a_board_card_without_sticking_it()
 	await test_leaving_and_returning_restores_the_screens_own_description()
 	await test_a_description_dismissed_with_the_x_stays_dismissed_on_return()
@@ -1917,8 +1920,7 @@ func _hover_in(viewport: Viewport, at: Vector2) -> void:
 func _hover_another_card(controls: Array[Control], avoid: Control) -> Control:
 	for control : Control in controls:
 		if control == avoid: continue
-#A control that ALREADY holds the focus publishes nothing when the pointer lands on it: the hover
-#is what MOVES the focus, and moving it where it already is is not an event.
+#The walk is after a hover that MOVES the focus, which the card already holding it cannot give.
 		if control == _game_viewport.gui_get_focus_owner(): continue
 		_hover(control.get_global_rect().get_center())
 		await get_tree().process_frame
@@ -2324,6 +2326,100 @@ func test_a_hover_describes_a_board_card_without_sticking_it() -> void:
 		check(hud_stack.visible and not _panel.visible,
 				"the pointer leaving every card CLOSES the description again")
 		check(not _exit_button().is_visible_in_tree(), "...with the X gone with it")
+	await _end_main_fixture()
+
+# Every entry the board publishes, in order -- a count, so a hover that published twice shows.
+func _record_board_publishes() -> Array[InfoEntry]:
+	var published : Array[InfoEntry] = []
+	_play_area.info_requested.connect(func(entry: InfoEntry) -> void: published.append(entry))
+	return published
+
+## The pointer leaving keeps the focus rim, and coming back onto that same card describes it again.
+func test_re_hovering_the_focused_card_describes_it_again() -> void:
+	await _start_game_fixture()
+	var title : Label = _panel.get_node(^"%Title")
+	var controls := await _hoverable_card_controls()
+	check(controls.size() >= 2, "the dealt board offers two card controls to hover",
+			str(controls.size()))
+	if controls.size() >= 2:
+		var a : Control = controls[0]
+		var a_title : String = _expected_text(_play_area.ui_data[a])[0]
+		var published := _record_board_publishes()
+		_hover(a.get_global_rect().get_center())
+		await get_tree().process_frame
+		_hover(_bare_board_point(controls))
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(_game_viewport.gui_get_focus_owner() == a,
+				"sanity: the closed hover left the board focus (and its rim) on the card")
+		_hover(a.get_global_rect().get_center())
+		await get_tree().process_frame
+		var a_publishes := published.filter(func(e: InfoEntry) -> bool: return e.title == a_title)
+		check(a_publishes.size() == 2,
+				"hovering the card, leaving and hovering it again describes it BOTH times",
+				str(a_publishes.size()))
+		check(_panel.visible and title.text == a_title,
+				"...and the sidebar reads it after the second hover", title.text)
+		_hover(_bare_board_point(controls))
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var b := await _hover_another_card(controls, a)
+		check(b != null, "the pointer landed on a second card")
+		if b != null:
+			check(_panel.visible and title.text == _expected_text(_play_area.ui_data[b])[0],
+					"leaving the first card and hovering another describes the other", title.text)
+	await _end_main_fixture()
+
+## A hover that moves the focus publishes through focus_entered alone, so the re-hover route adds no second publish.
+func test_a_hover_that_moves_the_focus_publishes_once() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	check(controls.size() >= 2, "the dealt board offers two card controls to hover",
+			str(controls.size()))
+	if controls.size() >= 2:
+		var a : Control = controls[0]
+		_hover(a.get_global_rect().get_center())
+		await get_tree().process_frame
+		var published := _record_board_publishes()
+		var b := await _hover_another_card(controls, a)
+		check(b != null, "the pointer moved the focus onto a second card")
+		if b != null:
+			var b_title : String = _expected_text(_play_area.ui_data[b])[0]
+			var b_publishes := published.filter(func(e: InfoEntry) -> bool: return e.title == b_title)
+			check(b_publishes.size() == 1,
+					"a hover that moves the focus publishes the new card EXACTLY once",
+					str(b_publishes.size()))
+	await _end_main_fixture()
+
+# A click on the first Entrance card sticks its description; null when the board dealt none.
+func _stick_an_entrance_card() -> CardData:
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if entrance.is_empty(): return null
+	var stuck : CardData = _play_area.ui_data[entrance[0]]
+	await _lock_without_holding(entrance[0])
+	return stuck
+
+## A stuck description through a re-hover: the pointer coming back onto the stuck card neither loses nor unsticks it.
+func test_re_hovering_a_stuck_card_keeps_it_stuck() -> void:
+	await _start_game_fixture()
+	var title : Label = _panel.get_node(^"%Title")
+	var stuck := await _stick_an_entrance_card()
+	if stuck != null:
+		var controls := await _hoverable_card_controls()
+		var a : Control = _play_area.data_ui[stuck]
+		_hover(_bare_board_point(controls))
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_hover(a.get_global_rect().get_center())
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(title.text == _expected_text(stuck)[0],
+				"re-hovering the stuck card still reads it", title.text)
+		check(_container.is_locked() and _play_area.locked_data == stuck,
+				"...and it is still stuck")
+		check(_exit_button().is_visible_in_tree(), "...with its X up")
 	await _end_main_fixture()
 
 ## The same rule for the other device: a pad/keyboard focus describes and sticks nothing, and the focus leaving the board closes it.
@@ -2898,12 +2994,8 @@ func test_leaving_everything_returns_to_the_locked_card() -> void:
 func test_a_stuck_card_survives_hovers_and_the_pointer_reaching_the_sidebar() -> void:
 	await _start_game_fixture()
 	var title : Label = _panel.get_node(^"%Title")
-	var entrance := await _entrance_card_controls()
-	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
-			str(entrance.size()))
-	if not entrance.is_empty():
-		var stuck : CardData = _play_area.ui_data[entrance[0]]
-		await _lock_without_holding(entrance[0])
+	var stuck := await _stick_an_entrance_card()
+	if stuck != null:
 		check(_container.is_locked(), "a CLICK is what sticks the description")
 		check(_exit_button().is_visible_in_tree(),
 				"...and only a stuck description carries the exit X")

@@ -3607,7 +3607,8 @@ func create_card_control() -> Control:
 #`_unhandled_input` is too late.
 	new_control.gui_input.connect(func(e: InputEvent)->void:_on_cell_gui_input(e, new_control))
 	new_control.mouse_entered.connect(func()->void:
-			new_control.grab_focus()
+			if new_control.has_focus(): _describe_control(new_control)
+			else: new_control.grab_focus()
 			moused_hovered_control = new_control)
 	new_control.mouse_exited.connect(func()->void:
 			if moused_hovered_control == new_control:
@@ -3682,6 +3683,15 @@ func _sweep_legal_cells() -> void:
 	_legal_cells = legal
 	_refresh_card_marking()
 
+# A pointer re-entering the card that already holds the focus moves no focus, so the hover
+# publishes here itself; a hover that DOES move the focus publishes only through focus_entered.
+func _describe_control(control: Control) -> void:
+	if not ui_data.has(control) or _focus_is_resting: return
+	if is_stock_control(control):
+		_publish_stock_info(_stock_slot_of_control[control])
+	else:
+		_publish_info(ui_data[control])
+
 func on_control_focus_entered(control:Control) -> void:
 	flush_rebuild()
 #ONE CURSOR FOR BOTH INPUT MODES: whatever moved the board focus onto a grid — mouse hover, arrows,
@@ -3691,11 +3701,7 @@ func on_control_focus_entered(control:Control) -> void:
 	focused_visual = null
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
-	if ui_data.has(control) and not _focus_is_resting:
-		if is_stock_control(control):
-			_publish_stock_info(_stock_slot_of_control[control])
-		else:
-			_publish_info(ui_data[control])
+	_describe_control(control)
 
 #⚠ HOVER DOES NOT RESIZE THE STACK, AND ESPECIALLY NOT ITS ZONE CARD. Hand-sizing controls by fixed
 #child index on every focus named the ZONE card once the board stacked upward, and the zone visibly

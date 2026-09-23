@@ -490,8 +490,8 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/UI/play_area.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar DragPlace'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'mouse_entered on a card that already holds the focus publishes through PlayArea._describe_control (the publish body both paths share); a hover that moves the focus still publishes once, through focus_entered. Red (HEAD play_area.gd): Sidebar 1679 passed, 2 FAILED (described once, not twice). Green: FILTERED 4 of 51 [Sidebar DragPlace UiViewers Interaction]: 2188; --logic 3021. Fable review: product clean; one test-order fix (read the stuck card before the lock). Gates: ALL 51 SUITES 6854 passed, 1 FAILED (UI VIEWERS, below), then 6836 CHECKS PASSED - per-suite tables differ only in BOARD FUZZ and the timing-conditional SIDEBAR world-generator check.'
   notes: 'P34 measured it: hover publishes through grab_focus -> on_control_focus_entered, so a card already focused gets no focus_entered on re-hover. Publish on mouse_entered as well (one home: highlight_info) without moving the focus. Red: hover A, leave, hover A again - the sidebar describes A twice. sonnet.'
 - id: P48
   description: Keyboard parity - arrow keys cannot move the focus from a focused grid onto the Entrance (Up and Down stay in the grid), so a keyboard-only player cannot pick up a card from the board (the standing one-device principle).
@@ -564,6 +564,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - A LEAKED LIVE BOARD between suites: a settings write in WALL FOCUS rebuilt a PlayArea another suite left alive (the P23 SCRIPT ERROR surfaced only on the full gate, under no filtered subset). Harmless now, but it is an order-dependence source - find the suite that does not free its Main/GameView.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 - VISUAL LAYERS "one frame after the section changes, no circle has SNAPPED to its new card" failed 1 of 3 implementer nine-suite runs on the P44 (5b) tree, 0 of 1 overseer gates; the (5b) move-tween change is the one edit that reaches a bare GameView. Measure before naming a cause.
+- UI VIEWERS "a later arrow never drags the focus back to the first card" failed 1 of 2 overseer gates on the P47 tree (its failure line interleaved with WALL TRANSITION's soak output): the row grabs focus on a standalone DeckViewer's second card, waits ONE frame, and the focus is gone. P47 cannot reach it (no PlayArea in that fixture; its new branch grabs no focus). Suspect a focus steal from a concurrently running suite in the same window - measure before naming a cause.
 
 ## Next up
 1. P47 (low), P45 (low), P43 (medium), P48 (medium, keyboard parity), then the close per /plan-run in a NEW session.
