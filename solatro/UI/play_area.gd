@@ -703,9 +703,9 @@ func _sync_entrance_x() -> void:
 		columns_x = xf.origin.x
 		columns_w = xf.basis_xform(cells.size).x
 #The strip already starts at the board window's left edge, so the centred position is the spare
-#width either side of the row, halved.
+#width either side of the row, halved, carried along by the sidebar's slide as the set is.
 	var under_the_grid := columns_x
-	var centred := (_board_width_left() - columns_w) * 0.5
+	var centred := (_board_width_left() - columns_w) * 0.5 + board_slide_offset.x
 	entrance_h_track.position.x = lerpf(centred, under_the_grid, _entrance_slide)
 	entrance_h_track.size.x = columns_w
 	_apply_entrance_zoom_rect()

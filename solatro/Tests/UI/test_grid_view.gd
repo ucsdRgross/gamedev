@@ -3221,7 +3221,7 @@ func run_a_fresh_show_opens_live_on_the_zoom_in_test() -> void:
 				"...and the deal's cards sit on their slots on every live frame (%d grids)" % grids,
 				"worst card %.2f px off its slot on live frame %d" % [worst_lag, worst_lag_frame])
 #A COMMITTED ENTRANCE GROWS WITH ITS GRID: its offset from the grid is the rest offset at the scale
-#drawn on that frame. An uncommitted one is centred in the window, which the sidebar slides past.
+#drawn on that frame. An uncommitted one slides with the set; the sidebar's row pins that.
 		var worst_entrance := 0.0
 		var rest_row : PackedFloat64Array = landed[-1]
 		for row : PackedFloat64Array in landed:
@@ -3298,6 +3298,9 @@ func run_the_board_rests_in_the_window_beside_the_sidebar_test() -> void:
 		var arriving := await _sample_through_the_slide(main, main.enter_game, 1.0)
 		var pa := _main_game_view(main).play_area
 		var grids := pa.grid_container.get_child_count()
+		check(grids < 2 or pa.entrance_home_grid() == PlayArea.NO_GRID,
+				"precondition: the %d-grid board's Entrance belongs to no grid yet" % grids,
+				"home grid %d" % pa.entrance_home_grid())
 		var fit := pa.overview_board_zoom() if pa.view_mode == PlayArea.ViewMode.OVERVIEW 				else pa.focused_board_zoom(pa.focused_grid)
 		var pair := _set_and_window(pa)
 		var span := pair[0]
@@ -3321,9 +3324,10 @@ func run_the_board_rests_in_the_window_beside_the_sidebar_test() -> void:
 			check(is_equal_approx(pa.board_zoom, pa.focused_board_zoom(0)),
 					"one grid rests at the focused fit of the window beside the sidebar, as before",
 					"zoom %.4f, fit %.4f" % [pa.board_zoom, pa.focused_board_zoom(0)])
-		_check_the_slide_only_shifts(arriving, fit, 1.0, grids)
+		var rest : PackedFloat64Array = arriving.back()
+		_check_the_slide_only_shifts(arriving, fit, 1.0, grids, rest)
 		var leaving := await _sample_through_the_slide(main, main._go_to_wall_view, 0.0)
-		_check_the_slide_only_shifts(leaving, fit, 0.0, grids)
+		_check_the_slide_only_shifts(leaving, fit, 0.0, grids, rest)
 		await _tear_down_main(main)
 
 ## Column of `_sample_through_the_slide`'s rows: the sidebar's slid fraction.
@@ -3334,12 +3338,14 @@ const FIT := 1
 const DRAWN := 2
 ## Column: the instance id of the view's live ease, 0 while none runs.
 const EASE_ID := 3
+## Column: the Entrance's drawn centre x less the set's, in the picture's pixels.
+const ENTRANCE_OFF := 4
 
 #From the last frame the sidebar sits furthest from `slid` to the last frame of whatever ease runs
 #once it has settled there: the fit held, the drawn scale never falling and ending on the fit, and
-#at most one ease.
+#at most one ease. `rest` is the row the board settled on beside the sidebar.
 func _check_the_slide_only_shifts(rows: Array[PackedFloat64Array], fit: float, slid: float,
-		grids: int) -> void:
+		grids: int, rest: PackedFloat64Array) -> void:
 	var leg := "arriving" if slid > 0.5 else "leaving"
 	var start := 0
 	for k : int in rows.size():
@@ -3364,9 +3370,19 @@ func _check_the_slide_only_shifts(rows: Array[PackedFloat64Array], fit: float, s
 	check(eases.size() <= 1,
 			"...and at most one ease of the board runs over the slide (%s, %d grids)" % [leg, grids],
 			"%d eases" % eases.size())
+	if grids < 2: return
+#THE UNCOMMITTED ENTRANCE SLIDES WITH THE SET, so it stays centred under it: its offset from the
+#set is the rest offset at the scale drawn on that frame.
+	var worst := 0.0
+	for k : int in range(start, rows.size()):
+		var expected := rest[ENTRANCE_OFF] * rows[k][DRAWN] / rest[DRAWN]
+		worst = maxf(worst, absf(rows[k][ENTRANCE_OFF] - expected))
+	check(worst <= 1.0,
+			"...and the uncommitted Entrance slides with the set of %d while the sidebar is %s"
+			% [grids, leg], "worst %.2f px off its rest offset %.2f" % [worst, rest[ENTRANCE_OFF]])
 
 #Every DRAWN frame of `move` (an async Main route), until it has returned, the sidebar has settled on
-#`slid` and the view's ease has finished. Columns: SLID through EASE_ID.
+#`slid` and the view's ease has finished. Columns: SLID through ENTRANCE_OFF.
 func _sample_through_the_slide(main: Main, move: Callable, slid: float) -> Array[PackedFloat64Array]:
 	var wp : WallPicture = main._pictures[&"game"]
 	var moved : Array[bool] = [false]
@@ -3384,8 +3400,10 @@ func _sample_through_the_slide(main: Main, move: Callable, slid: float) -> Array
 		var ease_id := 0.0
 		if pa._view_tween and pa._view_tween.is_valid():
 			ease_id = float(pa._view_tween.get_instance_id())
+		var set_centre := _set_and_window(pa)[0].get_center().x
 		rows.append(PackedFloat64Array([view.hud_container.slid_fraction(), pa.board_zoom,
-				pa.drawn_zoom * pa.scale.x, ease_id]))
+				pa.drawn_zoom * pa.scale.x, ease_id,
+				_entrance_row_rect(pa).get_center().x - set_centre]))
 		if moved[0] and is_equal_approx(view.hud_container.slid_fraction(), slid) 				and pa._view_ease >= 1.0: break
 	CardEnvironment.CURRENT = (wp.screen_root as GameView).game
 	return rows
