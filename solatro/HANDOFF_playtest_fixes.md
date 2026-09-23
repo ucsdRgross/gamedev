@@ -139,6 +139,7 @@ a lot of these issues are with lack of parity between different modal input opti
 - **Eleventh round (verbatim), P44 (5b) after its measurement** (the scene is built before the flight; the one cost left is the picture's FIRST live render, one frozen frame up to ~0.35 s on Box A, ~40 ms warm). Where that frame falls: "c: at app launch" - rendered once, hidden, behind the start menu or wall reveal, so no flight pays it. The live point: "zoom-in start, 0.65" - the start of the flight's existing zoom-in phase (WallTransition.phase_bounds()), no new knob.
 - **Twelfth round (verbatim), P44 (6) after its measurement** (the board is fitted to the sidebar's RESTING reserve before the picture is visible; a slide only shifts it). Ruling (6): "a: close as built" - the resting fit applies unseen, the slide shifts at one scale, the only visible ease on entry is the opening grow. An UNCOMMITTED Entrance during a slide: "a: slide with the set" - it shifts with the board as the committed one does, staying centred under the set.
 - **Thirteenth round (verbatim), P46.** Where the keyboard focus goes when a viewer closes on the game screen: "a: back to the opener" - as built; the board card the player left is reached with Right x3, undescribed until they move.
+- **Fourteenth round (verbatim), P45.** After the measurement (Godot omits a setting equal to its default from a saved .tres, so every file saved under the old 0.45 default loads the new 0.15): "a: close, already done".
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -474,8 +475,8 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/Scripts/settings_manager.gd, solatro/Scripts/player_settings.gd, solatro/Tests/Settings/]
   verification_command: 'run_tests.py --logic; --filter Settings'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'No code change. Measured: the default is 0.15 since P37 (only ever 0.45 or 0.15); SettingsManager ResourceLoader-loads user://settings.tres with no version seam; Godot 4.7.2 omits prop_tick_fraction from the file when it equals the default, so a file saved under 0.45 carries no line and loads 0.15; a stored 0.45 can only be a player choice made after P37. Owner closed it (fourteenth round).'
   notes: 'Find how settings load (SettingsManager) and whether a version/migration seam exists; if none, the smallest honest mechanism is a settings-format version with one migration (0.45 -> 0.15 when the stored value equals the OLD default only - a player who set their own value keeps it; say if the owner wants otherwise). Red: a saved .tres with 0.45 loads as 0.15. sonnet unless a seam has to be designed.'
 - id: P46
   description: While a viewer is hosted, the board and its cards are not the focus - a board card holding keyboard focus publishes NO description to the sidebar (the HUD or the viewer card's description shows), so the game screen matches the map (owner, eighth round, 7 = b).
@@ -567,7 +568,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - UI VIEWERS "a later arrow never drags the focus back to the first card" failed 1 of 2 overseer gates on the P47 tree (its failure line interleaved with WALL TRANSITION's soak output): the row grabs focus on a standalone DeckViewer's second card, waits ONE frame, and the focus is gone. P47 cannot reach it (no PlayArea in that fixture; its new branch grabs no focus). Suspect a focus steal from a concurrently running suite in the same window - measure before naming a cause.
 
 ## Next up
-1. P47 (low), P45 (low), P43 (medium), P48 (medium, keyboard parity), then the close per /plan-run in a NEW session.
+1. P43 (medium), P48 (medium, keyboard parity), then the close per /plan-run in a NEW session.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
