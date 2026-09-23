@@ -10,9 +10,9 @@ const MAIN_SCENE := preload("res://Levels/main.tscn")
 const MAP_SCENE := preload("res://Levels/map.tscn")
 const MENU_SCENE := preload("res://Levels/menu.tscn")
 
-# Measured on the pre-deletion tree (Part A, `%MultScore`/`%Preview` still mounted). The inset
-# formula never depended on either retired control, so this is expected to stay unchanged.
-const MEASURED_BOARD_CENTRE_PX := 733.808
+# Removing the retired controls did not re-centre the board; moves with the picture design size.
+const MEASURED_BOARD_CENTRE_PX := 723.417
+
 
 ## Higher than a real deck can score in a handful of placements, so a test about something else never trips the goal's own automatic end.
 const GOAL_OUT_OF_REACH : int = 100000000
@@ -46,7 +46,7 @@ func _ready() -> void:
 	await test_the_game_views_hud_container_is_scoped_to_its_own_wall()
 	behavior_section("THE CONTAINER'S GEOMETRY")
 	await test_game_hud_members_stay_inside_the_container_at_a_side_window()
-	await test_the_inset_is_394_at_the_pictures_own_aspect()
+	await test_the_inset_is_the_sidebars_share_at_the_pictures_own_aspect()
 	await test_an_ultrawide_window_clamps_and_narrows()
 	await test_a_resize_re_applies_every_overlay_touch_target()
 	await test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide()
@@ -902,26 +902,34 @@ func test_the_game_views_hud_container_is_scoped_to_its_own_wall() -> void:
 
 # ------------------------------------------------------------------ the container's geometry
 
-## At the picture's own aspect the window cancels and the cap never bites -- the board is inset 394 px at any 16:9 window size, 4K included.
-func test_the_inset_is_394_at_the_pictures_own_aspect() -> void:
+## The resting inset at the picture's own aspect: the sidebar's fraction of the picture's width.
+func _sidebar_share_of_the_picture() -> float:
+	var settings := SettingsManager.settings
+	return settings.container_size_fraction * float(PlayArea.game_picture_design_size(settings).x)
+
+## At the picture's own aspect the window cancels and the cap never bites -- the board is inset the sidebar's share of the picture at any 16:9 window size, 4K included.
+func test_the_inset_is_the_sidebars_share_at_the_pictures_own_aspect() -> void:
 	await _start_game_fixture()
 	for window : Vector2i in [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440),
 			Vector2i(3840, 2160)]:
 		await _resize_viewport(_booted_viewport, window)
-		check(absf(_play_area.board_inset_left - 394.0) <= 0.5,
-				"the board publishes a 394 px inset at %s (3.1)" % window,
-				"%.3f" % _play_area.board_inset_left)
+		check(absf(_play_area.board_inset_left - _sidebar_share_of_the_picture()) <= 0.5,
+				"the board publishes the sidebar's share of the picture as its inset at %s (3.1)"
+				% window, "%.3f vs %.3f" % [_play_area.board_inset_left,
+				_sidebar_share_of_the_picture()])
 	await _end_main_fixture()
 
 ## An ultrawide window clamps the container, flush against the band's inner edge, empty space outboard.
 func test_an_ultrawide_window_clamps_and_narrows() -> void:
 	await _start_game_fixture(Vector2i(3840, 1080))
-	check(absf(_play_area.board_inset_left - 262.7) <= 0.5,
-			"an ultrawide window clamps and narrows the board's published inset (3.2)",
-			"%.3f" % _play_area.board_inset_left)
 	var settings := PlayerSettings.new()
 	var window := Vector2(3840.0, 1080.0)
 	var rect := HudContainer.rect_for_window(window, settings)
+#The picture covers the window by its width here, so one window px is design.x / window.x of it.
+	var clamped := rect.size.x * float(PlayArea.game_picture_design_size(settings).x) / window.x
+	check(absf(_play_area.board_inset_left - clamped) <= 0.5,
+			"an ultrawide window clamps and narrows the board's published inset (3.2)",
+			"%.3f vs %.3f" % [_play_area.board_inset_left, clamped])
 	var inner_edge := settings.container_size_fraction * window.x
 	check(is_equal_approx(rect.position.x + rect.size.x, inner_edge),
 			"the container's right edge is flush against the band's inner edge")
@@ -1343,9 +1351,9 @@ func test_the_sidebar_slides_in_after_the_landing_and_the_board_shifts_with_it()
 	CardEnvironment.CURRENT = view.game
 	_play_area = view.play_area
 	_game_viewport = _main._pictures[&"game"].viewport
-	check(absf(_play_area.board_inset_left - 394.0) <= 0.5,
+	check(absf(_play_area.board_inset_left - _sidebar_share_of_the_picture()) <= 0.5,
 			"the board ends inset by the whole sidebar, exactly where it rests today",
-			"%.3f" % _play_area.board_inset_left)
+			"%.3f vs %.3f" % [_play_area.board_inset_left, _sidebar_share_of_the_picture()])
 	check(absf(_container.position.x - _container.container_rect().position.x) <= 0.5,
 			"...and the sidebar ends at its resting rect, not part way",
 			"%.3f vs %.3f" % [_container.position.x, _container.container_rect().position.x])
@@ -1403,7 +1411,7 @@ func test_a_leave_mid_slide_ends_with_the_sidebar_fully_out() -> void:
 	await _end_main_fixture()
 
 # R1 asks for a SHIFT, not a re-scale. Fitting the board against the live reserve re-zoomed it by
-# up to 1.333x as the window went 1576 -> 1182: sampled per frame, in both views, the board's zoom
+# up to 1.333x as the window lost the sidebar's quarter: sampled per frame, in both views, the zoom
 # must not move at all while its x travels the sidebar's whole width.
 func test_the_slide_shifts_the_board_without_re_scaling_it() -> void:
 	await _start_game_fixture()

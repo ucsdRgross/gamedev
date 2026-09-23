@@ -44,22 +44,14 @@ camera stepping is proven end-to-end through a real key route, and the saved pan
 
 ```
 focused_content_height_px()  475   block 286 + Entrance strip 81 + 2 edge pads 108
-the live focused fit divides  510   ...plus the panel's column-label gutter 27 and the
-                                    scroller's reserved horizontal band 8
+the live focused fit divides  510   ...plus the panel's column-label gutter 27 and an 8 px
+                                    "scrollbar band" (measured: the focus-border margins)
 so the solver models z = 834/475 = 1.756 where the board really uses 834/510 = 1.635 -- 7% low
 ```
 
-⚠ **THE 27 IS A FONT METRIC AND THE 8 IS A THEME ONE**, and `game_picture_design_size()` runs before
-any board exists to measure either. That is the whole of what is left of `GAP-039`.
-⚠ **DO NOT CLOSE IT BY DELETING THE TWO TERMS FROM THE LIVE FIT.** The gutter is real content and
-the band is really reserved; dropping them makes the model agree by letting the board overflow its
-window, and the board is bottom-anchored, so the overflow goes off the TOP and the top row clips
-again — which is the bug this whole stream started on.
-
-**The cheapest honest route, NOT yet chosen:** measure both once from real controls and cache them,
-so the static sizing can read a measured number rather than a derived one. ⚠ It needs a tree to
-resolve a theme, and `H1` requires the picture stay ONE fixed size for a run, so where that
-measurement happens is a design decision and belongs to the owner.
+The 27 is a font metric, now measured by `PlayArea.board_furniture_height_px()`. The 8 was never a
+scrollbar band: measured, it was the board scroller's focus-border margins, and
+`SCROLL_MODE_SHOW_NEVER` reserves no band. The border is off and the term is gone.
 
 ## ⚠ THE FOCUSED VIEW'S HEIGHT, AS IT NOW STANDS
 
@@ -79,12 +71,11 @@ height denominator = block + panel gutter + Entrance strip + 2 x edge pad + scro
   sizes, which a container answers from its children on demand — no stale rect — and subtracting the
   cells' own minimum takes the stacks' DEPTH back out, so a deepening stack cannot re-scale the
   board.
-- `_scroller_frame_h()` — the 8 px band the scroller keeps for its horizontal bar.
 
 ⚠ **BOTH SCROLLBARS ARE `SCROLL_MODE_SHOW_NEVER`, AND SIZING ALONE COULD NOT DO IT.** Measured: the
 vertical bar shows at EXACT equality of content and page — hidden at 1152x648, shown at 1147x649,
 both reading `313 == 313`. Any fit is a coin toss between two widths five pixels apart.
-⚠ **SHOW_NEVER HIDES A BAR AND KEEPS ITS BAND**, which is why `_scroller_frame_h()` still exists.
+`SHOW_NEVER` hides a bar and reserves no band for it: the page is the scroller's whole rect.
 
 **Verified by eye and by measurement at 1147x649, 1152x648, 1920x600, 800x480 and 412x892:** no
 scrollbar, the whole 5x5 block and the Entrance row inside the window, a card-row buffer at each end.
@@ -1474,14 +1465,12 @@ THE TREE IS CLEAN. Nothing is half-applied.
 THE NINE FAILURES ARE TWO QUESTIONS, NOT NINE BUGS
   8 GRID VIEW = GAP-039's last 7%: the isolation solver divides by 475 where the live
     focused fit divides by 510. The missing 35 is the panel's column-label gutter (27, a
-    FONT metric) plus the scroller's reserved band (8, a THEME one), and the picture is
+    FONT metric) plus an 8 px "band" (measured later: the focus-border margins), and the picture is
     sized before any board exists to measure either.
     ! TP-140 failing SYMMETRICALLY on both neighbours is PROGRESS -- it used to fail on
     the left one only. Both are now short by the same amount.
-    ! DO NOT close it by deleting those two terms from the live fit. The gutter is real
-    content and the band is really reserved; dropping them lets the board overflow its
-    window, and the board is bottom-anchored, so the overflow goes off the TOP and the
-    top row clips again -- the bug the whole stream started on.
+    ! The 8 was the scroller's focus-border margins, not a reserved band (measured);
+    both are gone now.
   1 GRID LAYOUT 116.0 px = GAP-030's settings interference. That suite ALONE passes.
 
 PICK A TRACK AND TELL THE OWNER WHICH

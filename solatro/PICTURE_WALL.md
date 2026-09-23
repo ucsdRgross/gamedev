@@ -293,13 +293,11 @@ three of them owner calls, and the composition ones are now judgeable live in th
 
 - **`design/poker-patience/gaps/GAP-038`** — answered `(d)` and **NOT BUILT**. The whole
   HUD-scales-with-the-picture pass is parked on it.
-- **`design/poker-patience/gaps/GAP-039`** — the focused fit's isolation derivation is short by
-  35 px of 510, and the 35 is a FONT metric (the panel's column-label gutter, 27) plus a THEME one
-  (the scroller's reserved horizontal band, 8). `game_picture_design_size()` runs before any board
-  exists to measure either. ⚠ **DO NOT CLOSE IT BY DELETING THE TWO TERMS FROM THE LIVE FIT.**
-  The gutter is real content and the band is really reserved; dropping them makes the model agree
-  by letting the board overflow its window, and the board is bottom-anchored, so the overflow goes
-  off the TOP and the top row clips again — which is the bug that stream started on.
+- **`design/poker-patience/gaps/GAP-039`** — the focused fit's isolation derivation was short by
+  35 px of 510: the column-label gutter (27, a font metric, now measured off a `Label` by
+  `PlayArea.board_furniture_height_px()`) and an 8 px "scrollbar band". Measured: the 8 was the
+  board scroller's focus-border margins (`draw_focus_border`, now off); `SCROLL_MODE_SHOW_NEVER`
+  reserves no band, so both the band term and the border are gone.
 
 ⚠ **The wall currently RENDERS WRONG in the running game** — the map sits outside its frame and
 is unclickable. Known, reported by the owner, and owned by the wall stream rather than by any doc

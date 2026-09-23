@@ -302,7 +302,6 @@ divided by the same factor so the window keeps its pixels.
 | Name | Kind | Notes |
 |---|---|---|
 | `PlayArea.board_zoom` | `float` | The live board scale. |
-| `PlayArea.OVERVIEW_BOARD_ZOOM` | const | The overview's scale. |
 | `PlayArea.focused_board_zoom(gi)` | method | Derived, not a knob: the factor that makes a grid as tall as the board window. |
 | `PlayArea._zoom_board_to(z)` | method | |
 | `PlayArea._apply_board_zoom_rect(strip_h)` | method | |

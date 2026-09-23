@@ -37,7 +37,6 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 follow_focus = true
-draw_focus_border = true
 script = ExtResource("1_07a3p")
 wheel_scroll_damper = SubResource("Resource_frxyd")
 dragging_scroll_damper = SubResource("Resource_1opyf")

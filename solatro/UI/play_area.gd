@@ -253,9 +253,8 @@ static func entrance_strip_height_px(settings_res: PlayerSettings, zoom: float) 
 #⚠ STILL AN UNDER-COUNT, AND DELIBERATELY: the remainder is ~35 units of ~510, and the two
 #card-row buffers were the term worth closing.
 
-#The two terms no SETTING describes are the panel's column-label row and the band the scroller
-#reserves for its horizontal bar. ⚠ ASKED OF THE ENGINE, NOT GUESSED AT: they are properties of a
-#Label and an HScrollBar, either of which states its own minimum height without being in a tree.
+#The one term no SETTING describes is the panel's column-label row. ⚠ ASKED OF THE ENGINE, NOT
+#GUESSED AT: a Label states its own minimum height without being in a tree.
 
 #⚠ CACHED, BECAUSE THE PICTURE IS ONE SIZE FOR A RUN. A font or theme swap mid-run would have to
 #invalidate this, and nothing in this game does one.
@@ -263,14 +262,15 @@ static var _furniture_h := -1.0
 static func board_furniture_height_px(settings_res: PlayerSettings) -> float:
 	if _furniture_h < 0.0:
 		var label := Label.new()
-		var bar := HScrollBar.new()
-		_furniture_h = label.get_combined_minimum_size().y + bar.get_combined_minimum_size().y
+		_furniture_h = label.get_combined_minimum_size().y
 		label.free()
-		bar.free()
 	return _furniture_h + board_separation_px(settings_res)
 
 static func focused_content_height_px(settings_res: PlayerSettings) -> float:
-	return grid_block_size_px(settings_res, GridData.new()).y 			+ entrance_strip_height_px(settings_res, 1.0) 			+ 2.0 * board_edge_pad_px(settings_res) 			+ board_furniture_height_px(settings_res)
+	return grid_block_size_px(settings_res, GridData.new()).y \
+			+ entrance_strip_height_px(settings_res, 1.0) \
+			+ 2.0 * board_edge_pad_px(settings_res) \
+			+ board_furniture_height_px(settings_res)
 
 #What the picture's width is divided by to get the half-width a neighbour must clear.
 
@@ -526,9 +526,9 @@ func _ready() -> void:
 #equality of content and page — hidden at a 1152x648 window, shown at 1147x649 with the identical
 #313 == 313 — so any fit lands on a coin toss between two widths five pixels apart.
 
-#⚠ `SCROLL_MODE_SHOW_NEVER` hides a bar and KEEPS ITS BAND; `_scroller_frame_h()` is what pays for
-#the horizontal one. Scrolling itself is untouched — the zoom, the pan actions, the touch drag and
-#a deep stack all still move the board.
+#`SCROLL_MODE_SHOW_NEVER` hides a bar and reserves no band for it: the page is the whole rect.
+#Scrolling itself is untouched — the zoom, the pan actions, the touch drag and a deep stack all
+#still move the board.
 	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 #Pay every FX shader's first-use compile here, on invisible one-pixel quads, rather than on the
@@ -680,8 +680,8 @@ var _cell_score_labels : Dictionary[Vector3i, BigNumberLabel] = {}
 #that starts while the board is still panning still lands under the grid.
 
 #⚠ THE TRACK TAKES THE GRID'S OWN CELL BLOCK, NOT A WIDTH SHARED WITH THE WHOLE BOARD. Both halves
-#are read off the cells' live rect: the scrolled content carries a constant margin of its own
-#(measured: 4 px), and the cells, not the panel, are where the columns start (a 20 px gutter apart).
+#are read off the cells' live rect, because the cells, not the panel, are where the columns start
+#(a 20 px gutter apart).
 func _sync_entrance_x() -> void:
 	if not is_instance_valid(entrance_h_track) or not is_instance_valid(scroll_container): return
 #⚠ THE BOARD'S CONTENT STAYS AT LEAST AS WIDE AS THE ENTRANCE, OR AN ENTRANCE WIDER THAN THE WINDOW
@@ -878,9 +878,8 @@ func _give_the_board_a_floor(strip_h: float) -> void:
 #30 px of inset then left 30.25 of scroll range on a board with nothing out of view -- a board the
 #player could slide off its own spawn position.
 	var pad := board_edge_pad_px(PlayArea.settings()) * drawn_zoom
-	top_level_vbox.custom_minimum_size.y = maxf(
+	top_level_vbox.custom_minimum_size.y = \
 			maxf(_board_height_left() - strip_h - 2.0 * pad, 0.0) / maxf(drawn_zoom, 0.0001)
-			- _scroller_frame_h(), 0.0)
 	top_level_vbox.alignment = BoxContainer.ALIGNMENT_END
 	_publish_board_floor()
 	if not top_level_vbox.resized.is_connected(_publish_board_floor):
@@ -1205,8 +1204,6 @@ const DEFAULT_BOARD_ZOOM := 1.0
 #bottom is authored at scale 1 and grows with the zoom, so the answer is the ratio of the window to
 #the authored set, never a value read back off the last layout.
 func overview_board_zoom() -> float:
-	if not is_instance_valid(scroll_container) or not is_instance_valid(grid_container):
-		return DEFAULT_BOARD_ZOOM
 	var count := grid_container.get_child_count()
 	if count == 0 or size.x <= 0.0 or size.y <= 0.0: return DEFAULT_BOARD_ZOOM
 	var settings_res := PlayArea.settings()
@@ -1228,13 +1225,12 @@ func overview_board_zoom() -> float:
 	grid_container.add_theme_constant_override("separation", sep)
 	var wide := grid_container.get_combined_minimum_size().x
 	grid_container.add_theme_constant_override("separation", was)
-#⚠ THE FIT IS EXACT AND IDEMPOTENT: 912 authored px of grids at 1.296053 is the window's 1182, to
-#the pixel, twice over. The 4 px a three-grid set still rests off centre is NOT this and not the
-#scroller's panel margins, which measure zero -- see `_sync_entrance_x`, which widens the row.
+#⚠ THE FIT IS EXACT AND IDEMPOTENT: the set's authored width at the fit is the window's width, to
+#the pixel, twice over.
 	var tall := maxf(_board_height_left(), 0.0) / (block_h + gutter_h
 			+ entrance_strip_height_px(settings_res, 1.0)
-			+ 2.0 * board_edge_pad_px(settings_res) + _scroller_frame_h())
-	return tall if wide <= 0.0 else minf(tall, maxf(_board_width_left(), 1.0) / wide)
+			+ 2.0 * board_edge_pad_px(settings_res))
+	return minf(tall, maxf(_board_width_left(), 1.0) / wide)
 
 #The scale the board is being TAKEN TO. Every aim is computed at this one, so a pan and a zoom
 #started together land together.
@@ -1258,20 +1254,9 @@ func focused_board_zoom(gi: int) -> float:
 	var pad := board_edge_pad_px(PlayArea.settings())
 	if block_h <= 0.0 or size.y <= 0.0 or size.x <= 0.0: return DEFAULT_BOARD_ZOOM
 	var tall := maxf(_board_height_left(), 0.0) / (block_h + _panel_gutter_h(gi) + base_strip
-			+ 2.0 * pad + _scroller_frame_h())
+			+ 2.0 * pad)
 	var wide := _panel_width(gi)
 	return tall if wide <= 0.0 else minf(tall, maxf(_board_width_left(), 1.0) / wide)
-
-#The band the scroller keeps for its HORIZONTAL bar, which it reserves whether or not that bar is
-#on screen — `SCROLL_MODE_SHOW_NEVER` hides the bar and keeps the band.
-
-#⚠ `page` IS WHAT DECIDES WHETHER THE VERTICAL BAR SHOWS, not the scroller's rect, and `page` is
-#the rect LESS this. A board fitted to the rect overflows the page by exactly this much and the
-#player gets a scrollbar on an untouched board. Measured: a content of 313 against a page of 305.
-func _scroller_frame_h() -> float:
-	if not is_instance_valid(scroll_container): return 0.0
-	var h_bar := scroll_container.get_h_scroll_bar()
-	return h_bar.get_combined_minimum_size().y if h_bar else 0.0
 
 #The whole panel's width — the row-label gutter, the cells and the special-meld label — as one
 #MINIMUM-size query, for the same reasons `_panel_gutter_h()` gives.
@@ -1316,7 +1301,8 @@ func _zoom_board_to(z: float) -> void:
 #⚠ THE GAP IS PART OF "ALREADY THERE". Once the overview fits the set, two grids leave the two
 #modes at the SAME scale and only the gap between them changes -- and a zoom-only test let that
 #change snap, which is the thing this ease exists to stop.
-	if is_equal_approx(board_zoom, target) and is_equal_approx(drawn_zoom, target) 			and is_equal_approx(_drawn_grid_gap, _grid_gap_target()): return
+	if is_equal_approx(board_zoom, target) and is_equal_approx(drawn_zoom, target) \
+			and is_equal_approx(_drawn_grid_gap, _grid_gap_target()): return
 	board_zoom = target
 	_land_the_opening()
 	_start_the_view_ease()
@@ -2294,7 +2280,8 @@ func _stack_slot_center(origin_x: float, floor_y: float, column: int, h: int) ->
 	var width := CardVisual.card_size_play.x * z
 	var sep := float(separation) * z
 	var x := origin_x + float(column) * (width + sep) + width * 0.5
-	var y := floor_y - _depth_pitch_px() * z * float(h) 			- CardVisual.card_size_play.y * z * 0.5
+	var y := floor_y - _depth_pitch_px() * z * float(h) \
+			- CardVisual.card_size_play.y * z * 0.5
 	return Vector2(x, y)
 
 #⚠ NO SEPARATION: a `VBoxContainer` gives even a zero-height child one and the row grew at its
@@ -2313,7 +2300,8 @@ func _size_stack_slot(slot: Control, marks_layer: bool) -> void:
 	var occupied := slot.get_child_count() > 1 and not marks_layer
 	var grants_focus := not board_focus_locked
 	var zone_control : Control = slot.get_child(-1)
-	zone_control.custom_minimum_size = CardVisual.card_size_play if not occupied 			else Vector2(CardVisual.card_size_play.x, 0)
+	zone_control.custom_minimum_size = CardVisual.card_size_play if not occupied \
+			else Vector2(CardVisual.card_size_play.x, 0)
 	zone_control.focus_mode = Control.FOCUS_ALL if grants_focus and not occupied else Control.FOCUS_NONE
 	for j : int in slot.get_child_count() - 1:
 		var card_control : Control = slot.get_child(j)
@@ -2408,7 +2396,8 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	if game:
 		for i : int in game.state.upper_zone.size():
 			deepest = maxi(deepest, game.state.upper_zone[i].datas.size())
-	var resting_h := CardVisual.card_size_play.y 			+ float(maxi(deepest - 1, 0)) * _depth_pitch_px()
+	var resting_h := CardVisual.card_size_play.y \
+			+ float(maxi(deepest - 1, 0)) * _depth_pitch_px()
 	var z := _content_scale_on_screen()
 	var floor_y := upper_zone_right.global_position.y + resting_h * z
 	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h)
@@ -3483,7 +3472,8 @@ func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNum
 #⚠ EACH GUTTER LEANS TOWARD THE CELLS IT DESCRIBES (owner). The row gutter sits LEFT of the grid,
 #so its numbers are right-aligned, hard against the cells; the column gutter sits under its
 #columns, so its numbers are centred on them.
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if is_row 				else HORIZONTAL_ALIGNMENT_CENTER
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if is_row \
+				else HORIZONTAL_ALIGNMENT_CENTER
 		var key := Vector3i(gi, index, h)
 		if bucket.has(key): label.current_num = bucket[key]
 		else: label.text = ""

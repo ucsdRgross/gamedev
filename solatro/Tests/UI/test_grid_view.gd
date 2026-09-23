@@ -243,7 +243,8 @@ func _board_view_rect(main: Main, camera: Camera2D) -> Rect2:
 	var window_size := main.get_viewport().get_visible_rect().size
 	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
 	var wp : WallPicture = main._pictures[&"game"]
-	var left := wp.rect.centre.x - wp.rect.size.x * 0.5 			+ wp.rect.size.x * SettingsManager.settings.container_size_fraction
+	var left := wp.rect.centre.x - wp.rect.size.x * 0.5 \
+			+ wp.rect.size.x * SettingsManager.settings.container_size_fraction
 	return visible.intersection(Rect2(Vector2(left, visible.position.y),
 			Vector2(maxf(visible.end.x - left, 1.0), visible.size.y)))
 
@@ -789,13 +790,13 @@ func run_the_focused_grid_is_as_tall_as_its_window_test() -> void:
 	await _settle_scroll(view)
 	var focused_h := _screen_rect(pa._cells_root(pa.grid_container.get_child(1) as Control)).size.y
 # ⚠ THE BLOCK FILLS ITS WINDOW LESS THE PANEL FURNITURE, never the WHOLE window. The window carries
-# the Entrance strip and the edge pads; what it does not carry is the column-label row and the
-# scroller's reserved band, which focused_content_height_px() takes out of the same fit.
+# the Entrance strip and the edge pads; what it does not carry is the column-label row, which
+# focused_content_height_px() takes out of the same fit.
 
-# MEASURED: window 407.9, block 363.4, and the 44.5 between them is exactly the 35 board units of
-# furniture at the live zoom of 1.27.
+# The difference is exactly board_furniture_height_px() board units at the live zoom.
 	var window_h2 := _screen_rect(pa.scroll_container).size.y
-	var furniture_screen : float = PlayArea.board_furniture_height_px(PlayArea.settings()) 			* pa.board_zoom
+	var furniture_screen : float = PlayArea.board_furniture_height_px(PlayArea.settings()) \
+			* pa.board_zoom
 	check(absf(focused_h - (window_h2 - furniture_screen)) <= 2.0,
 			"the FOCUSED grid's cell block fills its window less the panel furniture the same fit "
 			+ "reserves (TP-139)",
@@ -1034,23 +1035,7 @@ func run_the_overview_draws_the_grids_close_test() -> void:
 					% [count, gi, gi + 1] + "not the isolating buffer",
 					"drawn %.1f px, asked %.1f px, floor %.1f px, buffer %.1f px"
 					% [_drawn_grid_gap(mpa, gi), asked, gap, buffer])
-#⚠ WITHIN THE GUTTERS' OWN ASYMMETRY. The panels' left and right score gutters are not the same
-#width, so the set's two sides differ by ~2.2 authored px however well it is centred.
-		var leftovers := _set_leftovers(mpa)
-#⚠ A FILED DEFECT, PINNED EXACTLY. Where the fit is width-bound the set has no slack and rests
-#4.0 authored px right of centre. Excluded by measurement: v-scrollbar reserve 0, content origin
-#0, container minimum, live stylebox circular, authored stylebox 0, Entrance minimum 216 < 912.
-		if count == 3:
-#⚠ 0.05 px IS THE DIVISION'S OWN NOISE, not a tolerance: the leftovers are drawn px taken into
-#authored ones, so an exact 4.0 is 4.00015 by the time the zoom has been divided out.
-			check(absf(leftovers.x - 4.0) <= 0.05 and absf(leftovers.y + 4.0) <= 0.05,
-					"...and the whole set of 3 sits 4 px right of centre, which is the known defect: a "
-					+ "fix makes this row RED and it is re-pointed then",
-					"left %.1f px, right %.1f px" % [leftovers.x, leftovers.y])
-		else:
-			check(absf(leftovers.x - leftovers.y) <= 2.5,
-					"...and the whole set of %d sits centred in the board's window" % count,
-					"left %.1f px, right %.1f px" % [leftovers.x, leftovers.y])
+		_check_the_set_centred(mpa, "the overview's %d-grid set" % count)
 		await _tear_down(many)
 		picture_vp.queue_free()
 		await get_tree().process_frame
@@ -1114,10 +1099,10 @@ func run_the_overview_draws_the_grids_close_test() -> void:
 			"precondition: Back zoomed the one-grid board out",
 			"mode %d" % opa.view_mode)
 	var overview_offset := _centre_offset(one.play_area, 0)
-	check(focused_offset <= 1.0 and overview_offset <= 1.0,
-			"with one grid the board sits centred in its window in BOTH views: nothing jumps when "
-			+ "the gap has nothing to space",
-			"focused %.1f px off centre, overview %.1f px" % [focused_offset, overview_offset])
+	check(absf(focused_offset - overview_offset) <= 1.0,
+			"with one grid the board rests at the same offset from its window's centre in BOTH "
+			+ "views: nothing jumps when the gap has nothing to space",
+			"focused %.2f px off centre, overview %.2f px" % [focused_offset, overview_offset])
 	await _tear_down(one)
 
 #THE CARDS, NEVER THE FULL-WIDTH STRIP THEY SIT IN, which spans the whole play area and says
@@ -3202,9 +3187,8 @@ func run_a_fresh_show_opens_live_on_the_zoom_in_test() -> void:
 		check(rising and between >= 3,
 				"...and rises to its rest monotonically, through the frames between (%d grids)" % grids,
 				"%d frames strictly between the two ends" % between)
-#⚠ AGAINST THE SAME FRAME'S LAYOUT UNGROWN, not against the rest: the layout itself moves in flight,
-#an overflowing set dropping the scroller's 4 px centring margin until the landing re-sorts it
-#(measured: up to 6.91 px at three grids, the margin at zoom 1.728), and that is no grow's to hold.
+#⚠ AGAINST THE SAME FRAME'S LAYOUT UNGROWN, not against the rest: the layout itself moves in
+#flight, and that is no grow's to hold.
 		check(worst_drift <= 1.0,
 				"...growing IN PLACE: the point the rest view centres is drawn where the ungrown board "
 				+ "puts it, on every frame (%d grids)" % grids,
@@ -3301,7 +3285,8 @@ func run_the_board_rests_in_the_window_beside_the_sidebar_test() -> void:
 		check(grids < 2 or pa.entrance_home_grid() == PlayArea.NO_GRID,
 				"precondition: the %d-grid board's Entrance belongs to no grid yet" % grids,
 				"home grid %d" % pa.entrance_home_grid())
-		var fit := pa.overview_board_zoom() if pa.view_mode == PlayArea.ViewMode.OVERVIEW 				else pa.focused_board_zoom(pa.focused_grid)
+		var fit := pa.overview_board_zoom() if pa.view_mode == PlayArea.ViewMode.OVERVIEW \
+				else pa.focused_board_zoom(pa.focused_grid)
 		var pair := _set_and_window(pa)
 		var span := pair[0]
 		var win := pair[1]
@@ -3313,13 +3298,7 @@ func run_the_board_rests_in_the_window_beside_the_sidebar_test() -> void:
 		check(span.position.x >= win.position.x - 1.0 and span.end.x <= win.end.x + 1.0,
 				"once the sidebar has settled, the whole set of %d is inside that window" % grids,
 				"set %s vs window %s at zoom %.4f, the fit %.4f" % [span, win, pa.board_zoom, fit])
-		var off_centre := span.get_center().x - win.get_center().x
-#⚠ THREE GRIDS REST 4.0 AUTHORED PX RIGHT OF CENTRE, the filed defect the overview-fit row pins too;
-#pinned here at the drawn zoom so its fix turns this row RED as well.
-		var expected_off := 4.0 * pa.drawn_zoom if grids == 3 else 0.0
-		check(absf(off_centre - expected_off) <= 1.0,
-				"...and centred in it to the pixel (%d grids; three carry the filed 4 px)" % grids,
-				"set centre %.2f px off the window's, expected %.2f" % [off_centre, expected_off])
+		_check_the_set_centred(pa, "the %d-grid set beside the resting sidebar" % grids)
 		if grids == 1:
 			check(is_equal_approx(pa.board_zoom, pa.focused_board_zoom(0)),
 					"one grid rests at the focused fit of the window beside the sidebar, as before",
@@ -3328,6 +3307,7 @@ func run_the_board_rests_in_the_window_beside_the_sidebar_test() -> void:
 		_check_the_slide_only_shifts(arriving, fit, 1.0, grids, rest)
 		var leaving := await _sample_through_the_slide(main, main._go_to_wall_view, 0.0)
 		_check_the_slide_only_shifts(leaving, fit, 0.0, grids, rest)
+		_check_the_set_centred(pa, "the %d-grid set with the sidebar gone" % grids)
 		await _tear_down_main(main)
 
 ## Column of `_sample_through_the_slide`'s rows: the sidebar's slid fraction.
@@ -3404,7 +3384,8 @@ func _sample_through_the_slide(main: Main, move: Callable, slid: float) -> Array
 		rows.append(PackedFloat64Array([view.hud_container.slid_fraction(), pa.board_zoom,
 				pa.drawn_zoom * pa.scale.x, ease_id,
 				_entrance_row_rect(pa).get_center().x - set_centre]))
-		if moved[0] and is_equal_approx(view.hud_container.slid_fraction(), slid) 				and pa._view_ease >= 1.0: break
+		if moved[0] and is_equal_approx(view.hud_container.slid_fraction(), slid) \
+				and pa._view_ease >= 1.0: break
 	CardEnvironment.CURRENT = (wp.screen_root as GameView).game
 	return rows
 
@@ -3531,6 +3512,18 @@ func _set_and_window(pa: PlayArea) -> Array[Rect2]:
 	var x := _window_x(pa)
 	return [span, Rect2(x.x, win.position.y, x.y - x.x, win.size.y), panels] as Array[Rect2]
 
+#⚠ ONE AUTHORED PX, DRAWN AT THE BOARD'S SCALE, AND THE ENGINE SETS IT: the box centring the grids
+#truncates its slack to whole px and halves that, so a fractional window rests the set up to one
+#authored px left of centre (measured 0.81, 1.41 drawn at 1.738).
+func _check_the_set_centred(pa: PlayArea, what: String) -> void:
+	var pair := _set_and_window(pa)
+	var leftovers := _set_leftovers(pa)
+	var off := pair[0].get_center().x - pair[1].get_center().x
+	check(absf(off) < pa.drawn_zoom,
+			"%s is centred in the board's window, within one authored pixel" % what,
+			"set centre %.2f px off the window's at zoom %.4f; panel leftovers left %.2f, right %.2f "
+			% [off, pa.drawn_zoom, leftovers.x, leftovers.y] + "authored px")
+
 #THE PICTURE'S SIZE NEVER FOLLOWS THE GRID COUNT (owner ruling), so the overview's SCALE does: the
 #grids the run actually has are fitted to the board's window. Two grids in a span built for three
 #used to sit small in the middle of it, which is the "shrunk down version" the owner saw.
@@ -3578,35 +3571,11 @@ func run_the_overview_fits_the_set_it_has_test() -> void:
 				"zoom %.4f vs the unfitted %.4f"
 				% [pa.board_zoom, PlayArea.DEFAULT_BOARD_ZOOM])
 
-		var leftovers := _set_leftovers(pa)
-#⚠ A FILED DEFECT, PINNED EXACTLY. Where the fit is width-bound the set has no slack and rests
-#4.0 authored px right of centre. Excluded by measurement: v-scrollbar reserve 0, content origin
-#0, container minimum, live stylebox circular, authored stylebox 0, Entrance minimum 216 < 912.
-		if count == 3:
-#⚠ 0.05 px IS THE DIVISION'S OWN NOISE, not a tolerance: the leftovers are drawn px taken into
-#authored ones, so an exact 4.0 is 4.00015 by the time the zoom has been divided out.
-			check(absf(leftovers.x - 4.0) <= 0.05 and absf(leftovers.y + 4.0) <= 0.05,
-					"...and at three grids it sits 4 px right of centre instead -- the known defect, "
-					+ "pinned so a fix turns this row RED and it is re-pointed then",
-					"left %.1f px, right %.1f px, window %.1f, grids %.1f wide at %.6f"
-					% [leftovers.x, leftovers.y, pa._board_width_left(),
-					pa.grid_container.get_combined_minimum_size().x, pa.board_zoom])
-		else:
-			check(absf(leftovers.x - leftovers.y) <= 2.0,
-					"...and the set stays centred in the window to the pixel (%d grids)" % count,
-					"left %.1f px, right %.1f px, window %.1f, grids %.1f wide at %.6f"
-					% [leftovers.x, leftovers.y, pa._board_width_left(),
-					pa.grid_container.get_combined_minimum_size().x, pa.board_zoom])
-#⚠ THE PANELS' OVERHANG IS PINNED, NOT TOLERATED. The fit sizes the board by the panels, whose
-#outermost score gutter then sits a little past the window -- measured at 4 authored px, and a
-#change that makes it worse has to say so here.
-		check((panels.position.x - win.position.x) / maxf(pa.drawn_zoom, 0.0001) >= -4.5
-				and (win.end.x - panels.end.x) / maxf(pa.drawn_zoom, 0.0001) >= -4.5,
-				"...with the outermost score gutter overhanging the window by no more than the 4 "
-				+ "authored px the fit currently leaves (%d grids)" % count,
-				"left %.1f px, right %.1f px"
-				% [(panels.position.x - win.position.x) / maxf(pa.drawn_zoom, 0.0001),
-				(win.end.x - panels.end.x) / maxf(pa.drawn_zoom, 0.0001)])
+		_check_the_set_centred(pa, "the fitted %d-grid set" % count)
+		check(panels.position.x >= win.position.x - 1.0 and panels.end.x <= win.end.x + 1.0,
+				"...and so are the panels, the outermost score gutters included (%d grids)" % count,
+				"left %.2f px, right %.2f px inside"
+				% [panels.position.x - win.position.x, win.end.x - panels.end.x])
 		await _tear_down(view)
 		picture_vp.queue_free()
 		await get_tree().process_frame

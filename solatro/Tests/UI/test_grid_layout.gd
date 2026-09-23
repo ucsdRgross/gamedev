@@ -1551,13 +1551,10 @@ func run_a_deepening_stack_grows_the_board_upward_test() -> void:
 	check(after.size.y > before.size.y + 1.0,
 			"precondition: the stack really made the cell block taller",
 			"%.1f -> %.1f" % [before.size.y, after.size.y])
-# ⚠ THE TOLERANCE IS A DISCLOSED RESIDUAL, NOT A ROUNDING ALLOWANCE. Six placements leave the bottom
-# 5.1 px out where the unfixed board left it 157.5 px out. Carrying the integer scroll offset's
-# fraction did NOT move that number, so the residual is something else and is not explained.
-
-# It is small, and the guarantee the owner's report is actually about - the block never reaching
+# Six placements leave the bottom where it was (measured: 0.00 px at zoom 1.29), where the unfixed
+# board left it 157.5 px out. The guarantee the owner's report is about - the block never reaching
 # past its own window into the Entrance - is the check below.
-	check(absf(after.end.y - before.end.y) <= 8.0,
+	check(absf(after.end.y - before.end.y) <= 1.0,
 			"the cell block's BOTTOM line does not move as the stack deepens -- the board grows "
 			+ "out of the Entrance, it does not sink into it",
 			"bottom %.1f -> %.1f" % [before.end.y, after.end.y])
