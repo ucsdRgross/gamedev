@@ -4,6 +4,140 @@ Add new items here; **delete an item when it lands**, recording the regression-c
 ARCHITECTURE_REVIEW.md rather than keeping a log here. Current-state facts live in
 ARCHITECTURE_REVIEW.md; done-work history lives in git.
 
+## Planned by the owner — notes to design in a later session
+
+Recorded so they are not forgotten; none is designed yet. Each goes through `/flowchart-design`
+(Design Loop) before anything is built.
+
+- ⬜ **Split the repo: a new repo, "Showitaire".** It takes everything Claude works on or has
+  touched: `solatro/`, `palette/`, `designloop/`, `worldgen/`, `.claude/`, `CLAUDE.md`,
+  `.gitignore`. Everything else (the jam and study projects, `README.md`) stays behind.
+  **Why:** every branch worktree checks out the whole tree. Tracked size at HEAD: ≈1.0 GB per
+  checkout, of which the moving set is ≈175 MB (palette 82, worldgen 56, solatro 34, designloop
+  0.7, .claude 0.3). Most of the rest is pokerlands 386, game jam fall ucsd 254, necromii 86 and
+  martial rhythm 55. The 488 MiB history pack is shared by worktrees, but a fresh clone on another
+  machine carries all of it.
+  **Owner rulings:**
+  - **Only after every current change is combined into `main`.** That covers this branch and the
+    other worktrees (`board-plan`, `sidebar`, `test-speed`, the detached `gamedev-baseline`); the
+    split starts from one `main`.
+  - **Keep history where it is relevant to what moves**: `git filter-repo` on the moved paths keeps
+    their history and drops the other projects' history from the pack.
+  - **In the same phase, worldgen stops tracking heavy images**; they are generated at runtime.
+    Measured at HEAD: 110 tracked images, 13.2 MB (`placement_debug/*.png`, `snapshot_*.png`,
+    `procedural_generation_snapshot.png` 1.0 MB, `tests/height.exr` 0.5 MB). Check whether any test
+    reads `tests/height.exr` as an input first. Other heavy tracked worldgen files that are not
+    images, for the owner: `map_viewer.tscn` 20.3 MB, `worldgen_native/.sconsign.dblite` 13.6 MB
+    (the SCons build database) and `worldgen_native/api/extension_api.json` 6.6 MB (Godot-generated).
+    Dropping them from history as well is a `filter-repo` flag.
+  - **Every doc stops pointing at the `gamedev` repo.** Files that name it today:
+    `.claude/memory/machine-profiles.md`, `.claude/settings.local.json`,
+    `.claude/skills/docs/SKILL.md`. Also rewrite the "monorepo of separate games" framing in
+    `CLAUDE.md` and `dup_check.py`'s within-a-top-level-project rule.
+  Also:
+  - Claude Code's machine-local memory cache is keyed by the repo path, so it starts empty;
+    `.claude/memory/` travels.
+  - `worldgen/worldgen_native` is 591 MB on disk and untracked (build output), so a new clone must
+    rebuild it.
+  - `.git` has 54 orphan pack `.idx` files and 1.8 MiB of garbage; clean up when splitting.
+
+- ⬜ **An effect demo system that is also the effect test system.** Owner's intent:
+  - **One demo scene** for every effect added from now on. It is filled from a preset (environment
+    settings plus the effect being demoed), and every demo uses it.
+  - **It runs recorded actions**, and can run many recordings. Recordings are also the effect's
+    unit tests: a replay's outcome is validated.
+  - **A dedicated viewer** loops a recording's actions, resets, then repeats or moves to another
+    preset. It is the preview in card descriptions: the real scene running, not a video. The viewer
+    can choose which recordings a preview focuses on, how many it cycles through, and its viewport
+    zoom.
+  - **Playtestable:** enter a demo and play on from its current environment for playtesting and
+    debugging, recording what happens so the outcome can be validated.
+  - Model: Minecraft's GameTest, where test structures spawn inside a playable world the player can
+    walk into. This goes one step further with a preview on top.
+  Related, already here: recorded actions are a command log, the same thing as D6 command-log undo
+  (Architecture below). A replay is only valid if randomness is deterministic, which is the RNG
+  layer below. The description preview is `CARD_SIZE * 2` on every surface. Hard rule 9 (no mocks
+  in tools) means the demo hosts the real board. `design/effect-review/` lists the effects that
+  will need demos.
+
+- ⬜ **A dedicated random-number layer**, built from
+  [Correlated randomness in Slay the Spire 2](https://tck.mn/blog/correlated-randomness-sts2/).
+  Owner: do not copy Slay the Spire 2's system — the article is about its bugs and their fixes —
+  build the best version. What the article measured going wrong:
+  - Each stream was seeded as `seed + hash(name)` on a generator whose state is LINEAR in its seed,
+    so streams meant to be independent were correlated. Early draws in one stream constrained
+    another's: an act's curse pool skewed the first potion drop (76 % against 4 %), the first orb
+    target and reward gold, and some items became unreachable.
+  - A save stored each stream's call count, and a load replayed that many calls: quadratic, and
+    stateful.
+  - The engine's library generator differed across platforms and runtime versions, so one seed gave
+    different runs.
+  Its fixes, to weigh rather than adopt: a non-linear generator (PCG32, xoshiro256**); keys DERIVED
+  by a strong hash of (run seed, stream name, context), never seed arithmetic; stateless or
+  counter-based draws (`value = hash(key, index)`), so a save is a key plus a counter and a load
+  replays nothing; our own implementation, so results do not change with an engine version or
+  platform; and a test that correlates draws across stream pairs over many seeds.
+  Where Solatro stands: 46 random call sites in 16 production files (`randi`, `randf`,
+  `*_range`, `shuffle()`, `pick_random`, `RandomNumberGenerator.new`), most on Godot's global
+  generator. `Game.shuffle_deck` is unseeded (board plan, above). `BoardPlan.deal` already derives
+  a context key, `plan_seed = hash(Vector2i(world_seed, current_node_id))`, with its own
+  Fisher-Yates (ARCHITECTURE_REVIEW §3e). `worldgen/` seeds itself. Required before any
+  seed-sharing feature and before demo replays.
+
+- ⬜ **Main agent plus a pair reviewer, for design work too.** Owner: the main agent is Opus 5.5;
+  as it goes it asks a Fable 5.1 subagent to review its work at reasonable checkpoints and suggest
+  changes, like pair programming. `/plan-run` already does this for implementation; the owner may
+  bring it to `/flowchart-design` and Design Loop, so a different model reviews the work right
+  before it would have been passed on to the owner. The effect-review pass below is its first use.
+  **Recommended cadence, for the owner to confirm.** Measured on the playtest-fixes stream: about
+  two in three per-step Fable reviews returned an actionable finding the author's own green run
+  had missed (`.claude/memory/implementer-routing.md`), and it ran 57 steps over 20 owner rounds,
+  roughly three reviewed steps per owner review.
+  - Design: two to three reviews per owner round. After the flowcharts cover the braindump and
+    before the question graph is written, where a gap compounds most. Always right before the
+    owner sees a round. Then after the answers are folded into the plan and test plan, before the
+    handoff.
+  - Implementation: one per verified step, as now.
+  - Widen the interval when two consecutive checkpoints return nothing actionable.
+  `implementer-routing.md` makes the overseer Fable for a stream in flight; reconcile that with an
+  Opus main agent when this lands.
+
+- ⬜ **An effect-review pass for each effect's level-2 form "when hitting its mark".** Opus 5.5 is
+  the main agent on high effort and Fable 5.1 is its pair reviewer (above). It goes through
+  `design/effect-review/` (1,595 live questions; `build/dupes.tsv` already lists ~150 duplicate
+  candidates) and proposes each effect's level-2 form. Bonus: it weeds out duplicates. Where one
+  effect's level 2 is the same as or close to another effect's level 1, merge or drop one.
+  **Already designed:** board-plan `PLAN.md` §1.7 has exactly two levels, passed as the `level`
+  argument of `on_mark_hit` and `on_mark_covered` (0 = normal, 1 = realized; the owner calls these
+  level 1 and level 2). A talent match fires the skill's level-2 form and always pays a flat mult,
+  even for an effect with an upgraded form. A mark is the cell's own zone card printing a rank, a
+  suit, a talent and a hat (ARCHITECTURE_REVIEW §3e).
+  **Owner rulings:**
+  - **A match is same kind to same kind**: suit to suit, rank to rank, hat to hat, skill to skill.
+    A property's level 2 is unlocked by its own match only.
+  - **Suit level 1 is a normal suit for scoring and making melds. Level 2 is level 1 plus its
+    additional effect.** The same for rank. The built suit rule stands (`PLAN.md` §1.6): a suit
+    effect fires only where its cell's mark agrees on suit. So today's suits already have this
+    shape: the suit counts for melds everywhere, and its prop effect is the level-2 addition on a
+    suit match.
+  - **Level 1 and level 2 are two different effects in the same class and file**, not a subclass.
+    Do not extend; that is more complicated.
+  By the same reading, today's rank-match points bonus (`plan_rank_match_step`, §3a) is rank's
+  level-2 addition. Confirm that at the start of the pass.
+
+- ⬜ **By default a grid and its score labels form a perfect square: treat it as 6×6.** The 5×5
+  cells, row scores in the LEFT column, column scores in the BOTTOM row, and the special score in
+  the bottom-left corner square. The gap between squares is the same everywhere, in x and in y.
+  This is the default look only: once cards stack, the grid still deforms to keep every card
+  visible. Cards are becoming 52×52 (owner's change in progress), so square cells come free.
+  Today `PlayArea._create_grid_panel` puts row labels left and column labels below, as wanted, but
+  the special label sits RIGHT, centred on the grid, and the gutters are only as wide as the label
+  font needs.
+  Open:
+  - The gap between grids rests on the score gutters (owner ruling: the minimum distance between
+    two grids is the score labels' width), so a cell-wide gutter moves that gap.
+  - Height scores stand above their stacks and are not part of the 6×6.
+
 ## Known intermittent test failures (not owned by any current work stream)
 
 ✅ **THE LOG-COPYING THIS SECTION ASKED FOR IS NOW AUTOMATIC.** `run_tests.py` copies the whole log
@@ -63,18 +197,18 @@ written when a run stalls or fails.
 
 ## Doc hygiene backlog (code comments — measured, not yet triaged)
 
-- ⬜ **`doc_check.py` scans code comments. Standing count over 304 source files: 5664 indented ·
-  2144 long doc · 739 long block · 599 trailing · 362 design id · 130 dated · 91 history ·
-  52 restated · 4 line refs.** Zero errors — every reference resolves.
-  ⚠ **A BACKLOG, not a regression**, and the numbers grew mostly because THE CHECKER GOT STRICTER,
-  not because the code got worse: `long block` went from "over 16 lines" to "over 3", and
-  `long doc`, `indented` and `trailing` are new categories. The rules postdate the comments.
+- ⬜ **`doc_check.py` scans code comments. Standing count over 334 source files (the combined
+  branch): 2515 indented · 952 long doc · 329 long block · 307 trailing · 257 design id · 84 dated
+  · 55 history · 49 restated · 3 line refs.** Zero errors — every reference resolves.
+  ⚠ **A BACKLOG, not a regression**: the rules postdate the comments.
   **Owner ruling: two halves.** (1) Every file an agent edits leaves compliant — the whole file,
   not only the lines it wrote (`plan-implementer` says so; `doc_check.py --changed` errors on
   the three hard rules for touched files). (2) ⬜ **A FULL PASS OVER EVERY SOURCE FILE is
   planned by the owner**, because files nobody edits are never swept by (1): the untouched
-  majority of the count above only drains that way. `--verbose` lists them; `dated` is the
-  category to leave alone (see below).
+  majority of the count above only drains that way. Schedule it between work streams — it touches
+  every file and would conflict with any branch in flight — and after the repo split below, so it
+  sweeps only what moves. `--verbose` lists them; `dated` is the category to leave alone (see
+  below).
   ⚠ **`dated` will not go to zero and should not**: many are measurements, where the date is part
   of the fact, and the checker cannot tell those from bookkeeping.
   ⚠ **`design id` is the one that matters most** — 362 citations of design documents the code's
@@ -103,8 +237,8 @@ written when a run stalls or fails.
     close, `TEST_PLAN.md` TP-72's beam half).
   - ⬜ **`_check_board_fits_window` measures a stale invariant.** It compares Entrance coords against
     the board's `SmoothScrollContainer`, but the Entrance is pinned OUTSIDE that scroll, so the check
-    fails on the shipped five-slot board ("board right edge 1156.6 vs scrollable right 1073.6") while
-    the board fits the 1576 px viewport with 419 px to spare; the surviving WIDE=12 row passes only
+    fails on the shipped five-slot board (the board's right edge past the scroll's) although the
+    board fits the window with room to spare; the surviving WIDE=12 row passes only
     because the grid container is sized from the Entrance width. The board plan dropped the call on
     the moved all-kinds fixture rather than assert it. What the pinned Entrance's reachability
     invariant is (fits the window, or its own `EntranceHTrack`) is the owner's; then the helper
@@ -434,8 +568,8 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 - Entrance drop-down between acts (DESIGN_DOC §2) — decide and implement.
 - Tips / hype-wagering / fog of war / tour planning (§15); circus renames (§9); shop & economy
-  (§16); meta progression (§19); leaders/acts (§11); deterministic per-subsystem RNG streams
-  (§6/§23 — required before any seed-sharing feature).
+  (§16); meta progression (§19); leaders/acts (§11). Deterministic RNG streams (§6/§23) are
+  planned above.
 
 ## Testing / infrastructure
 
@@ -558,13 +692,3 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
 - **`deck`, `settings` and `book` are registered ids with no screen** — they pack, frame and accept
   navigation, and draw whatever `background_texture` they are given, or nothing. Building their
   contents is out of scope for this stream; the wall does not need changing to host them.
-- **The suite intermittently HANGS at 30 of 39 suites with no banner**, in clusters, and every suite
-  involved completes when run alone — so it is in the concurrency. RE-RUN before bisecting: a hung
-  run is not reliably attributable to the change that produced it (`HANDOFF_picture_wall.md` S44).
-- **PIXELS' mask-vs-art bound has never been ruled on** (0 mask-without-art, 3773 art-without-mask at
-  rest). Its own comment forbids raising it to go green, so it stands as written (S41).
-- **The comment backlog drains whole-file on touch, and is not a sweep.** A full `doc_check` run
-  reports ~5.9k indented comments, ~2.1k over-long `##` docs, ~750 over-long `#` blocks and ~630
-  trailing ones. The rules are ERRORS on any file a session edits, so the count falls as files are
-  touched for other reasons. Do NOT open a branch to fix them all: the churn would be repo-wide,
-  unreviewable, and would collide with every stream in flight.
