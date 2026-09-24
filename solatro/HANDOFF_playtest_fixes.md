@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P55 done (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P55): `ALL 51 SUITES: 7167 CHECKS PASSED`,
+**State:** P1-P56 done (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P56): `ALL 51 SUITES: 7158 CHECKS PASSED`,
 21 placeholder warnings, 24 resources + 1150 ObjectDB.
-Pending: P56, P57 and the owner's next visual review round, then the close. Gate at the stream's start:
+Pending: P57 and the owner's next visual review round, then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -571,8 +571,8 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/Levels/map.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar UiViewers MapTraversal'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'Measured: map.gd _host_map_viewer hid the whole selection row whenever a map viewer opened. It now keeps it up while the chooser is up (selection_buttons.visible = chooser_is_up()), so the chooser''s Deck row stays and the existing DeckViewer.show_deck same-opener toggle closes the deck; a viewer over a picked node still hides Travel/Deck/Possible cards (row ~4860 green). Red (HEAD): SIDEBAR 6 FAILED (click and keyboard accept x3). Green: FILTERED 3 of 51 [Sidebar UiViewers MapTraversal]: 2044; --logic 3034. By eye: the deck over the chooser, the stuck 2 of Balls without X, Deck visible. Fable review: no blocker. Gate: ALL 51 SUITES: 7158 CHECKS PASSED. OWED (next session, first step, sonnet): rule 8 - the new test helper _accept_on (test_sidebar.gd ~5402, one call ~5378) duplicates _open_viewer_by_accept (~4293) - use it and delete _accept_on. FOR THE VISUAL REVIEW (review Finding 2, unmeasured): with the deck open over the chooser, a hovered RUN-DECK card''s description now also carries the Deck row (the row is up for the deck''s whole life; round 1 says a card description carries no Deck, the eighteenth round excepts the chooser''s own card) - shoot it and let the owner rule.'
   notes: 'Found by P54 (p54_deck_over_chooser_a_cancel.png: the stuck card described, no X - nineteenth round - and no Deck button). Opening a map viewer hides the selection row (map.gd _host_map_viewer). Measure first; the chooser''s Deck row must stay visible (eighteenth round) and toggle the deck closed.'
 - id: P57
   description: Only a STUCK description comes back when the player returns to a screen; an unstuck (hovered or focused) one is forgotten when the screen is left (nineteenth round). Today, by keys, a focused card's description survives Back and is re-shown on Forward with no card under it.
@@ -662,7 +662,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - FOR /docs AT THE CLOSE: design/picture-wall/DESIGN.md ~150 and ~890 still cite the map's ZOOM_MIN 0.5 (deleted by P55).
 
 ## Next up
-1. P56 (the Deck toggle over the chooser), P57 (an unstuck description is forgotten on leaving), then refresh the visual review with the P50 and P51 changes and park on the owner's next round (`/plan-run` "The owner's visual review").
+1. P57 (an unstuck description is forgotten on leaving), then refresh the visual review with the P50 and P51 changes and park on the owner's next round (`/plan-run` "The owner's visual review").
 2. The close per /plan-run, then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list), and the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)

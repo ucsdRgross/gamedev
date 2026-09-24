@@ -276,10 +276,10 @@ func _show_possible_cards(node: WorldGraphNode) -> void:
 
 # ⚠ HOSTED FIRST, REPUBLISHED SECOND: the container's close handler takes the viewer's card out of
 # the sidebar, so a pick put back before it would be wiped by it. The pick is what every viewer
-# this screen opens comes back to.
+# this screen opens comes back to. The chooser's Deck row stays up, the toggle that closes its deck.
 func _host_map_viewer(viewer: DeckViewer) -> void:
 	if viewer == null: return
-	selection_buttons.visible = false
+	selection_buttons.visible = chooser_is_up()
 	hud_container.host_viewer(viewer, wall_picture, info_hovered, HudContainer.MAP_SCREEN)
 	viewer.highlight_cleared.connect(_republish_the_pick)
 

@@ -195,6 +195,7 @@ func _ready() -> void:
 	await test_no_route_leaves_the_chooser_until_take()
 	await test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it()
 	await test_closing_the_deck_viewer_over_the_chooser_gives_back_its_stuck_card()
+	await test_the_choosers_deck_button_stays_up_and_closes_its_open_deck()
 	await test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map()
 	await test_leaving_mid_walk_onto_a_pack_never_strands_the_chooser()
 	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
@@ -5362,6 +5363,45 @@ func test_closing_the_deck_viewer_over_the_chooser_gives_back_its_stuck_card() -
 					"...its Deck button still beside it (%s)" % close[0])
 		chooser.queue_free()
 	await _end_main_fixture()
+
+## The chooser keeps its Deck button while the run deck is open over it, and pressing it again -- by a click or a keyboard accept -- closes the deck and gives back the stuck card with its X.
+func test_the_choosers_deck_button_stays_up_and_closes_its_open_deck() -> void:
+	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
+	check(chooser != null, "sanity: arriving on a pack opened its chooser")
+	if chooser != null:
+		await _click(chooser.cards().controls[0].get_global_rect().get_center(), _map_viewport)
+		var stuck_title := _panel.current_entry.title if _panel.current_entry else ""
+		check(_container.is_locked() and _exit_button().visible and chooser.confirm_button.disabled,
+				"sanity: a click stuck a chosen card, its X up and Take held")
+		var presses : Array[Array] = [
+			["a click", _click_button.bind(_map.selection_deck_button, _booted_viewport)],
+			["a keyboard accept", _accept_on.bind(_map.selection_deck_button)],
+		]
+		for press : Array in presses:
+			await _click_button(_map.selection_deck_button, _booted_viewport)
+			await get_tree().process_frame
+			var viewer := DeckViewer._open
+			check(is_instance_valid(viewer) and not viewer.is_queued_for_deletion(),
+					"sanity: the run deck opened over the chooser (%s)" % press[0])
+			check(_map.selection_deck_button.is_visible_in_tree(),
+					"the chooser's Deck button stays visible while its deck is open (%s)" % press[0])
+			await (press[1] as Callable).call()
+			await get_tree().process_frame
+			check(not is_instance_valid(viewer) or viewer.is_queued_for_deletion(),
+					"pressing the chooser's Deck again by %s closes the deck" % press[0])
+			var shown_title := _panel.current_entry.title 					if _container.showing_description() and _panel.current_entry else "HUD"
+			check(_container.is_locked() and shown_title == stuck_title and _exit_button().visible,
+					"...giving back the chooser's stuck card with its X (%s)" % press[0],
+					"locked=%s shown=%s x=%s" % [_container.is_locked(), shown_title,
+					_exit_button().visible])
+			check(chooser.cards().sticky != null and chooser.confirm_button.disabled,
+					"...Take held as before (%s)" % press[0])
+		chooser.queue_free()
+	await _end_main_fixture()
+
+func _accept_on(button: Button) -> void:
+	button.grab_focus()
+	await _tap_key(KEY_ENTER)
 
 ## A game deck viewer the player left open behind the overlay's Back is the game's alone: on the map the Deck button, a pack's first pick and an arrow each behave exactly as with no viewer anywhere, and Forward finds the game sane.
 func test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map() -> void:
