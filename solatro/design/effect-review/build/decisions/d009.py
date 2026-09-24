@@ -126,7 +126,7 @@ KEEPS = [
  "After a number of weather cards, you choose between relief now or a larger payout if you survive the next one",
  "c"),
 ("E1231","I11","skill","Fire that roads can stop.",
- "Burning spreads to wood-type cards and is blocked by road-type cards",
+ "Burning spreads to paper-type cards and is blocked by iron-type cards",
  "Burning spreads to any card and is blocked only by a card that has already burned",
  "Burning spreads along a suit and is blocked by any card of the opposing suit",
  "c"),
@@ -208,6 +208,6 @@ KEEPS = [
 ("E1305","G2","skill","Borrowed, and due back.",
  "Creates a temporary card that lasts a few shows and then leaves",
  "Creates a temporary card that lasts a few shows; if it scores in every one of them, it stays",
- "Creates a temporary card on loan; keeping it past its term costs gold every show",
+ "Creates a temporary card on loan; keeping it past its term costs one card from your deck each show",
  "b"),
 ]

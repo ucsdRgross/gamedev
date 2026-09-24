@@ -249,4 +249,52 @@ RETIRED = {
     "E2041": 'Retired: already a rule. Placed cards are already immovable, so (a) restates the game; (c) loosens it and (b) needs a drawback pack that does not exist.',  # Q0355
 
     "G0237": 'Duplicate of Q0358 (Boss: adjacency-only placement): cards may only go next to cards already down, which is a hazard; the owner rules on it there.',  # Q0364
+
+    "E0841": 'Duplicate of Q0357 (The Light and Heavy Chest): light when you move it, immovable to effects; the owner rules on it there.',  # Q0381
+
+    "G0280": "Merged into Q0419 (The Voice From The Wings): working from the discard is that effect's level 2; the owner rules on it there.",  # Q0422
+
+    "G0386": 'Duplicate of Q0424 (Blue Joker): paid by the cards still in the deck; the owner rules on it there.',  # Q0425
+
+    "E0793": 'Duplicate of Q0459 (The Kite): send a card out of play and it returns stronger for the time away; the owner rules on it there.',  # Q0457
+
+    "E0310": 'Duplicate of Q0454 (Milk Can): put grid cards out of play and bring them back later; the owner rules on it there.',  # Q0460
+
+    "E0091": "Merged into Q0472 (Slapstick): a free swap of any two adjacent ranks once per turn is that effect's level 2; the owner rules on it there.",  # Q0473
+
+    "E1846": "Retired: there is no currency and no shop. Its premise is randomising a shop's values.",  # Q0479
+
+    "G0169": 'Duplicate of Q0294 (The Merge): two equal ranks side by side become one card of the next rank up; the owner rules on it there.',  # Q0487
+
+    "E1940": 'Retired: there is no currency and no shop. Its premise is recovering sold cards; recovering destroyed ones is Q0511 (The Hologram Tour).',  # Q0508
+
+    "E0066": 'Retired: there is no currency and no shop. A money token whose value is trade at a shop.',  # Q0518
+
+    "E0362": 'Retired: there is no currency and no shop. A token whose value is double trade at a shop.',  # Q0525
+
+    "E0173": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on. A boss disabling your rule cards is a rules-deck mechanism.',  # Q0543
+
+    "E0214": "Merged into Q0565 (Amber Acorn): choosing the resolution order yourself is that effect's level 2; the owner rules on it there.",  # Q0569
+
+    "E0057": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0573
+
+    "E0172": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0574
+
+    "E0279": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0577
+
+    "E0331": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0578
+
+    "G0089": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0583
+
+    "G0016": 'Duplicate of Q0631 (The Exhausted Card): fires once at several times strength, then is gone for the show or the run; the owner rules on it there.',  # Q0632
+
+    "G0020": "Merged into Q0636 (The Running Gag): a counter surviving the end of the run is that effect's level 2; the owner rules on it there.",  # Q0639
+
+    "G0473": 'Duplicate of Q0636 (The Running Gag), whose level 2 keeps a counter across runs; the owner rules on it there.',  # Q0640
+
+    "E0487": 'Retired: already a rule. Statuses exist (Burning, Juggling, Exhausted); this describes how they are stored, not an effect.',  # Q0646
+
+    "E0104": "Merged into Q0658 (Iron Body): the first hit prevented, paid out as tokens, is that effect's level 2; the owner rules on it there.",  # Q0659
+
+    "E1971": 'Duplicate of Q0663 (The Cleansing Pass): a consumable that strips statuses from your cards; the owner rules on it there.',  # Q0661
 }

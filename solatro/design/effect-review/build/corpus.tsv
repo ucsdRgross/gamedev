@@ -104,7 +104,7 @@ E0102	catalog	CARD_CATALOG	Liberty Horses		Uncommon	skill;Animal Trainer;deck-ma
 E0103	catalog	CARD_CATALOG	Lithograph		Rare	type;spotlight	While this card sits in the Grand Entrance its skill is active globally; on the board it has no effect.			0
 E0104	catalog	CARD_CATALOG	Lloyd's Policy		Rare	stamp;protection;economy	The first time this card would be destroyed or debuffed, prevent it and mint 2 Gold tokens instead.		designdocs	1
 E0105	catalog	CARD_CATALOG	Lot Lice		Common	hazard;economy	Town hazard: the show's first placement scores 0 fame.		designdocs	1
-E0106	catalog	CARD_CATALOG	Lucky Streak		Uncommon	skill;Fortune Teller;meta;random	Grants +1 reroll per shop visit; after it activates, repeated actions for the rest of the show never repeat identical results.			0
+E0106	catalog	CARD_CATALOG	Lucky Streak		Uncommon	skill;Fortune Teller;meta;random	After it activates, repeated actions for the rest of the show never repeat identical results.			0
 E0107	catalog	CARD_CATALOG	Mabel's Tigers		Rare	skill;Animal Trainer;destruction;growth	Consumes prop (skill-less) cards dropped on it, gaining +1 rank per card eaten, with no cap, permanently.			0
 E0108	catalog	CARD_CATALOG	Madame Zora's Eye		Rare	skill;Fortune Teller;info	The next card to be drawn is always visible above the deck slot while this card is anywhere in play.		designdocs	1
 E0109	catalog	CARD_CATALOG	Mallakhamb Pole		Uncommon	skill;Acrobat;formation;combo	While spotlit, every card in this card's column gains bonus points per row of column height when the column scores.			0
@@ -148,7 +148,7 @@ E0146	catalog	CARD_CATALOG	Sawdust		Common	type;discard;Concessions	When this ca
 E0147	catalog	CARD_CATALOG	Sawing in Half		Uncommon	skill;Magician;deck-manip;movement	Cue: split a target card into two same-suit cards of half rank (one rounded up, one down); this card exhausts for the show.		designdocs	1
 E0148	catalog	CARD_CATALOG	Searing Knife		Rare	skill;Escape Artist;gamble;formation;hazard	When scored, its column pays 3x this placement but is locked (no placement or grabs) for the next 2 turns.			0
 E0149	catalog	CARD_CATALOG	Second Act		Uncommon	type;deck-manip	After every shuffle, this card is placed exactly at the deck's midpoint and enters play alone.			0
-E0150	catalog	CARD_CATALOG	Self-Granted Title		Rare	stamp;economy;info	This card counts as one rarity higher for all effects and bonuses, but not for pack or shop pool rolls.			0
+E0150	catalog	CARD_CATALOG	Self-Granted Title		Rare	stamp;economy;info	This card counts as one rarity higher for all effects and bonuses, but not for pack rolls.			0
 E0151	catalog	CARD_CATALOG	Sin of Gluttony		Epic	skill;Animal Trainer;destruction;growth	Consumes cards from anywhere (board, Entrance, or decks, via cue), with no cap, permanently gaining rank.			0
 E0152	catalog	CARD_CATALOG	Slapstick		Common	skill;Clown;movement;combo	Cue: swap the ranks of this card and one adjacent card.		designdocs	1
 E0153	catalog	CARD_CATALOG	Sliced Bread		Uncommon	skill;Special Effects;formation;combo	On submission, if a same-suit card sits lower in this card's stack, gain a point per card between them.		designdocs	1

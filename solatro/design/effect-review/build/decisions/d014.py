@@ -92,7 +92,7 @@ KEEPS = [
 ("E1854","I5","skill","On a timer you can extend.",
  "A large bonus that self-destructs after a few shows; a specific action adds a show to its life",
  "A large bonus that self-destructs after a few shows, with no way to extend it",
- "A large bonus on a timer you may extend by paying gold, at a rising price each time",
+ "A large bonus on a timer you may extend by destroying a card from your deck, one more each time",
  "c"),
 ("E1856","L6","hazard","An enormous boss that pays enormously.",
  "Boss: the goal is many times larger than normal, and beating it grants an outsized reward",

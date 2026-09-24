@@ -104,7 +104,7 @@ E0102	KEEP		F5	skill	On Entrance refresh, all Animal-class cards in the Entrance
 E0103	KEEP		D6	type	While this card sits in the Entrance its skill is active globally; on the grid it has no effect.	
 E0104	KEEP		I12	stamp	The first time this card would be destroyed or debuffed, prevent it and mint 2 Gold tokens instead.	
 E0105	KEEP		A7	hazard	Town rule: the show's first placement scores 0 fame.	
-E0106	KEEP		F8	skill	Grants +1 reroll per shop visit; after it activates, repeated actions for the rest of the show never repeat identical results.	
+E0106	KEEP		F8	skill	After it activates, repeated actions for the rest of the show never repeat identical results.	
 E0107	KEEP		D7	skill	Consumes prop (skill-less) cards dropped on it, gaining +1 rank per card eaten, with no cap, permanently.	E0087
 E0108	KEEP		F3	skill	The next card to be drawn is always visible above the deck slot while this card is anywhere in play.	
 E0109	KEEP		D3	skill	While spotlit, every card in this card's column gains bonus points per row of column height when the column scores.	
@@ -148,7 +148,7 @@ E0146	KEEP		C4	type	When this card is discarded from the grid, its slot keeps a 
 E0147	KEEP		G7	skill	Cue: split a target card into two same-suit cards of half rank (one rounded up, one down); this card exhausts for the show.	
 E0148	KEEP		A3	skill	When scored, its column pays 3x this placement but is locked (no placement or grabs) for the next 2 turns.	
 E0149	KEEP		F1	type	After every shuffle, this card is placed exactly at the deck's midpoint and enters play alone.	
-E0150	KEEP		I4	stamp	This card counts as one rarity higher for all effects and bonuses, but not for pack or shop pool rolls.	
+E0150	KEEP		I4	stamp	This card counts as one rarity higher for all effects and bonuses, but not for pack rolls.	
 E0151	KEEP		D7	skill	Consumes cards from anywhere (grid, Entrance, or decks, via cue), with no cap, permanently gaining rank.	E0107
 E0152	KEEP		G5	skill	Cue: swap the ranks of this card and one adjacent card.	
 E0153	KEEP		C12	skill	On submission, if a same-suit card sits lower in this card's stack, gain a point per card between them.	
