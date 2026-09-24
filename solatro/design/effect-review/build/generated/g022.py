@@ -61,7 +61,7 @@ ROWS = [
 
 ("M0043", "The Rent Book", "Y8", "hazard",
  "The plan costs to use.",
- "Level: matching a mark discards a card from the Entrance, and you may decline to match",
+ "Level: matching a mark discards a card from the Entrance, and a card placed on a mark it matches may be placed as unmatched",
  "Level: matching a mark costs a placement's worth of Entrance refill",
  "Level: the first match each show is free and every later one discards a card from the Entrance",
  "c"),
@@ -76,7 +76,7 @@ ROWS = [
 ("M0045", "The Poisoned Plan", "Y8", "hazard",
  "The plan carries a status.",
  "Level: every mark of one named suit applies Burning to whatever covers it",
- "Level: every mark applies its own card's statuses to whatever covers it",
+ "Level: every mark applies Burning to a card that covers it without matching",
  "Level: one cell's mark applies a status of the level's choosing, and it is visible",
  "c"),
 
@@ -155,16 +155,16 @@ ROWS = [
 
 ("M0056", "The Dark Grid", "Y11", "hazard",
  "One board goes unplanned.",
- "Level: with more than one grid, one grid carries no marks at all",
- "Level: with more than one grid, one grid's marks are hidden until you commit the Entrance to it",
+ "Level: the marks are hidden until the first placement",
+ "Level: the marks are hidden until the Entrance is committed to the grid",
  "Level: one grid's marks are shown only in the layer view, never on the board",
  "b"),
 
 ("M0057", "The Fogged Plan", "Y11", "hazard",
  "Reading it costs something.",
  "Level: the layer view may be opened a fixed number of times per show",
- "Level: opening the layer view costs a placement",
- "Level: the layer view shows only the row your Entrance is committed toward",
+ "Level: opening the layer view discards one Entrance card",
+ "Level: the layer view shows only the lines through the last cell you placed in",
  "a"),
 
 # -------------------------------------------------------- Y12 the plan as objective ---

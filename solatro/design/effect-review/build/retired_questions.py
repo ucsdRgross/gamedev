@@ -578,4 +578,8 @@ RETIRED = {
     "G0123": 'Duplicate of Q1374 (The Dropped Bit), whose (b) doubles lines one card short at show end, and Q1392, whose (c) pays the shortfall; the owner rules on them there.',  # Q1393
 
     "G0402": 'Duplicate of Q1390 (The Glancing Blow): a prop that misses scores anyway or is relaunched from the opposite edge; the owner rules on it there.',  # Q1391
+
+    "M0014": "Merged into Q1685 (The Chosen Property): letting a card's level 2 unlock on a property other than its own is that stamp; the owner rules on it there.",  # Q1422
+
+    "M0040": 'Duplicate of Q1446: which grid is marked by what; a normal run plays one grid; the owner rules on it there.',  # Q1449
 }

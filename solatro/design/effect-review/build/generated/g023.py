@@ -52,11 +52,11 @@ ROWS = [
 ("SN0007", "The One-Use Pocket", "Z2", "skill",
  "A holding cell that works once.",
  "One pocket beside the grid holds one card, and closes for the show once that card leaves it",
- "One pocket beside the grid holds one card, which may leave it only into an empty column; the pocket then closes for the show",
+ "One pocket beside the grid holds one card, which may leave it only into an empty cell; the pocket then closes for the show",
  "Three pockets beside the grid each hold one card once per show, and a card leaving a pocket pays its rank",
  "a"),
 
-("SN0008", "The Two-Suit Deck", "Z2", "skill",
+("SN0008", "The Two-Suit Deck", "Z2", "structure",
  "A deck of only two suits, doubled.",
  "Cards are built from two suits only, each present twice over",
  "Cards are built from one suit only, four times over",
@@ -73,7 +73,7 @@ ROWS = [
 
 ("SN0010", "The Cruel Redeal", "Z3", "consumable",
  "Gather the board in order and lay it out again, unshuffled.",
- "Consumable: gather every grid card in reading order and re-deal them into the grid in that order, so only what you moved changes place",
+ "Consumable: gather every grid card in reading order and re-deal them from the first cell, closing every gap; lines they complete score again",
  "Consumable: gather every grid card in reading order and re-deal them column by column",
  "Consumable: gather the Entrance stocks in order and re-deal them round-robin, unshuffled",
  "a"),
@@ -94,9 +94,9 @@ ROWS = [
 
 ("SN0013", "The Spider Deal", "Z3", "consumable",
  "One card onto every column at once.",
- "Consumable: deal one card from the deck onto the top of every column of the grid",
- "Consumable: deal one card from the deck onto the top of the three leftmost columns",
- "Consumable: deal one card from the deck onto every column, and any line it completes scores double",
+ "Consumable: deal one card from the deck onto the lowest empty cell of every column of the grid; a full column is stacked on",
+ "Consumable: deal one card from the deck onto the lowest empty cell of the three leftmost columns; a full column is stacked on",
+ "Consumable: deal one card from the deck onto the lowest empty cell of every column, and any line it completes scores double",
  "a"),
 
 # ------------------------------------------------------------------------------ Z4 targets ---
@@ -109,7 +109,7 @@ ROWS = [
 
 ("SN0015", "The Dealt Base", "Z4", "skill",
  "The rank a straight starts from is dealt at show start.",
- "At show start one rank is dealt as the base, and straights wrap past rank 13 back to rank 1 up to the base",
+ "At show start one rank is dealt as the base, and a straight that wraps through the base pays its rank bonus again",
  "At show start one rank is dealt as the base, and only a card of the rank below it may be the first card into an empty column",
  "At show start one rank is dealt as the base, and a straight that starts on the base pays double",
  "a"),
@@ -118,7 +118,7 @@ ROWS = [
  "A rank may enter a row only if the row above already holds it.",
  "A card may be placed in a row only if the row above already holds a card of the same rank; the top row is free",
  "A card may be placed in a row only if the row above already holds a card of the same rank, and the top row accepts one suit",
- "Placement is free, but a card scores in a row only if the row above holds a card of the same rank",
+ "Placement is free, but a card's row scores only if the row above holds a card of its rank; the top row is free",
  "c"),
 
 ("SN0017", "The Scorpion Count", "Z4", "skill",
@@ -174,15 +174,15 @@ ROWS = [
 # ---------------------------------------------------------------- Z6 sliding and shrinking ---
 ("SN0024", "The Dealt-Full Grid", "Z6", "hazard",
  "The grid starts full and every placement shoves one out.",
- "Level: the grid is dealt full at show start; every placement enters from an edge, shoves its line one cell, and the card pushed off is discarded",
- "Level: the grid is dealt full at show start, and a placement replaces a card of your choice, which is discarded",
- "Level: the grid is dealt full at show start, with three single-use pockets beside it that hold a card each",
+ "Level: the grid is dealt full from a house deck at show start; every placement enters from an edge, shoves its line one cell, and the card pushed off is discarded",
+ "Level: the grid is dealt full from a house deck at show start, and a placement replaces a card of your choice, which is discarded",
+ "Level: the grid is dealt full from a house deck at show start, with three single-use pockets beside it that hold a card each",
  "a"),
 
 ("SN0025", "The Emptied Fan", "Z6", "skill",
  "A cell once emptied stays empty.",
  "A cell a card has left cannot be filled again this show",
- "A cell a card has left cannot be filled again this show, and each such cell pays a point at End",
+ "A cell a card has left cannot be filled again this show, and each such cell pays its mark's rank at End",
  "A column every card has left cannot be filled again this show",
  "a"),
 
@@ -217,8 +217,8 @@ ROWS = [
 
 ("SN0030", "The Royal Marriage", "Z7", "hazard",
  "Bring the king to his queen.",
- "Objective: end the show with the king and queen of hearts orthogonally adjacent for a bonus",
- "Objective: end the show with the king and queen of hearts adjacent, paid per card that was removed from between them in reading order",
+ "Objective: end the show with the 13 and 12 of one suit the level names orthogonally adjacent for a bonus",
+ "Objective: end the show with the 13 and 12 of one suit the level names adjacent, paid per card that was removed from between them in reading order",
  "Objective: two cards named by the level must end the show adjacent, and the show is won when they do, whatever the score",
  "a"),
 
@@ -226,7 +226,7 @@ ROWS = [
  "A clean frame is paid the next two frames' worth again.",
  "A line completed within one Entrance refill of the previous line also earns the score of the next two lines completed",
  "A line completed within one Entrance refill of the previous line also earns the score of the next line completed",
- "A line completed within one refill of the previous line pays ten plus the next two lines' scores, and one that takes two refills pays ten plus the next one's",
+ "A line completed within one refill of the previous line pays its own score again plus the next two lines' scores; one that takes two refills pays the next one's",
  "a"),
 
 ("SN0032", "The Ten Pins", "Z7", "skill",
