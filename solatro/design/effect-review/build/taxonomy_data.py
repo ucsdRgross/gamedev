@@ -413,4 +413,14 @@ FAMILIES = [
  ("AA7","Hazards","none","would be R and B3: level modifiers with a counterplay, on scoring, placement and the deck"),
  ("AA8","From the four named games","none","the circuit, the garden plot, the production line, walls and rails"),
 ]),
+("AB", "Hitting the mark - new ideas",
+ "Written for the level-2 pass: effects built around the mark-hitting loop itself, where aiming a card at the cell whose mark agrees with it is the decision. Checked against family Y so none restates a mark effect already asked. A separate family only because the question id is positional.", [
+ ("AB1","Aim","none","effects that change which cell a card wants, or reward a chain of hits"),
+ ("AB2","Level 2 is the point","none","effects that are modest at level 1 and built to be realized"),
+ ("AB3","The plan answers back","none","hits and misses that rewrite, reveal or move marks"),
+]),
+("AC", "Level 2 of effects already ruled on",
+ "The owner ruled on these effects before level 2 existed, so the level-2 form is asked here instead of being added to a recorded answer. (d) is not a reject: it keeps the effect with no level 2, so a match pays only the flat mult.", [
+ ("AC1","Level 2 of a ruled effect","none","one question per effect already answered, in question order"),
+]),
 ]

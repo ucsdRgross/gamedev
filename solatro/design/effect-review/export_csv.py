@@ -22,6 +22,13 @@ OUT = os.path.join(DESIGN, "EFFECTS.csv")
 Q = re.compile(r"^- \*\*(Q\d+)\*\* `\[root\]` \u2014 (.*)$")
 OPT = re.compile(r"\*\*\(([a-d])\)\*\* ")
 
+#build/render.py appends the level-2 form to the mechanic, or to each option; these read it back.
+L2_HEAD = re.compile(r"\. \*\*Level (?:2, on its own mark:\*\* (.*)|2:\*\* none.*|1 is the plain .*)$")
+L2_OPT = " \u2014 **level 2:** "
+LEVEL2_SAID = {". **Level 2:** none beyond the": "none beyond the flat mult",
+               ". **Level 1 is the plain suit;": "the approved effect, on a suit match",
+               ". **Level 1 is the plain rank;": "the approved effect, on a rank match"}
+
 questions, fam, cls = {}, "", ""
 order = []
 for line in io.open(DOC, encoding="utf-8"):
@@ -56,9 +63,18 @@ for line in io.open(DOC, encoding="utf-8"):
     sm = re.match(r"from (.+?)\. (.*)$", tail)
     if sm:
         src, mech = sm.group(1), sm.group(2)
+    level2 = {}
+    lm = L2_HEAD.search(mech)
+    if lm:
+        mech, said = mech[:lm.start()], lm.group(0)
+        level2 = dict.fromkeys("abc", lm.group(1) or LEVEL2_SAID[said[:30]])
+    for k, v in list(opts.items()):
+        halves = v.split(L2_OPT)
+        if len(halves) == 2:
+            opts[k], level2[k] = halves
     questions[qid] = {"qid": qid, "family": fam, "class_group": cls, "name": nm,
                       "slot": slot, "class": klass, "source": src,
-                      "mechanic": mech, "opts": opts, "default": default}
+                      "mechanic": mech, "opts": opts, "default": default, "level2": level2}
     order.append(qid)
 
 print("parsed %d questions" % len(questions))
@@ -125,11 +141,20 @@ for qid in order:
         "option_a": q["opts"].get("a", ""),
         "option_b": q["opts"].get("b", ""),
         "option_c": q["opts"].get("c", ""),
+        "level2": q["level2"].get(letter, "") if letter in ("a", "b", "c") else "",
     })
+
+# Family AC asks the level 2 of an effect the owner had already ruled on; its answer belongs on
+# that effect's own row.
+by_id = {r["id"]: r for r in rows}
+for r in rows:
+    m = re.match(r"Level 2 of (Q\d+)", r["name"])
+    if m and r["status"] != "unanswered":
+        by_id[m.group(1)]["level2"] = r["approved_effect"] or "none beyond the flat mult"
 
 cols = ["id", "name", "status", "approved_effect", "slot", "class", "family",
         "class_group", "variant", "was_recommended", "answer_state", "owner_note",
-        "one_line_summary", "provenance", "option_a", "option_b", "option_c"]
+        "one_line_summary", "provenance", "option_a", "option_b", "option_c", "level2"]
 with io.open(OUT, "w", encoding="utf-8-sig", newline="") as f:
     w = csv.DictWriter(f, fieldnames=cols)
     w.writeheader()

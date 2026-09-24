@@ -11,6 +11,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from taxonomy_data import FAMILIES
 from retired_questions import RETIRED
+import levels
+
+LEVELS = levels.rows()
 
 DEST = os.path.join(os.path.dirname(HERE), "DESIGN.md")
 
@@ -188,10 +191,27 @@ for r in ordered:
     prov = (clean(r["src"]) or "generated") if r["origin"] == "generated" else "`%s`" % label_src(clean(r["src"]))
     head = "**%s** — %s, %s, from %s. %s" % (
         clean(r["name"]), r["slot"], r["cls"] or "unclassified", prov, clean(r["mech"]))
+    opts = [clean(r["a"]), clean(r["b"]), clean(r["c"])]
+    if r["eid"] in LEVELS:
+        lqid, verdict, level2, why = LEVELS[r["eid"]]
+        assert lqid == qid, ("level row names %s but %s renders as %s" % (lqid, r["eid"], qid))
+        if isinstance(level2, tuple):
+            opts = ["%s — **level 2:** %s" % (o, clean(l)) for o, l in zip(opts, level2)]
+        elif level2 in (levels.SUIT, levels.RANK):
+            head += (". **Level 1 is the plain %s; each option is its level 2**, firing on a %s match"
+                     % (level2.lower(), level2.lower()))
+        elif level2 == levels.NONE:
+            head += ". **Level 2:** none beyond the flat mult a match pays"
+        elif level2:
+            head += ". **Level 2, on its own mark:** " + clean(level2)
+        if verdict == "WEAK":
+            head += " ⚑ *pair review: %s*" % clean(why)
+    reject = ("no level 2 — a match pays the flat mult only" if r["fam"] == "AC"
+              else "reject — this effect does not enter the game")
     out.append(
-        "- **%s** `[root]` \u2014 %s \u00b7 **(a)** %s \u00b7 **(b)** %s \u00b7 **(c)** %s "
-        "\u00b7 **(d)** reject \u2014 this effect does not enter the game \u00b7 *default* (%s)"
-        % (qid, head, clean(r["a"]), clean(r["b"]), clean(r["c"]), r["d"])
+        "- **%s** `[root]` — %s · **(a)** %s · **(b)** %s · **(c)** %s "
+        "· **(d)** %s · *default* (%s)"
+        % (qid, head, opts[0], opts[1], opts[2], reject, r["d"])
     )
 out.append("\n" + io.open(os.path.join(HERE, "footer.md"), encoding="utf-8").read())
 

@@ -5,9 +5,8 @@ each with three variants plus reject, and the rulings exported to a single CSV. 
 answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for every one.
 
 **State:** the questionnaire is live: **1,595 askable questions, 83 retired in place**, 0 parser
-errors, 0 warnings. The owner has answered **118**. The current work stream is **S13** (below): the
-`rule` slot is gone, the Balatro mod wiki is being mined for new effects, and a duplicate hunt is
-queued. **The S13 TODO list is the thing to read first when resuming.**
+errors, 0 warnings. The owner has answered **118**. The current work stream is **S14** (below): the
+level-2 pass. **The S14 checklist under "Next up" is the thing to read first when resuming.**
 
 **Entry docs:** `solatro/design/effect-review/build/GAME_BRIEF.md` (the rulebook every effect must
 fit — read it before judging anything) · `solatro/design/effect-review/build/REVIEW.md` (how to
@@ -195,6 +194,32 @@ the next render silently discards the edit.
     New effects go in a new last-sorting family so no answered id moves. The TODO list under
     "Next up" is the live state.
 
+- id: S14
+  description: >
+    The level-2 pass. Every live question read for uniqueness and fun; every matchable effect
+    (skill, stamp, suit, rank) given its form "when hitting its own mark"; duplicates retired in
+    place, including a level 2 that equals another effect's level 1; new mark-hitting effects in
+    family AB; the level 2 of every effect the owner already ruled on asked in family AC. Opus 5.5
+    writes, a Fable pair reviewer reads each family before it lands.
+  files_touched: [solatro/design/effect-review/build/levels.py, solatro/design/effect-review/build/levels, solatro/design/effect-review/build/render.py, solatro/design/effect-review/export_csv.py, solatro/design/effect-review/build/taxonomy_data.py, solatro/design/effect-review/build/GAME_BRIEF.md, solatro/design/effect-review/build/generated, solatro/design/effect-review/build/retired_questions.py, solatro/design/effect-review/build/header.md]
+  verification_command: 'py solatro/design/effect-review/build/levels.py stat && py -c "import sys; sys.path.insert(0, 'solatro/design/effect-review/build'); import fixkit; fixkit.verify()" && npm --prefix designloop run check -- solatro/effect-review'
+  verification_kind: manual
+  status: in_progress
+  evidence: ''
+  notes: >
+    Owner rulings are in `build/GAME_BRIEF.md` § Every matchable effect has two levels. The owner
+    answered "go" to: level 2 written once per effect as a change true of all three options, per
+    option only where the options differ in mechanism; answered effects get their level 2 in a
+    last-sorting family (AC) so no recorded answer changes meaning; clear duplicates among
+    unanswered questions retired in place naming the twin, anything touching an answered question
+    asked instead; rank's level 2 is the rank-match points bonus. Owner, on starting: "you and
+    reviewer will need to review every single effect and consider its uniqueness and funness" and
+    "feel free to add any random ideas you have that fits the poker square mark hitting gameplay
+    loop". The engine gives every property level 2 on any match: `design/board-plan/gaps/GAP-007.md`.
+    Branch `effect-levels`, in its own worktree because another session holds the base branch;
+    merge back into `combine-sidebar-boardplan` when done. ⚠ `answers.json` belongs to the owner's
+    checkout: before merging, re-read it and move any question answered since into family AC.
+
 - id: S9
   description: Owner answers the questionnaire; export the final CSV.
   files_touched: [solatro/design/effect-review/EFFECTS.csv]
@@ -250,7 +275,23 @@ solatro/design/effect-review/               new directory
 ```
 No game code, no tests, no vendored addon touched.
 
-## Next up — the S13 TODO list
+## Next up — the S14 checklist
+
+Per family: `py build/levels.py fam X`, write that family's file under `build/levels/` (one row
+per live question; the `levels.py` docstring has the schema), rewrite or retire through `fixkit`,
+add a family-AC row under `build/generated/` for each answered matchable effect, re-render, then the
+Fable pair review of that family's rows before the next one lands. Tick each family when its review
+is applied.
+
+- [ ] A · [ ] B · [ ] C · [ ] D · [ ] E · [ ] F · [ ] G · [ ] H · [ ] I · [ ] J · [ ] K · [ ] L
+- [ ] M · [ ] N · [ ] O · [ ] P · [ ] Q · [ ] R · [ ] S · [ ] T · [ ] U · [ ] V · [ ] X · [ ] W
+- [ ] Y · [ ] Z · [ ] AA
+- [ ] family AB, new mark-hitting effects under `build/generated/`, checked against family Y
+- [ ] cross-family duplicate sweep: every level 2 against every other level 1
+- [ ] `header.md` section for the round; `status.agent.json` summary; final pair review before the owner sees it
+- [ ] merge back into `combine-sidebar-boardplan` (the AC re-read above first)
+
+## The S13 TODO list
 
 Everything for S13 lives in `solatro/design/effect-review/build/mine_mods/`. Tick items off here as
 they land; this list is the resumption point.
@@ -312,7 +353,7 @@ the architecture review recorded in `header.md` re-read every question against t
 
 ## Opening prompt for the next agent
 
-> Read `solatro/HANDOFF_effect_review.md` — the S13 TODO list under "Next up" is the resumption
+> Read `solatro/HANDOFF_effect_review.md` — the S14 checklist under "Next up" is the resumption
 > point — then `solatro/design/effect-review/build/GAME_BRIEF.md`. Work the unticked items in
 > order. Rules that are not negotiable: never hand-edit `DESIGN.md`; never rename or delete an
 > effect (the question id is positional — retire in place); new effects go in a last-sorting family;

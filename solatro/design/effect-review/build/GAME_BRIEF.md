@@ -126,6 +126,32 @@ only works on the pre-plan board.
   nothing.
 - A level or blind **may grant marks of cards outside your deck** (that is the hazard/blessing seam).
 
+## ⚠ Every matchable effect has two levels
+
+`on_mark_hit` / `on_mark_covered` carry a `level`: 0 is **level 1**, the effect as printed; 1 is
+**level 2**, its form "when hitting its mark" (board-plan `PLAN.md` §1.7). Exactly two, ever.
+
+- **A match is same kind to same kind** (owner): suit to suit, rank to rank, hat to hat, skill to
+  skill. **A property's level 2 is unlocked by its own match only.** So a skill's level 2 needs a
+  talent match, a stamp's a hat match; a rank match does nothing for either.
+- **Suit and rank: level 1 is the plain suit or rank** — it scores and makes melds everywhere.
+  **Level 2 is level 1 plus its additional effect.** Today's suit prop effects already have this
+  shape (§1.6), and so does the rank-match points bonus (`plan_rank_match_step`). A suit or rank
+  question's options are written as its level-2 addition; anything that changes meld or straight
+  identity is level 1.
+- **Skill and stamp: level 2 is its own effect, written beside level 1** — the same class and
+  file, not a subclass (owner: *"do not extend; that is more complicated"*). A talent match fires
+  level 2 AND always pays the flat talent mult, even when level 2 exists.
+- **type, consumable, status, hazard and structure have no level 2** — a type is not matchable
+  (`QR3`), and the rest are not on a card that sits on a mark.
+- ⚠ **A level 2 that equals, or nearly equals, another effect's level 1 is a duplicate** — merge
+  the two or drop one.
+
+**What makes a good level 2.** The player earned it by placing the right card on the right cell,
+so it should feel like a payoff for aim, not a bigger number: the effect reaches further (its line,
+its grid, the next refill), fires again, turns a cost into a gain, lets the player choose where it
+lands, or changes the mark itself. A flat "×2 the number" is the fallback, not the default.
+
 ## ⚠ The Entrance is five per-slot STOCKS — confirmed design, not yet built
 
 `design/sidebar/` §17 is answered and runs FIRST. The deck is split evenly across the five slots by
