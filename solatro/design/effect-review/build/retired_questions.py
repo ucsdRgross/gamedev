@@ -297,4 +297,84 @@ RETIRED = {
     "E0104": "Merged into Q0658 (Iron Body): the first hit prevented, paid out as tokens, is that effect's level 2; the owner rules on it there.",  # Q0659
 
     "E1971": 'Duplicate of Q0663 (The Cleansing Pass): a consumable that strips statuses from your cards; the owner rules on it there.',  # Q0661
+
+    "E1784": 'Retired: there is no currency and no shop. Retriggers pay gold.',  # Q0667
+
+    "E1545": 'Retired: there is no currency and no shop. It earns gold.',  # Q0668
+
+    "E1862": 'Retired: there is no currency and no shop. It earns gold.',  # Q0669
+
+    "E0065": 'Retired: there is no currency and no shop. A suit whose cards are currency at a shop.',  # Q0670
+
+    "E0657": 'Retired: there is no currency and no shop. It steals gold from the town.',  # Q0671
+
+    "E2006": 'Retired: there is no currency and no shop. A difficulty that takes gold.',  # Q0674
+
+    "E0330": 'Retired: there is no currency and no shop. It pays gold tokens for a cut of payouts.',  # Q0675
+
+    "E1803": 'Retired: there is no currency and no shop. Interest on gold.',  # Q0677
+
+    "E1563": 'Retired: there is no currency and no shop. It doubles gold.',  # Q0678
+
+    "E1657": 'Retired: there is no currency and no shop. It earns gold.',  # Q0680
+
+    "E1564": 'Retired: there is no currency and no shop. Its value is a sale price.',  # Q0683
+
+    "E1578": 'Retired: there is no currency and no shop. Its value is sale prices.',  # Q0685
+
+    "E0839": 'Retired: there is no currency and no shop. A map node that sells for gold.',  # Q0686
+
+    "E0988": 'Retired: there is no currency and no shop. It pays when sold.',  # Q0688
+
+    "E1509": 'Retired: there is no currency and no shop. Free shop items.',  # Q0689
+
+    "G0332": "Retired: there is no currency and no shop. It sets a shop's stock.",  # Q0692
+
+    "E0426": 'Retired: there is no currency and no shop. An economy paid in gold.',  # Q0693
+
+    "E0586": 'Retired: there is no currency and no shop. A second currency.',  # Q0697
+
+    "E0650": 'Retired: there is no currency and no shop. It earns the second currency, heat.',  # Q0698
+
+    "E1550": 'Retired: there is no currency and no shop. Debt against gold.',  # Q0701
+
+    "E1813": 'Retired: there is no currency and no shop. Debt against gold.',  # Q0702
+
+    "E2043": 'Retired: there is no currency and no shop. A goal set by gold held.',  # Q0707
+
+    "E1703": 'Retired: there is no currency and no shop. It takes gold.',  # Q0709
+
+    "E1998": 'Retired: there is no currency and no shop. It sets sale prices.',  # Q0711
+
+    "G0354": 'Retired: there is no currency and no shop. Haggling in a shop.',  # Q0712
+
+    "G0355": 'Retired: there is no currency and no shop. It sets shop prices.',  # Q0713
+
+    "E1839": 'Duplicate of Q0420 (The Comedic Drop): give this card up mid-show for points now; its fraction-of-the-goal variant is the same trade; the owner rules on it there.',  # Q0684
+
+    "E0643": 'Duplicate of Q0766 (The Ground Rent): a card spent as a resource instead of scored, paying for cued effects; the owner rules on it there.',  # Q0696
+
+    "E1554": 'Retired: there is no currency and no shop. It earns gold.',  # Q0716
+
+    "E0060": 'Retired: already a rule. Undo is a button with a capped history (Game.undo_cap) that rewinds the board with the deck order unchanged. One free undo per turn is what the button already gives.',  # Q0721
+
+    "E0231": 'Retired: already a rule. Undo is a button with a capped history (Game.undo_cap) that rewinds the board with the deck order unchanged. More free undos is what the button already gives; debuffs rewind with it.',  # Q0722
+
+    "G0132": 'Retired: already a rule. Undo is a button with a capped history (Game.undo_cap) that rewinds the board with the deck order unchanged. Undos do not accrue, so there is nothing to account for.',  # Q0724
+
+    "E1570": 'Retired: there is no currency and no shop. It grows on shop rerolls.',  # Q0727
+
+    "G0316": 'Duplicate of Q0413 (Lucky Streak): a random outcome rolled twice and the better kept; the owner rules on it there.',  # Q0728
+
+    "E0004": "Duplicate of Q0059, which the owner wrote: a patience total that runs down and ends the show; the owner's version stands.",  # Q0734
+
+    "G0363": "Duplicate of Q0059, which the owner wrote: patience drops per Entrance refill and a scored meld restores it; the owner's version stands.",  # Q0737
+
+    "G0148": "Merged into Q0253 (The Forge): placing two Entrance cards in one turn, into different cells, is that effect's level 2; the owner rules on it there.",  # Q0749
+
+    "G0167": 'Retired: already a rule. Undo is a button with a capped history (Game.undo_cap) that rewinds the board with the deck order unchanged. Rewinding the grid with the deck order unchanged is the button.',  # Q0758
+
+    "E1255": 'Duplicate of Q0128 (Burnt Joker): the hand type chosen at random, by you, or the least-played is enhanced; the owner rules on it there.',  # Q0143
+
+    "E1449": "Duplicate of Q0030 (The Clock Hang), which the owner wrote: a card placed past the grid's edge as if the grid were one larger; the owner's version stands.",  # Q0176
 }

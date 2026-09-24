@@ -22,7 +22,7 @@ ROWS = [
 ('Q0250', 'E0109', 'OK', 'A height line completed in its stack also re-scores its row', ''),
 ('Q0251', 'E0133', 'WEAK', 'Its crown hand is read at any stack height, not only five', '(a) and (b) are what a five-card stack already scores'),
 ('Q0252', 'E0814', 'OK', "Cards stacked on top that match the cell's mark count double", ''),
-('Q0253', 'G0149', 'OK', 'The two cards may go onto two different cells, each one whose mark it matches', ''),
+('Q0253', 'G0149', 'OK', 'The two cards may go onto two different cells', 'absorbs Q0749 (The Double Harvest)'),
 ('Q0254', 'G0012', 'OK', None, ''),
 ('Q0255', 'G0010', 'OK', 'Each card that falls scores twice', ''),
 ('Q0256', 'G0011', 'OK', 'It holds up the stacks in the cells beside it too', ''),

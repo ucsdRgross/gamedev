@@ -195,7 +195,7 @@ E0193	catalog	CARD_CATALOG	The Card Index		Rare	skill;Magician;deck-manip	Cue, o
 E0194	catalog	CARD_CATALOG	The Castell		Epic	skill;Dancer;Acrobat;formation;gamble	Formation: a stack of 6+ cards topped by the lowest-ranked card pays a large bonus at scoring; if the stack is broken by a hazard first, lose double the bonus instead.			0
 E0195	catalog	CARD_CATALOG	The Charivari		Uncommon	skill;Dancer;Clown;formation;combo	If 4 or more cards are placed into the board on the first turn of a show, gain bonus multiplier on the show's first placement's payout.			0
 E0196	catalog	CARD_CATALOG	The Cheap Pop		Common	skill;Producer;economy	When scored, grants a small bonus fame in every town.			0
-E0197	catalog	CARD_CATALOG	The Claque		Rare	consumable;economy;gamble	Consumable: raises this show's fame floor to 60% of goal, but costs 1 Gold at every subsequent show forever.			0
+E0197	catalog	CARD_CATALOG	The Claque		Rare	consumable;economy;gamble	Consumable: raises this show's fame floor to 60% of goal, but every later show's reward drops.			0
 E0198	catalog	CARD_CATALOG	The Cliffhanger		Rare	skill;Fortune Teller;gamble;economy	Cue at show end: the next town's goal drops 30%, but this card must score in that show or lose double the discount as fame.			0
 E0199	catalog	CARD_CATALOG	The Clock Hang		Rare	skill;Acrobat;gamble;spotlight	May be placed half-off the board past the last column; while hanging it is double-spotlit (its skill fires twice), but any board-shift effect discards it.			0
 E0200	catalog	CARD_CATALOG	The Comedic Drop		Uncommon	skill;Clown;discard;gamble	Cue: discard this card mid-show for a bonus larger than scoring it would have paid.		designdocs	1
@@ -238,7 +238,7 @@ E0236	catalog	CARD_CATALOG	The Fifteen		Uncommon	pip;combo;Special Effects	This 
 E0237	catalog	CARD_CATALOG	The Fire Breather		Rare	skill;Escape Artist;status;prop	Cue: apply Burning to every card in this card's entire row; this card becomes Exhausted.			0
 E0238	catalog	CARD_CATALOG	The Fire-Knife		Rare	pip;prop;status;combo	This card is fixed dual-suit Knives and Flames: knife props fly the row while Burning status drops down the column.	vetoed (already have fire and knives)		0
 E0239	catalog	CARD_CATALOG	The Fire Marshal		Uncommon	hazard;prop;status	Town hazard: Flames-suit cards cannot score, and any Flames card in the deck is treated as Wax type this show.			0
-E0240	catalog	CARD_CATALOG	The Forged Ace		Legendary	pip;gamble;event-granted;secret	This card has an enormous rank that counts as two Aces in melds; if a card is ever stacked on it, it is destroyed and the show's fame payout is voided.	Vetoed (??? wtf is this)		0
+E0240	catalog	CARD_CATALOG	The Forged Ace		Legendary	pip;gamble;event-granted;secret	This card has an enormous rank that counts as two Aces in melds and matches an Ace's mark on rank; if a card is ever stacked on it, it is destroyed and the show's fame payout is voided.	Vetoed (??? wtf is this)		0
 E0241	catalog	CARD_CATALOG	The Forty-Two		Legendary	rule;secret;combo	Hidden rule: when a row's score plus its column's score totals exactly 42, the show's combo gains +3.			0
 E0242	catalog	CARD_CATALOG	The Fourth Wall		Epic	skill;meta-effect;movement;gamble	Once per Entrance refill, during scoring resolution, pauses the show to allow one grab/place before resolution continues.			0
 E0243	catalog	CARD_CATALOG	The Gentled Beast		Uncommon	skill;Animal Trainer;growth;protection	Cards dropped on this card are not consumed but returned to the column below it; each one permanently adds +1 to this card's score bonus.			0

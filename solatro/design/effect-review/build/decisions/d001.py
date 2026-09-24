@@ -139,7 +139,7 @@ KEEPS = [
  "b"),
 ("E0290","K1","skill","Throws one card back.",
  "Discard one Entrance card per turn before placement; further copies add one discard each",
- "Discard any number of Entrance cards per turn, but each discard after the first costs 1 gold",
+ "Discard any number of Entrance cards per turn, but each discard after the first also discards the top card of a stock",
  "Discard one Entrance card per turn, and the discarded card is replaced immediately from the deck",
  "c"),
 ("E0291","Q6","skill","Catches a prop and throws it back.",

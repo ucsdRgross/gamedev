@@ -15,7 +15,7 @@ ROWS = [
 
 ("G0212","The Augment Offer","K11","structure","Three permanent choices at fixed points in the run.",
  "At three fixed points in the run you are offered three run-permanent effects and must take one",
- "At three fixed points you are offered three run-permanent effects and must take one, with a reroll available for gold",
+ "At three fixed points you are offered three run-permanent effects and must take one, with one reroll per offer",
  "At three fixed points you are offered three, must take one, and the two refused are removed from the pool for the rest of the run",
  "b"),
 

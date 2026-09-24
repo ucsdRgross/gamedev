@@ -125,7 +125,7 @@ ROWS = [
  "Cue: block one empty cell per use, so repeated use costs more and more room",
  "c"),
 ("G0092","The Clearance","K10","skill","Room is the resource.",
- "Effects are paid for with empty cells rather than gold, at a fixed rate",
+ "Effects are paid for with empty cells at a fixed rate",
  "Effects may be paid for with empty cells or points, your choice, at a fixed rate",
  "Effects are paid for with empty cells, and a full grid means nothing can fire",
  "b"),

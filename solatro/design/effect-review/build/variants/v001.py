@@ -117,7 +117,7 @@ ROWS = [
  "Swaps with the card covering it automatically, every time a line it belongs to completes",
  "c"),
 ("E0026",
- "While in the deck, doubles the chance of Rare cards appearing in packs and shops",
+ "While in the deck, doubles the chance of Rare cards appearing in packs",
  "While in the deck, doubles the chance of the rarity one step above this card's own appearing",
  "While on the grid, the next pack opened contains one guaranteed Rare",
  "b"),

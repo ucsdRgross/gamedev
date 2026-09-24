@@ -166,6 +166,10 @@ not the default.
 - A mark takes part in a meld only when it is **uncovered and stands in for an empty cell** — the
   owner's own shape (`Q0098`, `Q0109`). A covered mark is under its card; the card acts, not it.
 - A level 2 must not equal another live effect's level 1; grep `DESIGN.md` before writing one.
+- A level 2 must **do something under every option**, the default above all. When the options
+  differ in reach or mechanism, write one level 2 per option.
+- A rank or suit level 2 is never "it matches X": matching is what unlocks level 2. What a strange
+  rank matches is its level 1, stated in the question's head.
 
 ## ⚠ The Entrance is five per-slot STOCKS — confirmed design, not yet built
 

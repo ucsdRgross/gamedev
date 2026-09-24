@@ -15,7 +15,7 @@ ROWS = [
 ("G0180","The Clearance Threshold","C1","skill","A line that passes a mark clears itself.",
  "A line whose running total passes a threshold scores and empties, freeing its cells",
  "A line whose total passes a threshold scores and empties, and the threshold rises each time",
- "A line whose total passes a threshold scores and empties, and the grid shifts to fill the gap",
+ "A line whose total passes the threshold scores, and only the card that pushed it over is discarded",
  "b"),
 ("G0181","The Eyesore","A8","type","A card you must place that hurts what surrounds it.",
  "This card must be placed like any other and subtracts from every neighbour, but is worth a great deal itself",

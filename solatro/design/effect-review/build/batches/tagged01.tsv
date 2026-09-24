@@ -24,7 +24,7 @@ E0022	KEEP		V6	skill	Counts as a copy of its highest orthogonally-adjacent neigh
 E0023	KEEP		F6	skill	On Entrance refresh, adds one extra card into this card's column, plus one more per Clown-class card scored last placement.	
 E0024	KEEP		E2	skill	Cue: swaps positions with the single card covering it.	
 E0025	DROP	ALREADY_A_RULE				
-E0026	KEEP		J5	skill	While in the deck, doubles the odds of Rare cards appearing in packs and shops.	
+E0026	KEEP		J5	skill	While in the deck, doubles the odds of Rare cards appearing in packs.	
 E0027	KEEP		L4	stamp	Scores +X points per show it is played; if benched two shows in a row, it is permanently removed from the deck.	
 E0028	KEEP		G5	skill	Cue: target card's suit becomes Balls; if that completes a flush row, gain bonus multiplier immediately.	
 E0029	KEEP		B8	skill	Scoring two pair, Aces over Eights, in one row pays a jackpot and triggers a map event.	
@@ -195,7 +195,7 @@ E0193	KEEP		F2	skill	Cue, once per show: search the deck for any card and put it
 E0194	KEEP		D9	skill	Formation: a stack of 6+ cards topped by the lowest-ranked card pays a large bonus at scoring; if the stack is broken by a hazard first, lose double the bonus instead.	
 E0195	KEEP		K6	skill	If 4 or more cards are placed onto the grid on the first turn of a show, gain bonus multiplier on the show's first placement's payout.	
 E0196	KEEP		J7	skill	When scored, grants a small bonus fame in every town.	
-E0197	KEEP		J8	consumable	Consumable: raises this show's fame floor to 60% of goal, but costs 1 Gold at every subsequent show forever.	
+E0197	KEEP		J8	consumable	Consumable: raises this show's fame floor to 60% of goal, but every later show's reward drops.	
 E0198	KEEP		R6	skill	Cue at show end: the next town's goal drops 30%, but this card must score in that show or lose double the discount as fame.	
 E0199	KEEP		A5	skill	May be placed half-off the grid past the last column; while hanging it is double-spotlit (its skill fires twice), but any board-shift effect discards it.	
 E0200	KEEP		F10	skill	Cue: discard this card mid-show for a bonus larger than scoring it would have paid.	
@@ -224,7 +224,7 @@ E0222	KEEP		A5	skill	Cue, once per show: re-triggers any formation bonus already
 E0223	KEEP		H1	skill	Event-forged unique card created for this save file, assembled from the two effects scored most this run.	
 E0224	KEEP		E9	skill	During an Entrance refresh, once armed by cue, intercepts one falling card as it drops and redirects it to any column.	
 E0225	KEEP		F7	skill	Cue while spotlit: stash the top discard inside this card; when this card scores, the stashed card returns to the Entrance.	
-E0226	KEEP		J4	skill	Cue: send any grid card to the discard, gaining 1 Ticket Stub.	
+E0226	KEEP		J4	skill	Cue: send any grid card to the discard.	
 E0227	KEEP		A5	stamp	If this card's skill triggered this show, there is a seeded 50% chance it triggers once more at show end.	
 E0228	KEEP		P3	skill	Gamble-tagged cards cost 1 less to acquire and their destruction odds are halved.	
 E0229	DROP	NOT_APPLICABLE				
@@ -238,7 +238,7 @@ E0236	KEEP		B1	skill	This card also melds with any adjacent neighbors whose rank
 E0237	KEEP		I10	skill	Cue: apply Burning to every card in this card's entire row; this card becomes Exhausted.	
 E0238	DROP	RESKIN:E0076				
 E0239	DROP	DUPLICATE:E0048				
-E0240	KEEP		B4	rank	This card has an enormous rank that counts as two Aces in melds; if a card is ever stacked on it, it is destroyed and the show's fame payout is voided.	
+E0240	KEEP		B4	rank	This card has an enormous rank that counts as two Aces in melds and matches an Ace's mark on rank; if a card is ever stacked on it, it is destroyed and the show's fame payout is voided.	
 E0241	KEEP		A12	skill	When a row's score plus its column's score totals exactly 42, the show's combo gains +3.	
 E0242	KEEP		K8	skill	Once per Entrance refill, during scoring resolution, pauses the show to allow one grab/place before resolution continues.	
 E0243	KEEP		I4	skill	Cards dropped on this card are not consumed but returned to the column below it; each one permanently adds +1 to this card's score bonus.	

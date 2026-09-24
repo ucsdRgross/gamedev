@@ -227,7 +227,7 @@ KEEPS = [
 ("E1684","K7","skill","Huge, and it costs you room.",
  "A very large flat bonus, at the cost of two Entrance slots",
  "A very large flat bonus, at the cost of one placement per show",
- "A very large flat bonus, at the cost of two Entrance slots, refundable by selling it",
+ "A very large flat bonus, at the cost of two Entrance slots, refundable by destroying it",
  "a"),
 ("E1685","A7","skill","Paid by how often you have played it.",
  "Adds to the multiplier the number of times the scoring hand type has been played this run",

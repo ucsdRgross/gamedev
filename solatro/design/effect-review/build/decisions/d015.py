@@ -202,7 +202,7 @@ KEEPS = [
 ("E2072","B6","skill","Levelling up is worth more.",
  "When a hand type levels up, it gains multiplier and flat points rather than flat points alone",
  "When a hand type levels up, it gains double what it normally would",
- "When a hand type levels up, every other hand type gains a small amount too",
+ "A level-up through its cell also raises the hand type of every other line that scored that placement",
  "c"),
 ("E2075","G6","hazard","One card is replaced every placement.",
  "Boss: one random card you own is replaced by another every placement",
