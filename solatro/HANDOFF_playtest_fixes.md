@@ -3,8 +3,8 @@
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P50 done (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P49, e7ead6cc): `ALL 51 SUITES: 6930
-CHECKS PASSED`, 21 placeholder warnings, 24 resources + 1150 ObjectDB; P50 has a filtered run only.
+Fable-reviewed, one verified step per commit. Last full gate (P50, 6ffa2876): `ALL 51 SUITES: 6906
+CHECKS PASSED`, 21 placeholder warnings, 24 resources + 1150 ObjectDB (TP-92 1 of 2).
 Pending: P51 and the owner's next visual review round, then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
@@ -521,7 +521,7 @@ a lot of these issues are with lack of parity between different modal input opti
   verification_command: 'run_tests.py --filter Pixels DragPlace VisualLayers UiProps SettingsRange; the visual review refresh'
   verification_kind: snapshot
   status: done
-  evidence: 'commit 9cfe7b0c. match_rim 15 -> 31; the P49 PIXELS ink-vs-paper row deleted; docs back to 31. Lift measured, unchanged: CardVisual.held_lift_px is one general state gated on `held` (card_visual.gd:813-850). FILTERED 5 of 51 [Pixels DragPlace VisualLayers UiProps SettingsRange]: 872 on the second run (first: three DRAG PLACE timing rows, Open bugs); --logic 3041. FULL GATE OWED.'
+  evidence: 'commit 9cfe7b0c. match_rim 15 -> 31; the P49 PIXELS ink-vs-paper row deleted; docs back to 31. Lift measured, unchanged: CardVisual.held_lift_px is one general state gated on `held` (card_visual.gd:813-850). FILTERED 5 of 51 [Pixels DragPlace VisualLayers UiProps SettingsRange]: 872 on the second run (first: three DRAG PLACE timing rows, Open bugs); --logic 3041. Overseer gates on HEAD 6ffa2876: 6935 passed, 1 FAILED (TP-92), rerun ALL 51 SUITES: 6906 CHECKS PASSED, 21 placeholder warnings, 24 resources + 1150 ObjectDB; per-suite tables differ only in BOARD FUZZ and TP-92.'
   notes: 'match_rim 15 -> 31 in roles.tres and its mirrored script default. The P49 PIXELS row "the focus rim is drawn in an ink the card''s paper is not" enforced the reversed ruling - delete it (the DRAG PLACE equal-rim row stays). Docs P49 touched go back to 31, stating the owner''s reason (closest to white; the paper cards'' brown border keeps a focused paper card readable). Lift: the owner ruled a lift belongs to everything clicked and about to move, never special-cased - REPORT whether CardVisual''s held lift is already one general state (not Entrance-specific); change nothing about it here.'
 - id: P51
   description: A card description in the game screen's sidebar shows a Deck button; only a MAP NODE's description carries one (the owner's visual review; second playtest: no Travel/Deck on a card description; sixth round: a node description shows Deck).
@@ -599,15 +599,14 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - GRID VIEW TP-138 "the board at rest is already where an explicit pan puts it" (rest -445.7 vs pan -443.3, 1 px bound): 1 of 5 runs on the P43 tree.
 - FOR /docs AT THE CLOSE: the rim-ink records - design/board-plan/gaps/GAP-004.md ("match_rim = 31 ... stand") and design/sidebar/ASSUMPTIONS.md ~993 (the fourth-round ink ruling) with no pointer to the seventeenth round; ARCHITECTURE_REVIEW.md ~1599 and board-plan ASSUMPTIONS.md ~306 now give 15 but still reason "the ruling says WHITE, so" - pink was chosen because cream vanished on the Entrance paper.
 - FOR /docs AT THE CLOSE: the design records still quote the pre-P43 picture (1576x887, inset 394, 262.7, 733.808, the 27+8 band): design/sidebar/{DESIGN,PLAN,TEST_PLAN,ASSUMPTIONS}.md, gaps GAP-001/GAP-002, design/poker-patience/gaps/GAP-039.md, Tests/Visual/grid_zoom_shot.gd ~214, todo.md ~107; test_grid_layout.gd ~1709 has a tab-joined line.
-- PLAN VISUALS TP-92 failed 3 of 4 runs on the P48 tree (all three in the implementer's filtered runs, passed the overseer gate) against ~1 of 3 gates before; a wall-clock stagger row. Measure before naming a cause.
+- PLAN VISUALS TP-92 failed 1 of 2 overseer gates on the P50 tree (worst drift 0.086 s against a 0.080 s stagger) and 3 of 4 runs on the P48 tree (all three in the implementer's filtered runs, passed the overseer gate) against ~1 of 3 gates before; a wall-clock stagger row. Measure before naming a cause.
 - Latent, recorded by the P48 review: HudContainer._leaves_the_sidebar_for_the_picture reads the container-global _hosted_viewer (the existing per-screen bug above gains a reader); a Down pressed within a pan's ease picks the Entrance stop from a mid-flight x.
 - DRAG PLACE timing rows, 1 of 2 runs on the P50 tree (a Sonnet report called them a known flake - they are NOT on any list): "...and bare motion afterwards moves the board not at all" (content x -836.74 -> -837.32), "leaving the picture stops the slide exactly where it stood" and its precondition "the slide was caught part way across" (travelled 1.000). The palette change cannot reach them; measure before naming a cause.
 - Picture-wall design DAG warning (Design Loop check): QR6's default (a) reaches nothing - Q76 is gated [QR6=b|c], Q77 [QR6=b]. A design decision for the owner: widen the gates or change the default.
 
 ## Next up
-1. The full windowed gate on HEAD (P50 has only a filtered run).
-2. P51 (no Deck button on a card description), then refresh the visual review with the P50 and P51 changes and park on the owner's next round (`/plan-run` "The owner's visual review").
-3. The close per /plan-run, then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list), and the owner merges the branch.
+1. P51 (no Deck button on a card description), then refresh the visual review with the P50 and P51 changes and park on the owner's next round (`/plan-run` "The owner's visual review").
+2. The close per /plan-run, then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list), and the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
 
