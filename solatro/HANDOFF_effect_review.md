@@ -285,7 +285,8 @@ ticked; its findings are claims to check, then apply.
 - [x] every family written, A to AA; family AB (18 new effects); family AC (97 level-2 questions)
 - [x] level 2 vs level 1 collision sweep across all families (eight fixed)
 - [x] pair review applied: A, B, C, D, E, F
-- [ ] pair review applied: G-I · J-M, O-P · Q-X and W · Y-Z · AA · AB
+- [x] pair review applied: G-I · J-M, O-P · Q-T · U-X and W
+- [ ] pair review applied: Y-Z · AA and AB
 - [ ] `header.md` counts; `status.agent.json` summary; final pair review of the round
 - [ ] merge into `combine-sidebar-boardplan` (re-read `answers.json` there first, as above)
 
@@ -294,6 +295,11 @@ Open for the owner, found during the pass: ten pairs of live effects share a nam
 Q1146/Q1430, The Quick Change Q0581/Q1441, The Casting Call Q0768/Q1427, The Empty House
 Q1376/Q1444, The Standing Ovation Q1246/Q1415, Understudy Q0531/The Understudy Q1417, Glass
 Q0268/Q0624) — names are sort keys, so renaming waits until a rename cannot move an answered id.
+
+Also open: about fifteen live options in families S and T spend or pay fame (Q1126 (c), Q1139 (c),
+Q1142 (b), Q1146, Q1147 (c), Q1148 (c), Q1154 (c), Q1156 (c), Q1262 (c) and more), while fame is
+the score a show must earn and the ruling is "no currency". One owner question settles all of them:
+is fame spendable? If not, each clause becomes "skip a reward".
 
 ## The S13 TODO list
 

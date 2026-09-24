@@ -4,7 +4,7 @@
 candidate effect, and every answer is a ruling on whether that effect enters the game and in
 which form. Nothing here specifies how anything is built.
 
-**1,595 live questions, plus 83 retired in place.** There is no branching: every question is
+**1,526 live questions, plus 270 retired in place.** There is no branching: every question is
 independent, so the count you see is
 the count you answer. Rejecting is one keystroke.
 
@@ -84,17 +84,25 @@ checking each batch. What changed:
   true of all three options, inside each option when the options differ. A suit or rank says
   "level 1 is the plain suit; each option is its level 2". Type, consumable, status, hazard and
   structure have none: they never sit on a mark.
-- **About 170 more questions are retired in place**, each naming why: duplicates and twins (where
+- **187 more questions are retired in place**, each naming why: duplicates and twins (where
   one effect's level 2 was another's level 1 — the Queen is now the Rook's and the Bishop's level 2),
   premises the game does not have (shops, gold, selling, the rules deck, stickers), and effects that
   are already rules (undo, straights wrapping through the Ace, talent no longer suppressing a suit).
-- **About 90 had options rewritten** — a shop or gold clause taken out where the effect survives
-  without it, an "inspection" downside replaced, a broken sentence fixed.
-- **About 170 carry a ⚑ pair-review flag** in the head, saying in one line why the effect may not be
+- **172 had options rewritten** — a shop or gold clause taken out where the effect survives
+  without it, an "inspection" downside replaced, a broken sentence fixed, an effect that fired at
+  show start (when the card is still in the deck) moved to when it is placed.
+- **Ten changed slot** to the one their mechanic needs (a boss filed as a skill is now a hazard, a
+  mark rule that carries a hat is now a stamp); the class is kept, so no id moved. **Four defaults
+  moved** to the form a board-plan ruling already names.
+- **207 carry a ⚑ pair-review flag** in the head, saying in one line why the effect may not be
   worth a slot: it only costs you (a hazard filed as a skill), it needs a second grid, it does not
-  say what it does, or it overlaps one of your own answers. The flag is advice; the answer is yours.
-- **Family AB is new — 18 effects written around the mark-hitting loop itself**: streaks and relays
-  of hits, cards built to be realised, and plans that answer back.
+  say what it does, it depends on another question entering, or it overlaps one of your own
+  answers. The flag is advice; the answer is yours.
+- ⚠ **One question is not in the list: is fame spendable?** About fifteen options in families S and
+  T spend or pay fame, while fame is the score a show must earn and there is no currency. If fame
+  is not spendable, each of those clauses becomes "skip a reward".
+- **Family AB is new — 21 effects written around the mark-hitting loop itself**: streaks and relays
+  of hits, cards built to be realised, plans that answer back, and called and bounced hits.
 - **Family AC is new — the level 2 of every effect you had already ruled on**, one question each,
   so no recorded answer changed meaning. Its (d) is not a reject: it keeps the effect with no level 2.
 
