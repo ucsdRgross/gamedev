@@ -169,6 +169,9 @@ Everything else is a smaller game-jam or study project.
 - **`/handoff`** — session continuity. `<project>/HANDOFF_*.md` is the live state of any
   multi-session work stream; start there when resuming.
 - **`/fx-verify`** — the verification gate for any visual, shader or prop-art change.
+- **The owner's visual review** — before/after pairs the owner approves, rejects or comments on,
+  served by Design Loop (`#visual` tab); `solatro/visual-review/README.md`. `/fx-verify` and
+  `/plan-run` say when to shoot it and how a reject becomes the next step.
 - **`/merge-branches`** — combine finished branches into one change for `main`: the branches' own
   overlap notes, a base-showing merge, `py .claude/tools/merge_split.py` to split comment sweeps
   from real edits, then the semantic breakage git cannot see. Run it for a single branch too.
