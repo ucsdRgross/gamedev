@@ -124,7 +124,7 @@ ROWS = [
 ("E0076",
  "Fires both suits' props",
  "Fires the prop of the suit its mark shows",
- "Its two suits swap places each time it scores",
+ "Fires the prop of the suit its mark shows, twice",
  "a"),
 ("E0077",
  "After any shuffle or return to the deck, this card sinks to the bottom",

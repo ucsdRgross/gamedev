@@ -34,7 +34,7 @@ ROWS = [
 ('Q0801', 'G0338', 'DUP', None, 'Q0658'),
 ('Q0802', 'E1092', 'WEAK', 'The goal rises by half the multiplier instead of all of it', 'it raises the next goal, which the overscore ruling tells effects not to do'),
 ('Q0803', 'E1856', 'OK', None, ''),
-('Q0804', 'G0320', 'REWORK', 'Lines through its cell pay triple past the goal', '(c) raised the next goal for scoring well, which the overscore ruling forbids'),
+('Q0804', 'G0320', 'WEAK', 'Lines through its cell pay triple past the goal', 'the show ends the moment its goal is met, so nothing scores after it'),
 ('Q0805', 'E1406', 'WEAK', "Tricks attempted from its lines fail at the lower tier's rate", 'it does not say what a trick is'),
 ('Q0806', 'E0185', 'REWORK', 'Its destruction chance halves', 'a scored card is always spotlit'),
 ('Q0807', 'E0848', 'WEAK', 'Landing on its own mark is the test, and it passes', 'it does not say what scrutiny is; you rejected inspection-by-looking at Q0076'),

@@ -48,9 +48,9 @@ ROWS = [
  "A grid's stack heights act as floors, and you choose the order they resolve in each show",
  "a"),
 ("G0244","The Last Line","U2","hazard","One cell must never be reached.",
- "Alternate loss: a named cell must never be occupied by a hazard; if it is, the show ends immediately",
- "Alternate loss: a named cell must never be occupied by a hazard, and defending it successfully pays a bonus each placement",
- "Alternate loss: a named cell must never be reached, and its location moves each placement",
+ "Alternate loss: a named cell must stay empty; covering it ends the show at once",
+ "Alternate loss: a named cell must stay empty, and each Entrance refill it survives empty pays a step into the special bucket",
+ "Alternate loss: a named cell must stay empty, and after each refill it moves to the uncovered mark with the most lines through it",
  "b"),
 
 # --- Baba Is You --------------------------------------------------------------
@@ -62,7 +62,7 @@ ROWS = [
 ("G0246","The Rewritten Noun","V2","skill","Changes what a card counts AS, globally.",
  "Cue: name a suit and a second suit; for the rest of the show every card of the first counts as the second",
  "Cue: name a rank and a second rank; for the rest of the show every card of the first counts as the second",
- "Cue: name any two card properties and swap them across the whole board for the rest of the show",
+ "Cue: name two values of one property - two suits, two ranks, two hats or two talents - and swap them across the whole board for the rest of the show",
  "c"),
 
 # --- Photosynthesis -----------------------------------------------------------

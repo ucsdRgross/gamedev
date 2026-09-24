@@ -55,8 +55,8 @@ ROWS = [
  "c"),
 
 ("G0152","The Fall","U2","skill","Win by dropping, not by climbing.",
- "Alternate win: move a card down two or more levels of height in one action",
- "Alternate win: move a card down from the top of the tallest stack to the floor in one action",
+ "Alternate win: one removal drops a stack of three or more cards by a level",
+ "Alternate win: a card that reached height five ends the show on the floor",
  "Alternate win: end a show having dropped more total height than you built",
  "b"),
 

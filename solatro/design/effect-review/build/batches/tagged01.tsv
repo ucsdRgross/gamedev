@@ -174,12 +174,12 @@ E0172	KEEP		H9	skill	Attach any owned stamp to a rule card in the hidden rules d
 E0173	KEEP		H4	hazard	Boss: each placement, disables one of your beneficial rule cards for the rest of the show, in an order it chooses.	
 E0174	KEEP		H1	skill	Blank skill; each show it permanently learns the first effect it observes firing, up to three learned effects.	
 E0175	KEEP		G3	stamp	This card copies another deck card's name, class, and identity for all checks until it has scored 3 times, at which point it is unmasked.	
-E0176	KEEP		V1	skill	Cue: reverse the run direction of one column for the rest of the show, so descending counts as ascending and vice versa.	
+E0176	KEEP		V1	skill	Cue: reverse one stack top to bottom.	
 E0177	KEEP		U2	hazard	Final-tier boss: cannot be beaten by score; win by ending the show with row total and column total within 10% of each other.	
 E0178	KEEP		T2	stamp	Exactly one card in the save file holds this stamp at a time; it scores double, and a challenge boss can take it and it must be won back.	
 E0179	KEEP		V4	suit	This card counts as every suit for flush evaluation (but not for suit-stacking rules), and its prop identity is randomly one of the game's props each time.	
 E0180	KEEP		E5	skill	May be placed onto any card along an open diagonal, capturing it; blocked by occupied slots between.	
-E0181	KEEP		V1	rank	This card has no rank or suit: it can stack on anything and anything can stack on it, but it never melds and scores 0.	
+E0181	KEEP		V1	rank	This card has no rank or suit: it can stack on anything and anything can stack on it, but it never melds and scores 0. It counts as matching every rank mark.	
 E0182	KEEP		Q6	skill	Absorbs one Knife prop per show, banking it as flat points instead of being hit.	
 E0183	KEEP		L7	skill	Declares a goal/term for the show (e.g. score X with no Knife melds); fulfilling it grants bonus fame, missing it triggers a worse penalty.	
 E0184	KEEP		H5	skill	Passes a buff down its row card-to-card without triggering, invisible to effects that count or punish triggers.	
@@ -245,7 +245,7 @@ E0243	KEEP		I4	skill	Cards dropped on this card are not consumed but returned to
 E0244	KEEP		G5	skill	Each show start, writes a temporary skill (a copy of an effect that fired last show) onto one blank/prop card; it fades at show end.	
 E0245	KEEP		K9	hazard	Town hazard: any placement scoring under 25% of goal ends the show immediately.	
 E0246	KEEP		F5	skill	At show start, discards the bottom card of the deck, then refills 1 card into the Entrance.	
-E0247	KEEP		T1	skill	Preserves up to 20% of a show's unspent score into the next show's opening total, and re-triggers one chosen effect from last show at the next show's start.	
+E0247	KEEP		T1	skill	Carries a fifth of this show's score into the next show.	
 E0248	KEEP		A5	skill	Cue, once per show: replay the previous placement's entire effect sequence against the current board, same effects and order, targets resolved fresh.	
 E0249	KEEP		G2	consumable	Consumable: a random Legendary card joins the deck for exactly 3 shows then departs, kept permanently if a hidden condition is met during its stay.	
 E0250	KEEP		D9	rank	This card has half rank (rounded down) and half size: two copies occupy one grid slot together and meld as one combined card.	

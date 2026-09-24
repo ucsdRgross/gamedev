@@ -171,6 +171,14 @@ not the default.
   differ in reach or mechanism, write one level 2 per option.
 - A rank or suit level 2 is never "it matches X": matching is what unlocks level 2. What a strange
   rank matches is its level 1, stated in the question's head.
+- A show ends the moment its goal is met (`Levels/game.gd` `_end_show_if_goal_met`), so "past the
+  goal" is the margin of the placement that meets it. A lost show ends the run, so "after a lost
+  show" never fires.
+- "**Turn**" is not a unit: write placement or Entrance refill. The player has no discard or
+  destroy action; an effect that waits on one waits on another effect.
+- A payout outside a line names its bucket; under the product rule the bucket is the value.
+- Rarity is declared but carried by nothing yet, and suits have no colour: an effect keyed on
+  either does nothing today.
 
 ## ⚠ The Entrance is five per-slot STOCKS — confirmed design, not yet built
 

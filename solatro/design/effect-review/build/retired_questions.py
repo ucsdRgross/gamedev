@@ -594,4 +594,8 @@ RETIRED = {
     "E0102": "Retired: already free. You may place any of the Entrance's five cards in any order, so sorting the Entrance changes nothing.",  # Q0398
 
     "E2067": 'Retired: twin of the alternate boss you wrote on Q0066, where every other Entrance pass scores nothing and the next doubles; your version stands.',  # Q1114
+
+    "E1033": 'Duplicate of Q0796 (Deus ex Machina): a failed show turned into a win; a lost show ends the run, so scoring on one never fires. The owner rules on it there.',  # Q1171
+
+    "G0440": "Duplicate of Q1473 (The Dye Vat, as a mark): a cell that changes the suit of what is placed in it; 'zone' is not a slot. The owner rules on it there.",  # Q1361
 }

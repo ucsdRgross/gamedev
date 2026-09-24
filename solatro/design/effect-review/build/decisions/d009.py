@@ -168,7 +168,7 @@ KEEPS = [
 ("E1266","U2","hazard","Win by a flush, but only so often.",
  "Alternate win: a single flush wins the show, with a hard cap on how many flushes a run may ever play",
  "Alternate win: a single flush wins, and the cap falls by one each time you use it",
- "Alternate win: a flush wins, and the required flush grows longer each time you win that way",
+ "Alternate win: a flush wins the show; the second time it must be a straight flush, and the third a flush five",
  "c"),
 ("E1278","R7","skill","A storm that walks the grid.",
  "Cards in a ring shape are soaked; the storm starts at a random strength, walks the grid and weakens",

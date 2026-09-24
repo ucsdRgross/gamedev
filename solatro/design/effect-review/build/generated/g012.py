@@ -21,7 +21,7 @@ ROWS = [
 
 ("G0213","The Carousel","S5","structure","A shared draft you physically move through.",
  "At intervals a ring of cards turns one step per show; you take the card in front of you when you choose to stop it",
- "At intervals a ring of cards is offered; the wider your last margin, the more steps you may turn it before taking one",
+ "At intervals a ring of cards is offered; the wider the margin of the placement that met your last goal, the more steps you may turn it before taking one",
  "At intervals a ring of cards is offered, each carrying an attached stamp, and you take the pair together",
  "c"),
 

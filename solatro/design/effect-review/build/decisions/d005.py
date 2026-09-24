@@ -158,7 +158,7 @@ KEEPS = [
 ("E0693","T2","skill","The card remembers its own record.",
  "Personal bests are recorded on the card itself for this run, and beating one scores a bonus",
  "Personal bests are recorded on the card for this run, and beating one permanently raises that card's floor for the rest of the run",
- "Personal bests are recorded per card for this run, and a card that beats its record three times gains a rarity tier for the rest of the run",
+ "Personal bests are recorded per card for this run, and a card that beats its record three times is dealt its own mark every show thereafter",
  "b"),
 ("E0698","C12","skill","Depth is worth more.",
  "Every stack line through its cell pays into the row bucket as well as the special one",

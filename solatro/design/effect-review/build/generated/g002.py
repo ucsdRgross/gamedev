@@ -165,7 +165,7 @@ ROWS = [
 ("G0065","The Halving","V7","stamp","Splits the number in two.",
  "This card's rank counts as half its printed value, rounded down, for every check",
  "This card's rank counts as half for melds and full for stacking",
- "This card's rank counts as half, and the other half is given to an adjacent card",
+ "This card's rank counts as half, and the other half is given to the adjacent card of lowest rank",
  "c"),
 ("G0066","The Doubling Act","V7","stamp","Twice the number, once the card.",
  "This card's rank counts as double its printed value for every check",

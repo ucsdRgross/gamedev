@@ -174,12 +174,12 @@ E0172	catalog	CARD_CATALOG	The Amendment		Rare	skill;meta-effect;rule;collection
 E0173	catalog	CARD_CATALOG	The Anarchist		Epic	hazard;rule;secret	Boss: each placement, disables one of your beneficial rule cards for the rest of the show, in an order it chooses.			0
 E0174	catalog	CARD_CATALOG	The Apprentice		Rare	skill;meta-effect;growth;collection	Blank skill; each show it permanently learns the first effect it observes firing, up to three learned effects.			0
 E0175	catalog	CARD_CATALOG	The Avatar		Rare	stamp;info;secret	This card copies another deck card's name, class, and identity for all checks until it has scored 3 times, at which point it is unmasked.			0
-E0176	catalog	CARD_CATALOG	The Backward-Backward		Rare	skill;Acrobat;movement;combo	Cue: reverse the run direction of one column for the rest of the show, so descending counts as ascending and vice versa.			0
+E0176	catalog	CARD_CATALOG	The Backward-Backward		Rare	skill;Acrobat;movement;combo	Cue: reverse one stack top to bottom.			0
 E0177	catalog	CARD_CATALOG	The Balance		Legendary	hazard;formation;combo;secret	Final-tier boss: cannot be beaten by score; win by ending the show with row total and column total within 10% of each other.			0
 E0178	catalog	CARD_CATALOG	The Belt		Legendary	stamp;economy;persistence;secret	Exactly one card in the save file holds this stamp at a time; it scores double, and a Belt-challenge boss can take it and it must be won back.			0
 E0179	catalog	CARD_CATALOG	The Best Bower		Uncommon	pip;combo	This card counts as every suit for flush evaluation, but not for suit-stacking rules.	Added (added effect that it randomly acts as any prop from the game)		0
 E0180	catalog	CARD_CATALOG	The Bishop		Uncommon	skill;freakshow;movement;destruction	May be placed onto any card along an open diagonal, capturing it; blocked by occupied slots between.			0
-E0181	catalog	CARD_CATALOG	The Blank		Common	pip;movement;freakshow	This card has no rank or suit: it can stack on anything and anything can stack on it, but it never melds and scores 0.	Added		0
+E0181	catalog	CARD_CATALOG	The Blank		Common	pip;movement;freakshow	This card has no rank or suit: it can stack on anything and anything can stack on it, but it never melds and scores 0. It counts as matching every rank mark.	Added		0
 E0182	catalog	CARD_CATALOG	The Blockhead		Common	skill;Escape Artist;prop;protection	Absorbs one Knife prop per show, banking it as flat points instead of being hit.			0
 E0183	catalog	CARD_CATALOG	The Booking		Uncommon	rule;gamble;economy	Declares a goal/term for the show (e.g. score X with no Knife melds); fulfilling it grants bonus fame, missing it triggers a worse penalty.			0
 E0184	catalog	CARD_CATALOG	The Boot Code		Rare	skill;Special Effects;secret;combo	Passes a buff down its row card-to-card without triggering, invisible to effects that count or punish triggers.			0
@@ -245,7 +245,7 @@ E0243	catalog	CARD_CATALOG	The Gentled Beast		Uncommon	skill;Animal Trainer;grow
 E0244	catalog	CARD_CATALOG	The Ghost Writer		Rare	skill;meta-effect;token;growth	Each show start, writes a temporary skill (a copy of an effect that fired last show) onto one blank/prop card; it fades at show end.			0
 E0245	catalog	CARD_CATALOG	The Gong		Rare	hazard;gamble	Town hazard: any placement scoring under 25% of goal ends the show immediately.		designdocs	1
 E0246	catalog	CARD_CATALOG	The Grease Joint		Uncommon	skill;Concessions;deck-manip;discard	At show start, discards the bottom card of the draw deck, then draws 1 card.		designdocs	1
-E0247	catalog	CARD_CATALOG	The Griot		Rare	skill;Fortune Teller;persistence;economy	Preserves up to 20% of a show's unspent score into the next show's opening total, and re-triggers one chosen effect from last show at the next show's start.			0
+E0247	catalog	CARD_CATALOG	The Griot		Rare	skill;Fortune Teller;persistence;economy	Carries a fifth of this show's score into the next show.			0
 E0248	catalog	CARD_CATALOG	The Groundhog		Rare	skill;meta-effect;combo;gamble	Cue, once per show: replay the previous placement's entire effect sequence against the current board, same effects and order, targets resolved fresh.			0
 E0249	catalog	CARD_CATALOG	The Guest Star		Epic	consumable;collection;gamble;event-granted	Consumable: a random Legendary card joins the deck for exactly 3 shows then departs, kept permanently if a hidden condition is met during its stay.			0
 E0250	catalog	CARD_CATALOG	The Half Card		Rare	pip;movement;freakshow	This card has half rank (rounded down) and half size: two copies occupy one board slot together and meld as one combined card.	Modified (either talent that splits into two halves down middle, or becomes two cards where rank is half. recombines on score as its own meld)		0

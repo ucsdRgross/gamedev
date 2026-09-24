@@ -20,6 +20,9 @@ ROWS = [
 ('Q1813', 'ND0013', 'OK', 'The erased cell is not left blank: its mark is re-dealt from the next card of that stock', ''),
 ('Q1814', 'ND0020', 'OK', 'The class match pays the full talent mult', ''),
 ('Q1815', 'ND0014', 'OK', 'The thrown card is shown to you before you choose the cell', ''),
-('Q1816', 'ND0015', 'OK', 'The call may be raised once during the refill', ''),
-('Q1817', 'ND0010', 'OK', 'Its cue may choose two cards', ''),
+('Q1816', 'ND0022', 'OK', 'The changed card pays the rank match as well', ''),
+('Q1817', 'ND0015', 'OK', 'The call may be raised once during the refill', ''),
+('Q1818', 'ND0010', 'OK', 'Its cue may choose two cards', ''),
+('Q1819', 'ND0023', 'OK', 'It counts as both its printed and its mirrored rank', ''),
+('Q1820', 'ND0021', 'OK', 'The cards beside it stay too', ''),
 ]

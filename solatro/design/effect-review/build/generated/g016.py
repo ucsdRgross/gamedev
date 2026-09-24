@@ -191,7 +191,7 @@ ROWS = [
  "A stake raised in one show resets at the next, but clearing it banks a permanent reward",
  "b"),
 ("G0327","The Understated Bill","S9","consumable","Promise less, and be paid for the surprise.",
- "Consumable: lower the show target; the show pays less, but every step scored above the lowered target pays at the original rate plus a bonus",
+ "Consumable: lower the show's target; the lowered target is what counts as a win, but the show runs on until the original is met, and every line scored between the two pays a step extra",
  "Consumable: lower the show target and the payout together, and bank the difference as a permanent reward",
  "Consumable: lower this show's target, and the next show's target absorbs what you took off",
  "a"),

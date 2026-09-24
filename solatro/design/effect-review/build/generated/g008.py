@@ -21,7 +21,7 @@ ROWS = [
 ("G0158","The Metal Chain","U4","skill","A sequence that must be consumed in order.",
  "A named chain of ranks may only be scored in strict ascending order, and skipping one locks the rest",
  "A named chain must be scored in order, and completing the whole chain pays enormously",
- "A named chain must be scored in order; the chain is reseeded each show and its order is shown up front",
+ "The chain is the ranks of the marks along one row you name at show start, read left to right; cards of those ranks must be scored in that order, and finishing the row's chain pays a hand into the special bucket",
  "b"),
 
 ("G0159","The Salt","B5","rank","Matches its own kind, or anything, and matches any rank mark.",

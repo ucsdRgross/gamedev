@@ -9,7 +9,7 @@ ROWS = [
  "Names an objective at run start; completing it adds a new card to your deck permanently",
  "a"),
 ("G0104","The Apprenticeship","U6","skill","A quest the card sets itself.",
- "Names an objective when acquired, drawn from a pool; finishing it transforms this card into a Rare version of itself",
+ "Names an objective when acquired, drawn from a pool; finishing it makes this card's level 2 permanent, mark or no mark",
  "Names an objective when acquired; finishing it lets you choose one of three permanent rewards",
  "Names a new objective each time the previous one is finished, escalating, with a permanent reward each time",
  "c"),

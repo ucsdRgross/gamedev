@@ -198,6 +198,6 @@ ROWS = [
 ("G0365","The Long Memory","T2","skill","A card that remembers what it did.",
  "This card records the highest-scoring line it was ever part of, and scores a fraction of that total every show thereafter",
  "This card records the highest-scoring line it was part of this run, and matching that line again scores it double",
- "This card records every hand type it has been part of, and scores a step for each distinct one",
+ "Each time it scores, it pays +1 step per distinct hand type it has ever been part of",
  "c"),
 ]

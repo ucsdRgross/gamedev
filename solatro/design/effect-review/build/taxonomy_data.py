@@ -430,5 +430,6 @@ FAMILIES = [
  ("AD2","Stocks, slots and the discard","none","the five stocks, the Entrance slots and the discard pile as places that pay"),
  ("AD3","Stacks and legality","none","what may stack where, and what a stack pays"),
  ("AD4","Marks, hits and level 2","none","cues and bets on marks, and how far a level 2 reaches"),
+ ("AD5","Ranks, suits and what stays","none","new rank readings, and a card that stays on stage between shows"),
 ]),
 ]

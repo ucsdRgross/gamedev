@@ -27,7 +27,7 @@ ROWS = [
 
 ("G0202","Fantasyland","S6","skill","A strong result changes how the next show is dealt.",
  "A strong enough hand in a named line means the next show deals ten cards into the Entrance instead of five",
- "A strong enough hand in a named line means the next show starts with a card already placed where you want it",
+ "A strong enough hand in a named line means the next show starts with one card of your choice already placed on the mark it matches best",
  "A strong enough hand means the next show deals ten cards into the Entrance, and staying in it requires repeating the feat",
  "c"),
 
