@@ -28,6 +28,11 @@ const MAP_CARD_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/map_card_descrip
 const VIEWER_OPEN_HUD_OUT_PATH := "user://sidebar_snapshot/viewer_open_hud_showing.png"
 const CHOOSER_OPAQUE_OUT_PATH := "user://sidebar_snapshot/chooser_opaque.png"
 const DECK_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_over_chooser.png"
+const DECK_CARD_HOVER_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_card_hover_over_chooser.png"
+const MAP_ZOOMED_EDGE_OUT_PATH := "user://sidebar_snapshot/map_zoomed_edge.png"
+const MAP_AFTER_TRAVEL_OUT_PATH := "user://sidebar_snapshot/map_after_travel.png"
+## Wheel notches pushed at the map: far enough past the fit that the view has room to reach an edge.
+const MAP_ZOOM_NOTCHES := 6
 const ENTRANCE_STOCKS_OUT_PATH := "user://sidebar_snapshot/entrance_stocks.png"
 const ENTRANCE_FLIP_MID_OUT_PATH := "user://sidebar_snapshot/entrance_flip_mid.png"
 # Slow enough that the stagger is a THING YOU CAN SEE in one still: at the shipped 0.15 the whole
@@ -282,6 +287,12 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	_capture(OUTCOME_BUTTONS_OUT_PATH)
 	_report_the_outcome_buttons(main, view)
+
+# LAST: the walk moves the token and its arrival rolls a pack, which no earlier still may inherit.
+	await main._focus_picture(&"map")
+	await _await_the_camera_still(main.wall.get_node(^"%Camera2D") as Camera2D)
+	await _shoot_the_zoomed_map(main)
+	await _shoot_the_map_after_travel(main)
 
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
@@ -552,7 +563,7 @@ func _capture_while_processing(view: GameView) -> bool:
 			return true
 	return false
 
-func _push_pointer(viewport: SubViewport, at: Vector2) -> void:
+func _push_pointer(viewport: Viewport, at: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = at
 	motion.global_position = at
@@ -572,7 +583,7 @@ func _cancel_the_held_card_once(main: Main, view: GameView) -> bool:
 	await _await_held_card_settled(view, data)
 	return view.hud_container.showing_description()
 
-func _push_click(viewport: SubViewport, at: Vector2, pressed: bool) -> void:
+func _push_click(viewport: Viewport, at: Vector2, pressed: bool) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
 	event.pressed = pressed
@@ -648,7 +659,7 @@ func _describe_a_card_on_the_map(main: Main) -> void:
 	var map := main.map_scene
 	var pack := _the_pack_node(map)
 	if pack == null: return
-	await _await_the_wall_camera_still(main)
+	await _await_the_camera_still(main.wall.get_node(^"%Camera2D") as Camera2D)
 	_make_the_node_reachable(map.controller, pack)
 	map.controller.select_node(pack)
 	await _await_a_viewer()
@@ -692,18 +703,6 @@ func _make_the_node_reachable(controller: WorldMapController, node: WorldGraphNo
 			controller._current = n
 			controller.refresh_visuals()
 			return
-
-## The wall camera has stopped easing into the picture: a still taken before it has is of a picture half off the window.
-func _await_the_wall_camera_still(main: Main) -> void:
-	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
-	var last := Transform2D()
-	var still := 0
-	for frame : int in CASCADE_WATCH_FRAMES:
-		var now := camera.get_global_transform()
-		still = still + 1 if frame > 0 and now == last else 0
-		if still >= BOARD_STILL_FRAMES: return
-		last = now
-		await RenderingServer.frame_post_draw
 
 ## The generated map's first talent-pack node, whose pick opens a viewer of its possible cards.
 func _the_pack_node(map: Map) -> WorldGraphNode:
@@ -758,10 +757,142 @@ func _shoot_the_chooser(main: Main) -> void:
 	_capture(DECK_OVER_CHOOSER_OUT_PATH)
 	print("SIDEBAR_SNAPSHOT deck_over_chooser viewer=%s chooser_alive=%s"
 			% [is_instance_valid(DeckViewer._open), is_instance_valid(chooser)])
+	await _hover_a_run_deck_card(main)
 	if is_instance_valid(DeckViewer._open): DeckViewer._open.free()
 	await get_tree().process_frame
 	if is_instance_valid(chooser): chooser.free()
 	await get_tree().process_frame
+
+# A RUN-DECK CARD HOVERED OVER THE CHOOSER: its description takes the sidebar, and whether the
+# chooser's Deck row still rides beside it is what the still is for.
+func _hover_a_run_deck_card(main: Main) -> void:
+	var cards : Array[ControlCard] = []
+	var shown := main.map_scene.get_viewport().get_visible_rect()
+	for card : ControlCard in _listed_cards(DeckViewer._open.flow_container):
+		if shown.encloses(card.get_global_rect()): cards.append(card)
+	var card := _the_most_described_card(cards)
+	_push_map_pointer(main, card.get_global_transform_with_canvas() * (card.size * 0.5))
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(DECK_CARD_HOVER_OVER_CHOOSER_OUT_PATH)
+	var title : Label = main.wall.get_node(^"%HudContainer").get_node(^"%DescriptionPanel").get_node(^"%Title")
+	print("SIDEBAR_SNAPSHOT deck_card_hover_over_chooser deck_button=%s title=%s hovered=%s"
+			% [main.map_scene.selection_deck_button.is_visible_in_tree(), title.text,
+					ControlCard.describe_card(card.child.data)])
+
+# THE MAP ZOOMED IN BY THE WHEEL AND PANNED TO ITS RIGHT EDGE, the way a player does it: every event
+# pushed at the window and routed by the wall to the focused map. The view must stop at the sea buffer.
+func _shoot_the_zoomed_map(main: Main) -> void:
+	var controller := main.map_scene.controller
+	var map_viewport : SubViewport = main._pictures[&"map"].viewport
+	var fit := controller.camera.zoom.x
+	var near_edge := Vector2(map_viewport.size) * Vector2(0.9, 0.5)
+	_push_map_pointer(main, near_edge)
+	for _notch : int in MAP_ZOOM_NOTCHES:
+		var notch := InputEventMouseButton.new()
+		notch.button_index = MOUSE_BUTTON_WHEEL_UP
+		notch.pressed = true
+		notch.position = _map_point_in_window(main, near_edge)
+		notch.global_position = notch.position
+		get_viewport().push_input(notch)
+		await get_tree().process_frame
+# The wheel zooms about the token, not the pointer, so a drag carries the view on to that edge.
+	var middle := _middle_beside_the_sidebar(main)
+	await _drag_the_map(main, middle - Vector2(map_viewport.size.x, 0.0))
+	await RenderingServer.frame_post_draw
+	_capture(MAP_ZOOMED_EDGE_OUT_PATH)
+	assert(controller.camera.zoom.x > fit, "the wheel zoomed the map in")
+	var bounds := controller._framed_map()
+	var half := controller._space / (2.0 * controller.camera.zoom.x)
+	print(("SIDEBAR_SNAPSHOT map_zoomed_edge zoom_fit=%.4f zoom=%.4f camera=%s framed=%s "
+			+ "view=%s selected=%s travel_visible=%s")
+			% [fit, controller.camera.zoom.x, controller.camera.position, bounds,
+					Rect2(controller.camera.position - half, half * 2.0), controller.selected(),
+					main.map_scene.travel_button.visible])
+
+# FROM THE ZOOMED VIEW, A REAL PICK AND A REAL TRAVEL: the camera snaps back to the fit as the walk
+# starts, so the still is the first frame drawn after the press, with the token on its way.
+func _shoot_the_map_after_travel(main: Main) -> void:
+	var map := main.map_scene
+	var controller := map.controller
+	var zoomed := controller.camera.zoom.x
+	map._show_only_the_deck_button(false)
+	var node := _the_pack_node(map)
+	assert(node in controller.next_nodes_of(controller._current), "the pack is one step from the token")
+# The map is generated afresh every run, so the zoomed view may not hold the pack's dot: a real
+# drag carries it toward the middle of the space beside the sidebar, clamped as a player's pan is.
+	var middle := _middle_beside_the_sidebar(main)
+	await _drag_the_map(main, middle * 2.0 - WorldMapController.node_screen_rect(node).get_center())
+	var at := WorldMapController.node_screen_rect(node).get_center()
+	_push_map_pointer(main, at)
+	await get_tree().process_frame
+	_push_map_click(main, at, true)
+	await get_tree().process_frame
+	_push_map_click(main, at, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("SIDEBAR_SNAPSHOT map_after_travel picked=%s clicked_at=%s travel_visible=%s"
+			% [controller.selected() == node, at, map.travel_button.is_visible_in_tree()])
+	var travel := _window_px(map.travel_button, map.travel_button.size * 0.5)
+	_push_pointer(get_viewport(), travel)
+	await get_tree().process_frame
+	_push_click(get_viewport(), travel, true)
+	_push_click(get_viewport(), travel, false)
+	await RenderingServer.frame_post_draw
+	_capture(MAP_AFTER_TRAVEL_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT map_after_travel zoom_before=%.4f zoom_after=%.4f moving=%s token=%s"
+			% [zoomed, controller.camera.zoom.x, controller._moving, controller.token.position])
+	await map.chooser_changed
+	await get_tree().process_frame
+	map._chooser.free()
+	await get_tree().process_frame
+
+func _middle_beside_the_sidebar(main: Main) -> Vector2:
+	return Vector2(main._pictures[&"map"].viewport.size) * 0.5 - main.map_scene.controller._container_shift
+
+## A real left-button drag from the middle of the space beside the sidebar to `to`, in map-viewport points.
+func _drag_the_map(main: Main, to: Vector2) -> void:
+	var from := _middle_beside_the_sidebar(main)
+	_push_map_pointer(main, from)
+	await get_tree().process_frame
+	_push_map_click(main, from, true)
+	await get_tree().process_frame
+	var motion := InputEventMouseMotion.new()
+	motion.position = _map_point_in_window(main, to)
+	motion.global_position = motion.position
+	motion.relative = motion.position - _map_point_in_window(main, from)
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	get_viewport().push_input(motion)
+	await get_tree().process_frame
+	_push_map_click(main, to, false)
+	await _await_the_camera_still(main.map_scene.controller.camera)
+
+## Waits until `camera` has drawn the same view for a few frames running: a still taken sooner is of a view mid-move.
+func _await_the_camera_still(camera: Camera2D) -> void:
+	var last := Transform2D()
+	var still := 0
+	for frame : int in CASCADE_WATCH_FRAMES:
+		var now := camera.get_global_transform()
+		still = still + 1 if frame > 0 and now == last else 0
+		if still >= BOARD_STILL_FRAMES: return
+		last = now
+		await RenderingServer.frame_post_draw
+
+## A map-viewport point in window pixels, out through the wall's centred sprite of the map.
+func _map_point_in_window(main: Main, at: Vector2) -> Vector2:
+	var picture : WallPicture = main._pictures[&"map"]
+	return _window_px(picture.get_node(^"%Screen") as Sprite2D, at - Vector2(picture.viewport.size) * 0.5)
+
+func _push_map_pointer(main: Main, at: Vector2) -> void:
+	_push_pointer(get_viewport(), _map_point_in_window(main, at))
+
+func _push_map_click(main: Main, at: Vector2, pressed: bool) -> void:
+	_push_click(get_viewport(), _map_point_in_window(main, at), pressed)
+
+## `local` inside a root-viewport item, in the window pixels an event is pushed at.
+func _window_px(item: CanvasItem, local: Vector2) -> Vector2:
+	return get_viewport().get_final_transform() * (item.get_global_transform_with_canvas() * local)
 
 func _open_the_deck_viewer(view: GameView) -> void:
 	var button := view.deck_ui.get_node(^"Button") as Button
