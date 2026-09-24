@@ -6,6 +6,10 @@
 //   GET  /web/... /src/...     -> static files (the browser imports src/grammar.mjs directly)
 //   GET  /api/ping             -> { app: 'designloop', pid, port }
 //   POST /api/shutdown         -> stops this server (loopback callers only)
+//   GET  /visual-review/<project>/...          -> <project>/visual-review/ (page and images)
+//   GET  /api/visual-review/<project>          -> manifest, verdicts, which images exist
+//   POST /api/visual-review/<project>/verdict  -> { id, verdict, comment }
+//   POST /api/visual-review/<project>/done     -> hands the turn back to a parked watch
 //
 // The design API of §4.8 is added by the steps that need it; `routes()` below is the one place
 // it grows, so there is never a second router.
@@ -29,6 +33,7 @@ import {
 } from './gaps.mjs';
 import { softAnswers, quoteAudit, contractAudit, restatementsOf } from './provenance.mjs';
 import { listVersions, readVersion, diffGraphs, freeze } from './versions.mjs';
+import { VERDICTS, reviewDir, reviewFile, readReview, recordVerdict, markDone } from './visualreview.mjs';
 
 /** designloop/ — the tool directory, and the static root. */
 export const TOOL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -98,7 +103,11 @@ function resolveStatic(pathname) {
 
 /** Serve a static file, falling back to index.html for a bare directory request. */
 async function handleStatic(req, res, pathname) {
-  let file = resolveStatic(pathname);
+  await sendFile(req, res, resolveStatic(pathname));
+}
+
+/** Send one file, or a 404 when `file` is null or absent. */
+async function sendFile(req, res, file) {
   if (!file) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('404 Not Found');
@@ -106,10 +115,10 @@ async function handleStatic(req, res, pathname) {
   }
   try {
     const info = await stat(file);
-    if (info.isDirectory()) file = join(file, 'index.html');
-    const data = await readFile(file);
+    const path = info.isDirectory() ? join(file, 'index.html') : file;
+    const data = await readFile(path);
     res.writeHead(200, {
-      'Content-Type': MIME[extname(file).toLowerCase()] || 'application/octet-stream',
+      'Content-Type': MIME[extname(path).toLowerCase()] || 'application/octet-stream',
       'Content-Length': data.length,
       'Cache-Control': 'no-store',
     });
@@ -707,6 +716,46 @@ async function handleDesignApi(req, res, pathname, query) {
   sendJson(res, 404, { error: 'no such endpoint' });
 }
 
+/** The `/api/visual-review/<project>…` routes; the folder's file contract is in visualreview.mjs. */
+async function handleVisualReviewApi(req, res, pathname) {
+  const [project, action = ''] = pathname.slice('/api/visual-review/'.length).split('/');
+  const dir = reviewDir(REPO_ROOT, project);
+  const manifest = dir && await readJson(join(dir, 'manifest.json'));
+  if (!manifest) {
+    sendJson(res, 404, { error: `no ${project}/visual-review/manifest.json` });
+    return;
+  }
+  if (action === '' && req.method === 'GET') {
+    sendJson(res, 200, await readReview(dir));
+    return;
+  }
+  if (action === 'verdict' && req.method === 'POST') {
+    let body;
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch {
+      sendJson(res, 400, { error: 'body must be valid JSON' });
+      return;
+    }
+    if (!manifest.shots.some((shot) => shot.id === body.id)) {
+      sendJson(res, 400, { error: `no shot ${body.id} in the manifest` });
+      return;
+    }
+    if (!VERDICTS.includes(body.verdict)) {
+      sendJson(res, 400, { error: `verdict must be one of ${VERDICTS.join(', ')}` });
+      return;
+    }
+    const review = await recordVerdict(dir, { id: body.id, verdict: body.verdict, comment: String(body.comment ?? '') });
+    sendJson(res, 200, { ok: true, review });
+    return;
+  }
+  if (action === 'done' && req.method === 'POST') {
+    sendJson(res, 200, { ok: true, owner: await markDone(dir) });
+    return;
+  }
+  sendJson(res, 404, { error: 'no such endpoint' });
+}
+
 /**
  * Build the HTTP server without binding it — the test harness listens on port 0.
  * `onShutdown` is what `POST /api/shutdown` calls; without it the route does not exist,
@@ -737,6 +786,10 @@ export function createDevServer({ onShutdown = null } = {}) {
           sendJson(res, 403, { error: 'forbidden' });
           return;
         }
+        if (pathname.startsWith('/api/visual-review/')) {
+          await handleVisualReviewApi(req, res, pathname);
+          return;
+        }
         if (pathname === '/api/designs' || pathname.startsWith('/api/designs/')) {
           const query = new URL(req.url, 'http://localhost').searchParams;
           await handleDesignApi(req, res, pathname, query);
@@ -753,6 +806,12 @@ export function createDevServer({ onShutdown = null } = {}) {
       }
       if (req.method !== 'GET' && req.method !== 'HEAD') {
         sendJson(res, 405, { error: 'method not allowed' });
+        return;
+      }
+      if (pathname.startsWith('/visual-review/')) {
+        const [project, ...rest] = decodeURIComponent(pathname.slice('/visual-review/'.length)).split('/');
+        const dir = reviewDir(REPO_ROOT, project);
+        await sendFile(req, res, dir && reviewFile(dir, rest.join('/')));
         return;
       }
       await handleStatic(req, res, pathname);

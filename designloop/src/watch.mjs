@@ -20,6 +20,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readJson, writeJsonAtomic, load, now } from './store.mjs';
 import { find, DEFAULT_OWNER_STATUS } from './registry.mjs';
+import { reviewDir } from './visualreview.mjs';
 
 const TOOL_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const REPO_ROOT = resolve(process.env.DESIGNLOOP_ROOT || resolve(TOOL_ROOT, '..'));
@@ -193,16 +194,42 @@ export async function claim(dir, patch) {
   return next;
 }
 
+/**
+ * The owner's verdicts, one line per shot, rejects and comments with their words: each of those
+ * is the brief of the next implementer step, so it is printed rather than left to be looked up.
+ */
+export async function reviewReport(dir, key) {
+  const manifest = await readJson(join(dir, 'manifest.json'));
+  const review = (await readJson(join(dir, 'review.json'))) || { shots: {} };
+  const lines = ['', `${key} — the owner pressed Done`];
+  for (const shot of manifest.shots) {
+    const v = review.shots[shot.id];
+    lines.push(`  ${(v ? v.verdict : 'unreviewed').padEnd(10)} ${shot.id}${v?.comment ? ` — "${v.comment}"` : ''}`);
+  }
+  lines.push('', `  verdicts    ${join(dir, 'review.json')}`, '');
+  return lines.join('\n');
+}
+
+/** A `<project>/<slug>` design, or `visual-review/<project>`: both park on the same owner half. */
+export async function resolveTarget(repoRoot, target) {
+  const review = /^visual-review\/([^/]+)$/.exec(target);
+  if (review) {
+    const dir = reviewDir(repoRoot, review[1]);
+    return dir && { key: target, dir, visualReview: true };
+  }
+  return find(repoRoot, target);
+}
+
 async function main() {
   const args = process.argv.slice(2).filter((a) => a !== '--');
   const target = args.find((a) => !a.startsWith('-'));
   if (!target) {
-    process.stdout.write('usage: npm --prefix designloop run watch -- <project>/<slug> [--timeout <seconds>]\n');
+    process.stdout.write('usage: npm --prefix designloop run watch -- <project>/<slug> | visual-review/<project> [--timeout <seconds>]\n');
     process.exit(2);
   }
-  const design = await find(REPO_ROOT, target);
+  const design = await resolveTarget(REPO_ROOT, target);
   if (!design) {
-    process.stdout.write(`no design at "${target}" — expected <project>/design/<slug>/meta.json\n`);
+    process.stdout.write(`no design at "${target}" — expected <project>/design/<slug>/meta.json or visual-review/<project>\n`);
     process.exit(1);
   }
   const timeoutArg = args.indexOf('--timeout');
@@ -218,8 +245,13 @@ async function main() {
     process.stdout.write('timed out; nothing has changed\n');
     process.exit(3);
   }
-  await report(design, status);
-  await claim(design.dir, { state: 'working', round: status.round });
+  if (design.visualReview) {
+    process.stdout.write(`${await reviewReport(design.dir, design.key)}\n`);
+    await claim(design.dir, { state: 'working', mode: 'visual-review' });
+  } else {
+    await report(design, status);
+    await claim(design.dir, { state: 'working', round: status.round });
+  }
   // The watch returning means the agent is now WORKING, not watching. `status.agent.json` carries
   // that; this file is only ever about whether someone is parked.
   await stopHeartbeat();

@@ -1,0 +1,55 @@
+{
+  "shots": [
+    {
+      "id": "grid3_overview",
+      "title": "Three grids, the every-grid overview",
+      "row": "P43",
+      "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
+      "env": {
+        "GRID_COUNT": "3"
+      },
+      "png": "user://reveal_shots/grid_zoom_3_overview.png",
+      "seen": "1555x875 game picture. The dark HUD panel fills the left 389 px (Goal 1000000000, Total 1, Deck / Discard / Rules, Undo / Marks). Right of it, three 5x5 grids sit side by side with two equal gaps, every card of each fully on screen; measured, the cell block spans x 447..1497, which leaves 57 px on each side of the area right of the panel, so the set is centred. Grid 1 (labelled 1) has its top row placed face-up (6, 4, 8, 3, A), the other cells hold cards drawn on the dark cell paper, and the five-card Entrance (Q, 10, 7, 6, J) sits under grid 1. No white horizontal line crosses the board anywhere. One detail I cannot account for: a 1 px pink line runs along the bottom edge of the placed 6 at top-left and nowhere else."
+    },
+    {
+      "id": "grid3_focused",
+      "title": "Three grids, the middle grid focused",
+      "row": "P43",
+      "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
+      "env": {
+        "GRID_COUNT": "3"
+      },
+      "png": "user://reveal_shots/grid_zoom_3_focused.png",
+      "seen": "1555x875 game picture, the HUD panel on the left as in the overview. One 5x5 grid, full of cards, is drawn large in the middle of the area right of the panel: measured cell block x 786..1158, 396 px clear on both sides, so the focused grid is centred to the pixel. The neighbouring grids are entirely out of view and the Entrance row is not in the frame (it is committed under grid 1). No white lines across the board."
+    },
+    {
+      "id": "grid1_focused",
+      "title": "One grid, focused",
+      "row": "P43",
+      "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
+      "env": {
+        "GRID_COUNT": "1"
+      },
+      "png": "user://reveal_shots/grid_zoom_1_focused.png",
+      "seen": "1555x875 game picture, the HUD panel on the left. The single grid (labelled 1) is centred in the area right of the panel: measured cell block x 783..1159, 393 px clear on the left and 395 px on the right. Its top row is placed face-up (6, 4, 8, 3, A); the A at the right end carries a thin pink line along its top edge. The five Entrance cards (Q, 10, 7, 6, J) sit directly under the grid's columns, aligned with them. No white lines across the board."
+    },
+    {
+      "id": "window_show_open",
+      "title": "The whole window as a show opens",
+      "row": "P43",
+      "scene": "res://Tests/Visual/focused_pose_probe.tscn",
+      "env": {},
+      "png": "user://focused_pose_probe/focused_focused.png",
+      "seen": "The whole 1152x648 window as a show opens. The sidebar on the left (Back / Forward / Wall, Goal 1000000000, Total 0, Deck / Discard / Rules, Undo / Marks) is a dark panel 288 px wide. The board is caught mid-deal: several grid cards are still tilted in flight, the top-left card (an orange 5) is drawn with a pink rim and a pale fill, which reads as the focused card. The Entrance row under the grid shows four face-up cards (5, 4, a red card, J) and a card back at the right end still flipping. DEBUG buttons along the top right, Prop Step at bottom right."
+    },
+    {
+      "id": "lifted_focus_elsewhere",
+      "title": "A lifted Entrance card with the focus moved to a grid cell",
+      "row": "P49",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/lifted_focus_elsewhere.png",
+      "seen": "1280x720 window. The sidebar describes the focused card: '7 of Knives', the Knife rule text and 'Grid Cell - One cell of a Grid, marked Knife 7', with an X to dismiss. On the board the focus is on the bottom-left grid cell (the 7 of Knives), which wears a pink rim; the Entrance's leftmost card, a lifted 2 of Knives, is raised off its red stock back and also wears a pink rim along its top and sides, while the other four Entrance cards (J, 9, 10, Q) keep their dark edge. The knife pips on the 7 and the 2 cells of the grid carry pink outlines. I counted 1668 pixels of exactly (255,140,255) in the image. No before: this scene does not exist on the base."
+    }
+  ]
+}

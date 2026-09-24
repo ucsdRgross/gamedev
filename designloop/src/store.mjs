@@ -80,16 +80,16 @@ async function renameWithRetry(from, to, attempts = 20) {
 }
 
 /**
- * Append events to `answers.log` and fsync (§4.4). One JSON object per line, `seq` strictly
- * increasing. This returns only once the bytes are on the platter — everything after it in the
+ * Append events to `answers.log` (or another log `file`) and fsync (§4.4). One JSON object per
+ * line, `seq` strictly increasing. This returns only once the bytes are on the platter — everything after it in the
  * sequence is recoverable, everything before it never happened.
  */
-export async function append(dir, events) {
+export async function append(dir, events, file = LOG) {
   const list = Array.isArray(events) ? events : [events];
   if (!list.length) return;
   const body = `${list.map((e) => JSON.stringify(e)).join('\n')}\n`;
   await mkdir(dir, { recursive: true });
-  const fh = await open(join(dir, LOG), 'a');
+  const fh = await open(join(dir, file), 'a');
   try {
     await fh.writeFile(body, 'utf8');
     await fh.sync();

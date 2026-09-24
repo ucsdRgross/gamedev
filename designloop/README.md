@@ -27,6 +27,7 @@ Three screens, all keyed by `<project>/<slug>`:
 | `/web/question.html?key=solatro/spotlight&scope=gaps` | a **scoped round**: only the open gaps |
 | `/web/canvas.html?key=solatro/spotlight` | the review canvas (`&version=1` opens a frozen one) |
 | `/web/gaps.html?key=solatro/spotlight` | gaps open and closed, and the plan steps they make stale |
+| `/visual-review/solatro/` | the post-work visual review: before/after pairs to approve, reject or comment on — `solatro/visual-review/README.md` |
 
 ## The other commands
 
@@ -37,6 +38,7 @@ npm --prefix designloop run check -- solatro/spotlight charts   …and do its ch
 npm --prefix designloop run check -- solatro/spotlight answers  which answers are PROSE, not a letter
 npm --prefix designloop run check -- solatro/spotlight answer Q16   the note + every restatement of it
 npm --prefix designloop run watch -- solatro/spotlight  park until the owner finishes a round
+npm --prefix designloop run watch -- visual-review/solatro  park until the owner presses Done on the visual review
 ```
 
 ⚠ **Never pass a `--flag` through `npm run`** — npm eats it and exits 255 on a run that succeeded.
