@@ -597,6 +597,7 @@ button.link { background: none; border: none; padding: 0; color: var(--accent); 
 .detail-q .answered { color: var(--accent); }
 /* An unanswered question is not an undecided one: this is the answer the design proceeds on. */
 .detail-q .recommends { color: var(--warn); }
+.superseded { font-weight: 600; color: var(--warn); }
 .detail-note { border-left: 2px solid var(--note); padding: 0.2rem 0.6rem; margin: 0.4rem 0; color: var(--ink-dim); }
 .detail textarea { min-height: 3.5rem; margin: 0.5rem 0 0.4rem; font-size: 0.85rem; }
 

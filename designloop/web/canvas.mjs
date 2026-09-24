@@ -93,6 +93,7 @@ async function load() {
   state.answers = {};
   for (const h of history) state.answers[h.id] = { option: h.option, active: h.active, state: h.state, note: h.note, override: h.override };
   state.prunedQuestions = new Set(reachability(parsed.questions, state.answers).pruned.map((q) => q.id));
+  state.supersededQuestions = new Map(parsed.questions.filter((q) => q.superseded).map((q) => [q.id, q.superseded]));
   state.annotations = { nodes: {}, edges: {}, approved: {}, flagged: {}, ...review.annotations };
   state.assumptions = review.assumptions || [];
   state.outOfScope = review.out_of_scope || [];
@@ -303,12 +304,14 @@ function drawNode(id, node, laid) {
   // is readable without clicking every box.
   const decided = node.decidedBy || [];
   if (decided.length) {
-    const open = decided.filter((q) => !state.answers[q] && !state.prunedQuestions.has(q)).length;
+    const open = decided.filter((q) => !state.answers[q] && !state.prunedQuestions.has(q)
+      && !state.supersededQuestions.has(q)).length;
     const chip = svgEl('text', { x: size.w / 2, y: size.h - 5, 'text-anchor': 'middle' },
       `node-decided${open ? ' open' : ''}`);
     chip.textContent = decided.length === 1 ? decided[0] : `${decided[0]}+${decided.length - 1}`;
     const title = svgEl('title');
     title.textContent = decided.map((qid) => {
+      if (state.supersededQuestions.has(qid)) return `${qid} — superseded: ${state.supersededQuestions.get(qid)}`;
       const a = state.answers[qid];
       if (a) return `${qid} — answered ${a.override ? 'in your own words' : `(${a.option})`}`;
       if (state.prunedQuestions.has(qid)) return `${qid} — ruled out by an earlier answer`;
@@ -901,10 +904,11 @@ function renderDetail(id) {
       // An unanswered question still HAS an answer waiting: its recommended default is what the
       // design proceeds on if the owner never gets to it (Q17b/Q12), so a node whose question is
       // unanswered is not undecided — it is provisionally decided, and the panel says which way.
-      const fallback = q?.options.find((o) => o.letter === q.default);
+      const fallback = q?.superseded ? null : q?.options.find((o) => o.letter === q.default);
       const row = document.createElement('div');
       row.className = 'detail-q';
       row.innerHTML = `<strong>${esc(qid)}</strong> ${md(q ? q.text : '(not in this document)')}<br>`
+        + (q?.superseded ? `<span class="superseded">superseded</span> ${md(q.superseded)}<br>` : '')
         + (a
           ? `<span class="answered">answered ${a.override ? 'in your own words' : `(${esc(a.option)}) ${md(option?.label || '')}`}</span>`
             + `${a.active === false ? ' <span class="faint">— set aside</span>' : ''}`

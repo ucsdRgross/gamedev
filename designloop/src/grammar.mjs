@@ -5,7 +5,7 @@
 // The normative grammar is PLAN §5; the prose version is in
 // `.claude/skills/flowchart-design/SKILL.md` and the two must agree.
 //
-//   - **<ID>** `<gate>` [⚑gate] [⚑contract] — <text> · <option> [· <option>…] · *default* (<letter>) [· notes] [⇒ <hint>]
+//   - **<ID>** `<gate>` [⚑gate] [⚑contract] — <text> · <option> [· <option>…] · *default* (<letter>) [· notes] [· *superseded* — <note>] [⇒ <hint>]
 //
 // The acceptance document is `solatro/design/spotlight/DESIGN.md`. ⚠ It is a LIVING document — the
 // tests assert that it parses clean and that its DAG is sound, never how many questions it has
@@ -26,6 +26,7 @@ const RE_GATE = /^`\[([^\]]*)\]`\s*/;
 const RE_RETIRED = /^—\s*\*(.+)\*\s*$/;
 const RE_OPTION = /^\*\*\(([a-z])\)\*\*\s*([\s\S]*)$/;
 const RE_DEFAULT = /^\*default\*\s*\(([a-z])\)\s*([\s\S]*)$/;
+const RE_SUPERSEDED = /^\*superseded\*\s*—\s*([\s\S]+)$/;
 const RE_NEXT = /\s—\s\*\*→\s*next:\*\*\s*/;
 const RE_HEADING = /^(#{2,6})\s+(.*)$/;
 const RE_HEADING_GATE = /\s*`\[([^\]]*)\]`\s*$/;
@@ -193,6 +194,7 @@ export function parseQuestionBody(id, body, { gate = null, isGate = false, isCon
     default: null,
     defaultNote: '',
     notes: false,
+    superseded: null,
     hint: null,
     line: lineNumber,
     warnings: [],
@@ -219,6 +221,11 @@ export function parseQuestionBody(id, body, { gate = null, isGate = false, isCon
     }
     if (/^notes\b/i.test(segment)) {
       question.notes = true;
+      continue;
+    }
+    const superseded = RE_SUPERSEDED.exec(segment);
+    if (superseded) {
+      question.superseded = superseded[1].trim();
       continue;
     }
     throw new GrammarError(`${id}: unrecognised segment "${segment}"`, { id, line: lineNumber });
@@ -402,6 +409,8 @@ export function reachability(questions, answers = {}) {
       answered.push(q);
       continue;
     }
+    // A later ruling already decided it, so it is never asked; its answer, if any, still feeds gates.
+    if (q.superseded) continue;
     (state === 'true' ? reachable : pending).push(q);
   }
   return { reachable, pending, pruned, answered };

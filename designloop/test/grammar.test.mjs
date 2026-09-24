@@ -215,6 +215,30 @@ test('reachability separates PENDING from PRUNED (chart C7 vs C10)', () => {
   assert.deepEqual(r.pruned.map((q) => q.id), ['Q20'], 'one false atom prunes without waiting');
 });
 
+test('a *superseded* segment keeps its note verbatim, and the options and default stay', () => {
+  const q = parseQuestionLine(
+    '- **Q4** `[root]` — a · **(a)** x · **(b)** y · *default* (a) · *superseded* — ⚠ **OVERTURNED**: z, `Q9` · notes');
+  assert.equal(q.superseded, '⚠ **OVERTURNED**: z, `Q9`');
+  assert.deepEqual(q.options.map((o) => o.letter), ['a', 'b']);
+  assert.equal(q.default, 'a');
+  assert.equal(q.notes, true);
+  assert.equal(parseQuestionLine('- **Q5** `[root]` — a · **(a)** x · *default* (a)').superseded, null);
+});
+
+test('a superseded question is never open, yet its answer still feeds gates', () => {
+  const { questions } = parseDocument(doc(
+    '- **Q4** `[root]` — a · **(a)** x · **(b)** y · *default* (a) · *superseded* — overturned',
+    '- **Q9** `[Q4=b]` — b · **(a)** x · **(b)** y · *default* (a)',
+  ));
+  let r = reachability(questions, {});
+  assert.deepEqual(r.reachable.map((q) => q.id), []);
+  assert.deepEqual(r.pending.map((q) => q.id), ['Q9']);
+  assert.equal(nextQuestion(questions, {}), null, 'the questionnaire never asks it');
+  r = reachability(questions, { Q4: A('b') });
+  assert.deepEqual(r.answered.map((q) => q.id), ['Q4']);
+  assert.deepEqual(r.reachable.map((q) => q.id), ['Q9']);
+});
+
 test('blastRadius strands transitively and restores on the way back', () => {
   const { questions } = parseDocument(doc(
     '- **Q1** `[root]` — a · **(a)** x · **(b)** y · *default* (a)',

@@ -390,6 +390,11 @@ function render() {
     screen.append(back);
   }
 
+  if (q.superseded) {
+    screen.append(el('div', 'banner warn', `<strong>Superseded</strong> — a later ruling decided this, `
+      + `so the questionnaire no longer asks it. ${md(q.superseded)}`));
+  }
+
   if (q.gap) screen.append(el('div', 'phase', `${q.gap} · a gap found during implementation`));
   screen.append(el('div', 'qtext', md(q.text)));
 

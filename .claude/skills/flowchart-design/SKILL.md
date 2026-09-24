@@ -69,6 +69,7 @@ Two consequences:
 | **options** | Lettered `(a) (b) (c)…`, even for yes/no. Each carries its consequence per rule 2. Multiple choice beats binary wherever a third answer is genuinely possible — a forced binary is how a real option gets lost. |
 | **default** | Exactly one letter. Every question has one, so *default* is a complete answer. |
 | **notes** | Marks a fork where the options are especially likely to be insufficient. Free text is available everywhere regardless; this is a hint to the owner that it is expected here. |
+| **superseded** | `· *superseded* — <note>`: a later ruling overturned, extended or answered this question. Record such a ruling with this segment, never as free text appended to the line; the question keeps its options and is no longer asked. |
 | **⇒** | Forward hint: `⇒ skips Q40–Q52`. The gates are the truth; this is a convenience. |
 
 ### Gating questions carry a preview of what comes next
