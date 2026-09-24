@@ -108,7 +108,7 @@ KEEPS = [
 ("E1213","L7","skill","Bet on this Entrance against the next.",
  "Before placing, wager on whether the current Entrance will out-score the next one",
  "Before placing, wager on whether the current Entrance will out-score the next; winning lets you keep both",
- "Before placing, you may sell the current Entrance unseen for a fixed sum and take the next instead",
+ "Before placing, you may discard the current Entrance unseen and take the next instead",
  "c"),
 ("E1215","I11","skill","An eruption that snakes outward.",
  "Cards catch Burning in an expanding snake pattern, with no way to stop it",

@@ -14,7 +14,7 @@ E0012	catalog	CARD_CATALOG	Blowdown		Rare	hazard;discard;random	Weather boss: at
 E0013	catalog	CARD_CATALOG	Bottom Deal		Common	skill;Fortune Teller;deck-manip	Cue: this turn, draws come from the bottom of the deck instead of the top.			0
 E0014	catalog	CARD_CATALOG	Brass Check		Common	stamp;economy;token;Producer	Whenever this card's effects trigger, mint a Gold token card onto the top of the draw deck.			0
 E0015	catalog	CARD_CATALOG	Brass Ring		Rare	rule;combo;economy;movement	A token rotates one column per turn; if that column scores while the ring is on it, the meld pays double and a Ticket Stub is banked.			0
-E0016	catalog	CARD_CATALOG	Brodie's Leap		Uncommon	skill;Escape Artist;gamble;economy;secret	Banks fame each show for a stunt that never happened; if ever exposed by an inspection effect, loses double everything banked.			0
+E0016	catalog	CARD_CATALOG	Brodie's Leap		Uncommon	skill;Escape Artist;gamble;economy;secret	Banks fame each show for a stunt that never happened; if a card is ever stacked on it, loses everything banked.			0
 E0017	catalog	CARD_CATALOG	Buried Alive		Rare	skill;Escape Artist;gamble;growth	Cue: remove a card from the game for 2 shows; it returns upgraded one rarity, with a seeded chance it does not return at all.			0
 E0018	catalog	CARD_CATALOG	Canvas		Common	type;protection	The first debuff or status applied to this card each show is discarded.			0
 E0019	catalog	CARD_CATALOG	Cascade Scorer		Common	rule;combo	When a line scores, scores all rows of the board first, then all columns simultaneously per row band.			0
@@ -259,7 +259,7 @@ E0257	catalog	CARD_CATALOG	The Hook		Uncommon	hazard;discard	Town hazard: after 
 E0258	catalog	CARD_CATALOG	The Hunger Artist		Rare	skill;Escape Artist;persistence;gamble	Gains bonus points for every consecutive show it stays in the deck unplayed; when finally played and scored, pays it all at once and resets to zero.			0
 E0259	catalog	CARD_CATALOG	The Illustrated		Rare	stamp;Costume Designer;collection	This card may hold unlimited stamps, but can never hold a skill.			0
 E0260	catalog	CARD_CATALOG	The Imitator		Rare	skill;Magician;gamble;secret	Choose a deck card at acquisition: this card scores 150% of that card's base points, but only while the original is not on the board.			0
-E0261	catalog	CARD_CATALOG	The Impresario		Common	pip;Producer;economy	Kings are renamed, count as Producer-class cards, and give +1 trade value when spent at shops.	Vetoed (reference can be recycled)		0
+E0261	catalog	CARD_CATALOG	The Impresario		Common	pip;Producer;economy	Kings are renamed and count as Producer-class cards.	Vetoed (reference can be recycled)		0
 E0262	catalog	CARD_CATALOG	The Incubator		Rare	skill;Concessions;status;protection;growth	Each turn a card is covered by this card, it removes one debuff and restores 1 lost rank from that card.			0
 E0263	catalog	CARD_CATALOG	The Invisible Wall		Uncommon	skill;Escape Artist;protection;movement	Cue: block one empty column so no card may enter or leave it for one turn, hazards included.			0
 E0264	catalog	CARD_CATALOG	The Joey		Common	pip;Clown	Jacks are renamed and count as Clown-class cards for group effects.	Vetoed (rank that is always 11 is boring, joey should be a clown token with actual effect)		0

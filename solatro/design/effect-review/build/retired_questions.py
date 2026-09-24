@@ -377,4 +377,80 @@ RETIRED = {
     "E1255": 'Duplicate of Q0128 (Burnt Joker): the hand type chosen at random, by you, or the least-played is enhanced; the owner rules on it there.',  # Q0143
 
     "E1449": "Duplicate of Q0030 (The Clock Hang), which the owner wrote: a card placed past the grid's edge as if the grid were one larger; the owner's version stands.",  # Q0176
+
+    "E0457": 'Retired: there is no currency and no shop. A wheel you stake gold cards on.',  # Q0774
+
+    "E0744": 'Retired: there is no currency and no shop. A swindle played for gold.',  # Q0777
+
+    "E0879": 'Retired: there is no currency and no shop. A gambling node paid in gold.',  # Q0779
+
+    "E0318": 'Duplicate of Q0550 (The Double): a hostile effect aimed at another of your cards hits this one instead; the owner rules on it there.',  # Q0800
+
+    "G0338": 'Duplicate of Q0658 (Iron Body): the first destruction or status aimed at this card each show is absorbed; the owner rules on it there.',  # Q0801
+
+    "E1175": "Merged into Q0814 (The Critical Peg): crits spreading from one card to the triggers around it is that effect's level 2; the owner rules on it there.",  # Q0813
+
+    "E0448": 'Retired: there is no currency and no shop. A debuff taken for gold.',  # Q0819
+
+    "E1931": 'Retired: there is no currency and no shop. Purchases and gold.',  # Q0821
+
+    "G0187": 'Duplicate of Q0420 (The Comedic Drop): give this card up mid-show for a payout larger than scoring it; the owner rules on it there.',  # Q0831
+
+    "G0097": 'Duplicate of Q0413 (Lucky Streak): once active, no repeated action returns the same result for the show; the owner rules on it there.',  # Q0834
+
+    "G0098": "Duplicate of Q0023 (Googol Play Card), which the owner wrote: a chance that improves with each miss; the owner's version stands.",  # Q0835
+
+    "G0291": 'Duplicate of Q0413 (Lucky Streak): random results that will not repeat; the owner rules on it there.',  # Q0838
+
+    "E0045": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on. Its premise reveals the hidden rules deck.',  # Q0842
+
+    "G0255": "Merged into Q0867 (Marked): showing the position of any named card, not only itself, is that effect's level 2; the owner rules on it there.",  # Q0868
+
+    "E2022": 'Retired: there is no currency and no shop. A card disguised in a shop.',  # Q0873
+
+    "E1068": 'Duplicate of Q0874 (The Charm): a card whose real effect is hidden until it fires; the owner rules on it there.',  # Q0879
+
+    "G0260": 'Duplicate of Q0852 (Concealed Versus Exposed): a card placed unseen pays more for it; the owner rules on it there.',  # Q0881
+
+    "E0206": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on. Its law becomes a permanent rule card.',  # Q0893
+
+    "G0454": 'Duplicate of Q0236 (Hanoi Solitaire): a card may only be stacked on a higher rank; the owner rules on it there.',  # Q0897
+
+    "G0453": 'Duplicate of Q0895 (House Rules: Building), whose (b) is anything on anything; the owner rules on it there.',  # Q0898
+
+    "G0162": 'Duplicate of Q0894 (Contradiction): two stacking rules at once, split by grid or by line; the owner rules on it there.',  # Q0899
+
+    "E0089": "Retired: its premise is the upper zone, which is gone; the Entrance's five stocks are what feeds the grid now.",  # Q0914
+
+    "G0458": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on. It reveals rule cards.',  # Q0931
+
+    "G0240": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on. It announces or reads hidden rules.',  # Q0932
+
+    "G0033": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on. A rule card that moves between grids.',  # Q0936
+
+    "G0035": "Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on. It adds your rule cards to a town's.",  # Q0938
+
+    "G0037": 'Duplicate of Q0942 (The Census Taker): a bonus per card of one named class on the board; the owner rules on it there.',  # Q0943
+
+    "E0522": 'Duplicate of Q0962 (The Engineer): risk-tagged cards made cheaper and safer; the owner rules on it there.',  # Q0946
+
+    "E0568": 'Duplicate of Q0413 (Lucky Streak): every roll made twice and the better kept; the owner rules on it there.',  # Q0947
+
+    "E0326": 'Retired: there is no currency and no shop. Shops offer free fakes.',  # Q0955
+
+    "G0183": 'Duplicate of Q0829 (Ceremonial Dagger): destroys an adjacent card and grows on it; the owner rules on it there.',  # Q0961
+
+    "E0265": "Merged into Q0984 (The One-Man Band): counting as every class on its grid is that effect's level 2; the owner rules on it there.",  # Q0985
+
+    "E1007": 'Duplicate of Q0984 (The One-Man Band): one card counting as several classes at once; the owner rules on it there.',  # Q0988
+
+    "E1102": 'Duplicate of Q0941 (Rehearsal Hall): two, four and six of one class unlock tiers, differing per class; the owner rules on it there.',  # Q0990
+
+    "E2036": 'Duplicate of Q0991 (Baseball Card): paid by how many distinct rarities you hold; the owner rules on it there.',  # Q0995
+
+    "G0211": 'Duplicate of Q0941 (Rehearsal Hall): class thresholds switching on tier bonuses; the owner rules on it there.',  # Q0998
+
+    "E0297": 'Duplicate of Q1009 (Karagoz & Hacivat): a bound pair that each gain a multiplier while both are out; the owner rules on it there.',  # Q1013
+
+    "E0322": "Duplicate of Q0387 (Madame Zora's Eye): the next card of the deck always shown; the owner rules on it there.",  # Q1014
 }

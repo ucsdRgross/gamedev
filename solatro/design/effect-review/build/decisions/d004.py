@@ -55,7 +55,7 @@ KEEPS = [
 ("E0536","P6","structure","Villain or hero, and towns care.",
  "Cards carry a face or heel alignment with different bonuses, and towns prefer one or the other",
  "Cards carry a face or heel alignment you may flip once per show, with towns preferring one",
- "Cards carry an alignment, and a card scoring against a town's preference earns a different currency instead of fame",
+ "Cards carry an alignment, and a card scoring with a town's preference earns double while one scoring against it earns nothing",
  "c"),
 ("E0539","K2","skill","A win is not banked until you say so.",
  "Fame is committed only when you press Continue after a win, so the show stays undoable until then",

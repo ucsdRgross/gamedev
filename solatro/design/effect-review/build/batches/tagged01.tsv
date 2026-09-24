@@ -14,7 +14,7 @@ E0012	KEEP		F5	skill	At show start and each Entrance refresh, a random seeded ca
 E0013	KEEP		F1	skill	Cue: this turn, the Entrance refills from the bottom of the deck instead of the top.	
 E0014	KEEP		G11	stamp	Whenever this card's effects trigger, mint a Gold token card onto the top of the deck.	
 E0015	KEEP		E5	skill	A token rotates one column per turn; if that column scores while the token is on it, the meld pays double and a Ticket Stub is banked.	
-E0016	KEEP		L9	skill	Banks fame each show for an unearned stunt; if ever exposed by an inspection effect, loses double everything banked.	
+E0016	KEEP		L9	skill	Banks fame each show for an unearned stunt; if a card is ever stacked on it, loses everything banked.	
 E0017	KEEP		G8	skill	Cue: remove a card from the game for 2 shows; it returns upgraded one rarity, with a seeded chance it does not return.	
 E0018	KEEP		I12	type	The first debuff or status applied to this card each show is discarded.	
 E0019	KEEP		H8	skill	When a line scores, scores all rows first, then all columns simultaneously per row band.	
@@ -215,7 +215,7 @@ E0213	KEEP		H2	skill	Cue: manually fire one adjacent card's trigger hook exactly
 E0214	KEEP		H8	skill	While in play, the player chooses the trigger order of all card effects each scoring pass.	
 E0215	KEEP		R6	structure	A boss show with a trivial goal that is normally always won, but has a hidden seeded 1-in-1000 chance the goal silently triples mid-show.	
 E0216	KEEP		D7	skill	Consumes cards dropped on it like a Glutton, but secretly stores them; cue to return any one stored card to the Entrance.	
-E0217	KEEP		M1	consumable	Consumable, 3 uses: reveals every fake card in play (yours, the shop's, the town's); banned (a crime event) in pious towns.	
+E0217	KEEP		M1	consumable	Consumable, 3 uses: reveals every fake card in play (yours and the town's); banned (a crime event) in pious towns.	
 E0218	KEEP		H5	skill	Assign a 'star' card at show start; the first destruction or debuff aimed at the star hits this card instead.	
 E0219	KEEP		H6	skill	Choose a card: its on-score effects also fire when it is discarded.	
 E0220	KEEP		E2	skill	When a run of 4+ scores while this card is in it, that run can be relocated as a unit anywhere on the grid once, next turn.	
@@ -226,7 +226,7 @@ E0224	KEEP		E9	skill	During an Entrance refresh, once armed by cue, intercepts o
 E0225	KEEP		F7	skill	Cue while spotlit: stash the top discard inside this card; when this card scores, the stashed card returns to the Entrance.	
 E0226	KEEP		J4	skill	Cue: send any grid card to the discard.	
 E0227	KEEP		A5	stamp	If this card's skill triggered this show, there is a seeded 50% chance it triggers once more at show end.	
-E0228	KEEP		P3	skill	Gamble-tagged cards cost 1 less to acquire and their destruction odds are halved.	
+E0228	KEEP		P3	skill	Gamble-tagged cards have their destruction odds halved.	
 E0229	DROP	NOT_APPLICABLE				
 E0230	KEEP		F10	skill	When discarded, reveals part of the world map's fog of war.	
 E0231	KEEP		K2	skill	Free undo becomes 2 per turn, and all debuffs on your cards expire one show sooner.	E0060
@@ -259,4 +259,4 @@ E0257	KEEP		R2	hazard	Town hazard: after each placement, the lowest-ranked grid 
 E0258	KEEP		A9	skill	Gains bonus points for every consecutive show it stays in the deck unplayed; when finally played and scored, pays it all at once and resets to zero.	
 E0259	KEEP		H9	stamp	This card may hold unlimited stamps, but can never hold a skill.	
 E0260	KEEP		G3	skill	Choose a deck card at acquisition: this card scores 150% of that card's base points, but only while the original is not on the board.	
-E0261	KEEP		P6	rank	Kings are renamed, count as Producer-class cards, and give +1 trade value when spent at shops.	
+E0261	KEEP		P6	rank	Kings are renamed and count as Producer-class cards.	

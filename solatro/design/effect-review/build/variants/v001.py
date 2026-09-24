@@ -72,7 +72,7 @@ ROWS = [
  "A token sits on the same column in every grid at once; scoring that column in all grids in one placement pays a large bonus",
  "a"),
 ("E0016",
- "Banks points each show instead of scoring them; any inspection effect used on this card forfeits the whole bank",
+ "Banks points each show instead of scoring them; a card ever stacked on it forfeits the whole bank",
  "Banks points each show and pays out at the end of the run, but the bank is lost entirely if this card is ever covered",
  "Banks double points each show, with a 1-in-4 chance at the end of each show that the bank is lost",
  "c"),

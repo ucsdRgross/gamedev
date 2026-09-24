@@ -17,7 +17,7 @@ ROWS = [
  "c"),
 ("G0331","The Last Season","L4","stamp","A card that has a last night.",
  "This card scores double, and is permanently removed from the deck after three shows",
- "This card scores double, and is removed after three shows unless you pay to renew it each time",
+ "This card scores double, and is removed after three shows unless it scored in each of them",
  "This card scores double and is removed after three shows, leaving behind a permanent upgrade for whichever card was next to it most often",
  "b"),
 ("G0332","The Requisition","J5","skill","Tell the shop what to stock.",
