@@ -45,8 +45,7 @@ measurement has confirmed one. Then every probe:
 2. A BEFORE image and an AFTER image of the same shot.
 3. State in words what is visibly different between them — "no change" is a finding.
 4. Restore state: kill your PID by `-Id`, put back every file you parked.
-5. Register the pair in the visual review (`solatro/visual-review/`, commands in its README) so the
-   owner reviews before/after side by side.
+5. Hand the pair to the owner through the visual review — Steps, item 6.
 
 ## Preconditions
 
@@ -100,6 +99,11 @@ measurement has confirmed one. Then every probe:
 
 5. **If the change has a duration, measure it over time** — see the section above. A rendered still
    is not evidence about a pulse, a travel, a fade or a sequence.
+
+6. **Hand the change to the owner as before/after pairs** (`solatro/visual-review/README.md`).
+   Register its shots in `solatro/visual-review/manifest.json` — existing shot scenes in the repo,
+   never a scratch probe — then `py solatro/visual-review/review.py refresh` with `GODOT_BIN` set.
+   Read every `after/` PNG and write its `seen` from what the image shows; look at every `before/`.
 
 ## Reporting
 

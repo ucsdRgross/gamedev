@@ -271,6 +271,14 @@ Wait for a background agent by polling the lock file (`until [ $(grep -c . .clau
 reported the worktree as corrupted — it had no way to know the overseer had rolled it back. Tell it
 first, and confirm it has stopped.
 
+## The owner's visual review
+
+At the end of a run with visual work — or at the start of the next session doing visual work — run
+`py solatro/visual-review/review.py refresh` (it reshoots both sides, so it takes the one Godot
+slot), then park on `npm --prefix designloop run watch -- visual-review/solatro`. Park only after a
+shoot: a Done older than the last shoot is ignored. Every reject or comment becomes the next
+implementer step, the owner's comment verbatim as its brief; then refresh and park again.
+
 ## Declaring the run ready to close
 
 **The last step's commit is not the end of the run.** The moment every step in `PLAN.md` is verified,
