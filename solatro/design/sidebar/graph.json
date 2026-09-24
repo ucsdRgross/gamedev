@@ -1,11 +1,11 @@
 {
-  "doc_hash": "sha256:374a2914daf3ce2a8c94889316203ba52f99ea2d9f4ae8f5c1217108e5f3ebea",
+  "doc_hash": "sha256:7d7751ccb10fd2fad2c74b41a804f81ee14f40470c9c2e11096fc311848604fc",
   "charts": [
     {
       "id": "A",
       "name": "A",
       "title": "the description path as it exists today",
-      "line": 805,
+      "line": 1067,
       "nodes": [
         "A1",
         "A2",
@@ -24,7 +24,7 @@
       "id": "B",
       "name": "B",
       "title": "what opens, changes and closes the description",
-      "line": 832,
+      "line": 1094,
       "nodes": [
         "B1",
         "B2",
@@ -41,14 +41,18 @@
         "B13",
         "B14",
         "B15",
-        "B16"
+        "B16",
+        "B17",
+        "B18",
+        "B19",
+        "B20"
       ]
     },
     {
       "id": "C",
       "name": "C",
       "title": "the ONE container, and what is inside it",
-      "line": 871,
+      "line": 1141,
       "nodes": [
         "C1",
         "C2",
@@ -62,14 +66,17 @@
         "C10",
         "C11",
         "C12",
-        "C13"
+        "C13",
+        "C14",
+        "C15",
+        "C16"
       ]
     },
     {
       "id": "D",
       "name": "D",
       "title": "the container's geometry",
-      "line": 903,
+      "line": 1180,
       "nodes": [
         "D1",
         "D2",
@@ -91,7 +98,7 @@
       "id": "E",
       "name": "E",
       "title": "one click, end to end",
-      "line": 955,
+      "line": 1240,
       "nodes": [
         "E1",
         "E2",
@@ -108,14 +115,22 @@
         "E13",
         "E14",
         "E15",
-        "E16"
+        "E16",
+        "E17",
+        "E18",
+        "E19",
+        "E20",
+        "E21",
+        "E22",
+        "E23",
+        "E24"
       ]
     },
     {
       "id": "F",
       "name": "F",
       "title": "the tap gesture",
-      "line": 993,
+      "line": 1293,
       "nodes": [
         "F1",
         "F2",
@@ -132,7 +147,7 @@
       "id": "G",
       "name": "G",
       "title": "arming an Entrance card, and placing it",
-      "line": 1016,
+      "line": 1316,
       "nodes": [
         "G1",
         "G2",
@@ -146,14 +161,19 @@
         "G10",
         "G11",
         "G12",
-        "G13"
+        "G13",
+        "G14",
+        "G15",
+        "G16",
+        "G17",
+        "G18"
       ]
     },
     {
       "id": "H",
       "name": "H",
       "title": "the Entrance stocks",
-      "line": 1048,
+      "line": 1359,
       "nodes": [
         "H1",
         "H2",
@@ -176,7 +196,7 @@
       "id": "I",
       "name": "I",
       "title": "the refill, and the flip",
-      "line": 1084,
+      "line": 1395,
       "nodes": [
         "I1",
         "I2",
@@ -197,7 +217,7 @@
       "id": "J",
       "name": "J",
       "title": "ending a show",
-      "line": 1115,
+      "line": 1426,
       "nodes": [
         "J1",
         "J2",
@@ -210,14 +230,15 @@
         "J9",
         "J10",
         "J11",
-        "J12"
+        "J12",
+        "J13"
       ]
     },
     {
       "id": "K",
       "name": "K",
       "title": "the map",
-      "line": 1145,
+      "line": 1458,
       "nodes": [
         "K1",
         "K2",
@@ -237,7 +258,7 @@
       "id": "L",
       "name": "L",
       "title": "everything this design deletes",
-      "line": 1174,
+      "line": 1487,
       "nodes": [
         "L1",
         "L2",
@@ -251,7 +272,29 @@
         "L10",
         "L11",
         "L12",
-        "L13"
+        "L13",
+        "L14",
+        "L15"
+      ]
+    },
+    {
+      "id": "M",
+      "name": "M",
+      "title": "how far you must move, and how big a thing must be",
+      "line": 1518,
+      "nodes": [
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M7",
+        "M8",
+        "M9",
+        "M10",
+        "M11",
+        "M12"
       ]
     }
   ],
@@ -262,7 +305,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 807
+      "line": 1069
     },
     "A2": {
       "chart": "A",
@@ -270,7 +313,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 808
+      "line": 1070
     },
     "A3": {
       "chart": "A",
@@ -278,7 +321,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 809
+      "line": 1071
     },
     "A4": {
       "chart": "A",
@@ -286,7 +329,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 810
+      "line": 1072
     },
     "A5": {
       "chart": "A",
@@ -294,7 +337,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 811
+      "line": 1073
     },
     "A6": {
       "chart": "A",
@@ -302,7 +345,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 812
+      "line": 1074
     },
     "A7": {
       "chart": "A",
@@ -310,7 +353,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 813
+      "line": 1075
     },
     "A8": {
       "chart": "A",
@@ -318,7 +361,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 814
+      "line": 1076
     },
     "A9": {
       "chart": "A",
@@ -326,7 +369,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 815
+      "line": 1077
     },
     "A10": {
       "chart": "A",
@@ -334,7 +377,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 816
+      "line": 1078
     },
     "A11": {
       "chart": "A",
@@ -342,7 +385,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 817
+      "line": 1079
     },
     "B1": {
       "chart": "B",
@@ -350,7 +393,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 834
+      "line": 1096
     },
     "B2": {
       "chart": "B",
@@ -358,15 +401,15 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 835
+      "line": 1097
     },
     "B3": {
       "chart": "B",
-      "label": "NEW — an ARMED card alone does not open it. Arming is not highlighting",
+      "label": "NEW — an ARMED card alone does NOT open it. Arming is not highlighting, and it moves no focus — chart G",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 836
+      "line": 1098
     },
     "B4": {
       "chart": "B",
@@ -374,7 +417,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 837
+      "line": 1099
     },
     "B5": {
       "chart": "B",
@@ -382,7 +425,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 838
+      "line": 1100
     },
     "B6": {
       "chart": "B",
@@ -390,7 +433,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 839
+      "line": 1101
     },
     "B7": {
       "chart": "B",
@@ -398,7 +441,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 840
+      "line": 1102
     },
     "B8": {
       "chart": "B",
@@ -406,7 +449,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 841
+      "line": 1103
     },
     "B9": {
       "chart": "B",
@@ -414,7 +457,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 842
+      "line": 1104
     },
     "B10": {
       "chart": "B",
@@ -422,15 +465,15 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 843
+      "line": 1105
     },
     "B11": {
       "chart": "B",
-      "label": "NEW — the held card's cursor leaves the bounds of the cell it came from",
+      "label": "NEW — the held card leaves the bounds of the cell it came from — but ONLY once it is FOLLOWING, so an untouched armed card never closes a description by accident, and NEVER for a card the player CLICKED to lock: that one click both locked and grabbed it, so its placement is what closes it — `GAP-008`=a",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 844
+      "line": 1106
     },
     "B12": {
       "chart": "B",
@@ -438,7 +481,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 845
+      "line": 1107
     },
     "B13": {
       "chart": "B",
@@ -446,7 +489,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 846
+      "line": 1108
     },
     "B14": {
       "chart": "B",
@@ -454,7 +497,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 847
+      "line": 1109
     },
     "B15": {
       "chart": "B",
@@ -462,7 +505,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 848
+      "line": 1110
     },
     "B16": {
       "chart": "B",
@@ -470,7 +513,39 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 849
+      "line": 1111
+    },
+    "B17": {
+      "chart": "B",
+      "label": "NEW — Game.processing goes TRUE: the container reverts to the HUD whatever was showing, INCLUDING a locked description — chart C",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1112
+    },
+    "B18": {
+      "chart": "B",
+      "label": "NEW — that lock is gone for good. It is not restored when processing ends",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1113
+    },
+    "B19": {
+      "chart": "B",
+      "label": "NEW — hovers DURING processing are ignored entirely, so a resting pointer cannot swap the HUD straight back out",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1114
+    },
+    "B20": {
+      "chart": "B",
+      "label": "NEW — processing ends, and the HUD STAYS until any focus event at all, including focus landing back on the card it was already on",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1115
     },
     "C1": {
       "chart": "C",
@@ -478,7 +553,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 873
+      "line": 1143
     },
     "C2": {
       "chart": "C",
@@ -486,7 +561,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 874
+      "line": 1144
     },
     "C3": {
       "chart": "C",
@@ -494,7 +569,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 875
+      "line": 1145
     },
     "C4": {
       "chart": "C",
@@ -502,15 +577,15 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 876
+      "line": 1146
     },
     "C5": {
       "chart": "C",
-      "label": "NEW — a highlight arrives, so the contents swap to the description — chart B",
+      "label": "NEW — a highlight arrives, so the contents swap to the description, its preview drawn at the size the highlighted object is itself drawn at: the board's card size from the board, each viewer's own from that viewer (GAP-004=b) — chart B",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 877
+      "line": 1147
     },
     "C6": {
       "chart": "C",
@@ -518,7 +593,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 878
+      "line": 1148
     },
     "C7": {
       "chart": "C",
@@ -526,55 +601,79 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 879
+      "line": 1149
     },
     "C8": {
+      "chart": "C",
+      "label": "NEW — Game.processing forces it back too, lock and all, and the HUD is then what the player watches the cascade in: the score, the goal and the combo are what the cascade animates",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1150
+    },
+    "C9": {
+      "chart": "C",
+      "label": "NEW — the HUD holds until ANY focus event once processing ends",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1151
+    },
+    "C10": {
+      "chart": "C",
+      "label": "NEW — the processing rule is the GAME screen only. The map has no cascade worth watching — chart K",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1152
+    },
+    "C11": {
       "chart": "C",
       "label": "NEW — the panel eats clicks in its whole rect, which today's scattered controls do not",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 880
+      "line": 1153
     },
-    "C9": {
+    "C12": {
       "chart": "C",
-      "label": "NEW — no hud_scale. The container lays out to its own rect, so the scale mechanism and both authored-offset caches go",
+      "label": "NEW — no hud_scale. The container lays out to its own rect, so the scale mechanism and both authored-offset caches go — chart L",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 881
+      "line": 1154
     },
-    "C10": {
+    "C13": {
       "chart": "C",
-      "label": "NEW — the MAP gets the same container, holding Fame, Lap, Luck and its Deck button, which is what makes the geometry identical on both screens — chart K",
+      "label": "NEW — the MAP gets the same container, holding Fame, Lap, Luck and its Deck button, and both screens convert its window px through their own picture, which is what makes the geometry identical (GAP-003=a)",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 882
+      "line": 1155
     },
-    "C11": {
+    "C14": {
       "chart": "C",
       "label": "The debug bar and the prop-step controls stay OUTSIDE it, top-right, unchanged",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 883
+      "line": 1156
     },
-    "C12": {
+    "C15": {
       "chart": "C",
       "label": "GameView win or lose overlay still covers ONLY the play area, so the container stays live",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 884
+      "line": 1157
     },
-    "C13": {
+    "C16": {
       "chart": "C",
-      "label": "NEW — the exit X in the container's top-right means GO BACK TO THE HUD, at the touch-target minimum",
+      "label": "NEW — the exit X in the container's top-right means GO BACK TO THE HUD, sized by the same touch-target rule as every other overlay control — chart M",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 885
+      "line": 1158
     },
     "D1": {
       "chart": "D",
@@ -582,7 +681,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 905
+      "line": 1182
     },
     "D2": {
       "chart": "D",
@@ -590,7 +689,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 906
+      "line": 1183
     },
     "D3": {
       "chart": "D",
@@ -598,7 +697,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 907
+      "line": 1184
     },
     "D4": {
       "chart": "D",
@@ -606,7 +705,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 908
+      "line": 1185
     },
     "D5": {
       "chart": "D",
@@ -614,15 +713,15 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 909
+      "line": 1186
     },
     "D6": {
       "chart": "D",
-      "label": "NEW — is the window wide enough that the fraction exceeds the maximum",
+      "label": "NEW — is the window more extreme in SHAPE than the project's reference window, which is what makes the maximum apply at all (GAP-001=b), and does the fraction exceed it",
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 910
+      "line": 1187
     },
     "D7": {
       "chart": "D",
@@ -630,39 +729,39 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 911
+      "line": 1188
     },
     "D8": {
       "chart": "D",
-      "label": "NEW — PlayArea.board_inset_left becomes the container's width, converted from window pixels to picture pixels through the focused picture's live scale",
+      "label": "NEW — PlayArea.board_inset_left becomes the container's width, converted from window pixels to picture pixels through the focused picture's live scale, plus the crop that covering scale puts off-window on that axis (GAP-002=a)",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 912
+      "line": 1189
     },
     "D9": {
       "chart": "D",
-      "label": "NEW — a matching TOP inset exists for the case where the container moved up",
+      "label": "NEW — a matching TOP inset exists for the case where the container moved up, and matching RIGHT and BOTTOM edges for the crop, so the board's region is the VISIBLE picture",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 913
+      "line": 1190
     },
     "D10": {
       "chart": "D",
-      "label": "NEW — the board centres in what is left, never on the screen",
+      "label": "NEW — the board centres in what is left, never on the screen — and what is left is what the player can SEE beside the container",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 914
+      "line": 1191
     },
     "D11": {
       "chart": "D",
-      "label": "The MAP uses the window fraction directly: it has no picture and needs no conversion",
+      "label": "The MAP converts exactly as the board does: window px through the map picture's live cover scale and through the map camera's own zoom (GAP-003=a)",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 915
+      "line": 1192
     },
     "D12": {
       "chart": "D",
@@ -670,7 +769,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 916
+      "line": 1193
     },
     "D13": {
       "chart": "D",
@@ -678,7 +777,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 917
+      "line": 1194
     },
     "D14": {
       "chart": "D",
@@ -686,15 +785,15 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 918
+      "line": 1195
     },
     "E1": {
       "chart": "E",
-      "label": "NEW — what is under the click",
+      "label": "NEW — what is under the press",
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 957
+      "line": 1242
     },
     "E2": {
       "chart": "E",
@@ -702,7 +801,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 958
+      "line": 1243
     },
     "E3": {
       "chart": "E",
@@ -710,7 +809,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 959
+      "line": 1244
     },
     "E4": {
       "chart": "E",
@@ -718,7 +817,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 960
+      "line": 1245
     },
     "E5": {
       "chart": "E",
@@ -726,15 +825,15 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 961
+      "line": 1246
     },
     "E6": {
       "chart": "E",
-      "label": "NEW — occupied: the card STACKS, and the legal-cell highlight already showed that it would",
+      "label": "NEW — occupied: the card STACKS, and the highlight already showed whether it would — an occupied cell offers the card on TOP as the target, so it is marked only while a rule accepts that (GAP-005=a)",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 962
+      "line": 1247
     },
     "E7": {
       "chart": "E",
@@ -742,15 +841,15 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 963
+      "line": 1248
     },
     "E8": {
       "chart": "E",
-      "label": "NEW — a BOARD card: it is grabbed, but only after the armed card has been cancelled first, because otherwise the click would try to place onto it",
+      "label": "NEW — a BOARD card: a CLICK still needs the armed card cancelled first, or the click would try to place onto it instead",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 964
+      "line": 1249
     },
     "E9": {
       "chart": "E",
@@ -758,63 +857,127 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 965
+      "line": 1250
     },
     "E10": {
+      "chart": "E",
+      "label": "NEW — a DRAG from a board card cancels the arm implicitly, because a drag is unambiguous about which card is being moved",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1251
+    },
+    "E11": {
       "chart": "E",
       "label": "NEW — while a board card is held, the Entrance DISARMS until it is put down",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 966
+      "line": 1252
     },
-    "E11": {
+    "E12": {
       "chart": "E",
-      "label": "NEW — the grab is the primary feedback: the card lifts and follows the cursor, and the description updates quietly behind it",
+      "label": "NEW — the press was released — how far did it travel",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 1253
+    },
+    "E13": {
+      "chart": "E",
+      "label": "NEW — within the threshold: it was a CLICK. The card is grabbed and stays held — chart M for the threshold",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 967
+      "line": 1254
     },
-    "E12": {
+    "E14": {
+      "chart": "E",
+      "label": "NEW — beyond it: the RELEASE places, on both mouse and touch. One gesture model for every device",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1255
+    },
+    "E15": {
+      "chart": "E",
+      "label": "NEW — released over what",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 1256
+    },
+    "E16": {
+      "chart": "E",
+      "label": "Game.place_card_in_grid — a LEGAL cell only, and the highlight is literally the drop map: it is swept through the same on_can_place_stack dispatch try_place uses (GAP-005=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1257
+    },
+    "E17": {
+      "chart": "E",
+      "label": "NEW — anywhere else, the container included and off-window included: the card goes back to its slot, still armed, still lifted, no longer following. A failed drag costs nothing. The return HOLDS: only a new press starts it following again, never a mouse motion (GAP-007=a)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1258
+    },
+    "E18": {
+      "chart": "E",
+      "label": "NEW — a drag-placed card is an ordinary undo step and commits the Entrance to its grid exactly as a clicked one does. Nothing downstream can tell which route was taken",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1259
+    },
+    "E19": {
       "chart": "E",
       "label": "NEW — cancel is pressed",
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 968
+      "line": 1260
     },
-    "E13": {
+    "E20": {
       "chart": "E",
       "label": "NEW — the HELD CARD is released first",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 969
+      "line": 1261
     },
-    "E14": {
+    "E21": {
       "chart": "E",
       "label": "NEW — a second press then dismisses the description — chart B",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 970
+      "line": 1262
     },
-    "E15": {
+    "E22": {
       "chart": "E",
       "label": "NEW — Escape does MORE than cancel: it cancels everything the second button would AND shows the menu or wall immediately",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 971
+      "line": 1263
     },
-    "E16": {
+    "E23": {
       "chart": "E",
       "label": "NEW — on a touchscreen the FIRST tap behaves as a hover, so nothing commits on it",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 972
+      "line": 1264
+    },
+    "E24": {
+      "chart": "E",
+      "label": "NEW — and a touch TAP needs no threshold of its own: a release on the card's own slot is not a placeable spot, so it goes back to exactly where it already was",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1265
     },
     "F1": {
       "chart": "F",
@@ -822,7 +985,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 995
+      "line": 1295
     },
     "F2": {
       "chart": "F",
@@ -830,7 +993,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 996
+      "line": 1296
     },
     "F3": {
       "chart": "F",
@@ -838,7 +1001,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 997
+      "line": 1297
     },
     "F4": {
       "chart": "F",
@@ -846,7 +1009,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 998
+      "line": 1298
     },
     "F5": {
       "chart": "F",
@@ -854,7 +1017,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 999
+      "line": 1299
     },
     "F6": {
       "chart": "F",
@@ -862,7 +1025,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1000
+      "line": 1300
     },
     "F7": {
       "chart": "F",
@@ -870,7 +1033,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1001
+      "line": 1301
     },
     "F8": {
       "chart": "F",
@@ -878,7 +1041,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1002
+      "line": 1302
     },
     "F9": {
       "chart": "F",
@@ -886,7 +1049,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1003
+      "line": 1303
     },
     "G1": {
       "chart": "G",
@@ -894,103 +1057,143 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1018
+      "line": 1318
     },
     "G2": {
       "chart": "G",
-      "label": "NEW — armed means MARKED IN ITS SLOT. It lifts only once the pointer is over the board",
+      "label": "NEW — arming calls Game.try_grab and PlayArea.grab_cards, the SAME functions a player pickup calls, with no flag and no second path",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1019
+      "line": 1319
     },
     "G3": {
       "chart": "G",
-      "label": "NEW — GLOW means selected. LIFT means currently picked up, which warns that the next click on a highlighted space will put the lifted card down",
+      "label": "NEW — and it moves NO focus and NO selection highlight. Nothing to suppress on the description side, because no highlight moved — chart B",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1020
+      "line": 1320
     },
     "G4": {
       "chart": "G",
-      "label": "NEW — the selection glow sits wherever the selector is, showing the current selection as normal",
+      "label": "NEW — the card LIFTS the moment it arms, to show it is selected and about to move. That lift is the first thing a fresh board shows",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1021
+      "line": 1321
     },
     "G5": {
       "chart": "G",
-      "label": "NEW — arming does NOT open the armed card's description. Only a real highlight does — chart B",
+      "label": "NEW — but it does NOT follow the cursor yet",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1022
+      "line": 1322
     },
     "G6": {
       "chart": "G",
-      "label": "NEW — every legal cell is highlighted, and because a card is armed for the whole show, that highlight is on for the whole show",
-      "shape": "box",
+      "label": "NEW — has the POINTER moved",
+      "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1023
+      "line": 1323
     },
     "G7": {
       "chart": "G",
-      "label": "Game.place_card_in_grid — the placement commits the Entrance to its grid, exactly as today. Arming commits nothing",
+      "label": "NEW — any mouse motion at all, including the one Godot emulates from a touch. No threshold. A key or pad focus does NOT start it: the card stays lifted in its slot and the pad player places by accept on a cell (GAP-006=b)",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1024
+      "line": 1324
     },
     "G8": {
       "chart": "G",
-      "label": "NEW — after a placement, the new leftmost present card arms",
+      "label": "NEW — now it follows, at the same lift height, so the only visible change is that it starts moving. Following is a ONE-WAY latch until the card is placed or cancelled",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1025
+      "line": 1325
     },
     "G9": {
       "chart": "G",
-      "label": "NEW — after a refill, the new leftmost card arms — chart I",
+      "label": "NEW — GLOW means selected. LIFT means currently picked up, warning that the next click on a highlighted space will put it down. The selection glow sits wherever the selector is",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1026
+      "line": 1326
     },
     "G10": {
+      "chart": "G",
+      "label": "NEW — focus RESTS on the armed card once, at the start of a show only. After that the two move independently",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1327
+    },
+    "G11": {
+      "chart": "G",
+      "label": "NEW — a card the player CLICKS follows immediately: the mouse has just moved by definition. The delay only ever applies to a card nobody touched",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1328
+    },
+    "G12": {
+      "chart": "G",
+      "label": "NEW — every legal cell's own zone card has its FACE brightened toward white by highlight_glow in player_settings.gd, the rank, suit, stamp and art excluded, re-swept when the hand or the board changes. Nothing is lit until the player lifts a card, so the map is on for as long as one is in hand. The FOCUS is a separate mark and never brightens: it draws the card's outer rim in the match ink (GAP-005=a, R6)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1329
+    },
+    "G13": {
+      "chart": "G",
+      "label": "Game.place_card_in_grid — the placement commits the Entrance to its grid. Arming commits nothing",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1330
+    },
+    "G14": {
+      "chart": "G",
+      "label": "NEW — after a placement, and after a refill, the new leftmost present card arms — chart I",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1331
+    },
+    "G15": {
       "chart": "G",
       "label": "NEW — cancel DISARMS, and clicks on cells then do nothing until something is armed again",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1027
+      "line": 1332
     },
-    "G11": {
+    "G16": {
       "chart": "G",
       "label": "NEW — the arm is view-only. Undo restores the board and the arm is re-derived as leftmost present",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1028
+      "line": 1333
     },
-    "G12": {
+    "G17": {
       "chart": "G",
       "label": "NEW — keyboard and pad: the arm replaces the old select-an-Entrance-card step, and the arrows go straight to aiming a cell cursor",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1029
+      "line": 1334
     },
-    "G13": {
+    "G18": {
       "chart": "G",
       "label": "NEW — every slot's stock empty: nothing arms, and clicks on cells do nothing — chart H",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1030
+      "line": 1335
     },
     "H1": {
       "chart": "H",
@@ -998,7 +1201,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1050
+      "line": 1361
     },
     "H2": {
       "chart": "H",
@@ -1006,7 +1209,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1051
+      "line": 1362
     },
     "H3": {
       "chart": "H",
@@ -1014,7 +1217,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1052
+      "line": 1363
     },
     "H4": {
       "chart": "H",
@@ -1022,7 +1225,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1053
+      "line": 1364
     },
     "H5": {
       "chart": "H",
@@ -1030,7 +1233,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1054
+      "line": 1365
     },
     "H6": {
       "chart": "H",
@@ -1038,7 +1241,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1055
+      "line": 1366
     },
     "H7": {
       "chart": "H",
@@ -1046,7 +1249,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1056
+      "line": 1367
     },
     "H8": {
       "chart": "H",
@@ -1054,7 +1257,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1057
+      "line": 1368
     },
     "H9": {
       "chart": "H",
@@ -1062,7 +1265,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1058
+      "line": 1369
     },
     "H10": {
       "chart": "H",
@@ -1070,7 +1273,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1059
+      "line": 1370
     },
     "H11": {
       "chart": "H",
@@ -1078,7 +1281,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1060
+      "line": 1371
     },
     "H12": {
       "chart": "H",
@@ -1086,7 +1289,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1061
+      "line": 1372
     },
     "H13": {
       "chart": "H",
@@ -1094,7 +1297,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1062
+      "line": 1373
     },
     "H14": {
       "chart": "H",
@@ -1102,7 +1305,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1063
+      "line": 1374
     },
     "H15": {
       "chart": "H",
@@ -1110,7 +1313,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1064
+      "line": 1375
     },
     "I1": {
       "chart": "I",
@@ -1118,7 +1321,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1086
+      "line": 1397
     },
     "I2": {
       "chart": "I",
@@ -1126,7 +1329,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1087
+      "line": 1398
     },
     "I3": {
       "chart": "I",
@@ -1134,7 +1337,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1088
+      "line": 1399
     },
     "I4": {
       "chart": "I",
@@ -1142,7 +1345,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1089
+      "line": 1400
     },
     "I5": {
       "chart": "I",
@@ -1150,7 +1353,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1090
+      "line": 1401
     },
     "I6": {
       "chart": "I",
@@ -1158,7 +1361,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1091
+      "line": 1402
     },
     "I7": {
       "chart": "I",
@@ -1166,15 +1369,15 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1092
+      "line": 1403
     },
     "I8": {
       "chart": "I",
-      "label": "NEW — a capped stack of face-down cards is drawn, so depth reads at a glance. The cap is a knob defaulting to 5",
+      "label": "NEW — owner ruling at S21: a non-empty stock shows exactly ONE face-down card under the revealed card, drawn with frame 3 of the card sheet; no other stock card is an entity. At a refill it flips up to become the revealed card and a fresh face-down appears beneath while the stock has cards. No cap, no knob",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1093
+      "line": 1404
     },
     "I9": {
       "chart": "I",
@@ -1182,7 +1385,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1094
+      "line": 1405
     },
     "I10": {
       "chart": "I",
@@ -1190,7 +1393,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1095
+      "line": 1406
     },
     "I11": {
       "chart": "I",
@@ -1198,7 +1401,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1096
+      "line": 1407
     },
     "I12": {
       "chart": "I",
@@ -1206,7 +1409,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1097
+      "line": 1408
     },
     "I13": {
       "chart": "I",
@@ -1214,7 +1417,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1098
+      "line": 1409
     },
     "J1": {
       "chart": "J",
@@ -1222,7 +1425,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1117
+      "line": 1428
     },
     "J2": {
       "chart": "J",
@@ -1230,7 +1433,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1118
+      "line": 1429
     },
     "J3": {
       "chart": "J",
@@ -1238,7 +1441,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1119
+      "line": 1430
     },
     "J4": {
       "chart": "J",
@@ -1246,7 +1449,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1120
+      "line": 1431
     },
     "J5": {
       "chart": "J",
@@ -1254,7 +1457,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1121
+      "line": 1432
     },
     "J6": {
       "chart": "J",
@@ -1262,7 +1465,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1122
+      "line": 1433
     },
     "J7": {
       "chart": "J",
@@ -1270,7 +1473,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1123
+      "line": 1434
     },
     "J8": {
       "chart": "J",
@@ -1278,7 +1481,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1124
+      "line": 1435
     },
     "J9": {
       "chart": "J",
@@ -1286,7 +1489,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1125
+      "line": 1436
     },
     "J10": {
       "chart": "J",
@@ -1294,7 +1497,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1126
+      "line": 1437
     },
     "J11": {
       "chart": "J",
@@ -1302,7 +1505,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1127
+      "line": 1438
     },
     "J12": {
       "chart": "J",
@@ -1310,7 +1513,15 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1128
+      "line": 1439
+    },
+    "J13": {
+      "chart": "J",
+      "label": "NEW — the outcome screen carries its own Undo beside Continue, in the same SubViewport, so a d-pad walks Continue ↔ Undo. Focus navigation never crosses a viewport and no undo action is bound, so the HUD's Undo is mouse-only from here; it stays where it is, and Undo shows twice while the outcome is up (GAP-009=b)",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1440
     },
     "K1": {
       "chart": "K",
@@ -1318,7 +1529,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1147
+      "line": 1460
     },
     "K2": {
       "chart": "K",
@@ -1326,31 +1537,31 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1148
+      "line": 1461
     },
     "K3": {
       "chart": "K",
-      "label": "NEW — the same hover ALSO fills the sidebar with everything else — chart B",
+      "label": "OVERTURNED by the first playtest ruling — a hover NAMES only; a CLICK picks the node and fills the sidebar, so the description and the Travel button can never aim at different nodes — chart B",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1149
+      "line": 1462
     },
     "K4": {
       "chart": "K",
-      "label": "Map._on_node_entered — a click still ENTERS the node, exactly as today. Travelling never costs a second click",
+      "label": "OVERTURNED by the first playtest ruling — a click PICKS and travels nowhere; a Travel button beside the description is the one way there, so a node can be previewed before it is chosen",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1150
+      "line": 1463
     },
     "K5": {
       "chart": "K",
-      "label": "NEW — on a touchscreen the first tap is the same as a hover, so it describes rather than travels",
+      "label": "OVERTURNED by the first playtest ruling — a tap picks, and no tap count travels: a finger uses the Travel button too",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1151
+      "line": 1464
     },
     "K6": {
       "chart": "K",
@@ -1358,7 +1569,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1152
+      "line": 1465
     },
     "K7": {
       "chart": "K",
@@ -1366,23 +1577,23 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1153
+      "line": 1466
     },
     "K8": {
       "chart": "K",
-      "label": "NEW — a booster's preview cards are a flowing grid that wraps to the sidebar's width and scrolls with the rest",
+      "label": "OVERTURNED by the first playtest ruling — the sidebar is too narrow to read a pack in: the first pick of a pack node lists its possible cards in a viewer instead, and a button beside the description asks for that list again",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1154
+      "line": 1467
     },
     "K9": {
       "chart": "K",
-      "label": "NEW — hovering one of those preview cards switches the sidebar to that CARD, with a way back to the pack",
+      "label": "RETIRED with K8 — there is no grid inside the sidebar to pick out of, so there is no way back either",
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1155
+      "line": 1468
     },
     "K10": {
       "chart": "K",
@@ -1390,7 +1601,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1156
+      "line": 1469
     },
     "K11": {
       "chart": "K",
@@ -1398,7 +1609,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1157
+      "line": 1470
     },
     "K12": {
       "chart": "K",
@@ -1406,7 +1617,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1158
+      "line": 1471
     },
     "L1": {
       "chart": "L",
@@ -1414,7 +1625,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1176
+      "line": 1489
     },
     "L2": {
       "chart": "L",
@@ -1422,7 +1633,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1177
+      "line": 1490
     },
     "L3": {
       "chart": "L",
@@ -1430,7 +1641,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1178
+      "line": 1491
     },
     "L4": {
       "chart": "L",
@@ -1438,7 +1649,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1179
+      "line": 1492
     },
     "L5": {
       "chart": "L",
@@ -1446,7 +1657,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1180
+      "line": 1493
     },
     "L6": {
       "chart": "L",
@@ -1454,7 +1665,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1181
+      "line": 1494
     },
     "L7": {
       "chart": "L",
@@ -1462,7 +1673,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1182
+      "line": 1495
     },
     "L8": {
       "chart": "L",
@@ -1470,7 +1681,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1183
+      "line": 1496
     },
     "L9": {
       "chart": "L",
@@ -1478,7 +1689,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1184
+      "line": 1497
     },
     "L10": {
       "chart": "L",
@@ -1486,7 +1697,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1185
+      "line": 1498
     },
     "L11": {
       "chart": "L",
@@ -1494,7 +1705,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1186
+      "line": 1499
     },
     "L12": {
       "chart": "L",
@@ -1502,7 +1713,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1187
+      "line": 1500
     },
     "L13": {
       "chart": "L",
@@ -1510,7 +1721,121 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1188
+      "line": 1501
+    },
+    "L14": {
+      "chart": "L",
+      "label": "WallInput.mm_to_px, and every millimetre knob: grid_swipe_threshold_mm with its _min_mm and _max_mm, wall_touch_target_mm, and the wall_touch_target_min_px and _max_px bounds — chart M",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1502
+    },
+    "L15": {
+      "chart": "L",
+      "label": "card_tap_slop_mm never ships at all: one basis covers every gesture this design introduces",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1503
+    },
+    "M1": {
+      "chart": "M",
+      "label": "NEW — NO DPI READING SURVIVES ANYWHERE. Both consumers go, and the reason is measured: a DPI reading is unreliable on multi-monitor Windows, which reports the primary screen's for all of them, and on Android",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1520
+    },
+    "M2": {
+      "chart": "M",
+      "label": "NEW — is this how far you must MOVE, or how big a thing must be to HIT",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 1521
+    },
+    "M3": {
+      "chart": "M",
+      "label": "NEW — MOVE: a fraction of the CARD's current on-screen size, so the gesture scales with the thing being dragged and is right at every board zoom",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1522
+    },
+    "M4": {
+      "chart": "M",
+      "label": "NEW — a knob, defaulting to a quarter of the card's width",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1523
+    },
+    "M5": {
+      "chart": "M",
+      "label": "NEW — a gesture with no card under it, such as a swipe on bare board, uses the default card size at the current zoom, so there is always a reference",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1524
+    },
+    "M6": {
+      "chart": "M",
+      "label": "PlayArea._swipe_threshold_px — the board swipe moves onto this basis too, so the game has one answer rather than two",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1525
+    },
+    "M7": {
+      "chart": "M",
+      "label": "NEW — HIT: a fraction of the WINDOW's smaller dimension, the one reference every screen has, because the overlay lives outside the board where no card exists",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1526
+    },
+    "M8": {
+      "chart": "M",
+      "label": "NEW — a knob defaulting to 6 per cent, with NO clamp: the fraction IS the clamp, since it cannot run away the way a DPI reading could",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1527
+    },
+    "M9": {
+      "chart": "M",
+      "label": "WallInput.touch_target_px — the NAME survives with a new body, so every caller keeps the seam it already uses",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1528
+    },
+    "M10": {
+      "chart": "M",
+      "label": "WallOverlay._apply_touch_targets — still mandatory, and still on PICTURE_WALL.md's wiring contract. Only what it computes changes",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1529
+    },
+    "M11": {
+      "chart": "M",
+      "label": "NEW — the sidebar's exit X follows the same rule as every other overlay control",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1530
+    },
+    "M12": {
+      "chart": "M",
+      "label": "NEW — this formally reverses Q123 in picture-wall, which chose 9 mm physical derived from the reported DPI. That answer is shipped code, and it is the one superseded answer in this design that reaches another",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q123"
+      ],
+      "line": 1531
     }
   },
   "edges": [
@@ -1520,7 +1845,7 @@
       "to": "A2",
       "label": "",
       "chart": "A",
-      "line": 818
+      "line": 1080
     },
     {
       "key": "A2->A3",
@@ -1528,7 +1853,7 @@
       "to": "A3",
       "label": "not in Info mode AND wall_screen_popups",
       "chart": "A",
-      "line": 819
+      "line": 1081
     },
     {
       "key": "A2->A8",
@@ -1536,7 +1861,7 @@
       "to": "A8",
       "label": "in Info mode: this panel always yields",
       "chart": "A",
-      "line": 820
+      "line": 1082
     },
     {
       "key": "A4->A5",
@@ -1544,7 +1869,7 @@
       "to": "A5",
       "label": "",
       "chart": "A",
-      "line": 821
+      "line": 1083
     },
     {
       "key": "A4->A11",
@@ -1552,7 +1877,7 @@
       "to": "A11",
       "label": "not in Info mode",
       "chart": "A",
-      "line": 822
+      "line": 1084
     },
     {
       "key": "A5->A6",
@@ -1560,7 +1885,7 @@
       "to": "A6",
       "label": "",
       "chart": "A",
-      "line": 823
+      "line": 1085
     },
     {
       "key": "A6->A7",
@@ -1568,7 +1893,7 @@
       "to": "A7",
       "label": "",
       "chart": "A",
-      "line": 824
+      "line": 1086
     },
     {
       "key": "A7->A8",
@@ -1576,7 +1901,7 @@
       "to": "A8",
       "label": "",
       "chart": "A",
-      "line": 825
+      "line": 1087
     },
     {
       "key": "A9->A8",
@@ -1584,7 +1909,7 @@
       "to": "A8",
       "label": "",
       "chart": "A",
-      "line": 826
+      "line": 1088
     },
     {
       "key": "A10->A7",
@@ -1592,7 +1917,7 @@
       "to": "A7",
       "label": "",
       "chart": "A",
-      "line": 827
+      "line": 1089
     },
     {
       "key": "B1->B2",
@@ -1600,7 +1925,7 @@
       "to": "B2",
       "label": "",
       "chart": "B",
-      "line": 850
+      "line": 1116
     },
     {
       "key": "B3->B2",
@@ -1608,7 +1933,7 @@
       "to": "B2",
       "label": "",
       "chart": "B",
-      "line": 851
+      "line": 1117
     },
     {
       "key": "B2->B4",
@@ -1616,7 +1941,7 @@
       "to": "B4",
       "label": "",
       "chart": "B",
-      "line": 852
+      "line": 1118
     },
     {
       "key": "B2->B5",
@@ -1624,7 +1949,7 @@
       "to": "B5",
       "label": "",
       "chart": "B",
-      "line": 853
+      "line": 1119
     },
     {
       "key": "B5->B6",
@@ -1632,7 +1957,7 @@
       "to": "B6",
       "label": "",
       "chart": "B",
-      "line": 854
+      "line": 1120
     },
     {
       "key": "B6->B7",
@@ -1640,7 +1965,7 @@
       "to": "B7",
       "label": "yes",
       "chart": "B",
-      "line": 855
+      "line": 1121
     },
     {
       "key": "B6->B8",
@@ -1648,7 +1973,7 @@
       "to": "B8",
       "label": "a click, not a hover",
       "chart": "B",
-      "line": 856
+      "line": 1122
     },
     {
       "key": "B7->B9",
@@ -1656,7 +1981,7 @@
       "to": "B9",
       "label": "",
       "chart": "B",
-      "line": 857
+      "line": 1123
     },
     {
       "key": "B9->B10#1",
@@ -1664,7 +1989,7 @@
       "to": "B10",
       "label": "the exit X",
       "chart": "B",
-      "line": 858
+      "line": 1124
     },
     {
       "key": "B9->B10#2",
@@ -1672,15 +1997,15 @@
       "to": "B10",
       "label": "cancel",
       "chart": "B",
-      "line": 859
+      "line": 1125
     },
     {
       "key": "B9->B11",
       "from": "B9",
       "to": "B11",
-      "label": "the card leaves its cell",
+      "label": "the card leaves its cell, and the player did not click it to lock",
       "chart": "B",
-      "line": 860
+      "line": 1126
     },
     {
       "key": "B9->B10#3",
@@ -1688,7 +2013,7 @@
       "to": "B10",
       "label": "a click on bare board",
       "chart": "B",
-      "line": 861
+      "line": 1127
     },
     {
       "key": "B11->B10",
@@ -1696,7 +2021,7 @@
       "to": "B10",
       "label": "",
       "chart": "B",
-      "line": 862
+      "line": 1128
     },
     {
       "key": "B12->B10",
@@ -1704,7 +2029,7 @@
       "to": "B10",
       "label": "",
       "chart": "B",
-      "line": 863
+      "line": 1129
     },
     {
       "key": "B13->B9",
@@ -1712,7 +2037,7 @@
       "to": "B9",
       "label": "",
       "chart": "B",
-      "line": 864
+      "line": 1130
     },
     {
       "key": "B14->B9",
@@ -1720,7 +2045,7 @@
       "to": "B9",
       "label": "",
       "chart": "B",
-      "line": 865
+      "line": 1131
     },
     {
       "key": "B15->B16",
@@ -1728,7 +2053,39 @@
       "to": "B16",
       "label": "",
       "chart": "B",
-      "line": 866
+      "line": 1132
+    },
+    {
+      "key": "B17->B18",
+      "from": "B17",
+      "to": "B18",
+      "label": "",
+      "chart": "B",
+      "line": 1133
+    },
+    {
+      "key": "B17->B19",
+      "from": "B17",
+      "to": "B19",
+      "label": "",
+      "chart": "B",
+      "line": 1134
+    },
+    {
+      "key": "B19->B20",
+      "from": "B19",
+      "to": "B20",
+      "label": "",
+      "chart": "B",
+      "line": 1135
+    },
+    {
+      "key": "B20->B1",
+      "from": "B20",
+      "to": "B1",
+      "label": "",
+      "chart": "B",
+      "line": 1136
     },
     {
       "key": "C1->C2",
@@ -1736,7 +2093,7 @@
       "to": "C2",
       "label": "",
       "chart": "C",
-      "line": 886
+      "line": 1159
     },
     {
       "key": "C2->C3",
@@ -1744,7 +2101,7 @@
       "to": "C3",
       "label": "",
       "chart": "C",
-      "line": 887
+      "line": 1160
     },
     {
       "key": "C3->C4",
@@ -1752,7 +2109,7 @@
       "to": "C4",
       "label": "",
       "chart": "C",
-      "line": 888
+      "line": 1161
     },
     {
       "key": "C2->C5",
@@ -1760,7 +2117,7 @@
       "to": "C5",
       "label": "",
       "chart": "C",
-      "line": 889
+      "line": 1162
     },
     {
       "key": "C5->C6",
@@ -1768,7 +2125,7 @@
       "to": "C6",
       "label": "",
       "chart": "C",
-      "line": 890
+      "line": 1163
     },
     {
       "key": "C6->C7",
@@ -1776,7 +2133,7 @@
       "to": "C7",
       "label": "",
       "chart": "C",
-      "line": 891
+      "line": 1164
     },
     {
       "key": "C7->C2",
@@ -1784,39 +2141,47 @@
       "to": "C2",
       "label": "",
       "chart": "C",
-      "line": 892
+      "line": 1165
     },
     {
-      "key": "C13->C2",
-      "from": "C13",
-      "to": "C2",
-      "label": "",
-      "chart": "C",
-      "line": 893
-    },
-    {
-      "key": "C1->C8",
-      "from": "C1",
+      "key": "C5->C8",
+      "from": "C5",
       "to": "C8",
       "label": "",
       "chart": "C",
-      "line": 894
+      "line": 1166
     },
     {
-      "key": "C1->C9",
-      "from": "C1",
+      "key": "C8->C9",
+      "from": "C8",
       "to": "C9",
       "label": "",
       "chart": "C",
-      "line": 895
+      "line": 1167
     },
     {
-      "key": "C1->C10",
-      "from": "C1",
+      "key": "C9->C2",
+      "from": "C9",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 1168
+    },
+    {
+      "key": "C8->C10",
+      "from": "C8",
       "to": "C10",
       "label": "",
       "chart": "C",
-      "line": 896
+      "line": 1169
+    },
+    {
+      "key": "C16->C2",
+      "from": "C16",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 1170
     },
     {
       "key": "C1->C11",
@@ -1824,7 +2189,7 @@
       "to": "C11",
       "label": "",
       "chart": "C",
-      "line": 897
+      "line": 1171
     },
     {
       "key": "C1->C12",
@@ -1832,7 +2197,31 @@
       "to": "C12",
       "label": "",
       "chart": "C",
-      "line": 898
+      "line": 1172
+    },
+    {
+      "key": "C1->C13",
+      "from": "C1",
+      "to": "C13",
+      "label": "",
+      "chart": "C",
+      "line": 1173
+    },
+    {
+      "key": "C1->C14",
+      "from": "C1",
+      "to": "C14",
+      "label": "",
+      "chart": "C",
+      "line": 1174
+    },
+    {
+      "key": "C1->C15",
+      "from": "C1",
+      "to": "C15",
+      "label": "",
+      "chart": "C",
+      "line": 1175
     },
     {
       "key": "D1->D2",
@@ -1840,7 +2229,7 @@
       "to": "D2",
       "label": "",
       "chart": "D",
-      "line": 919
+      "line": 1196
     },
     {
       "key": "D2->D3",
@@ -1848,7 +2237,7 @@
       "to": "D3",
       "label": "no",
       "chart": "D",
-      "line": 920
+      "line": 1197
     },
     {
       "key": "D2->D4",
@@ -1856,7 +2245,7 @@
       "to": "D4",
       "label": "yes",
       "chart": "D",
-      "line": 921
+      "line": 1198
     },
     {
       "key": "D4->D5",
@@ -1864,7 +2253,7 @@
       "to": "D5",
       "label": "",
       "chart": "D",
-      "line": 922
+      "line": 1199
     },
     {
       "key": "D3->D6",
@@ -1872,7 +2261,7 @@
       "to": "D6",
       "label": "",
       "chart": "D",
-      "line": 923
+      "line": 1200
     },
     {
       "key": "D5->D6",
@@ -1880,7 +2269,7 @@
       "to": "D6",
       "label": "",
       "chart": "D",
-      "line": 924
+      "line": 1201
     },
     {
       "key": "D6->D7",
@@ -1888,7 +2277,7 @@
       "to": "D7",
       "label": "yes",
       "chart": "D",
-      "line": 925
+      "line": 1202
     },
     {
       "key": "D6->D8",
@@ -1896,7 +2285,7 @@
       "to": "D8",
       "label": "no",
       "chart": "D",
-      "line": 926
+      "line": 1203
     },
     {
       "key": "D7->D8",
@@ -1904,7 +2293,7 @@
       "to": "D8",
       "label": "",
       "chart": "D",
-      "line": 927
+      "line": 1204
     },
     {
       "key": "D8->D9",
@@ -1912,7 +2301,7 @@
       "to": "D9",
       "label": "",
       "chart": "D",
-      "line": 928
+      "line": 1205
     },
     {
       "key": "D9->D10",
@@ -1920,7 +2309,7 @@
       "to": "D10",
       "label": "",
       "chart": "D",
-      "line": 929
+      "line": 1206
     },
     {
       "key": "D1->D11",
@@ -1928,7 +2317,7 @@
       "to": "D11",
       "label": "",
       "chart": "D",
-      "line": 930
+      "line": 1207
     },
     {
       "key": "D3->D12",
@@ -1936,7 +2325,7 @@
       "to": "D12",
       "label": "",
       "chart": "D",
-      "line": 931
+      "line": 1208
     },
     {
       "key": "D1->D13",
@@ -1944,7 +2333,7 @@
       "to": "D13",
       "label": "",
       "chart": "D",
-      "line": 932
+      "line": 1209
     },
     {
       "key": "D1->D14",
@@ -1952,7 +2341,7 @@
       "to": "D14",
       "label": "",
       "chart": "D",
-      "line": 933
+      "line": 1210
     },
     {
       "key": "E1->E2",
@@ -1960,7 +2349,7 @@
       "to": "E2",
       "label": "",
       "chart": "E",
-      "line": 973
+      "line": 1266
     },
     {
       "key": "E1->E3",
@@ -1968,7 +2357,7 @@
       "to": "E3",
       "label": "",
       "chart": "E",
-      "line": 974
+      "line": 1267
     },
     {
       "key": "E1->E8",
@@ -1976,7 +2365,7 @@
       "to": "E8",
       "label": "",
       "chart": "E",
-      "line": 975
+      "line": 1268
     },
     {
       "key": "E3->E4",
@@ -1984,7 +2373,7 @@
       "to": "E4",
       "label": "yes",
       "chart": "E",
-      "line": 976
+      "line": 1269
     },
     {
       "key": "E4->E5",
@@ -1992,7 +2381,7 @@
       "to": "E5",
       "label": "",
       "chart": "E",
-      "line": 977
+      "line": 1270
     },
     {
       "key": "E5->E6",
@@ -2000,7 +2389,7 @@
       "to": "E6",
       "label": "yes",
       "chart": "E",
-      "line": 978
+      "line": 1271
     },
     {
       "key": "E3->E7",
@@ -2008,7 +2397,7 @@
       "to": "E7",
       "label": "no",
       "chart": "E",
-      "line": 979
+      "line": 1272
     },
     {
       "key": "E8->E9",
@@ -2016,15 +2405,15 @@
       "to": "E9",
       "label": "",
       "chart": "E",
-      "line": 980
+      "line": 1273
     },
     {
-      "key": "E9->E10",
-      "from": "E9",
+      "key": "E8->E10",
+      "from": "E8",
       "to": "E10",
       "label": "",
       "chart": "E",
-      "line": 981
+      "line": 1274
     },
     {
       "key": "E10->E11",
@@ -2032,55 +2421,111 @@
       "to": "E11",
       "label": "",
       "chart": "E",
-      "line": 982
+      "line": 1275
     },
     {
-      "key": "E2->E12",
-      "from": "E2",
+      "key": "E1->E12",
+      "from": "E1",
       "to": "E12",
       "label": "",
       "chart": "E",
-      "line": 983
-    },
-    {
-      "key": "E11->E12",
-      "from": "E11",
-      "to": "E12",
-      "label": "",
-      "chart": "E",
-      "line": 984
+      "line": 1276
     },
     {
       "key": "E12->E13",
       "from": "E12",
       "to": "E13",
-      "label": "",
+      "label": "barely",
       "chart": "E",
-      "line": 985
+      "line": 1277
     },
     {
-      "key": "E13->E14",
-      "from": "E13",
+      "key": "E12->E14",
+      "from": "E12",
       "to": "E14",
-      "label": "",
+      "label": "past the threshold",
       "chart": "E",
-      "line": 986
+      "line": 1278
     },
     {
-      "key": "E15->E13",
+      "key": "E14->E15",
+      "from": "E14",
+      "to": "E15",
+      "label": "",
+      "chart": "E",
+      "line": 1279
+    },
+    {
+      "key": "E15->E16",
       "from": "E15",
-      "to": "E13",
-      "label": "",
+      "to": "E16",
+      "label": "a legal cell",
       "chart": "E",
-      "line": 987
+      "line": 1280
     },
     {
-      "key": "E16->E1",
+      "key": "E15->E17",
+      "from": "E15",
+      "to": "E17",
+      "label": "anything else",
+      "chart": "E",
+      "line": 1281
+    },
+    {
+      "key": "E16->E18",
       "from": "E16",
-      "to": "E1",
+      "to": "E18",
       "label": "",
       "chart": "E",
-      "line": 988
+      "line": 1282
+    },
+    {
+      "key": "E23->E24",
+      "from": "E23",
+      "to": "E24",
+      "label": "",
+      "chart": "E",
+      "line": 1283
+    },
+    {
+      "key": "E2->E19",
+      "from": "E2",
+      "to": "E19",
+      "label": "",
+      "chart": "E",
+      "line": 1284
+    },
+    {
+      "key": "E13->E19",
+      "from": "E13",
+      "to": "E19",
+      "label": "",
+      "chart": "E",
+      "line": 1285
+    },
+    {
+      "key": "E19->E20",
+      "from": "E19",
+      "to": "E20",
+      "label": "",
+      "chart": "E",
+      "line": 1286
+    },
+    {
+      "key": "E20->E21",
+      "from": "E20",
+      "to": "E21",
+      "label": "",
+      "chart": "E",
+      "line": 1287
+    },
+    {
+      "key": "E22->E20",
+      "from": "E22",
+      "to": "E20",
+      "label": "",
+      "chart": "E",
+      "line": 1288
     },
     {
       "key": "F1->F2",
@@ -2088,7 +2533,7 @@
       "to": "F2",
       "label": "",
       "chart": "F",
-      "line": 1004
+      "line": 1304
     },
     {
       "key": "F2->F8",
@@ -2096,7 +2541,7 @@
       "to": "F8",
       "label": "",
       "chart": "F",
-      "line": 1005
+      "line": 1305
     },
     {
       "key": "F1->F3",
@@ -2104,7 +2549,7 @@
       "to": "F3",
       "label": "",
       "chart": "F",
-      "line": 1006
+      "line": 1306
     },
     {
       "key": "F4->F8",
@@ -2112,7 +2557,7 @@
       "to": "F8",
       "label": "",
       "chart": "F",
-      "line": 1007
+      "line": 1307
     },
     {
       "key": "F5->F8",
@@ -2120,7 +2565,7 @@
       "to": "F8",
       "label": "",
       "chart": "F",
-      "line": 1008
+      "line": 1308
     },
     {
       "key": "F6->F8",
@@ -2128,7 +2573,7 @@
       "to": "F8",
       "label": "",
       "chart": "F",
-      "line": 1009
+      "line": 1309
     },
     {
       "key": "F7->F8",
@@ -2136,7 +2581,7 @@
       "to": "F8",
       "label": "",
       "chart": "F",
-      "line": 1010
+      "line": 1310
     },
     {
       "key": "F9->F8",
@@ -2144,7 +2589,7 @@
       "to": "F8",
       "label": "",
       "chart": "F",
-      "line": 1011
+      "line": 1311
     },
     {
       "key": "G1->G2",
@@ -2152,7 +2597,7 @@
       "to": "G2",
       "label": "",
       "chart": "G",
-      "line": 1031
+      "line": 1336
     },
     {
       "key": "G2->G3",
@@ -2160,39 +2605,47 @@
       "to": "G3",
       "label": "",
       "chart": "G",
-      "line": 1032
+      "line": 1337
     },
     {
-      "key": "G3->G4",
-      "from": "G3",
+      "key": "G2->G4",
+      "from": "G2",
       "to": "G4",
       "label": "",
       "chart": "G",
-      "line": 1033
+      "line": 1338
     },
     {
-      "key": "G1->G5",
-      "from": "G1",
+      "key": "G4->G5",
+      "from": "G4",
       "to": "G5",
       "label": "",
       "chart": "G",
-      "line": 1034
+      "line": 1339
     },
     {
-      "key": "G1->G6",
-      "from": "G1",
+      "key": "G5->G6",
+      "from": "G5",
       "to": "G6",
       "label": "",
       "chart": "G",
-      "line": 1035
+      "line": 1340
     },
     {
-      "key": "G2->G7",
-      "from": "G2",
-      "to": "G7",
-      "label": "",
+      "key": "G6->G5",
+      "from": "G6",
+      "to": "G5",
+      "label": "not yet",
       "chart": "G",
-      "line": 1036
+      "line": 1341
+    },
+    {
+      "key": "G6->G7",
+      "from": "G6",
+      "to": "G7",
+      "label": "yes",
+      "chart": "G",
+      "line": 1342
     },
     {
       "key": "G7->G8",
@@ -2200,39 +2653,31 @@
       "to": "G8",
       "label": "",
       "chart": "G",
-      "line": 1037
+      "line": 1343
     },
     {
-      "key": "G9->G1",
-      "from": "G9",
-      "to": "G1",
+      "key": "G4->G9",
+      "from": "G4",
+      "to": "G9",
       "label": "",
       "chart": "G",
-      "line": 1038
+      "line": 1344
     },
     {
-      "key": "G8->G1",
-      "from": "G8",
-      "to": "G1",
+      "key": "G1->G10",
+      "from": "G1",
+      "to": "G10",
       "label": "",
       "chart": "G",
-      "line": 1039
+      "line": 1345
     },
     {
-      "key": "G10->G1",
-      "from": "G10",
-      "to": "G1",
-      "label": "",
-      "chart": "G",
-      "line": 1040
-    },
-    {
-      "key": "G11->G1",
+      "key": "G11->G8",
       "from": "G11",
-      "to": "G1",
+      "to": "G8",
       "label": "",
       "chart": "G",
-      "line": 1041
+      "line": 1346
     },
     {
       "key": "G1->G12",
@@ -2240,15 +2685,63 @@
       "to": "G12",
       "label": "",
       "chart": "G",
-      "line": 1042
+      "line": 1347
     },
     {
-      "key": "G13->G1",
+      "key": "G8->G13",
+      "from": "G8",
+      "to": "G13",
+      "label": "",
+      "chart": "G",
+      "line": 1348
+    },
+    {
+      "key": "G13->G14",
       "from": "G13",
+      "to": "G14",
+      "label": "",
+      "chart": "G",
+      "line": 1349
+    },
+    {
+      "key": "G14->G1",
+      "from": "G14",
       "to": "G1",
       "label": "",
       "chart": "G",
-      "line": 1043
+      "line": 1350
+    },
+    {
+      "key": "G15->G1",
+      "from": "G15",
+      "to": "G1",
+      "label": "",
+      "chart": "G",
+      "line": 1351
+    },
+    {
+      "key": "G16->G1",
+      "from": "G16",
+      "to": "G1",
+      "label": "",
+      "chart": "G",
+      "line": 1352
+    },
+    {
+      "key": "G1->G17",
+      "from": "G1",
+      "to": "G17",
+      "label": "",
+      "chart": "G",
+      "line": 1353
+    },
+    {
+      "key": "G18->G1",
+      "from": "G18",
+      "to": "G1",
+      "label": "",
+      "chart": "G",
+      "line": 1354
     },
     {
       "key": "H1->H2",
@@ -2256,7 +2749,7 @@
       "to": "H2",
       "label": "",
       "chart": "H",
-      "line": 1065
+      "line": 1376
     },
     {
       "key": "H2->H3",
@@ -2264,7 +2757,7 @@
       "to": "H3",
       "label": "",
       "chart": "H",
-      "line": 1066
+      "line": 1377
     },
     {
       "key": "H3->H4",
@@ -2272,7 +2765,7 @@
       "to": "H4",
       "label": "",
       "chart": "H",
-      "line": 1067
+      "line": 1378
     },
     {
       "key": "H4->H5",
@@ -2280,7 +2773,7 @@
       "to": "H5",
       "label": "",
       "chart": "H",
-      "line": 1068
+      "line": 1379
     },
     {
       "key": "H4->H6",
@@ -2288,7 +2781,7 @@
       "to": "H6",
       "label": "",
       "chart": "H",
-      "line": 1069
+      "line": 1380
     },
     {
       "key": "H6->H7",
@@ -2296,7 +2789,7 @@
       "to": "H7",
       "label": "removed",
       "chart": "H",
-      "line": 1070
+      "line": 1381
     },
     {
       "key": "H6->H8",
@@ -2304,7 +2797,7 @@
       "to": "H8",
       "label": "added",
       "chart": "H",
-      "line": 1071
+      "line": 1382
     },
     {
       "key": "H7->H9",
@@ -2312,7 +2805,7 @@
       "to": "H9",
       "label": "",
       "chart": "H",
-      "line": 1072
+      "line": 1383
     },
     {
       "key": "H8->H9",
@@ -2320,7 +2813,7 @@
       "to": "H9",
       "label": "",
       "chart": "H",
-      "line": 1073
+      "line": 1384
     },
     {
       "key": "H9->H10",
@@ -2328,7 +2821,7 @@
       "to": "H10",
       "label": "",
       "chart": "H",
-      "line": 1074
+      "line": 1385
     },
     {
       "key": "H1->H11",
@@ -2336,7 +2829,7 @@
       "to": "H11",
       "label": "",
       "chart": "H",
-      "line": 1075
+      "line": 1386
     },
     {
       "key": "H6->H12",
@@ -2344,7 +2837,7 @@
       "to": "H12",
       "label": "",
       "chart": "H",
-      "line": 1076
+      "line": 1387
     },
     {
       "key": "H1->H13",
@@ -2352,7 +2845,7 @@
       "to": "H13",
       "label": "",
       "chart": "H",
-      "line": 1077
+      "line": 1388
     },
     {
       "key": "H1->H14",
@@ -2360,7 +2853,7 @@
       "to": "H14",
       "label": "",
       "chart": "H",
-      "line": 1078
+      "line": 1389
     },
     {
       "key": "H1->H15",
@@ -2368,7 +2861,7 @@
       "to": "H15",
       "label": "",
       "chart": "H",
-      "line": 1079
+      "line": 1390
     },
     {
       "key": "I1->I2",
@@ -2376,7 +2869,7 @@
       "to": "I2",
       "label": "",
       "chart": "I",
-      "line": 1099
+      "line": 1410
     },
     {
       "key": "I2->I3",
@@ -2384,7 +2877,7 @@
       "to": "I3",
       "label": "",
       "chart": "I",
-      "line": 1100
+      "line": 1411
     },
     {
       "key": "I3->I4",
@@ -2392,7 +2885,7 @@
       "to": "I4",
       "label": "",
       "chart": "I",
-      "line": 1101
+      "line": 1412
     },
     {
       "key": "I4->I5",
@@ -2400,7 +2893,7 @@
       "to": "I5",
       "label": "",
       "chart": "I",
-      "line": 1102
+      "line": 1413
     },
     {
       "key": "I4->I6",
@@ -2408,7 +2901,7 @@
       "to": "I6",
       "label": "",
       "chart": "I",
-      "line": 1103
+      "line": 1414
     },
     {
       "key": "I4->I7",
@@ -2416,7 +2909,7 @@
       "to": "I7",
       "label": "",
       "chart": "I",
-      "line": 1104
+      "line": 1415
     },
     {
       "key": "I3->I8",
@@ -2424,7 +2917,7 @@
       "to": "I8",
       "label": "",
       "chart": "I",
-      "line": 1105
+      "line": 1416
     },
     {
       "key": "I8->I9",
@@ -2432,7 +2925,7 @@
       "to": "I9",
       "label": "",
       "chart": "I",
-      "line": 1106
+      "line": 1417
     },
     {
       "key": "I8->I10",
@@ -2440,7 +2933,7 @@
       "to": "I10",
       "label": "",
       "chart": "I",
-      "line": 1107
+      "line": 1418
     },
     {
       "key": "I3->I11",
@@ -2448,7 +2941,7 @@
       "to": "I11",
       "label": "",
       "chart": "I",
-      "line": 1108
+      "line": 1419
     },
     {
       "key": "I1->I12",
@@ -2456,7 +2949,7 @@
       "to": "I12",
       "label": "",
       "chart": "I",
-      "line": 1109
+      "line": 1420
     },
     {
       "key": "I1->I13",
@@ -2464,7 +2957,7 @@
       "to": "I13",
       "label": "",
       "chart": "I",
-      "line": 1110
+      "line": 1421
     },
     {
       "key": "J1->J2",
@@ -2472,7 +2965,7 @@
       "to": "J2",
       "label": "",
       "chart": "J",
-      "line": 1129
+      "line": 1441
     },
     {
       "key": "J2->J3",
@@ -2480,7 +2973,7 @@
       "to": "J3",
       "label": "goal met",
       "chart": "J",
-      "line": 1130
+      "line": 1442
     },
     {
       "key": "J3->J4",
@@ -2488,7 +2981,7 @@
       "to": "J4",
       "label": "",
       "chart": "J",
-      "line": 1131
+      "line": 1443
     },
     {
       "key": "J4->J5",
@@ -2496,7 +2989,7 @@
       "to": "J5",
       "label": "",
       "chart": "J",
-      "line": 1132
+      "line": 1444
     },
     {
       "key": "J5->J7",
@@ -2504,7 +2997,7 @@
       "to": "J7",
       "label": "",
       "chart": "J",
-      "line": 1133
+      "line": 1445
     },
     {
       "key": "J2->J9",
@@ -2512,7 +3005,7 @@
       "to": "J9",
       "label": "goal not met",
       "chart": "J",
-      "line": 1134
+      "line": 1446
     },
     {
       "key": "J6->J5",
@@ -2520,7 +3013,7 @@
       "to": "J5",
       "label": "",
       "chart": "J",
-      "line": 1135
+      "line": 1447
     },
     {
       "key": "J8->J9",
@@ -2528,7 +3021,7 @@
       "to": "J9",
       "label": "",
       "chart": "J",
-      "line": 1136
+      "line": 1448
     },
     {
       "key": "J9->J5",
@@ -2536,7 +3029,7 @@
       "to": "J5",
       "label": "",
       "chart": "J",
-      "line": 1137
+      "line": 1449
     },
     {
       "key": "J10->J9",
@@ -2544,7 +3037,7 @@
       "to": "J9",
       "label": "",
       "chart": "J",
-      "line": 1138
+      "line": 1450
     },
     {
       "key": "J5->J11",
@@ -2552,7 +3045,7 @@
       "to": "J11",
       "label": "",
       "chart": "J",
-      "line": 1139
+      "line": 1451
     },
     {
       "key": "J5->J12",
@@ -2560,7 +3053,15 @@
       "to": "J12",
       "label": "",
       "chart": "J",
-      "line": 1140
+      "line": 1452
+    },
+    {
+      "key": "J11->J13",
+      "from": "J11",
+      "to": "J13",
+      "label": "",
+      "chart": "J",
+      "line": 1453
     },
     {
       "key": "K1->K2",
@@ -2568,7 +3069,7 @@
       "to": "K2",
       "label": "",
       "chart": "K",
-      "line": 1159
+      "line": 1472
     },
     {
       "key": "K1->K3",
@@ -2576,7 +3077,7 @@
       "to": "K3",
       "label": "",
       "chart": "K",
-      "line": 1160
+      "line": 1473
     },
     {
       "key": "K3->K6",
@@ -2584,7 +3085,7 @@
       "to": "K6",
       "label": "",
       "chart": "K",
-      "line": 1161
+      "line": 1474
     },
     {
       "key": "K1->K4",
@@ -2592,7 +3093,7 @@
       "to": "K4",
       "label": "",
       "chart": "K",
-      "line": 1162
+      "line": 1475
     },
     {
       "key": "K5->K3",
@@ -2600,7 +3101,7 @@
       "to": "K3",
       "label": "",
       "chart": "K",
-      "line": 1163
+      "line": 1476
     },
     {
       "key": "K3->K7",
@@ -2608,7 +3109,7 @@
       "to": "K7",
       "label": "",
       "chart": "K",
-      "line": 1164
+      "line": 1477
     },
     {
       "key": "K7->K8",
@@ -2616,7 +3117,7 @@
       "to": "K8",
       "label": "",
       "chart": "K",
-      "line": 1165
+      "line": 1478
     },
     {
       "key": "K8->K9",
@@ -2624,7 +3125,7 @@
       "to": "K9",
       "label": "",
       "chart": "K",
-      "line": 1166
+      "line": 1479
     },
     {
       "key": "K10->K3",
@@ -2632,7 +3133,7 @@
       "to": "K3",
       "label": "",
       "chart": "K",
-      "line": 1167
+      "line": 1480
     },
     {
       "key": "K11->K2",
@@ -2640,7 +3141,7 @@
       "to": "K2",
       "label": "",
       "chart": "K",
-      "line": 1168
+      "line": 1481
     },
     {
       "key": "K12->K3",
@@ -2648,7 +3149,7 @@
       "to": "K3",
       "label": "",
       "chart": "K",
-      "line": 1169
+      "line": 1482
     },
     {
       "key": "L1->L2",
@@ -2656,7 +3157,7 @@
       "to": "L2",
       "label": "",
       "chart": "L",
-      "line": 1189
+      "line": 1504
     },
     {
       "key": "L2->L3",
@@ -2664,7 +3165,7 @@
       "to": "L3",
       "label": "",
       "chart": "L",
-      "line": 1190
+      "line": 1505
     },
     {
       "key": "L3->L4",
@@ -2672,7 +3173,7 @@
       "to": "L4",
       "label": "",
       "chart": "L",
-      "line": 1191
+      "line": 1506
     },
     {
       "key": "L1->L5",
@@ -2680,7 +3181,7 @@
       "to": "L5",
       "label": "",
       "chart": "L",
-      "line": 1192
+      "line": 1507
     },
     {
       "key": "L1->L6",
@@ -2688,7 +3189,7 @@
       "to": "L6",
       "label": "",
       "chart": "L",
-      "line": 1193
+      "line": 1508
     },
     {
       "key": "L7->L11",
@@ -2696,7 +3197,7 @@
       "to": "L11",
       "label": "",
       "chart": "L",
-      "line": 1194
+      "line": 1509
     },
     {
       "key": "L8->L10",
@@ -2704,7 +3205,7 @@
       "to": "L10",
       "label": "",
       "chart": "L",
-      "line": 1195
+      "line": 1510
     },
     {
       "key": "L9->L8",
@@ -2712,7 +3213,7 @@
       "to": "L8",
       "label": "",
       "chart": "L",
-      "line": 1196
+      "line": 1511
     },
     {
       "key": "L12->L13",
@@ -2720,7 +3221,103 @@
       "to": "L13",
       "label": "",
       "chart": "L",
-      "line": 1197
+      "line": 1512
+    },
+    {
+      "key": "L14->L15",
+      "from": "L14",
+      "to": "L15",
+      "label": "",
+      "chart": "L",
+      "line": 1513
+    },
+    {
+      "key": "M1->M2",
+      "from": "M1",
+      "to": "M2",
+      "label": "",
+      "chart": "M",
+      "line": 1532
+    },
+    {
+      "key": "M2->M3",
+      "from": "M2",
+      "to": "M3",
+      "label": "move",
+      "chart": "M",
+      "line": 1533
+    },
+    {
+      "key": "M3->M4",
+      "from": "M3",
+      "to": "M4",
+      "label": "",
+      "chart": "M",
+      "line": 1534
+    },
+    {
+      "key": "M3->M5",
+      "from": "M3",
+      "to": "M5",
+      "label": "",
+      "chart": "M",
+      "line": 1535
+    },
+    {
+      "key": "M4->M6",
+      "from": "M4",
+      "to": "M6",
+      "label": "",
+      "chart": "M",
+      "line": 1536
+    },
+    {
+      "key": "M2->M7",
+      "from": "M2",
+      "to": "M7",
+      "label": "hit",
+      "chart": "M",
+      "line": 1537
+    },
+    {
+      "key": "M7->M8",
+      "from": "M7",
+      "to": "M8",
+      "label": "",
+      "chart": "M",
+      "line": 1538
+    },
+    {
+      "key": "M8->M9",
+      "from": "M8",
+      "to": "M9",
+      "label": "",
+      "chart": "M",
+      "line": 1539
+    },
+    {
+      "key": "M9->M10",
+      "from": "M9",
+      "to": "M10",
+      "label": "",
+      "chart": "M",
+      "line": 1540
+    },
+    {
+      "key": "M9->M11",
+      "from": "M9",
+      "to": "M11",
+      "label": "",
+      "chart": "M",
+      "line": 1541
+    },
+    {
+      "key": "M1->M12",
+      "from": "M1",
+      "to": "M12",
+      "label": "",
+      "chart": "M",
+      "line": 1542
     }
   ],
   "links": [
@@ -2730,7 +3327,15 @@
       "fromChart": "B",
       "toChart": "C",
       "ref": "C",
-      "line": 835
+      "line": 1097
+    },
+    {
+      "key": "B3~>G",
+      "from": "B3",
+      "fromChart": "B",
+      "toChart": "G",
+      "ref": "G",
+      "line": 1098
     },
     {
       "key": "B5~>E",
@@ -2738,7 +3343,15 @@
       "fromChart": "B",
       "toChart": "E",
       "ref": "E",
-      "line": 838
+      "line": 1100
+    },
+    {
+      "key": "B17~>C",
+      "from": "B17",
+      "fromChart": "B",
+      "toChart": "C",
+      "ref": "C",
+      "line": 1112
     },
     {
       "key": "C4~>L",
@@ -2746,7 +3359,7 @@
       "fromChart": "C",
       "toChart": "L",
       "ref": "L",
-      "line": 876
+      "line": 1146
     },
     {
       "key": "C5~>B",
@@ -2754,7 +3367,7 @@
       "fromChart": "C",
       "toChart": "B",
       "ref": "B",
-      "line": 877
+      "line": 1147
     },
     {
       "key": "C10~>K",
@@ -2762,7 +3375,23 @@
       "fromChart": "C",
       "toChart": "K",
       "ref": "K",
-      "line": 882
+      "line": 1152
+    },
+    {
+      "key": "C12~>L",
+      "from": "C12",
+      "fromChart": "C",
+      "toChart": "L",
+      "ref": "L",
+      "line": 1154
+    },
+    {
+      "key": "C16~>M",
+      "from": "C16",
+      "fromChart": "C",
+      "toChart": "M",
+      "ref": "M",
+      "line": 1158
     },
     {
       "key": "D14~>L",
@@ -2770,15 +3399,23 @@
       "fromChart": "D",
       "toChart": "L",
       "ref": "L",
-      "line": 918
+      "line": 1195
     },
     {
-      "key": "E14~>B",
-      "from": "E14",
+      "key": "E13~>M",
+      "from": "E13",
+      "fromChart": "E",
+      "toChart": "M",
+      "ref": "M",
+      "line": 1254
+    },
+    {
+      "key": "E21~>B",
+      "from": "E21",
       "fromChart": "E",
       "toChart": "B",
       "ref": "B",
-      "line": 970
+      "line": 1262
     },
     {
       "key": "F9~>E",
@@ -2786,31 +3423,31 @@
       "fromChart": "F",
       "toChart": "E",
       "ref": "E",
-      "line": 1003
+      "line": 1303
     },
     {
-      "key": "G5~>B",
-      "from": "G5",
+      "key": "G3~>B",
+      "from": "G3",
       "fromChart": "G",
       "toChart": "B",
       "ref": "B",
-      "line": 1022
+      "line": 1320
     },
     {
-      "key": "G9~>I",
-      "from": "G9",
+      "key": "G14~>I",
+      "from": "G14",
       "fromChart": "G",
       "toChart": "I",
       "ref": "I",
-      "line": 1026
+      "line": 1331
     },
     {
-      "key": "G13~>H",
-      "from": "G13",
+      "key": "G18~>H",
+      "from": "G18",
       "fromChart": "G",
       "toChart": "H",
       "ref": "H",
-      "line": 1030
+      "line": 1335
     },
     {
       "key": "I3~>H",
@@ -2818,7 +3455,7 @@
       "fromChart": "I",
       "toChart": "H",
       "ref": "H",
-      "line": 1088
+      "line": 1399
     },
     {
       "key": "I10~>B",
@@ -2826,7 +3463,7 @@
       "fromChart": "I",
       "toChart": "B",
       "ref": "B",
-      "line": 1095
+      "line": 1406
     },
     {
       "key": "K3~>B",
@@ -2834,7 +3471,7 @@
       "fromChart": "K",
       "toChart": "B",
       "ref": "B",
-      "line": 1149
+      "line": 1462
     },
     {
       "key": "K12~>D",
@@ -2842,7 +3479,7 @@
       "fromChart": "K",
       "toChart": "D",
       "ref": "D",
-      "line": 1158
+      "line": 1471
     },
     {
       "key": "L10~>D",
@@ -2850,7 +3487,7 @@
       "fromChart": "L",
       "toChart": "D",
       "ref": "D",
-      "line": 1185
+      "line": 1498
     },
     {
       "key": "L12~>H",
@@ -2858,7 +3495,15 @@
       "fromChart": "L",
       "toChart": "H",
       "ref": "H",
-      "line": 1187
+      "line": 1500
+    },
+    {
+      "key": "L14~>M",
+      "from": "L14",
+      "fromChart": "L",
+      "toChart": "M",
+      "ref": "M",
+      "line": 1502
     }
   ]
 }

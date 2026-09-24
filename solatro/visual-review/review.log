@@ -1,0 +1,7 @@
+{"event":"verdict","id":"grid3_overview","verdict":"comment","comment":"pink looks off. go with the cream color after all for the outlines since its closest we have to white. after image looks fine, gap is much smaller than before.","at":"2026-09-24T02:44:09Z"}
+{"event":"verdict","id":"grid3_overview","verdict":"comment","comment":"pink looks off. go with the cream color after all for the outlines since its closest we have to white. after image looks fine, gap is much smaller than before.","at":"2026-09-24T02:44:13Z"}
+{"event":"verdict","id":"grid3_focused","verdict":"approve","comment":"","at":"2026-09-24T02:44:54Z"}
+{"event":"verdict","id":"grid1_focused","verdict":"approve","comment":"","at":"2026-09-24T02:45:11Z"}
+{"event":"verdict","id":"window_show_open","verdict":"approve","comment":"","at":"2026-09-24T02:45:27Z"}
+{"event":"verdict","id":"lifted_focus_elsewhere","verdict":"comment","comment":"deck button should not be in description sidebar. the only exception i mentioned for that was showing deck button when showing a map node.","at":"2026-09-24T02:46:47Z"}
+{"event":"verdict","id":"lifted_focus_elsewhere","verdict":"comment","comment":"deck button should not be in description sidebar. the only exception i mentioned for that was showing deck button when showing a map node.","at":"2026-09-24T02:46:50Z"}
