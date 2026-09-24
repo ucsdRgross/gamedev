@@ -303,10 +303,11 @@ gap under `gaps/`.
   The fixture's board carries NO dealt plan (the planner card is dropped from its rules row) and
   grants three marks by hand, so what a held card agrees with is a property of the test rather than
   of the shuffle.
-- S12 / GAP-004: `match_rim` = 15 `#ff8cff` (pink) and `match_rim_active` = 6 `#f8c300` (gold). The
-  owner's ruling says WHITE and `Assets/CircusCrayon.png` has no white entry, so the choice is
-  parked on GAP-004; a ruling moves one number in `roles.tres` and nothing else, because every test
-  asserts the ROLE. The focus rim shares `match_rim`.
+- S12 / GAP-004: `match_rim` = 31 (cream) and `match_rim_active` = 6 `#f8c300` (gold). The owner's
+  ruling says WHITE and `Assets/CircusCrayon.png` has no white entry, so `match_rim` is the closest
+  entry to white; the paper cards' brown border keeps a focused paper card readable against it.
+  A ruling moves one number in `roles.tres` and nothing else, because every test asserts the ROLE.
+  The focus rim shares `match_rim`.
 - S13 / Q113, Q114, Q117: entering and leaving are the two shapes the answers asked for, over ONE
   flag (`PlayArea.plan_layer_open`). The InputMap action is a PEEK -- `is_action_pressed` opens it
   and `is_action_released` closes it, read in `_consume_as_view_action` beside Back/Forward -- while

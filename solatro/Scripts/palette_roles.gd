@@ -41,7 +41,7 @@ extends Resource
 
 @export_group("The board plan")
 ## The outline a focused card and an element matching the mark under a held card both wear.
-@export_range(0, 255, 1) var match_rim : int = 15
+@export_range(0, 255, 1) var match_rim : int = 31
 ## The outline a matching element takes once the card has landed on that mark.
 @export_range(0, 255, 1) var match_rim_active : int = 6
 
