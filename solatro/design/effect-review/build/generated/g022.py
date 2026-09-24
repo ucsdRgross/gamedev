@@ -61,22 +61,22 @@ ROWS = [
 
 ("M0043", "The Rent Book", "Y8", "hazard",
  "The plan costs to use.",
- "Level: matching a mark discards a card from the Entrance, and a card placed on a mark it matches may be placed as unmatched",
- "Level: matching a mark costs a placement's worth of Entrance refill",
- "Level: the first match each show is free and every later one discards a card from the Entrance",
+ "Level: matching a mark sends the top card of the stock you drew from to the discard, and a card placed on a mark it matches may be placed as unmatched",
+ "Level: matching a mark sends the top card of every stock to the discard",
+ "Level: the first match each show is free; every later one discards the top card of the stock you drew from",
  "c"),
 
 ("M0044", "The Understudy Riot", "Y8", "hazard",
  "Ignore the plan and it acts on its own.",
  "Level: any cell whose mark you cover with a non-matching card places that mark's card onto the grid for you, somewhere else",
  "Level: any mark still unmatched at show end is placed onto the board and scores against you",
- "Level: covering a mark with a non-matching card discards a card from the Entrance",
+ "Level: covering a mark with a non-matching card discards the top card of the stock you drew from",
  "a"),
 
 ("M0045", "The Poisoned Plan", "Y8", "hazard",
  "The plan carries a status.",
- "Level: every mark of one named suit applies Burning to whatever covers it",
- "Level: every mark applies Burning to a card that covers it without matching",
+ "Level: every mark of one named suit Exhausts, until the next Entrance refill, whatever covers it",
+ "Level: every mark Exhausts, until the next Entrance refill, a card that covers it without matching",
  "Level: one cell's mark applies a status of the level's choosing, and it is visible",
  "c"),
 
@@ -163,7 +163,7 @@ ROWS = [
 ("M0057", "The Fogged Plan", "Y11", "hazard",
  "Reading it costs something.",
  "Level: the layer view may be opened a fixed number of times per show",
- "Level: opening the layer view discards one Entrance card",
+ "Level: opening the layer view discards the top card of a stock",
  "Level: the layer view shows only the lines through the last cell you placed in",
  "a"),
 
@@ -171,7 +171,7 @@ ROWS = [
 ("M0058", "The Full House Call", "Y12", "hazard",
  "A quest stated in marks.",
  "Objective: match every mark in any one line to win a permanent reward",
- "Objective: match every mark in any one line, and the reward grows with the line's length",
+ "Objective: match every mark in any one line, and the reward grows with the number of lines fully matched this show",
  "Objective: match every mark in a row AND the column that crosses it",
  "a"),
 
@@ -233,7 +233,7 @@ ROWS = [
  "Ships in blinds.csv: any grid you place nothing into during a refill has a random card placed in it for you.",
  "Keep it bespoke: the random placement stays unrelated to the plan",
  "Fold it in: the card placed for you is the one the plan marked for that cell",
- "Fold it in: the card placed for you is the plan's mark, and it counts as matched",
+ "Fold it in: the card placed for you is the plan's mark, and it pays its match bonus twice",
  "b"),
 
 ("M0067", "Sight Unseen, as a mark", "Y13", "hazard",

@@ -598,4 +598,8 @@ RETIRED = {
     "E1033": 'Duplicate of Q0796 (Deus ex Machina): a failed show turned into a win; a lost show ends the run, so scoring on one never fires. The owner rules on it there.',  # Q1171
 
     "G0440": "Duplicate of Q1473 (The Dye Vat, as a mark): a cell that changes the suit of what is placed in it; 'zone' is not a slot. The owner rules on it there.",  # Q1361
+
+    "G0404": 'Duplicate of Q0108, which you answered: any meld may be completed one card short. Your ruling stands.',  # Q1389
+
+    "M0035": 'Duplicate of Q1470: every unmatched mark subtracts from the score; as a skill it only cost you. The owner rules on it there.',  # Q1442
 }

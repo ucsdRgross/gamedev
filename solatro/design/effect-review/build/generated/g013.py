@@ -20,10 +20,10 @@ ROWS = [
  "a"),
 
 ("G0225","The Gap","X4","skill","The empty cells are the thing you move.",
- "You do not move cards, you move the gaps: a gap is filled by the card that continues the run to its left",
- "You move gaps rather than cards, and a gap at the start of a line may be filled by any card",
- "You move gaps rather than cards, and a gap that cannot be legally filled is sealed for the rest of the show",
- "c"),
+ "Cue: move a card into any empty cell whose left-hand neighbour is one rank below it; the gap moves to where the card was",
+ "As (a), and a gap at the start of a row takes any card",
+ "As (a); a gap no card can legally fill is sealed for the show and pays a step at End",
+ "a"),
 
 ("G0226","Stalactites","D5","skill","Lines grow downward from a fixed top.",
  "Lines build downward from a fixed card at the top rather than upward from the floor",

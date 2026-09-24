@@ -7,9 +7,9 @@ ROWS = [
 
 # ------------------------------------------------------------------- Z1 build legality ---
 ("SN0001", "The Golf Rule", "Z1", "skill",
- "One higher or one lower, any suit, wrapping.",
+ "One higher or one lower, any suit, wrapping, so a column can stack a straight.",
  "A card may be stacked on a card one rank above or one rank below it, any suit, and rank 1 wraps to rank 13",
- "A card may be stacked one rank above or below, any suit, and a stack pays its length the moment it can grow no further",
+ "A card may be stacked one rank above or below, any suit, and a stack pays its length into the special bucket at each refill in which no Entrance card could extend it",
  "Each column names its own base card at show start, and only cards one rank above or below its current top may join it",
  "b"),
 
@@ -79,10 +79,10 @@ ROWS = [
  "a"),
 
 ("SN0011", "The Flip-Three", "Z3", "skill",
- "Three come up at once, and only the top may be taken.",
- "Each Entrance stock turns three cards up at once and only the topmost may be taken; the two beneath stay hidden",
- "Each Entrance stock turns three cards up at once and only the topmost may be taken; the two beneath are visible",
- "The Entrance turns three cards onto a single slot, only the topmost may be taken, and the other four slots stay closed",
+ "Dig for the card beneath, at a cost.",
+ "Each Entrance slot shows the next two cards of its stock beneath the top one; only the top may be taken, and the two beneath are information",
+ "Each Entrance slot shows the next two cards of its stock beneath the top one; any of the three may be taken, and the cards above it go to the bottom of that stock",
+ "Each Entrance slot shows the next two cards of its stock beneath the top one; any of the three may be taken, and the cards above it are discarded",
  "b"),
 
 ("SN0012", "The Refill Gate", "Z3", "hazard",
@@ -94,7 +94,7 @@ ROWS = [
 
 ("SN0013", "The Spider Deal", "Z3", "consumable",
  "One card onto every column at once.",
- "Consumable: deal one card from the deck onto the lowest empty cell of every column of the grid; a full column is stacked on",
+ "Consumable: deal the top card of each stock into the lowest empty cell of the column below its slot; a full column is stacked on",
  "Consumable: deal one card from the deck onto the lowest empty cell of the three leftmost columns; a full column is stacked on",
  "Consumable: deal one card from the deck onto the lowest empty cell of every column, and any line it completes scores double",
  "a"),
@@ -102,9 +102,9 @@ ROWS = [
 # ------------------------------------------------------------------------------ Z4 targets ---
 ("SN0014", "The Clock Face", "Z4", "hazard",
  "Each column has a rank it must finish on.",
- "Level: each column is assigned a rank at show start, and a stack in it pays only when its top card is that rank",
- "Level: each column is assigned a rank at show start; a stack in it may not grow past that rank, and reaching it exactly pays double",
- "Level: each column is assigned a rank at show start, and the assignments rotate one column to the right at every refill",
+ "Level: each column is assigned a rank at show start; the column's line scores only while it holds a card of that rank",
+ "Level: each column is assigned a rank; a column holding its rank scores double, one without it half",
+ "Level: as (a), and the assignments rotate one column right at every refill",
  "a"),
 
 ("SN0015", "The Dealt Base", "Z4", "skill",
@@ -123,14 +123,14 @@ ROWS = [
 
 ("SN0017", "The Scorpion Count", "Z4", "skill",
  "Stacks headed by a king pay per card.",
- "A same-suit descending stack headed by a king pays one point per card each time its column changes",
- "A same-suit descending stack headed by a king pays one point per card, and a full thirteen is removed from the board for a bonus",
- "A descending stack of any suits headed by a king pays one point per card each time its column changes",
+ "A same-suit descending stack whose bottom card is a king scores as a hand into the special bucket every time a card is added, not only at multiples of five",
+ "As (a), and a full thirteen is removed from the board and scores once more",
+ "As (a) for a stack of any suits, at odd lengths only",
  "a"),
 
 ("SN0018", "The Starter", "Z4", "skill",
  "The last card of the deck belongs to every line.",
- "The last card of the deck is never placed; it counts as a member of every line on the board at once",
+ "The bottom card of the last stock the deal reaches is turned up at show start; it is never placed, and every complete line scores as the best five-card hand of its five cards plus the starter",
  "The last card of the deck is never placed; it counts as a sixth card in every line, and a jack starter pays every line an extra point",
  "The last card of the deck is never placed; it counts as a member of every line on one grid you choose",
  "a"),
@@ -146,28 +146,28 @@ ROWS = [
 ("SN0020", "The Aces Up Cull", "Z5", "skill",
  "Of two spotlit cards of one suit, the lower may go.",
  "When two spotlit cards share a suit, the lower may be discarded; aces count highest",
- "When two spotlit cards share a suit, the lower may be discarded and pays its rank; aces count highest",
+ "When two spotlit cards share a suit, the lower may be discarded and pays its rank into the special bucket; aces count highest",
  "When two spotlit cards share a suit, the lower is discarded automatically at the next refill; aces count highest",
  "b"),
 
 ("SN0021", "The Air Lock", "Z5", "skill",
  "Two of a rank, side by side, come off together.",
- "Two orthogonally adjacent cards of the same rank may be removed together for twice their rank",
- "Two orthogonally adjacent cards of the same rank, or one rank apart, may be removed together for their ranks; ace and king count as adjacent ranks",
- "Two orthogonally adjacent cards of the same rank may be removed together, and the last eight pairs removed pay their ranks again at End",
+ "Two orthogonally adjacent cards of the same rank may be removed together; they pay twice their rank into the bucket of the line they lay along",
+ "Two orthogonally adjacent cards of the same rank, or one rank apart, may be removed together; they pay their ranks into the bucket of the line they lay along; ace and king count as adjacent ranks",
+ "Two orthogonally adjacent cards of the same rank may be removed together into the bucket of their line, and the last eight pairs removed pay their ranks again at End",
  "a"),
 
 ("SN0022", "The Rising Set", "Z5", "skill",
  "Each set removed pays more than the last.",
- "Three cards of one rank in one column are removed and pay the rank times the number of sets removed so far this show",
- "Three cards of one rank in one row or column are removed and pay the rank times the number of sets removed so far this show",
- "Three cards of one rank in one column are removed and pay the rank times the number of sets removed so far this run",
+ "Three cards of one rank in one column are removed and pay into the column bucket the rank times the number of sets removed so far this show",
+ "Three cards of one rank in one row or column are removed and pay into the bucket of the line they sat in the rank times the number of sets removed so far this show",
+ "Three cards of one rank in one column are removed and pay into the column bucket the rank times the number of sets removed so far this run",
  "a"),
 
 ("SN0023", "The Sandwich", "Z5", "skill",
  "Flanked by two of a kind, a card is taken.",
- "A card whose two line-neighbours share a rank or a suit may be removed for points equal to its rank",
- "Two adjacent cards whose outer neighbours share a rank or a suit may be removed together for their ranks",
+ "A card whose two line-neighbours share a rank or a suit may be removed into the bucket of the line the flanking pair lies along for points equal to its rank",
+ "Two adjacent cards whose outer neighbours share a rank or a suit may be removed into the bucket of the line the flanking pair lies along together for their ranks",
  "A card whose two line-neighbours share a rank or a suit pays its rank every time its line is touched, and stays",
  "a"),
 
@@ -210,9 +210,9 @@ ROWS = [
 # ---------------------------------------------------------------------- Z7 goals and payouts ---
 ("SN0029", "The Final Bow", "Z7", "skill",
  "The last card standing pays its rank.",
- "At End, the last card placed pays its rank again",
- "At End, if every card of the deck has been placed, the last card placed pays its rank times the combo",
- "At End, the last eight cards placed each pay their rank again",
+ "At End, every complete line through the last card placed scores again",
+ "At End, if every card of the deck has been placed, every complete line through the last card scores again at double",
+ "At End, each of the last five cards placed re-scores one complete line through it, your choice",
  "a"),
 
 ("SN0030", "The Royal Marriage", "Z7", "hazard",
@@ -224,9 +224,9 @@ ROWS = [
 
 ("SN0031", "The Strike", "Z7", "skill",
  "A clean frame is paid the next two frames' worth again.",
- "A line completed within one Entrance refill of the previous line also earns the score of the next two lines completed",
- "A line completed within one Entrance refill of the previous line also earns the score of the next line completed",
- "A line completed within one refill of the previous line pays its own score again plus the next two lines' scores; one that takes two refills pays the next one's",
+ "A line completed in the same Entrance refill as the previous line, or the next also earns the score of the next two lines completed",
+ "A line completed in the same Entrance refill as the previous line, or the next also earns the score of the next line completed",
+ "A line completed in the same refill as the previous line, or the next pays its own score again plus the next two lines' scores; one that takes two refills pays the next one's",
  "a"),
 
 ("SN0032", "The Ten Pins", "Z7", "skill",
