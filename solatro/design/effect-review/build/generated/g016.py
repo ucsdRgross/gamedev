@@ -146,7 +146,7 @@ ROWS = [
 ("G0318","The Face Change","G6","consumable","Reroll what a card is.",
  "Consumable: reroll one slot of a chosen card - its suit, rank, type, stamp or skill - keeping the rest",
  "Consumable: reroll every slot of a chosen card at once",
- "Consumable: reroll one slot of a chosen card, and you may reroll again for an escalating cost",
+ "Consumable: reroll one slot of a chosen card, and each further reroll discards one Entrance card",
  "c"),
 ("G0319","The Countdown Equipment","I3","stamp","Powerful, and then unavailable for a while.",
  "This card fires a large effect, then goes dark for three scoring passes before it can fire again",

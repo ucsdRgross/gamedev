@@ -84,7 +84,7 @@ KEEPS = [
  "Rows score when the placement scores; columns score at the start of the next turn at half value",
  "You choose per Entrance refill whether rows or columns resolve first, and the second one resolves against the board the first one left",
  "c"),
-("E0345","G4","consumable","Levels a column for cash.",
+("E0345","G4","consumable","Levels a column for points.",
  "Consumable: destroy an entire column, scoring half the summed rank of its cards as flat points",
  "Consumable: destroy an entire column, scoring the full summed rank of its cards as flat points",
  "Consumable: destroy any line, scoring half its summed rank, and the cards go to the discard rather than out of the run",

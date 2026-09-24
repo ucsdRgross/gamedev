@@ -120,7 +120,7 @@ KEEPS = [
 ("E0286","I2","skill","More charges, everywhere.",
  "Every charge-based effect on your cards gains +1 maximum charge",
  "Every charge-based effect gains +1 maximum charge, and one spent charge is refunded per show",
- "Charges become a shared pool across all your cards rather than per-card, with +1 to the pool",
+ "Every charge-based effect gains +1 maximum charge, and unspent charges carry into the next show",
  "c"),
 ("E0287","L5","stamp","Takes the hit for the stack.",
  "Attaches to a stack and absorbs the first hostile effect aimed at any card in it",

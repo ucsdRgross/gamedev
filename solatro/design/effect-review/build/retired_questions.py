@@ -286,9 +286,9 @@ RETIRED = {
 
     "G0016": 'Duplicate of Q0631 (The Exhausted Card): fires once at several times strength, then is gone for the show or the run; the owner rules on it there.',  # Q0632
 
-    "G0020": "Merged into Q0636 (The Running Gag): a counter surviving the end of the run is that effect's level 2; the owner rules on it there.",  # Q0639
+    "G0020": 'Duplicate of Q0641 (The Trunk): a card keeping what it gained, counters included, into the next run; the owner rules on it there.',  # Q0639
 
-    "G0473": 'Duplicate of Q0636 (The Running Gag), whose level 2 keeps a counter across runs; the owner rules on it there.',  # Q0640
+    "G0473": 'Duplicate of Q0641 (The Trunk): a card keeping what it gained, counters included, into the next run; the owner rules on it there.',  # Q0640
 
     "E0487": 'Retired: already a rule. Statuses exist (Burning, Juggling, Exhausted); this describes how they are stored, not an effect.',  # Q0646
 
@@ -558,4 +558,8 @@ RETIRED = {
     "BM0026": 'Duplicate of Q0128 (Burnt Joker), whose (c) levels the hand type you scored least; the owner rules on it there.',  # Q1548
 
     "BM0042": 'Duplicate of Q0214 (Escaramuza), whose (c) pays a line that reads the same both ways; the owner rules on it there.',  # Q1550
+
+    "E0786": 'Duplicate of Q0532 (Call-and-response): re-firing what an adjacent card just triggered; the owner rules on it there.',  # Q0535
+
+    "E0334": 'Duplicate of Q0664 (The Incubator): removes one debuff a turn from the card or cards this one covers; the owner rules on it there.',  # Q0666
 }

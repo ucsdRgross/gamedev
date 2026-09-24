@@ -177,7 +177,7 @@ ROWS = [
  "b"),
 ("G0361","The Standing Set","I7","skill","The board is not struck between shows.",
  "Cards left on the grid at show end stay there for the next show, and the entrance fills around them",
- "One grid is left standing between shows and the others are struck",
+ "The cards in one line of your choice are left standing between shows and the rest are struck",
  "Cards left on the grid stay for the next show, but each one that stays scores a step less each time",
  "b"),
 ("G0362","The Running Gag","I7","stamp","A counter that survives the curtain.",

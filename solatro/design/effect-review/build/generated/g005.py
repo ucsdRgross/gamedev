@@ -31,7 +31,7 @@ ROWS = [
 ("G0136","The Witch's Gold","G11","skill","Tokens that pay out by detonating. (line 901)",
  "Spawns gold tokens that explode at the end of the placement, paying out and destroying whatever cell they sat in",
  "Spawns gold tokens that explode at the end of the placement, paying out and damaging their neighbours",
- "Spawns gold tokens that explode when a placement finishes resolving unless you have spent them first, so holding them is the gamble",
+ "Spawns gold tokens that explode when a placement finishes resolving unless you have placed them first, so holding them in the Entrance is the gamble",
  "c"),
 
 ("G0137","The Dead List","G10","skill","Destroyed cards get a zone of their own. (lines 905, 995)",

@@ -76,6 +76,6 @@ ROWS = [
 ("G0210","The Showdown Order","H8","skill","Lines resolve strongest first.",
  "Completed lines resolve in order of the strength of the hand they made, strongest first",
  "Completed lines resolve weakest first, so the strongest benefits from everything the others triggered",
- "Completed lines resolve in an order you choose each placement",
+ "Completed lines resolve strongest first, and each weaker line inherits the multiplier of the one before it",
  "b"),
 ]

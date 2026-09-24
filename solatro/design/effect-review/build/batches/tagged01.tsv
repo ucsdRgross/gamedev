@@ -148,7 +148,7 @@ E0146	KEEP		C4	type	When this card is discarded from the grid, its slot keeps a 
 E0147	KEEP		G7	skill	Cue: split a target card into two same-suit cards of half rank (one rounded up, one down); this card exhausts for the show.	
 E0148	KEEP		A3	skill	When scored, its column pays 3x this placement but is locked (no placement or grabs) for the next 2 turns.	
 E0149	KEEP		F1	type	After every shuffle, this card is placed exactly at the deck's midpoint and enters play alone.	
-E0150	KEEP		I4	stamp	This card counts as one rarity higher for all effects and bonuses, but not for pack rolls.	
+E0150	KEEP		I4	stamp	This card counts as one rarity higher for all effects and bonuses, but not for rarity-based rewards.	
 E0151	KEEP		D7	skill	Consumes cards from anywhere (grid, Entrance, or decks, via cue), with no cap, permanently gaining rank.	E0107
 E0152	KEEP		G5	skill	Cue: swap the ranks of this card and one adjacent card.	
 E0153	KEEP		C12	skill	On submission, if a same-suit card sits lower in this card's stack, gain a point per card between them.	

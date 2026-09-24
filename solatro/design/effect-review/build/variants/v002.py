@@ -273,7 +273,7 @@ ROWS = [
  "a"),
 ("E0112",
  "Doubles this card's points, then Exhausts it until a show passes in which it was never played",
- "Doubles this card's points, then Exhausts it for exactly one show",
+ "Doubles this card's points, then Exhausts it until it next lands on a mark it matches",
  "Triples this card's points, then Exhausts it for two shows",
  "a"),
 ("E0113",
