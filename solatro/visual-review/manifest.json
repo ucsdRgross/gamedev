@@ -2,17 +2,23 @@
   "shots": [
     {
       "id": "grid3_overview",
-      "title": "Three grids, the every-grid overview",
-      "row": "P43",
+      "title": "Three grids, the every-grid overview: the rims back in cream",
+      "row": "P50",
       "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
       "env": {
         "GRID_COUNT": "3"
       },
       "png": "user://reveal_shots/grid_zoom_3_overview.png",
       "crops": [
-        { "label": "grid 1 top-left card: the 1 px pink line along its bottom edge", "x": 437, "y": 294, "w": 68, "h": 84 }
+        {
+          "label": "grid 1 top-left card: outline stays dark, a 1 px cream sliver outside it",
+          "x": 437,
+          "y": 294,
+          "w": 68,
+          "h": 84
+        }
       ],
-      "seen": "1555x875 game picture. The dark HUD panel fills the left 389 px (Goal 1000000000, Total 1, Deck / Discard / Rules, Undo / Marks). Right of it, three 5x5 grids sit side by side with two equal gaps, every card of each fully on screen; measured, the cell block spans x 447..1497, which leaves 57 px on each side of the area right of the panel, so the set is centred. Grid 1 (labelled 1) has its top row placed face-up (6, 4, 8, 3, A), the other cells hold cards drawn on the dark cell paper, and the five-card Entrance (Q, 10, 7, 6, J) sits under grid 1. No white horizontal line crosses the board anywhere. One detail I cannot account for: a 1 px pink line runs along the bottom edge of the placed 6 at top-left and nowhere else."
+      "seen": "Three 5x5 grids side by side with a small even gap; grid 1 has its top row placed (6 of Knives, 4 of Balls, 8 of Balls, 3 of Hoops, Ace of Fires) and the five Entrance cards sit under grid 1. The grid 1 top-left card (the one the pink sliver sat on in round 1) keeps its own dark brown outline; cream shows only as a 1 px sliver outside that outline (this run: down part of its left edge; the previous run: along its top and lower-left edges). Compare the Entrance card in entrance_focus_rim, whose whole outer outline turns cream. I cannot tell from a still whether this card holds the keyboard focus; if it does, an occupied cell's focus rim is almost entirely hidden under the placed card."
     },
     {
       "id": "grid3_focused",
@@ -23,7 +29,7 @@
         "GRID_COUNT": "3"
       },
       "png": "user://reveal_shots/grid_zoom_3_focused.png",
-      "seen": "1555x875 game picture, the HUD panel on the left as in the overview. One 5x5 grid, full of cards, is drawn large in the middle of the area right of the panel: measured cell block x 786..1158, 396 px clear on both sides, so the focused grid is centred to the pixel. The neighbouring grids are entirely out of view and the Entrance row is not in the frame (it is committed under grid 1). No white lines across the board."
+      "seen": "The middle grid of three centred alone, 25 empty-cell marks (dashed red/yellow frames with their ranks and suits), no neighbours in view and no Entrance (it belongs to grid 1). No rim on any cell. Same as the round-1 approval."
     },
     {
       "id": "grid1_focused",
@@ -34,7 +40,16 @@
         "GRID_COUNT": "1"
       },
       "png": "user://reveal_shots/grid_zoom_1_focused.png",
-      "seen": "1555x875 game picture, the HUD panel on the left. The single grid (labelled 1) is centred in the area right of the panel: measured cell block x 783..1159, 393 px clear on the left and 395 px on the right. Its top row is placed face-up (6, 4, 8, 3, A); the A at the right end carries a thin pink line along its top edge. The five Entrance cards (Q, 10, 7, 6, J) sit directly under the grid's columns, aligned with them. No white lines across the board."
+      "seen": "One grid centred, its top row of five placed cards, four rows of marks, the five Entrance cards centred under it with columns aligned, the row label 1 left of the top row. The top-left placed card (6 of Knives) shows the same 1 px cream sliver outside its dark outline as in grid3_overview, not a full cream rim.",
+      "crops": [
+        {
+          "label": "top-left placed card: 1 px cream sliver outside a dark outline",
+          "x": 776,
+          "y": 88,
+          "w": 86,
+          "h": 104
+        }
+      ]
     },
     {
       "id": "window_show_open",
@@ -43,16 +58,172 @@
       "scene": "res://Tests/Visual/focused_pose_probe.tscn",
       "env": {},
       "png": "user://focused_pose_probe/focused_focused.png",
-      "seen": "The whole 1152x648 window as a show opens. The sidebar on the left (Back / Forward / Wall, Goal 1000000000, Total 0, Deck / Discard / Rules, Undo / Marks) is a dark panel 288 px wide. The board is caught mid-deal: several grid cards are still tilted in flight, the top-left card (an orange 5) is drawn with a pink rim and a pale fill, which reads as the focused card. The Entrance row under the grid shows four face-up cards (5, 4, a red card, J) and a card back at the right end still flipping. DEBUG buttons along the top right, Prop Step at bottom right."
+      "seen": "A show opening, caught mid-deal: the 5x5 marks, several still tilted as they fly in, five Entrance cards along the bottom (the rightmost face-down with a star back), the sidebar at left with Back/Forward/Wall above the HUD. The top-left cell wears a cream rim. Same shot as round 1.",
+      "crops": [
+        {
+          "label": "top-left cell: cream rim",
+          "x": 576,
+          "y": 60,
+          "w": 62,
+          "h": 80
+        }
+      ]
     },
     {
       "id": "lifted_focus_elsewhere",
-      "title": "A lifted Entrance card with the focus moved to a grid cell",
-      "row": "P49",
+      "title": "A lifted card described while the focus is elsewhere: no Deck button on a game card description",
+      "row": "P51",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/lifted_focus_elsewhere.png",
-      "seen": "1280x720 window. The sidebar describes the focused card: '7 of Knives', the Knife rule text and 'Grid Cell - One cell of a Grid, marked Knife 7', with an X to dismiss. On the board the focus is on the bottom-left grid cell (the 7 of Knives), which wears a pink rim; the Entrance's leftmost card, a lifted 2 of Knives, is raised off its red stock back and also wears a pink rim along its top and sides, while the other four Entrance cards (J, 9, 10, Q) keep their dark edge. The knife pips on the 7 and the 2 cells of the grid carry pink outlines. I counted 1668 pixels of exactly (255,140,255) in the image. No before: this scene does not exist on the base."
+      "seen": "Jack of Fires lifted out of the Entrance (raised, a red strip under its slot); the keyboard focus on the bottom-left grid cell (an empty Queen of Hoops mark), which wears a cream rim. The sidebar describes that cell - title Queen of Hoops, then Hoop with its effect, then Grid Cell - with an X at top right and NO Deck button under the title.",
+      "crops": [
+        {
+          "label": "sidebar: no Deck row under the title",
+          "x": 0,
+          "y": 90,
+          "w": 320,
+          "h": 320
+        },
+        {
+          "label": "lifted Jack of Fires and the focused cell",
+          "x": 636,
+          "y": 404,
+          "w": 80,
+          "h": 210
+        }
+      ]
+    },
+    {
+      "id": "entrance_focus_rim",
+      "title": "A focused Entrance card: the focus rim back in cream",
+      "row": "P50",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/description.png",
+      "seen": "Jack of Fires, the leftmost Entrance card, hovered/focused: its whole outer outline is cream (2 px), against the dark brown outline of the King of Hoops beside it; it sits a few px higher than its neighbours. The sidebar describes it (Jack of Fires, Fire and its effect) with no X and no Deck button.",
+      "crops": [
+        {
+          "label": "focused Jack of Fires: cream outline vs the dark one beside it",
+          "x": 636,
+          "y": 514,
+          "w": 140,
+          "h": 100
+        }
+      ]
+    },
+    {
+      "id": "chooser_overlay_greyed",
+      "title": "The pack chooser up: Back, Forward and Wall greyed until Take",
+      "row": "P52",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/chooser_opaque.png",
+      "seen": "The pack chooser covers the whole map picture (opaque dark), five offered cards with Reroll under each, Rerolls: 5 top right, Take greyed at the bottom. The first card (5 of Knives) is stuck: cream rim, described in the sidebar with an X and the chooser's Deck button under the title. Back, Forward and Wall are all greyed.",
+      "crops": [
+        {
+          "label": "Back / Forward / Wall greyed while the chooser holds the player",
+          "x": 0,
+          "y": 20,
+          "w": 300,
+          "h": 64
+        }
+      ]
+    },
+    {
+      "id": "map_fit",
+      "title": "The map at its default fit beside the sidebar, with the sea buffer",
+      "row": "P55",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/map_hud.png",
+      "seen": "The whole map at the fit beside the sidebar: land from about y=40 to y=660, sea-blue on every side of it, no grey and no wall anywhere; the token (yellow diamond) at the top with a highlighted yellow route. The sidebar shows the map HUD (Fame 0, Lap 1, Luck 0%, Deck). Because the map is square and the space beside the sidebar is wide, most of the buffer is sea left and right of the land.",
+      "crops": [
+        {
+          "label": "top edge: sea buffer above the land",
+          "x": 320,
+          "y": 0,
+          "w": 960,
+          "h": 80
+        }
+      ]
+    },
+    {
+      "id": "map_zoomed_edge",
+      "title": "The map zoomed in by the wheel and dragged to its east edge",
+      "row": "P55",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/map_zoomed_edge.png",
+      "seen": "Zoomed in (2.76x against the 1.19 fit) and dragged against the map's top and right edges: land in the middle, sea to the right and above out to the window edge, no grey and no wall. On the left the map runs on under the sidebar - a small island is cut by the sidebar's edge at x=320. The sidebar shows the HUD. The wheel zooms about the token, not the pointer.",
+      "crops": [
+        {
+          "label": "right edge: sea to the window edge, no grey",
+          "x": 1100,
+          "y": 0,
+          "w": 180,
+          "h": 720
+        },
+        {
+          "label": "left: map continues under the sidebar",
+          "x": 300,
+          "y": 480,
+          "w": 80,
+          "h": 120
+        }
+      ]
+    },
+    {
+      "id": "map_after_travel",
+      "title": "The first frame after Travel: back at the fit while the token walks",
+      "row": "P55",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/map_after_travel.png",
+      "seen": "The first frame after Travel from the zoomed view: back at the fit (zoom 1.19), the whole map with sea round it, no grey; the token at the top of the map, just leaving its node. The sidebar shows the HUD, no description."
+    },
+    {
+      "id": "deck_over_chooser",
+      "title": "The run deck open over the chooser; the chooser's Deck button stays up to close it",
+      "row": "P56",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/deck_over_chooser.png",
+      "seen": "The run deck open over the chooser: a scrolling grid of the deck's cards on a dark panel, Rerolls: 5 and a greyed Take still visible, Back/Forward/Wall greyed. The sidebar keeps the stuck 5 of Knives with NO X, and the chooser's Deck button is visible under its title. Between the deck's second and third rows (y about 300-345) pieces of the chooser's own cards show through, and faint Reroll text near y=440 - the deck panel does not fully cover the chooser.",
+      "crops": [
+        {
+          "label": "chooser cards showing through the deck's row gap",
+          "x": 570,
+          "y": 290,
+          "w": 440,
+          "h": 170
+        },
+        {
+          "label": "sidebar: stuck card, no X, Deck visible",
+          "x": 0,
+          "y": 90,
+          "w": 320,
+          "h": 160
+        }
+      ]
+    },
+    {
+      "id": "deck_card_hover_over_chooser",
+      "title": "A hovered run-deck card over the chooser: its description carries the Deck row - your ruling",
+      "row": "P56",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/deck_card_hover_over_chooser.png",
+      "seen": "As deck_over_chooser, with the pointer on the deck's Queen of Knives: the sidebar now describes Queen of Knives (Knife and its effect) and the Deck row sits under its title - a run-deck card's description over the chooser carries Deck. YOUR RULING: keep it (the row stays up while the chooser's deck is open) or hide Deck on a deck card's description. The same chooser cards show through the deck's row gap as in deck_over_chooser.",
+      "crops": [
+        {
+          "label": "Deck row under a run-deck card's description",
+          "x": 0,
+          "y": 90,
+          "w": 320,
+          "h": 160
+        }
+      ]
     }
   ]
 }
