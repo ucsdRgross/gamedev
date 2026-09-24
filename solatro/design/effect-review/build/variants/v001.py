@@ -103,7 +103,7 @@ ROWS = [
  "a"),
 ("E0022",
  "This card's rank equals its highest orthogonally adjacent neighbour's rank, or 1 with no neighbours",
- "This card's rank equals the sum of its orthogonally adjacent neighbours' ranks, capped at 13",
+ "This card's rank equals its lowest orthogonally adjacent neighbour's rank, or 1 with no neighbours",
  "This card's rank and suit both copy whichever neighbour was placed most recently",
  "a"),
 ("E0023",

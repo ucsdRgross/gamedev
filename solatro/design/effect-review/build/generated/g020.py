@@ -107,7 +107,7 @@ ROWS = [
 ("G0481","The Silent Tally","U7","structure","Progress you cannot see until it matters.",
  "Quest progress is hidden until it passes halfway, then shown for the rest of the run",
  "Quest progress is hidden entirely, and only completion is announced",
- "Quest progress is hidden, and may be read once per show at the cost of a placement",
+ "Quest progress is hidden, and may be read once per show at the cost of discarding one Entrance card",
  "c"),
 ("G0482","The Sealed Brief","U8","structure","You can see how far along you are, but not what you are doing.",
  "A hidden quest shows its progress bar from the start but never says what it is for until it completes",

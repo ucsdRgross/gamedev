@@ -74,7 +74,7 @@ E0072	catalog	CARD_CATALOG	Half-Step		Uncommon	pip;movement;freakshow	This card 
 E0073	catalog	CARD_CATALOG	Hall of Mirrors		Epic	hazard;secret;formation	Boss: duplicates the board's reflection with fake copies of your cards interleaved into rows; they score 0.			0
 E0074	catalog	CARD_CATALOG	Hanafuda Reskin		Rare	skill;Costume Designer;secret;protection	When a town outlaws a suit, all your cards of that suit count as the suit of the adjacent card for that show.			0
 E0075	catalog	CARD_CATALOG	Hand of God		Legendary	skill;god-cycle;movement;deck-manip	Cue: move any card to any board location ignoring legality, or reorder the cards inside any deck.		designdocs	1
-E0076	catalog	CARD_CATALOG	Harlequin		Rare	pip;prop;combo	This card counts as both of its printed suits for every comparison, meld, and suit effect, firing both suits' props.	vetoed (2 suit suit is boring)		0
+E0076	catalog	CARD_CATALOG	Harlequin		Rare	pip;prop;combo	Counts as both printed suits for melds and stacking, and matches a mark of either.	vetoed (2 suit suit is boring)		0
 E0077	catalog	CARD_CATALOG	Heavy		Common	type;deck-manip	After any shuffle or return to deck, this card sinks to the deck bottom.			0
 E0078	catalog	CARD_CATALOG	Helium		Common	type;deck-manip	After any shuffle or return to deck, this card rises to the top and is always the first card drawn on Next.			0
 E0079	catalog	CARD_CATALOG	Hey Rube!		Rare	hazard;status;formation	Boss: each placement, every card in the rightmost column gets Exhausted unless an Escape Artist-class card stands in that column.			0

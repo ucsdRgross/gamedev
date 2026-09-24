@@ -182,7 +182,7 @@ ROWS = [
 ("G0068","The Honk","W1","skill","No mechanical consequence at all.",
  "Cue for a noise and nothing else, unlimited uses, with no effect on play whatsoever",
  "Cue for a noise; every fifth honk in a show pays a token bonus",
- "Cue for a noise, and honking on the exact turn a line completes pays a hidden bonus",
+ "Cue for a noise, and honking in the exact placement a line completes pays a hidden bonus",
  "a"),
 ("G0069","The House Band","W2","skill","Changes the show, not the score.",
  "While on the board, the music and background change, with no mechanical effect",

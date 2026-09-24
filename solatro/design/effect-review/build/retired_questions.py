@@ -527,13 +527,13 @@ RETIRED = {
 
     "G0442": 'Duplicate of Q1366 (The Abacus): a rank equal to the sum of its neighbours; the owner rules on it there.',  # Q1372
 
-    "G0117": 'Duplicate of Q1374 (The Dropped Bit): paid for lines left incomplete at show end; the owner rules on it there.',  # Q1375
+    "G0117": 'Duplicate: (a) and (b) pay for lines that complete and score nothing, which is Q1376 (c); (c) pays for lines left incomplete at show end, which is Q1374 (The Dropped Bit). The owner rules on them there.',  # Q1375
 
     "G0220": 'Duplicate of Q0421 (The Death Rattle): a destroyed card fires its effect once more; the owner rules on it there.',  # Q1377
 
     "G0120": 'Duplicate of Q0424 (Blue Joker): a bonus per card still in the deck; the owner rules on it there.',  # Q1380
 
-    "G0399": "Duplicate of Q0057 (The Hunger Artist), which the owner approved: a card that grows for every show it goes unplayed; the owner's version stands.",  # Q1384
+    "G0399": 'Duplicate of Q1382: a card that goes a whole show unplaced upgrades permanently; the owner rules on it there.',  # Q1384
 
     "G0125": 'Duplicate of Q1389 (The Almost Flush): a line one card short of a hand scores anyway; the owner rules on it there.',  # Q1388
 
@@ -574,4 +574,8 @@ RETIRED = {
     "G0305": 'Duplicate of Q1024: props this card spawns slowed, firing twice on each card they cross; the owner rules on it there.',  # Q1034
 
     "G0359": "Duplicate of Q1229 (The Griot): score from this show carried into the next show's opening total; the owner rules on it there.",  # Q1231
+
+    "G0123": 'Duplicate of Q1374 (The Dropped Bit), whose (b) doubles lines one card short at show end, and Q1392, whose (c) pays the shortfall; the owner rules on them there.',  # Q1393
+
+    "G0402": 'Duplicate of Q1390 (The Glancing Blow): a prop that misses scores anyway or is relaunched from the opposite edge; the owner rules on it there.',  # Q1391
 }

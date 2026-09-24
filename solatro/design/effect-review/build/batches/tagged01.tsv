@@ -74,7 +74,7 @@ E0072	KEEP		V3	stamp	This card has rank N and a half, letting it stack legally b
 E0073	KEEP		G1	hazard	Boss: duplicates the grid's reflection with fake copies of your cards interleaved into rows; they score 0.	
 E0074	KEEP		V6	skill	When a town outlaws a suit, all your cards of that suit count as the suit of the adjacent card for that show.	
 E0075	KEEP		E2	skill	Cue: move any card to any grid location ignoring legality, or reorder the cards inside any deck.	E0058
-E0076	KEEP		V4	suit	This card counts as both of its printed suits for every comparison, meld, and suit effect, firing both suits' props.	
+E0076	KEEP		V4	suit	Counts as both printed suits for melds and stacking, and matches a mark of either.	
 E0077	KEEP		F1	type	After any shuffle or return to deck, this card sinks to the deck bottom.	
 E0078	KEEP		F1	type	After any shuffle or return to deck, this card rises to the top and is always the first card drawn on refresh.	
 E0079	KEEP		R9	hazard	Boss: each placement, every card in the rightmost column gets Exhausted unless an Escape Artist-class card stands in that column.	

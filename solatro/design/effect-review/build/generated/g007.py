@@ -63,7 +63,7 @@ ROWS = [
 ("G0153","The Long Count","U2","hazard","Win on the board's state, not on your own.",
  "Alternate win: the show is won the moment a set number of sealed cells exist anywhere, whoever made them",
  "Alternate win: the show is won when a set number of sealed cells exist, and hazards that seal cells count toward it",
- "Alternate win: the show is won when every grid holds at least one sealed cell",
+ "Alternate win: the show is won when every row holds at least one sealed cell",
  "b"),
 
 ("G0154","The Forethought","K8","skill","Acts on both sides of its own move.",
