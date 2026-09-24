@@ -27,7 +27,7 @@ ROWS = [
 ('Q1433', 'M0026', 'REWORK', 'It may destroy two marks per cue', '(a) paid gold, and there is no currency'),
 ('Q1434', 'M0023', 'OK', None, ''),
 ('Q1435', 'M0027', 'OK', 'You choose the cell the new mark goes to', ''),
-('Q1436', 'M0028', 'OK', 'At End, you choose which marks stand into the next show', ''),
+('Q1436', 'M0028', 'REWORK', 'At End, you choose which marks stand into the next show', '(c) said never covered, which is an empty cell; absorbs Q1691 (The Encore Plan)'),
 ('Q1437', 'M0024', 'REWORK', None, ''),
 ('Q1438', 'M0032', 'REWORK', ('Its own suit matches every suit mark', 'Its own suit effect fires at full strength', 'Its own suit matches every suit mark'), '(b) halved a suit bonus that no longer exists; a suit match fires the suit effect'),
 ('Q1439', 'M0031', 'REWORK', ('Its own card may match any mark in its row', 'Its own card may match any mark in its row', 'Its own card matches in every line through it, with no once-per-line limit'), ''),

@@ -21,7 +21,7 @@ ROWS = [
 
 ("BM0168", "The Wildfire", "AA5", "skill",
  "A bonus that spreads down the row.",
- "At each show end, this card's bonus is copied onto its left neighbour, which passes it on the show after",
+ "At each show end, this card's bonus is copied onto its left neighbour, permanently",
  "At each show end, this card's bonus is copied onto every orthogonal neighbour",
  "At each line completion, this card's bonus is copied onto its left neighbour, and this card's own bonus resets",
  "a"),

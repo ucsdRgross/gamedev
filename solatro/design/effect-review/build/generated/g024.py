@@ -87,7 +87,7 @@ ROWS = [
  "A suit that pays into the other bucket.",
  "Cards of this suit pay their rank into the multiplier instead of into flat points",
  "Cards of this suit pay their rank into both buckets at half value",
- "Two named ranks, rather than a suit, pay their rank into the multiplier instead of points",
+ "Cards of this suit pay their rank into the multiplier only when their line holds two or more of the suit",
  "a"),
 
 ("BM0013", "The Uniform", "AA1", "skill",
@@ -164,7 +164,7 @@ ROWS = [
 ("BM0023", "The Prime Sum", "AA2", "skill",
  "A line that adds up to something special is a hand.",
  "A line whose ranks sum to a prime number scores as its own hand",
- "A line whose ranks sum to a target named at show start scores as its own hand",
+ "A line whose ranks sum to a square number scores as its own hand",
  "A line whose ranks sum to exactly zero, negative ranks included, scores as its own hand",
  "a"),
 
@@ -207,7 +207,7 @@ ROWS = [
  "One hand scores as another.",
  "Name two hand types; the first scores as the second",
  "Name two hand types; completing the first also fires every effect keyed to the second",
- "Every completed line scores as one hand type named at show start, whatever it contains",
+ "Every completed line scores as one hand type named when this card is placed, whatever it contains",
  "a"),
 
 ("BM0030", "The Everything Hand", "AA2", "consumable",
@@ -262,7 +262,7 @@ ROWS = [
 ("BM0037", "The Full Mansion", "AA2", "skill",
  "A hand built across the whole board.",
  "Three of a kind and four of a kind anywhere on the board at once score as a hand",
- "Four different pairs anywhere on the board at once score as a hand",
+ "Two three-of-a-kinds anywhere on the board at once score as a hand",
  "A straight of five and a flush of five anywhere on the board at once score as a hand",
  "a"),
 

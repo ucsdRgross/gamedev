@@ -582,4 +582,8 @@ RETIRED = {
     "M0014": "Merged into Q1685 (The Chosen Property): letting a card's level 2 unlock on a property other than its own is that stamp; the owner rules on it there.",  # Q1422
 
     "M0040": 'Duplicate of Q1446: which grid is marked by what; a normal run plays one grid; the owner rules on it there.',  # Q1449
+
+    "MK0014": 'Duplicate of Q1436 (The Standing Set): which marks carry into the next show; the owner rules on it there.',  # Q1691
+
+    "MK0018": "Duplicate of Q1450 (The Bad Notice): marks that pay nothing or cost you when hit; that the false ones are hidden is Q1463's question; the owner rules on it there.",  # Q1692
 }

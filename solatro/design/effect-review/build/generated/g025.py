@@ -80,7 +80,7 @@ ROWS = [
  "It never reaches the discard.",
  "When the wearer leaves the board it returns to an Entrance stock instead of the discard pile",
  "When the wearer leaves the board it returns to the TOP of an Entrance stock",
- "Hazard form: every card that leaves the board goes to the bottom of its stock instead of the discard",
+ "When the wearer leaves the board it returns to the bottom of its stock and pays its rank",
  "a"),
 
 ("BM0067", "The Bound Stamp", "AA4", "stamp",
@@ -94,7 +94,7 @@ ROWS = [
  "A departure that pays the room.",
  "When a card leaves the board, every other card on it gains a step for the show",
  "When a card leaves the board, it gains a permanent step for the next time it is placed",
- "As a type: when a card of this type is destroyed, every other card on the board gains a permanent step",
+ "When a card leaves the board, every card in its lines gains two steps for the show",
  "a"),
 
 ("BM0069", "The Next In Line", "AA4", "skill",
@@ -227,7 +227,7 @@ ROWS = [
 ("BM0087", "The Chain Letter", "AA5", "skill",
  "It spreads across the grid.",
  "The first time it scores each show, it places a copy of itself in an empty orthogonally adjacent cell",
- "At show start it overwrites the card to its left with a copy of itself; at show end it destroys any copy to its right",
+ "When placed, it overwrites the card to its left with a copy of itself; at show end it destroys any copy to its right",
  "At show end it destroys its right-hand neighbour and replaces it with a stronger copy of itself",
  "a"),
 
@@ -304,7 +304,7 @@ ROWS = [
 ("BM0098", "The Reverse", "AA5", "rank",
  "A number that turns the line around.",
  "A card of this rank in a completed line reverses the order in which that line's cards resolve",
- "As a skill: completed lines resolve in reverse placement order",
+ "A card of this rank in a completed line makes the line resolve in reverse placement order",
  "A card of this rank in a completed line makes the line resolve from itself outward",
  "a"),
 
@@ -373,7 +373,7 @@ ROWS = [
 
 ("BM0108", "The Levelling Rank", "AA5", "skill",
  "Everything moves toward one number.",
- "Every scoring card's rank moves one step toward a rank named at show start, permanently",
+ "Every scoring card's rank moves one step toward a rank named when this card is placed, permanently",
  "Every scoring card's rank moves one step toward this card's rank, permanently",
  "Every scoring card's rank moves one step toward the rank most common on the board, permanently",
  "a"),
@@ -392,7 +392,7 @@ ROWS = [
  "A card of this type has no rank or suit; it becomes the card its row lacks for a straight, or stays blank",
  "a"),
 
-("BM0111", "The Overflow", "AA5", "rank",
+("BM0111", "The Overflow", "AA5", "skill",
  "Past the King, anything goes.",
  "A rank raised past King, or lowered below Ace, becomes wild instead of stopping",
  "A rank raised past King becomes an Ace of every suit",

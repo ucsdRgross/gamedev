@@ -42,7 +42,7 @@ ROWS = [
 ('Q0125', 'G0207', 'DUP', None, 'Q0123'),
 ('Q0126', 'E1671', 'OK', 'The paired suits also count as one suit when matching suit marks', ''),
 ('Q0127', 'G0159', 'OK', 'On its mark the choice is made per line, so it can be its own kind in its row and a wild in its column', ''),
-('Q0128', 'E1530', 'WEAK', 'It may raise the hand type of your choice instead', 'overlaps Q1548 and Q0048, which you wrote: reward the hands you neglect'),
+('Q0128', 'E1530', 'WEAK', 'It may raise the hand type of your choice instead', 'overlaps Q0048, which you wrote: reward the hands you neglect'),
 ('Q0129', 'E1688', 'OK', None, ''),
 ('Q0130', 'G0466', 'WEAK', 'Hands scored through its cell never rot', 'overlaps Q0048, which you wrote: hands you play more pay more'),
 ('Q0131', 'E2072', 'WEAK', 'Each level-up also adds +1 to the combo', 'overlaps Q1545 (Rising Tide): every hand gains when one levels'),

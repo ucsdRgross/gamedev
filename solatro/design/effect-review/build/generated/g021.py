@@ -211,7 +211,7 @@ ROWS = [
  "The plan outlives the show.",
  "The plan is not re-dealt between shows; the same marks stand until they are matched",
  "Marks you matched stay matched across shows and pay a smaller bonus each time",
- "The plan is re-dealt each show, but any mark you never covered is dealt again to the same cell",
+ "The plan is re-dealt each show, but any mark you covered but never matched is dealt again to the same cell",
  "c"),
 
 # --------------------------------------------------------------- Y5 lenient matching ---

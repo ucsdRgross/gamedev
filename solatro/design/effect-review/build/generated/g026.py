@@ -347,7 +347,7 @@ ROWS = [
  "Only next to your own kind.",
  "Hazard: a card may only be placed orthogonally adjacent to a card sharing its suit or rank, or in an empty grid",
  "Hazard: a card may only be placed orthogonally adjacent to a card sharing its suit",
- "As a skill: a card placed orthogonally adjacent to a card sharing its suit or rank pays a bonus",
+ "Hazard: a card may only be placed orthogonally adjacent to a card sharing its rank, or in an empty grid",
  "a"),
 
 # -------------------------------------------------- AA8 from the four named games ---

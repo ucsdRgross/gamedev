@@ -418,6 +418,7 @@ FAMILIES = [
  ("AB1","Aim","none","effects that change which cell a card wants, or reward a chain of hits"),
  ("AB2","Level 2 is the point","none","effects that are modest at level 1 and built to be realized"),
  ("AB3","The plan answers back","none","hits and misses that rewrite, reveal or move marks"),
+ ("AB4","Called and bounced hits","none","hits you announce, misses that herd marks, hits that carry to the far end of a line"),
 ]),
 ("AC", "Level 2 of effects already ruled on",
  "The owner ruled on these effects before level 2 existed, so the level-2 form is asked here instead of being added to a recorded answer. (d) is not a reject: it keeps the effect with no level 2, so a match pays only the flat mult.", [
