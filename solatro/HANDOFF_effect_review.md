@@ -290,7 +290,8 @@ edits the slot field in the effect's source row; the class stays, so no id moves
 Owner rulings from reading round 2 (recorded in `build/GAME_BRIEF.md`): fame is not spendable (a
 cost paid in fame is a skipped reward); a property's level 2 is unlocked by its own match only,
 unless an effect says otherwise (`design/board-plan/gaps/GAP-007.md`, dispatch change not yet
-built); a second pass gave a level 2 to every skill, stamp and rank but Q1408, Q1409 and Q1494.
+built); a second pass gave a level 2 to every skill, stamp and rank but Q0226, Q0935, Q1408, Q1409 and
+Q1494, and a Fable review of that pass is applied.
 Shared effect names (nineteen pairs, e.g. The Dead End Q1397/Q1477) wait until the effects are final:
 names are sort keys, and the owner will rename against the final set.
 

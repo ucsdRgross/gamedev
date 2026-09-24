@@ -32,7 +32,7 @@ ROWS = [
  "Scores a bonus for each grid containing its class, doubled if every grid does",
  "c"),
 ("G0042","Rival Companies","P8","skill","Two grids, two classes.",
- "Each grid is assigned a class at show start; cards of that class score double there and half elsewhere",
+ "Each grid is assigned a class when this card is placed; cards of that class score double there and half elsewhere",
  "Each grid is assigned a class; cards of other classes cannot be placed there at all",
  "Each grid is assigned a class, and you choose the assignment before the show",
  "c"),

@@ -171,8 +171,8 @@ ROWS = [
 
 # --- M8 adversary information -------------------------------------------------
 ("G0100","The Blind","M8","skill","Hides your board from the opposition.",
- "The boss cannot see one grid of your choice, so its targeting never lands there",
- "The boss cannot see one grid of your choice, and targets the others twice as often",
+ "The boss cannot see the lines through this card, so its targeting never lands there",
+ "The boss cannot see the lines through this card, and targets the others twice as often",
  "The boss cannot see any card that has not yet scored",
  "a"),
 ("G0101","The Tell","M8","skill","The opposition reads you back.",

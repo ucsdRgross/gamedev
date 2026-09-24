@@ -54,7 +54,7 @@ ROWS = [
 ('Q1068', 'E0369', 'OK', 'Props passing through it fire twice on the card behind', ''),
 ('Q1069', 'G0426', 'WEAK', 'Its props cross without paying', 'needs a second grid, and a normal run plays one'),
 ('Q1070', 'G0428', 'WEAK', 'SUIT', 'needs a second grid, and a normal run plays one'),
-('Q1071', 'G0052', 'WEAK', ('Its props keep full strength across the boundary', 'Its props may choose the grid they cross into', 'Its props keep full strength across the boundary'), 'needs a second grid, and a normal run plays one'),
+('Q1071', 'G0052', 'WEAK', ('Its props may cross back', 'Its props may choose the grid they cross into', 'Its props keep full strength across the boundary'), 'needs a second grid, and a normal run plays one'),
 ('Q1072', 'G0427', 'WEAK', 'Its props visit the grids in the order you choose', 'needs a second grid, and a normal run plays one'),
 ('Q1073', 'G0053', 'WEAK', 'SUIT', 'needs a second grid, and a normal run plays one'),
 ('Q1074', 'G0054', 'WEAK', 'Any card catches its props, whatever the suit', 'needs a second grid, and a normal run plays one'),

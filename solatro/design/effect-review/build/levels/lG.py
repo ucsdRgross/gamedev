@@ -79,7 +79,7 @@ ROWS = [
 ('Q0507', 'E0111', 'OK', ('The copy keeps its rank', "The copy keeps this card's stamp", 'The copy keeps its rank'), ''),
 ('Q0508', 'E1940', 'DUP', None, 'no shop; Q0511'),
 ('Q0509', 'E0819', 'OK', 'It reappears this show, not next', ''),
-('Q0510', 'G0137', 'REWORK', ('While it sits on its own mark, you may reach into the dead list once per show', 'While it sits on its own mark, you may take one card back from the dead list', 'Recovering a card while it sits on its own mark costs nothing'), 'fame is not spendable'),
+('Q0510', 'G0137', 'REWORK', 'Once per show while it sits on its own mark, return one card from the dead list to the Entrance slot you choose', 'fame is not spendable'),
 ('Q0511', 'E0908', 'OK', None, ''),
 ('Q0512', 'E0949', 'OK', None, ''),
 ('Q0513', 'E0296', 'OK', 'It returns in the next Entrance refill this show, not next show', ''),

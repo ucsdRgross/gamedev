@@ -71,7 +71,7 @@ KEEPS = [
 ("E0933","S3","hazard","Needs the right keys.",
  "Map node: requires specific card types as keys to open its reward",
  "Map node: requires specific card types as keys, and shows which before you commit to it",
- "Map node: requires keys, and each key you lack can be bought with fame instead",
+ "Map node: requires keys, and each key you lack can be had by skipping a reward instead",
  "b"),
 ("E0939","L6","hazard","Stake your identity.",
  "Duel: stake a card's stamp and identity; losing unmasks it permanently across the save file",

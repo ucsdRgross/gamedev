@@ -37,7 +37,7 @@ ROWS = [
 ('Q0409', 'E0225', 'OK', 'The stashed card returns straight onto an empty cell whose mark it matches', ''),
 ('Q0410', 'G0384', 'OK', ('It also takes effect when any single stock empties, not only the whole deck', 'It also takes effect when any single stock empties, not only the whole deck', 'You choose which discard card fills the slot'), ''),
 ('Q0411', 'G0383', 'OK', None, ''),
-('Q0412', 'G0178', 'WEAK', ('While it sits on its own mark, the deck plays fair', 'While it sits on its own mark, the goal does not rise', 'While it sits on its own mark, the stated bias is suspended'), 'it is a hazard in (a) and (c) and a hidden buff with a cost in (b)'),
+('Q0412', 'G0178', 'WEAK', ('While it sits on its own mark the bias reverses: each refill deals at least one card that matches an uncovered mark', 'While it sits on its own mark, the goal does not rise', 'While it sits on its own mark the bias reverses: each refill deals at least one card that matches an uncovered mark'), 'it is a hazard in (a) and (c) and a hidden buff with a cost in (b)'),
 ('Q0413', 'E0106', 'REWORK', 'It is active from the start of the show', '(a) and (b) were shop rerolls, and there is no shop'),
 ('Q0414', 'G0229', 'OK', 'A redeal also rerolls the marks of every empty cell', ''),
 ('Q0415', 'G0217', 'DUP', None, 'stale'),

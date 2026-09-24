@@ -3,7 +3,7 @@
 
 ROWS = [
 ('Q0714', 'E1510', 'OK', ('Cards discarded from matched cells do not count against it', 'Cards discarded from matched cells do not count against it', 'A card discarded from a matched cell counts twice in the pile'), ''),
-('Q0715', 'E1171', 'WEAK', 'While it sits on its own mark, the penalty does not grow', '(a) and (b) only cost you; it reads as a hazard'),
+('Q0715', 'E1171', 'WEAK', ('While it sits on its own mark, the penalty does not grow', 'While it sits on its own mark, the penalty does not grow', 'The goal keeps lowering while the penalty stays flat'), '(a) and (b) only cost you; it reads as a hazard'),
 ('Q0716', 'E1554', 'DUP', None, 'no shop'),
 ('Q0717', 'E1589', 'OK', ('Discards from matched cells cost it nothing', 'A discard from a matched cell gains it a multiplier instead of costing nothing', 'Discards from matched cells cost it nothing'), ''),
 ('Q0718', 'G0135', 'REWORK', 'It discards two cards instead of one', '(a) and (b) closed up a tableau column; a grid column is five fixed cells'),
@@ -22,11 +22,11 @@ ROWS = [
 ('Q0732', 'E0806', 'OK', None, ''),
 ('Q0733', 'E1701', 'OK', None, ''),
 ('Q0734', 'E0004', 'DUP', None, 'Q0059'),
-('Q0735', 'E1902', 'WEAK', 'While it sits on its own mark, the goal stops rising', 'fame is not spendable'),
+('Q0735', 'E1902', 'WEAK', 'Each line through its cell takes the goal back one step', 'fame is not spendable'),
 ('Q0736', 'G0364', 'WEAK', None, 'patience exists only under your Q0059 boss rule'),
 ('Q0737', 'G0363', 'DUP', None, 'Q0059'),
 ('Q0738', 'E1409', 'OK', 'While it sits on a rank mark it matches, its clock stops', ''),
-('Q0739', 'E0195', 'WEAK', 'Its multiplier also applies to lines through its cell', 'it counts turns, and the board has no turn; an Entrance refill is the nearest unit'),
+('Q0739', 'E0195', 'WEAK', ('Its multiplier also applies to lines through its cell', 'Its multiplier also applies to lines through its cell', 'Lines through its cell count as filled one turn faster'), 'it counts turns, and the board has no turn; an Entrance refill is the nearest unit'),
 ('Q0740', 'G0336', 'OK', ('Cards sitting on marks they match count down twice as fast', 'A card sitting on a mark it matches resets to full at zero instead of being removed', 'Cards sitting on marks they match count down twice as fast'), ''),
 ('Q0741', 'G0266', 'REWORK', 'It advances two chapters when a line through its cell scores', "(b) read 'per Entrance refill rather than per Entrance refill'"),
 ('Q0742', 'G0335', 'OK', 'A placement onto a matched cell counts it down twice', ''),

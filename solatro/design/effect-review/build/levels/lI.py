@@ -4,7 +4,7 @@
 ROWS = [
 ('Q0585', 'E0671', 'WEAK', 'Its cue also fires the cue of one card in its lines', 'it does not say what its cue does'),
 ('Q0586', 'E0128', 'OK', 'A charge spent on a card sitting on a mark it matches is refunded', ''),
-('Q0587', 'G0175', 'OK', 'While it sits on its own mark, you may place one card each refill without cueing it', ''),
+('Q0587', 'G0175', 'OK', ('A cued card whose mark it matches is placed there after its cue resolves', 'While it sits on its own mark, you may place one card each refill without cueing it', 'While it sits on its own mark you may both place and cue in one turn'), ''),
 ('Q0588', 'G0472', 'OK', ('The pool gains a charge per line scored through its cell', 'A card may lend to any card in its lines', 'The pool refills by two'), ''),
 ('Q0589', 'E1767', 'WEAK', 'The chance doubles for cards scoring through its cell', 'the brief names no limit on how many skills or consumables you carry, so there is no slot to grow'),
 ('Q0590', 'E1630', 'WEAK', 'A card placed beside the wearer while it sits on its mark takes no slot either', '(c) could not be sold, and there is no shop'),
@@ -42,7 +42,7 @@ ROWS = [
 ('Q0623', 'E1854', 'REWORK', 'Each line scored through its cell adds a show to its life', '(c) paid gold, and there is no currency'),
 ('Q0624', 'E0063', 'WEAK', None, 'a second Glass type: Q0268 is also Glass, transparent and brittle'),
 ('Q0625', 'E1600', 'OK', 'It melts only on placements that match no mark', ''),
-('Q0626', 'E0701', 'WEAK', 'A combo that stalls while it sits on its own mark does not end the buff', 'it does not say what the buff is'),
+('Q0626', 'E0701', 'WEAK', ('A combo that stalls while it sits on its own mark does not end the buff', 'While it sits on its own mark the buff does not decay', 'A combo that stalls while it sits on its own mark does not end the buff; it pays out at show end at the latest'), 'it does not say what the buff is'),
 ('Q0627', 'E2024', 'REWORK', 'A placement that lands a card on a mark it matches does not decay it', 'it decayed with shop rerolls, and there is no shop'),
 ('Q0628', 'E1013', 'OK', ('Its topple chance rises half as fast', 'You may stop it early and keep what it scored', 'Its topple chance rises half as fast'), ''),
 ('Q0629', 'E0373', 'OK', None, ''),

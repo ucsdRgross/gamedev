@@ -33,7 +33,7 @@ ROWS = [
 ('Q0700', 'E0196', 'OK', 'It grants the bonus twice', ''),
 ('Q0701', 'E1550', 'DUP', None, 'no shop'),
 ('Q0702', 'E1813', 'DUP', None, 'no shop'),
-('Q0703', 'E1613', 'WEAK', 'While it sits on its own mark, the Entrance does not shrink', 'it only costs you; it reads as a hazard'),
+('Q0703', 'E1613', 'WEAK', ('Each card the Entrance has lost adds +1 to the multiplier of lines through its cell', 'Each card the Entrance has lost adds +1 to the multiplier of lines through its cell', 'Lost cells in its lines count as matched marks'), 'it only costs you; it reads as a hazard'),
 ('Q0705', 'G0282', 'OK', 'Its debt is halved', ''),
 ('Q0706', 'E0197', 'REWORK', None, '(a) and (b) cost gold, and there is no currency'),
 ('Q0707', 'E2043', 'DUP', None, 'no shop'),

@@ -62,7 +62,7 @@ KEEPS = [
  "Fame is committed at the outcome screen, and only the last placement is undoable",
  "Fame is committed when you press Continue, and you may replay the show once instead of banking it",
  "c"),
-("E0540","S5","structure","Fame buys better odds.",
+("E0540","S5","structure","Fame raises the odds.",
  "Accumulated fame raises a run-wide luck value that gates stamp, skill and type rolls in packs",
  "Accumulated fame raises pack rarity odds directly, with no separate luck value",
  "Accumulated fame raises the luck value, and clearing a town far above its goal raises it further for one pack",

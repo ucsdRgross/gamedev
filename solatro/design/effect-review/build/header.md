@@ -20,9 +20,11 @@ pair reviewer before you see it.
 - **Where the level 2 is.** In the question's head when it is true of all three options, inside each
   option when the options differ. A suit or rank says "level 1 is the plain suit; each option is its
   level 2". Type, consumable, status, hazard and structure have none: they never sit on a mark.
-  Every skill, stamp and rank has one except three: two feel-only effects (Q1408, Q1409) and a
-  card that is never placed (Q1494). A rule or hazard carried by a skill gets a looser form, or
-  relief, while its card sits on its own mark, so there is a reason to aim it.
+  Every skill, stamp and rank has one except five: two feel-only effects (Q1408, Q1409), a card
+  that is never placed (Q1494), one that only reaches other grids (Q0935) and one that is only a
+  display (Q0226). A rule carried by a skill gets a stronger form while its card sits on its own
+  mark, and a skill that only costs you turns that cost into a gain there, so there is a reason
+  to aim it.
 - **Your recorded answers still mean what you chose.** Q0011 and Q0047 are still the only answered
   questions that are retired. Nothing you answered was edited; its level 2 is asked in family AC.
 - **187 more questions are retired in place**, each naming why: duplicates and twins (where one
