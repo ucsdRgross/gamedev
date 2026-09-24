@@ -84,7 +84,8 @@ func _on_new_run_pressed() -> void:
 	var picker := DeckPicker.add_to_scene(self)
 	picker.deck_picked.connect(func(cards: Array[CardData], rules: Array[CardData]) -> void:
 		new_run_requested.emit(cards, rules))
-	picker.viewer_opened.connect(hud_container.host_viewer.bind(wall_picture, info_requested))
+	picker.viewer_opened.connect(hud_container.host_viewer.bind(wall_picture, info_requested,
+			HudContainer.MENU_SCREEN))
 	picker.tree_exiting.connect(hud_container.release_screen.bind(HudContainer.MENU_SCREEN))
 
 ## Continue is only clickable while a resumable run exists on disk.

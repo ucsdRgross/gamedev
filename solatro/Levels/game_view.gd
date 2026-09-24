@@ -312,7 +312,16 @@ static func sorted_stock_union(state: GameData) -> Array[CardData]:
 # to whatever was locked behind it.
 func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
 	var viewer := DeckViewer.show_deck(self, cards, opener)
-	if viewer: hud_container.host_viewer(viewer, wall_picture, info_requested)
+	if not viewer: return
+	hud_container.host_viewer(viewer, wall_picture, info_requested, HudContainer.GAME_SCREEN)
+	viewer.highlight_cleared.connect(_rest_the_board_behind_another_screen)
+
+# ⚠ A VIEWER ANOTHER SCREEN CLOSED hands its focus back to a Deck button hidden with this screen's
+# HUD, and any focus that screen takes clears this viewport's, so the board rests on the return --
+# as though the viewer had never opened. A bare view with no picture is always the screen shown.
+func _rest_the_board_behind_another_screen() -> void:
+	if wall_picture and not wall_picture.is_focused:
+		wall_picture.went_live.connect(play_area.rest_focus_on_board, CONNECT_ONE_SHOT)
 
 # Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores
 # the press where it cannot act.

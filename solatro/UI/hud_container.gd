@@ -230,36 +230,48 @@ func _space_beside(picture: WallPicture, rect: Rect2) -> Rect2:
 func window_scale(picture: WallPicture) -> float:
 	return picture.window_scale(get_viewport().get_visible_rect().size) if picture else 1.0
 
-## Hosts a `DeckViewer` or `ChoiceViewer` opened in `picture`: relays its highlights to `relay`, returns to the lock on close, fits it beside this container.
-func host_viewer(viewer: Node, picture: WallPicture, relay: Signal) -> void:
+## Hosts a `DeckViewer` or `ChoiceViewer` that `screen` opened in `picture`: relays its highlights to `relay`, returns to the lock on close, fits it beside this container.
+func host_viewer(viewer: Node, picture: WallPicture, relay: Signal, screen: StringName) -> void:
 	viewer.connect(&"info_requested", func(entry: InfoEntry) -> void: entry.relay_to(relay))
-	viewer.connect(&"highlight_cleared", _close_hosted_viewer)
+	viewer.connect(&"highlight_cleared", _close_hosted_viewer.bind(viewer))
+	viewer.tree_exiting.connect(_forget_hosted_viewer.bind(viewer))
 	if viewer is DeckViewer: (viewer as DeckViewer).fallback_focus = _exit_button
 	var cards : CardsViewer = viewer.call(&"cards")
 	cards.sticky_changed.connect(_follow_the_viewers_sticky)
 	cards.sidebar_requested.connect(_exit_button.grab_focus)
 	cards.highlight_left.connect(highlight_gone)
-# ⚠ CAPTURED ONCE PER RUN OF VIEWERS: swapping piles frees the old viewer without closing it, and a
-# second capture would read the emptied dictionary and lose the screen's lock for good.
-	if not is_instance_valid(_hosted_viewer):
-		_suspended_lock = _locked_entry_by_screen.get(_active_screen)
-		_locked_entry_by_screen.erase(_active_screen)
-		_entry_under_the_viewer = _entry_by_screen.get(_active_screen) \
-				if showing_description() else null
-	_hosted_viewer = viewer
+	var hosted := _HostedViewer.new()
+	hosted.viewer = viewer
+	hosted.screen = screen
+	hosted.suspended_lock = _locked_entry_by_screen.get(screen)
+	_locked_entry_by_screen.erase(screen)
+	if screen == _active_screen and showing_description():
+		hosted.covered = _entry_by_screen.get(screen)
+	_hosted_viewers.append(hosted)
 	var fit := func() -> void: _fit_viewer(viewer, picture)
 	connect_for_screen(viewer, container_rect_changed, fit)
 	fit.call()
 	_refresh_exit_button()
 
-## The screen's OWN lock, set aside while a viewer is open so the viewer's sticky card can take the one lock; the viewer closing gives it back.
-var _suspended_lock : InfoEntry = null
+# ⚠ ONE PER VIEWER, FILED UNDER THE SCREEN THAT OPENED IT: the run deck opens over the pack chooser
+# and must hand the chooser's stuck card back, and a viewer left up behind an overlay Back must
+# neither take the next screen's keys nor give its lock back to that screen.
+class _HostedViewer extends RefCounted:
+	var viewer : Node
+	var screen : StringName
+	## The screen's lock, set aside so this viewer's sticky card can take the one lock; closing gives it back.
+	var suspended_lock : InfoEntry = null
+	## What the sidebar was reading when this viewer opened, where a highlight that goes puts it back.
+	var covered : InfoEntry = null
 
-## What the sidebar was reading when the viewer opened -- where a highlight that has gone, with nothing stuck, puts it back. Dropped when the viewer closes.
-var _entry_under_the_viewer : InfoEntry = null
+## Every viewer this container hosts, oldest first; the X, the keys and a lost highlight answer to the newest one on the screen shown.
+var _hosted_viewers : Array[_HostedViewer] = []
 
-## The viewer this container is hosting, so the sidebar's own X can ask it to go. Null while none is up.
-var _hosted_viewer : Node = null
+## The newest viewer up on the screen being shown, or null: one left up on another screen answers nothing here.
+func _shown_hosted_viewer() -> _HostedViewer:
+	for index : int in range(_hosted_viewers.size() - 1, -1, -1):
+		if _hosted_viewers[index].screen == _active_screen: return _hosted_viewers[index]
+	return null
 
 # A HIGHLIGHT NOTHING CLICKED LEAVES NOTHING BEHIND -- that is what makes it a highlight.
 ## Board and viewer alike, the pointer or focus is on nothing this describes: back to the stuck card, else what the viewer covered, else the HUD.
@@ -267,8 +279,9 @@ func highlight_gone() -> void:
 # A TEARDOWN IS NOT A POINTER MOVE: Godot fires `mouse_exited` on the hovered card as the tree
 # comes apart, and this container is already out of it by then -- measured, one SCRIPT ERROR a run.
 	if not is_inside_tree(): return
+	var hosted := _shown_hosted_viewer()
 	if is_locked(): return_to_lock()
-	elif _entry_under_the_viewer: show_description(_entry_under_the_viewer)
+	elif hosted and hosted.covered: show_description(hosted.covered)
 	else:
 		_release_shown_entry()
 		_release_remembered_entry(_active_screen, null)
@@ -288,25 +301,33 @@ func _follow_the_viewers_sticky(stuck: bool) -> void:
 	if stuck: lock_to(_entry_by_screen[_active_screen])
 	else: clear_lock()
 
-# A VIEWER CLOSING TAKES ITS CARD OUT OF THE SIDEBAR: what it stuck is released and the screen's
-# own lock comes back. Not through `show_hud()`, which is a dismissal, and the map reads one of
-# those as dropping its pick.
-func _close_hosted_viewer() -> void:
-	_release_locked_entry(_active_screen)
-	if _suspended_lock:
-		_locked_entry_by_screen[_active_screen] = _suspended_lock
-		_suspended_lock = null
-# A VIEWER CAN BE OPENED OVER ANOTHER -- the run deck over the pack chooser -- so the one closing
-# hands the field back to whatever is still up rather than leaving the X with nothing to ask.
-	var closing := _hosted_viewer
-	_hosted_viewer = null
-	for screen : Node in _screen_connections:
-		if (screen is DeckViewer or screen is ChoiceViewer) and screen != closing \
-				and not screen.is_queued_for_deletion(): _hosted_viewer = screen
-	highlight_gone()
-	var under := _entry_under_the_viewer
-	_entry_under_the_viewer = null
-	if under and under != _description_panel.current_entry: _free_detached_visual(under)
+# A VIEWER CLOSING TAKES ITS CARD OUT OF ITS OWN SCREEN'S SIDEBAR and gives back the lock it set
+# aside -- on a screen not shown, as what coming back to it shows. Not through `show_hud()`, a
+# dismissal, which the map reads as dropping its pick.
+func _close_hosted_viewer(viewer: Node) -> void:
+	var hosted := _hosted_viewers[_hosted_viewers.find_custom(_hosts.bind(viewer))]
+	_release_locked_entry(hosted.screen)
+	if hosted.suspended_lock: _locked_entry_by_screen[hosted.screen] = hosted.suspended_lock
+	hosted.suspended_lock = null
+	if hosted.screen == _active_screen: highlight_gone()
+	else:
+		var back : InfoEntry = _locked_entry_by_screen.get(hosted.screen, hosted.covered)
+		_release_remembered_entry(hosted.screen, back)
+		if back: _entry_by_screen[hosted.screen] = back
+	_hosted_viewers.erase(hosted)
+	if hosted.covered and hosted.covered != _entry_by_screen.get(hosted.screen):
+		_free_detached_visual(hosted.covered)
+
+# A VIEWER FREED WITH ITS SCREEN NEVER CLOSES -- a show torn down takes its open deck viewer with
+# it -- so leaving the tree is the last moment its record, and what it covered, can go.
+func _forget_hosted_viewer(viewer: Node) -> void:
+	var index := _hosted_viewers.find_custom(_hosts.bind(viewer))
+	if index < 0: return
+	_release_what_the_viewer_covered(_hosted_viewers[index])
+	_hosted_viewers.remove_at(index)
+
+static func _hosts(hosted: _HostedViewer, viewer: Node) -> bool:
+	return hosted.viewer == viewer
 
 # THE X PROMISES THE DESCRIPTION WILL STAY: a highlight nothing has clicked will not, wherever it
 # was published, so it carries no X until a click locks it.
@@ -431,8 +452,9 @@ func _on_exit_gui_input(event: InputEvent) -> void:
 # THE X IS THE SAME CANCEL AS EVERY OTHER: over a viewer it unsticks and closes together, rather
 # than dismissing a description the viewer would republish a moment later.
 func _dismiss_from_the_x() -> void:
-	if _hosted_viewer:
-		_hosted_viewer.call(&"close_from_sidebar")
+	var hosted := _shown_hosted_viewer()
+	if hosted:
+		hosted.viewer.call(&"close_from_sidebar")
 		return
 	dismiss_description()
 
@@ -455,10 +477,9 @@ func show_description(entry: InfoEntry) -> void:
 # ⚠ THE PANEL FREES WHATEVER IT IS HOLDING when another entry replaces it, so anything the
 # container still means to come back to is taken out first -- a lock waiting under a viewer is no
 # less kept than a live one.
-	var kept : InfoEntry = _locked_entry_by_screen.get(_active_screen)
-	if kept == null: kept = _suspended_lock
-	if kept == null: kept = _entry_under_the_viewer
-	if kept and kept != entry and _description_panel.current_entry == kept:
+	var shown : InfoEntry = _description_panel.current_entry
+	if shown and shown != entry and (shown == _locked_entry_by_screen.get(_active_screen)
+			or _held_by_a_viewer(shown)):
 		_description_panel.detach_entry()
 	_release_remembered_entry(_active_screen, entry)
 	_entry_by_screen[_active_screen] = entry
@@ -519,8 +540,7 @@ func _release_locked_entry(screen: StringName) -> void:
 # and nothing else would ever collect the preview it carries.
 func _release_remembered_entry(screen: StringName, keeping: InfoEntry) -> void:
 	var remembered : InfoEntry = _entry_by_screen.get(screen)
-	if remembered and remembered != keeping \
-			and remembered != _entry_under_the_viewer and remembered != _suspended_lock \
+	if remembered and remembered != keeping and not _held_by_a_viewer(remembered) \
 			and remembered != _locked_entry_by_screen.get(screen):
 		_free_detached_visual(remembered)
 	_entry_by_screen.erase(screen)
@@ -532,7 +552,8 @@ func release_screen(screen: StringName) -> void:
 	if screen == _active_screen:
 		_release_shown_entry()
 		_swap_to_hud()
-		_release_what_the_viewer_covered()
+	for hosted : _HostedViewer in _hosted_viewers:
+		if hosted.screen == screen: _release_what_the_viewer_covered(hosted)
 	_release_remembered_entry(screen, null)
 	_release_locked_entry(screen)
 	if screen != GAME_SCREEN: return
@@ -540,14 +561,17 @@ func release_screen(screen: StringName) -> void:
 	_game_card_in_hand = false
 
 # ⚠ WHAT A VIEWER COVERS IS IN NEITHER DICTIONARY: `host_viewer` takes the screen's lock out of
-# `_locked_entry_by_screen` to hold it here, so every other release walks straight past it and its
+# `_locked_entry_by_screen` to hold it there, so every other release walks straight past it and its
 # preview is the one thing left alive. This is the only owner that can free the pair.
-func _release_what_the_viewer_covered() -> void:
-	for entry : InfoEntry in [_suspended_lock, _entry_under_the_viewer] as Array[InfoEntry]:
+func _release_what_the_viewer_covered(hosted: _HostedViewer) -> void:
+	for entry : InfoEntry in [hosted.suspended_lock, hosted.covered] as Array[InfoEntry]:
 		if entry: _free_detached_visual(entry)
-	_suspended_lock = null
-	_entry_under_the_viewer = null
-	_hosted_viewer = null
+	hosted.suspended_lock = null
+	hosted.covered = null
+
+func _held_by_a_viewer(entry: InfoEntry) -> bool:
+	return _hosted_viewers.any(func(hosted: _HostedViewer) -> bool:
+		return entry == hosted.suspended_lock or entry == hosted.covered)
 
 # ⚠ FREED HERE AND NOT LEFT TO THE DICTIONARIES: on a whole-tree teardown this container's own
 # `_exit_tree()` has already run and cleared them, so a visual taken out of the panel afterwards
@@ -555,7 +579,8 @@ func _release_what_the_viewer_covered() -> void:
 func _release_shown_entry() -> void:
 	var shown : InfoEntry = _description_panel.current_entry
 	_description_panel.detach_entry()
-	if shown == _entry_under_the_viewer: _entry_under_the_viewer = null
+	for hosted : _HostedViewer in _hosted_viewers:
+		if hosted.covered == shown: hosted.covered = null
 	if shown: _free_detached_visual(shown)
 
 ## The game screen's own focus id: the one screen with a cascade to watch, and the one whose content is replaced show by show.
@@ -627,10 +652,11 @@ func _input(event: InputEvent) -> void:
 # viewport, where the overlay's own focus search would never look: the first navigation press is
 # handed to it here, ahead of the GUI pass that would walk the HUD buttons instead.
 func _enters_the_hosted_viewer(event: InputEvent) -> bool:
-	if _hosted_viewer == null: return false
+	var hosted := _shown_hosted_viewer()
+	if hosted == null: return false
 	for action : StringName in CardsViewer.NAVIGATION:
 		if event.is_action_pressed(action, true):
-			return (_hosted_viewer.call(&"cards") as CardsViewer).focus_first()
+			return (hosted.viewer.call(&"cards") as CardsViewer).focus_first()
 	return false
 
 # A DESCRIPTION NOTHING STUCK IS ALREADY ON ITS WAY OUT, the focus having left the card it
@@ -652,7 +678,7 @@ func focus_sidebar() -> void:
 # ⚠ A HOSTED VIEWER IS THE FOCUS, so the board behind it is no door; an EMPTY one lists nothing
 # for `_enters_the_hosted_viewer` to take the press into, and it would reach the board here.
 func _leaves_the_sidebar_for_the_picture(event: InputEvent) -> bool:
-	if _hosted_viewer != null: return false
+	if _shown_hosted_viewer() != null: return false
 	if not event.is_action_pressed(&"ui_right", true): return false
 	var owner := get_viewport().gui_get_focus_owner()
 	if owner == null or not is_ancestor_of(owner): return false
@@ -662,8 +688,9 @@ func _leaves_the_sidebar_for_the_picture(event: InputEvent) -> bool:
 # would answer a grid key the viewer's own neighbour search can use, and a stuck card could never
 # change rows. Only an arrow that finds no neighbour comes back, as `sidebar_requested`.
 func _the_arrows_belong_to_the_hosted_viewer(event: InputEvent) -> bool:
-	if _hosted_viewer == null: return false
-	if not (_hosted_viewer.call(&"cards") as CardsViewer).focus_is_inside(): return false
+	var hosted := _shown_hosted_viewer()
+	if hosted == null: return false
+	if not (hosted.viewer.call(&"cards") as CardsViewer).focus_is_inside(): return false
 	for action : StringName in CardsViewer.NAVIGATION:
 		if event.is_action_pressed(action, true): return true
 	return false
@@ -672,17 +699,9 @@ func _the_arrows_belong_to_the_hosted_viewer(event: InputEvent) -> bool:
 # crosses one, so the sidebar carries up, off the top of a description, onto the X itself. The
 # board's must be locked first; the map never locks, so any it shows counts while no viewer is up.
 func _navigates_to_exit(event: InputEvent) -> bool:
-	var map_without_a_viewer := _active_screen == MAP_SCREEN and not _hosting_a_viewer()
+	var map_without_a_viewer := _active_screen == MAP_SCREEN and _shown_hosted_viewer() == null
 	return (is_locked() or map_without_a_viewer) \
 			and event.is_action_pressed(&"ui_up", true) and _description_panel.at_top()
-
-# A HOSTED VIEWER OWNS A FOCUS CHAIN OF ITS OWN, and an up pressed inside it walks that chain: the X
-# taking the press would strand the accept after it. Read off the connections `host_viewer()` made,
-# which the viewer's own teardown drops, so nothing here can go stale.
-func _hosting_a_viewer() -> bool:
-	for screen : Node in _screen_connections:
-		if (screen is DeckViewer or screen is ChoiceViewer) 				and not screen.is_queued_for_deletion(): return true
-	return false
 
 ## The scroll stick's last reported deflection, integrated per frame while it is off centre.
 var _scroll_stick : float = 0.0
@@ -714,7 +733,9 @@ func _exit_tree() -> void:
 		_free_detached_visual(_locked_entry_by_screen[screen])
 	_entry_by_screen.clear()
 	_locked_entry_by_screen.clear()
-	_release_what_the_viewer_covered()
+	for hosted : _HostedViewer in _hosted_viewers:
+		_release_what_the_viewer_covered(hosted)
+	_hosted_viewers.clear()
 
 # One entry can be both a screen's remembered one and its locked one, so a visual already on its
 # way out is left alone rather than queued a second time.

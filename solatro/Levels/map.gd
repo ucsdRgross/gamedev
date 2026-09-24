@@ -165,7 +165,7 @@ func _open_booster(node: WorldGraphNode) -> void:
 	_chooser = viewer
 	chooser_changed.emit()
 	viewer.confirmed.connect(_on_booster_confirmed)
-	hud_container.host_viewer(viewer, wall_picture, info_hovered)
+	hud_container.host_viewer(viewer, wall_picture, info_hovered, HudContainer.MAP_SCREEN)
 	_show_only_the_deck_button(true)
 	viewer.confirmed.connect(_show_only_the_deck_button.bind(false).unbind(1))
 
@@ -239,9 +239,8 @@ func _on_node_selected(node: WorldGraphNode) -> void:
 	name_popup.show_above(entry.title, node)
 	selection_buttons.visible = true
 	possible_cards_button.visible = _booster_of(node) != null
-# ⚠ A PICK NOBODY CLICKED DOES NOT OPEN THE PACK: a viewer left up outlives this screen (the
-# container's `_entry_under_the_viewer` is not per-screen, so the game entered next reads the map's
-# entry back instead of its HUD). Possible cards is still there to ask with.
+# ⚠ A PICK NOBODY CLICKED DOES NOT OPEN THE PACK: an auto-pick is not the player asking to read
+# one, and Possible cards is still there to ask with.
 	if not controller.auto_picking: await _open_possible_cards_once(node)
 
 # Back to the basic view: the HUD, with its own Deck button, and no row of the description's buttons
@@ -275,14 +274,14 @@ func _show_possible_cards(node: WorldGraphNode) -> void:
 func _host_map_viewer(viewer: DeckViewer) -> void:
 	if viewer == null: return
 	selection_buttons.visible = false
-	hud_container.host_viewer(viewer, wall_picture, info_hovered)
+	hud_container.host_viewer(viewer, wall_picture, info_hovered, HudContainer.MAP_SCREEN)
 	viewer.highlight_cleared.connect(_republish_the_pick)
 
-# Nothing picked is the HUD's own Deck button opening the viewer from the basic view; the container
-# takes itself back to the HUD and there is no description to return to.
+# Nothing picked is the HUD's own Deck button opening the viewer from the basic view, with no
+# description to return to -- unless the chooser is up, whose borrowed Deck row comes back with it.
 func _republish_the_pick() -> void:
 	var picked := controller.selected()
-	selection_buttons.visible = picked != null
+	selection_buttons.visible = picked != null or chooser_is_up()
 	if picked: info_hovered.emit(_info_for(picked))
 
 func _info_for(node: WorldGraphNode) -> InfoEntry:
