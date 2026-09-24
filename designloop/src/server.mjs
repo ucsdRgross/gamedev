@@ -7,6 +7,7 @@
 //   GET  /api/ping             -> { app: 'designloop', pid, port }
 //   POST /api/shutdown         -> stops this server (loopback callers only)
 //   GET  /visual-review/<project>/...          -> <project>/visual-review/ (page and images)
+//   GET  /api/visual-reviews                   -> one summary row per project with a review
 //   GET  /api/visual-review/<project>          -> manifest, verdicts, which images exist
 //   POST /api/visual-review/<project>/verdict  -> { id, verdict, comment }
 //   POST /api/visual-review/<project>/done     -> hands the turn back to a parked watch
@@ -33,7 +34,7 @@ import {
 } from './gaps.mjs';
 import { softAnswers, quoteAudit, contractAudit, restatementsOf } from './provenance.mjs';
 import { listVersions, readVersion, diffGraphs, freeze } from './versions.mjs';
-import { VERDICTS, reviewDir, reviewFile, readReview, recordVerdict, markDone } from './visualreview.mjs';
+import { VERDICTS, reviewDir, reviewFile, readReview, recordVerdict, markDone, discoverReviews } from './visualreview.mjs';
 
 /** designloop/ — the tool directory, and the static root. */
 export const TOOL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -784,6 +785,10 @@ export function createDevServer({ onShutdown = null } = {}) {
       if (pathname.startsWith('/api/')) {
         if (!isLoopback(req)) {
           sendJson(res, 403, { error: 'forbidden' });
+          return;
+        }
+        if (pathname === '/api/visual-reviews') {
+          sendJson(res, 200, await discoverReviews(REPO_ROOT));
           return;
         }
         if (pathname.startsWith('/api/visual-review/')) {

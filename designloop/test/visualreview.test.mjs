@@ -126,4 +126,32 @@ test('Done wakes a watch parked on the folder, and a refresh after it parks the 
   }
 });
 
+test('the index lists each review with its current-shoot verdicts and whether it waits on the owner', async () => {
+  await fixture();
+  const s = await serve();
+  try {
+    await writeJsonAtomic(join(DIR, 'status.agent.json'), { state: 'ready', mode: 'visual-review', at: '2026-01-01T00:00:00Z' });
+    await writeJsonAtomic(join(DIR, 'review.json'), { shots: {
+      one: { verdict: 'approve', comment: '', at: '2000-01-01T00:00:00Z' },
+      two: { verdict: 'reject', comment: 'thin', at: '2000-01-01T00:00:00Z' },
+    } });
+    const list = () => fetch(`${s.url}/api/visual-reviews`).then((r) => r.json());
+    const [row] = (await list()).filter((r) => r.project === 'demoproject');
+    assert.equal(row.shots, 2);
+    assert.deepEqual(row.counts, { approve: 0, reject: 1, comment: 0 }, 'the approve was given on an older after');
+    assert.equal(row.shot_at, '2026-01-01T00:00:00Z');
+    assert.equal(row.done, false);
+    assert.equal(row.waiting, true);
+
+    await s.post('/verdict', { id: 'one', verdict: 'comment', comment: 'darker' });
+    await s.post('/done');
+    const [after] = (await list()).filter((r) => r.project === 'demoproject');
+    assert.deepEqual(after.counts, { approve: 0, reject: 1, comment: 1 });
+    assert.equal(after.done, true);
+    assert.equal(after.waiting, false);
+  } finally {
+    await s.close();
+  }
+});
+
 test.after(() => rm(ROOT, { recursive: true, force: true }));

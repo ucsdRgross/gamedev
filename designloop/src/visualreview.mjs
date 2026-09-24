@@ -4,7 +4,7 @@
 // images and `status.agent.json` (through `review.py`); the owner writes `review.log`,
 // `review.json` and `status.owner.json` through the routes below and nothing else.
 
-import { stat } from 'node:fs/promises';
+import { readdir, stat } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
 import { readJson, writeJsonAtomic, append, now } from './store.mjs';
 import { writeOwnerStatus, readStatus } from './registry.mjs';
@@ -39,6 +39,36 @@ export async function readReview(dir) {
   }
   const { owner, agent } = await readStatus(dir);
   return { manifest, review, files, owner, agent };
+}
+
+/** The watch's own rule: a Done counts only when no shoot has handed the turn back since. */
+function doneOnCurrentShoot({ owner, agent }) {
+  return owner.state === 'done' && (agent.state !== 'ready' || owner.at > agent.at);
+}
+
+/** One row of the index's Visual reviews tab: counts only verdicts given on the current AFTER. */
+async function summarise(project, dir) {
+  const { manifest, review, files, owner, agent } = await readReview(dir);
+  const counts = Object.fromEntries(VERDICTS.map((v) => [v, 0]));
+  for (const shot of manifest.shots) {
+    const given = review.shots[shot.id];
+    if (given && !(files[shot.id].after > given.at)) counts[given.verdict] += 1;
+  }
+  const done = doneOnCurrentShoot({ owner, agent });
+  return {
+    project, shots: manifest.shots.length, counts, done,
+    waiting: agent.state === 'ready' && !done, shot_at: agent.state === 'idle' ? null : agent.at,
+  };
+}
+
+/** Every `<project>/visual-review/manifest.json` in the repo — a scan, like the design registry. */
+export async function discoverReviews(repoRoot) {
+  const rows = [];
+  for (const entry of await readdir(repoRoot, { withFileTypes: true })) {
+    const dir = entry.isDirectory() && reviewDir(repoRoot, entry.name);
+    if (dir && await readJson(join(dir, 'manifest.json'))) rows.push(await summarise(entry.name, dir));
+  }
+  return rows;
 }
 
 /** Log first, then the materialised file — the same order `answers.log` keeps, for the same reason. */

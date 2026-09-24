@@ -18,11 +18,12 @@ npm --prefix designloop start
 `designloop/start.cmd` is the double-click equivalent. A second launch reclaims the port from the
 first, so there is never a stale server on 5273.
 
-Three screens, all keyed by `<project>/<slug>`:
+The screens, keyed by `<project>/<slug>`:
 
 | URL | What |
 |---|---|
 | `/web/index.html` | every design, by project — status, last touched, gap and warning badges |
+| `/web/index.html#visual` | every visual review — shots, verdicts on the current shoot, Done or waiting, last shoot; the tab's badge counts those waiting for you |
 | `/web/question.html?key=solatro/spotlight` | the questionnaire, one question per screen |
 | `/web/question.html?key=solatro/spotlight&scope=gaps` | a **scoped round**: only the open gaps |
 | `/web/canvas.html?key=solatro/spotlight` | the review canvas (`&version=1` opens a frozen one) |

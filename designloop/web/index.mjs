@@ -1,7 +1,17 @@
-// The index page (PLAN S3, chart H1–H4). Lists every design the registry found, under each
-// project it touches, with its status and when it was last touched.
+// The index page: every design under each project it touches, and on its own tab every visual
+// review. The tab is the URL hash, so it can be linked and survives a reload.
 
 const body = document.getElementById('body');
+
+/** Show the tab the hash names; anything else is the Designs tab. */
+function showTab() {
+  const tab = location.hash === '#visual' ? 'visual' : 'designs';
+  for (const a of document.querySelectorAll('.tabs a')) a.classList.toggle('current', a.dataset.tab === tab);
+  document.getElementById('tab-designs').classList.toggle('hidden', tab !== 'designs');
+  document.getElementById('tab-visual').classList.toggle('hidden', tab !== 'visual');
+}
+addEventListener('hashchange', showTab);
+showTab();
 
 /** Format an ISO timestamp as a short local date, or an em dash when there is none. */
 function when(iso) {
@@ -10,7 +20,7 @@ function when(iso) {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
 }
 
-/** One line describing whose turn it is, from the two status halves (§4.2). */
+/** One line describing whose turn it is, from the two status halves. */
 function statusLine(d) {
   if (d.owner.state === 'answering') return 'your turn — answering';
   if (d.agent.state === 'working') return 'with the agent';
@@ -53,8 +63,8 @@ if (!designs) {
       a.querySelector('.title').textContent = d.title;
       const meta = a.querySelector('.meta');
       meta.textContent = `${statusLine(d)} · ${d.answered} answered · last touched ${when(d.touched)} `;
-      // Q89b=c — a gap is told in chat AND badged here. Closed ones are badged too, quietly:
-      // Q96b=a keeps them with their resolutions, and a record nobody can see is not kept.
+      // A gap is told in chat AND badged here. Closed ones are badged too, quietly: they are
+      // kept with their resolutions, and a record nobody can see is not kept.
       for (const [show, className, text] of [
         [d.gaps > 0, 'gaps', `${d.gaps} open gap${d.gaps === 1 ? '' : 's'}`],
         [d.gaps_closed > 0, 'closed', `${d.gaps_closed} closed`],
@@ -65,7 +75,7 @@ if (!designs) {
         b.textContent = text;
         meta.append(' ', b);
       }
-      // GAP-001=b — the document parses, so the owner is not blocked; the badge is how the
+      // The document parses, so the owner is not blocked; the badge is how the
       // authoring agent finds out that one of its questions is under-specified.
       for (const [show, className, text] of [
         [d.doc_missing, 'bad', 'document missing'],
@@ -91,8 +101,8 @@ if (!designs) {
       review.href = `canvas.html?key=${encodeURIComponent(d.key)}`;
       review.textContent = d.confirmed_version ? `review canvas — v${d.confirmed_version} confirmed` : 'review canvas';
       links.append(review);
-      // The badge says a gap exists; this is where it is read and answered (Q90b=b — in the
-      // website, because the options and their consequences read better here than in chat).
+      // The badge says a gap exists; this is where it is read and answered — in the website,
+      // because the options and their consequences read better here than in chat.
       if (d.gaps_total) {
         const gaps = document.createElement('a');
         gaps.href = `gaps.html?key=${encodeURIComponent(d.key)}`;
@@ -105,4 +115,40 @@ if (!designs) {
     section.append(h, ul);
     return section;
   }));
+}
+
+const visualBody = document.getElementById('visual-body');
+const reviewsResponse = await fetch('/api/visual-reviews');
+const reviews = reviewsResponse.ok ? await reviewsResponse.json().catch(() => null) : null;
+if (!reviews) {
+  visualBody.innerHTML = '<p class="muted">Could not read the visual reviews — the server answered '
+    + `<span class="mono">${reviewsResponse.status}</span>. Its console says why.</p>`;
+} else if (!reviews.length) {
+  visualBody.innerHTML = '<p class="muted">No visual reviews yet. A review is any '
+    + '<span class="mono">&lt;project&gt;/visual-review/manifest.json</span>.</p>';
+} else {
+  const waiting = reviews.filter((r) => r.waiting).length;
+  const tabBadge = document.getElementById('visual-waiting');
+  tabBadge.textContent = String(waiting);
+  tabBadge.classList.toggle('hidden', !waiting);
+  const ul = document.createElement('ul');
+  ul.className = 'design-list';
+  for (const r of reviews) {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.className = 'design-card';
+    a.href = `/visual-review/${encodeURIComponent(r.project)}/`;
+    a.innerHTML = '<div class="title"></div><div class="meta"></div>';
+    a.querySelector('.title').textContent = r.project;
+    const given = r.counts.approve + r.counts.reject + r.counts.comment;
+    a.querySelector('.meta').textContent = `${r.shots} shot${r.shots === 1 ? '' : 's'} · ${given} of ${r.shots} reviewed `
+      + `(${r.counts.approve} approve · ${r.counts.reject} reject · ${r.counts.comment} comment) · last shoot ${when(r.shot_at)} `;
+    const b = document.createElement('span');
+    b.className = `badge ${r.done ? 'ok' : r.waiting ? 'gaps' : 'closed'}`;
+    b.textContent = r.done ? 'done' : r.waiting ? 'waiting for you' : 'no shoot yet';
+    a.querySelector('.meta').append(' ', b);
+    li.append(a);
+    ul.append(li);
+  }
+  visualBody.replaceChildren(ul);
 }

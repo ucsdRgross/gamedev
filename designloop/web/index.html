@@ -9,8 +9,18 @@
 <body>
   <div class="wrap">
     <h1>Design Loop</h1>
-    <p class="sub">Every design in this repo — <span class="mono">&lt;project&gt;/design/&lt;slug&gt;/</span>.</p>
-    <div id="body"><p class="muted">Loading…</p></div>
+    <nav class="tabs">
+      <a href="#designs" data-tab="designs">Designs</a>
+      <a href="#visual" data-tab="visual">Visual reviews <span id="visual-waiting" class="badge gaps hidden"></span></a>
+    </nav>
+    <div id="tab-designs">
+      <p class="sub">Every design in this repo — <span class="mono">&lt;project&gt;/design/&lt;slug&gt;/</span>.</p>
+      <div id="body"><p class="muted">Loading…</p></div>
+    </div>
+    <div id="tab-visual" class="hidden">
+      <p class="sub">Every visual review in this repo — <span class="mono">&lt;project&gt;/visual-review/</span>.</p>
+      <div id="visual-body"><p class="muted">Loading…</p></div>
+    </div>
   </div>
   <script type="module" src="index.mjs"></script>
 </body>
