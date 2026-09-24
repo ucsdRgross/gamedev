@@ -33,7 +33,6 @@ const BOOSTER_COLOR := Color("#9f7aea")
 ## Game node markers.
 const GAME_COLOR := Color("#f7fafc")
 const HIGHLIGHT_WIDTH_BONUS := 3.0
-const ZOOM_MIN := 0.5
 const ZOOM_MAX := 4.0
 ## Px of motion before a press becomes a pan.
 const DRAG_THRESHOLD := 8.0
@@ -59,16 +58,58 @@ var _dragging : bool = false
 var _selected : WorldGraphNode = null
 
 var _container_shift : Vector2 = Vector2.ZERO
+## The space beside the RESTING sidebar, in the map picture's own px: what the map is fitted to.
+var _space : Vector2 = Vector2.ZERO
+## How far the player has zoomed in past the fit; 1 is the fit itself, and nothing goes below it.
+var _zoom_in : float = 1.0
 
-# `Map._publish_map_inset()`'s shift, in the map picture's own local space: screen centre to the
-# space left over beside the container. `Camera2D.offset` is a world offset Godot multiplies by
-# `zoom` before it reaches the screen, so it is re-derived on every zoom change too.
-func apply_container_shift(shift: Vector2) -> void:
+# `Map._publish_map_inset()`'s numbers, in the map picture's own local space: `shift` runs from the
+# screen centre to the space beside the container as it has slid, `space` is that space's size once
+# the container rests. The fit reads only `space`, so a slide moves the map and never rescales it.
+func apply_container_shift(shift: Vector2, space: Vector2) -> void:
 	_container_shift = shift
-	_apply_camera_offset()
+	_space = space
+	_place_camera()
 
-func _apply_camera_offset() -> void:
-	camera.offset = _container_shift / camera.zoom
+# THE CAMERA'S ONE WRITER: zoom, offset and the clamp of its position, from every pan, zoom, follow
+# and re-fit. `Camera2D`'s own limits cannot do it -- they bound the whole viewport, not the space
+# beside the sidebar, and `offset` is applied past them. Before the world exists there is no map.
+func _place_camera() -> void:
+	if not _accepting_input: return
+	var bounds := _framed_map()
+	var fit := _fit_zoom(bounds)
+	var zoom := minf(fit * _zoom_in, ZOOM_MAX)
+	camera.zoom = Vector2(zoom, zoom)
+	camera.offset = _container_shift / zoom
+	var half := _space / (2.0 * zoom)
+	camera.position = Vector2(
+			_clamped_axis(camera.position.x, half.x, bounds.position.x, bounds.end.x),
+			_clamped_axis(camera.position.y, half.y, bounds.position.y, bounds.end.y))
+
+# Back to the fit on every map entry and every Travel, as a SNAP: interpolation drew a frame blended
+# past the map's edge, so the camera is told it teleported; the scroll is forced because a camera
+# reset while the map is paused otherwise draws its first live frame from the old zoom.
+func return_to_fit() -> void:
+	_zoom_in = 1.0
+	_place_camera()
+	camera.reset_physics_interpolation()
+	camera.force_update_scroll()
+
+## The map image in this node's space, grown by its sea buffer on every edge.
+func _framed_map() -> Rect2:
+	var corner := map.map_to_local(Vector2.ZERO)
+	var drawn := Rect2(corner, -2.0 * corner)
+	return drawn.grow(drawn.size.x * SettingsManager.settings.map_edge_buffer_fraction)
+
+## The zoom at which the framed map just fits the space beside the resting sidebar.
+func _fit_zoom(bounds: Rect2) -> float:
+	return minf(_space.x / bounds.size.x, _space.y / bounds.size.y)
+
+# Where the camera may sit on one axis: anywhere that keeps the view inside the framed map, or its
+# middle when the view is as wide as the map or wider -- the fit, where there is nothing to pan.
+func _clamped_axis(at: float, half: float, low: float, high: float) -> float:
+	if low + half >= high - half: return (low + high) / 2.0
+	return clampf(at, low + half, high - half)
 
 # Fetching the overlay before add_child creates it BEFORE the map Sprite2D, so z_index must raise
 # it over the map image. generate_on_ready=false auto-loads an existing bake on add_child, and
@@ -97,6 +138,7 @@ func start_run(new_run: RunState) -> void:
 func _process(_delta: float) -> void:
 	if _follow_token and token:
 		camera.position = token.position
+		_place_camera()
 	_pulse_next_markers()
 
 func _on_graph_populated() -> void:
@@ -285,6 +327,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_dragging = true
 			_follow_token = false
 			camera.position -= mm.relative / camera.zoom.x
+			_place_camera()
 		else:
 			_update_hover()
 
@@ -312,9 +355,9 @@ func _cycle_selection(dir: int) -> void:
 	select_node(nexts[wrapi((at if at >= 0 else (-1 if dir > 0 else 0)) + dir, 0, nexts.size())])
 
 func _zoom_at(factor: float) -> void:
-	var z := clampf(camera.zoom.x * factor, ZOOM_MIN, ZOOM_MAX)
-	camera.zoom = Vector2(z, z)
-	_apply_camera_offset()
+	var fit := _fit_zoom(_framed_map())
+	_zoom_in = clampf(_zoom_in * factor, 1.0, ZOOM_MAX / fit)
+	_place_camera()
 
 # World-space radius test against all markers (camera zoom is baked into the overlay's own
 # local space, so no per-zoom math is needed).
@@ -410,6 +453,7 @@ func move_to(next: WorldGraphNode) -> void:
 		run.traveled.append(Vector3i(_current.id, next.id, run.lap))
 	_style_marker(_current)
 	clear_selection()
+	return_to_fit()
 	_follow_token = true
 	await token.travel_along(pts)
 	run.current_node_id = next.id

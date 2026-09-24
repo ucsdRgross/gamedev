@@ -20,6 +20,18 @@ unique_name_in_owner = true
 z_index = 10
 script = ExtResource("3_token")
 
+[node name="SeaLayer" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="Sea" type="ColorRect" parent="SeaLayer"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="NamePopup" parent="UI" instance=ExtResource("4_namepop")]

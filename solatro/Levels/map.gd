@@ -11,6 +11,8 @@ signal chooser_changed
 @onready var controller: WorldMapController = %WorldMapController
 @onready var ui_layer: CanvasLayer = $UI
 @onready var name_popup: MapNamePopup = %NamePopup
+## Fills the picture behind the map in the colour the map paints its own ocean, so the space around the fitted map reads as open water.
+@onready var sea: ColorRect = %Sea
 ## Published and nothing more: the wall's one `HudContainer` decides what is shown.
 signal info_hovered(entry: InfoEntry)
 
@@ -39,6 +41,7 @@ func get_rules_collections() -> Array[CardData]:
 # No node_unhovered connection on purpose: the card keeps showing its last entry across empty
 # hover rather than blinking out.
 func _ready() -> void:
+	sea.color = WorldHeightColorizer.new().ocean_color
 	_bind_hud_container()
 	controller.node_entered.connect(_on_node_entered)
 	controller.node_hovered.connect(_on_node_hovered)
@@ -64,6 +67,8 @@ func _bind_hud_container() -> void:
 			name_popup.hide_name)
 	hud_container.connect_for_screen(self, hud_container.active_screen_changed,
 			controller.clear_selection)
+	hud_container.connect_for_screen(self, hud_container.active_screen_changed,
+			controller.return_to_fit)
 	hud_container.connect_for_screen(self, hud_container.description_dismissed,
 			controller.clear_selection)
 	_build_selection_buttons()
@@ -114,11 +119,12 @@ func _on_possible_cards_pressed() -> void:
 
 # The map DOES sit in a `WallPicture`, so the container's window px converts through that picture's
 # own cover scale -- `HudContainer.rect_beside()` is that one conversion, shared with `Menu`. Also
-# re-run on `map_ready`: the shift is divided by a zoom that only settles once the world exists.
+# re-run on `map_ready`: the fit needs the world's own size, which exists only once it is loaded.
 func _publish_map_inset() -> void:
 	var remaining := hud_container.rect_beside(wall_picture)
 	var screen_size := controller.camera.get_viewport_rect().size
-	controller.apply_container_shift(screen_size / 2.0 - remaining.get_center())
+	controller.apply_container_shift(screen_size / 2.0 - remaining.get_center(),
+			hud_container.resting_rect_beside(wall_picture).size)
 
 # Begin (or resume) a run on this map screen. Safe to call before the scene is in the tree. The
 # map persists across runs but its content is the run, so the last run's description goes here.

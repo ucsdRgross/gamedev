@@ -212,10 +212,10 @@ func _wants_container() -> bool:
 func rect_beside(picture: WallPicture) -> Rect2:
 	return _space_beside(picture, published_rect())
 
-# A VIEWER IS OPENED IN ORDER TO PUBLISH DESCRIPTIONS, so it lays out beside where the container
-# RESTS, never where the slide has it this instant: a card it lists has to stay reachable once the
-# description it publishes has brought the sidebar in over the picture.
-func _resting_rect_beside(picture: WallPicture) -> Rect2:
+# WHAT A SCREEN FITS TO: where the container RESTS, never where the slide has it this instant. A
+# viewer's cards stay reachable once the description they publish brings the sidebar in, and the
+# map keeps one scale through the slide, which only shifts it.
+func resting_rect_beside(picture: WallPicture) -> Rect2:
 	return _space_beside(picture, container_rect())
 
 ## The space left beside `rect` inside `picture`'s own space; a fixture with no picture falls back to the plain window rect.
@@ -340,7 +340,7 @@ func _refresh_exit_button() -> void:
 # only while a description is UP, redrawing the preview at its own card size: a dismissal is the
 # player's act and a window change is not one.
 func _fit_viewer(viewer: Node, picture: WallPicture) -> void:
-	viewer.call(&"fit_beside", _resting_rect_beside(picture), window_scale(picture))
+	viewer.call(&"fit_beside", resting_rect_beside(picture), window_scale(picture))
 	if showing_description(): viewer.call(&"republish_highlight")
 
 ## Sets this control's own rect to `container_rect()` offset by the slide, and tells listeners it moved.

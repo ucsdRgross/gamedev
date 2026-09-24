@@ -631,6 +631,12 @@ enum SeparationMode {
 		container_size_max_px = maxf(value, 0.0)
 		settings_changed.emit()
 
+## Sea shown around each edge of the map at its fitted zoom, as a fraction of the map's own size.
+@export var map_edge_buffer_fraction : float = 0.03:
+	set(value):
+		map_edge_buffer_fraction = maxf(value, 0.0)
+		settings_changed.emit()
+
 ## The smallest any overlay control may be, as a fraction of the window's smaller dimension.
 @export var touch_target_fraction : float = 0.06:
 	set(value):

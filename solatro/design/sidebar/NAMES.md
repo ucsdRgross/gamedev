@@ -151,6 +151,9 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `func highlight_gone()`, `func _close_hosted_viewer(viewer)`, `func _refresh_exit_button()`, `func _follow_the_viewers_sticky(stuck)`, `func _dismiss_from_the_x()` | The one answer for a highlight that has gone -- the board's `highlight_cleared` and a viewer's `highlight_left` alike: back to the stuck card, else what was under the viewer, else the HUD |
 | `InfoEntry` | `var transient : bool` | This entry is a HIGHLIGHT, not something the player made stay: no X, and the highlight leaving closes it. Set by every publisher a hover or a focus reaches |
 | `PlayArea` | `static func highlight_info(data: CardData, card_px: Vector2) -> InfoEntry` | `card_info()` marked transient -- the ONE home for what a hover or a focus publishes, on the board and in both card viewers |
+| `HudContainer` | `func resting_rect_beside(picture: WallPicture) -> Rect2` | The space beside where the container RESTS: a hosted viewer's layout and the map's fit both read it |
+| `WorldMapController` | `func apply_container_shift(shift: Vector2, space: Vector2)`, `func _place_camera()`, `func return_to_fit()`, `var _space`, `var _zoom_in` | The map is fitted to the space beside the resting sidebar; `_place_camera()` is the camera's one writer -- the fit is the zoom floor and the position is clamped to the map and its sea buffer; `return_to_fit()` drops the player's zoom on every map entry and at the start of every Travel |
+| `Map` | `var sea : ColorRect`, nodes `SeaLayer`/`Sea` | The map picture's background, painted the colour the map paints its own ocean |
 | `Game` | `func legal_cells_for(held: Array[CardData], grids: Array[GridData]) -> Array[CardData]` | THE ONE legality walk: the zone card of every cell in `grids` where `held` may land, asked through `on_can_place_stack` exactly as `try_place` asks. `_no_held_card_has_a_legal_placement`, `_no_legal_placement_remains_in_grid` and `PlayArea._sweep_legal_cells` all read it (G12, `GAP-005`=a) |
 
 ## 4. Deleted methods and properties
@@ -182,6 +185,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `touch_target_fraction` | `float` | `0.06` |
 | `entrance_flip_stagger` | `float` | `0.15` |
 | `highlight_glow` | `float` | `1.825` |
+| `map_edge_buffer_fraction` | `float` | `0.03` -- sea shown around each edge of the fitted map |
 
 **Removed:** `wall_info_mode`, `wall_info_card_width`, `wall_info_card_max_height`,
 `wall_info_card_overlap`, `wall_info_zoom_scale`, `wall_screen_popups`, `hud_width_fraction`,

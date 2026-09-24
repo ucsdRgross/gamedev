@@ -69,6 +69,15 @@ func _ready() -> void:
 	await test_focus_change_drives_which_hud_stack_child_shows()
 	await test_map_deck_button_reaches_the_live_maps_handler_then_disconnects()
 	await test_maps_camera_offset_moves_beside_the_container_not_under_it()
+	await test_the_map_at_rest_fits_the_space_beside_the_sidebar()
+	await test_zooming_out_stops_at_the_fit()
+	await test_at_the_fit_nothing_pans()
+	await test_zoomed_in_the_view_never_passes_the_maps_edge()
+	await test_the_maps_background_is_its_sea()
+	await test_a_travel_returns_the_map_to_the_fit()
+	await test_leaving_and_reentering_the_map_returns_it_to_the_fit()
+	await test_a_zoom_stays_through_a_visit_without_a_travel()
+	await test_no_frame_is_blended_across_a_return_to_the_fit()
 	await test_menus_buttons_lie_outside_the_container_and_inside_the_window()
 	await test_menus_scale_is_uniform_and_keeps_each_buttons_authored_aspect()
 	await test_menus_title_and_button_row_centre_on_the_remaining_space()
@@ -1611,9 +1620,9 @@ func _await_camera_transform_settled() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-# (d) The map's token (the camera follows it) renders at the centre of the space left over beside
-# `container_rect()`, converted through the map's own `WallPicture` cover scale and `Camera2D`
-# zoom, never window px unconverted. Boots the real `Main`: a side window, a top window, a zoom.
+# (d) The map fits the space left over beside `container_rect()`, converted through the map's own
+# `WallPicture` cover scale and `Camera2D` zoom, never window px unconverted. Boots the real
+# `Main`: a side window, a top window, then a zoom in, whose view must stay on the map.
 func test_maps_camera_offset_moves_beside_the_container_not_under_it() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -1625,20 +1634,19 @@ func test_maps_camera_offset_moves_beside_the_container_not_under_it() -> void:
 		var viewport : SubViewport = booted[0]
 		var main : Main = booted[1]
 		await _focus_map(main, run)
-		_check_map_token_centred(main, str(size))
+		_check_map_fits_the_space(main, str(size))
 		await _free_booted_main(viewport, main)
 
 	var zoom_booted := await _boot_main_at(Vector2i(1280, 720))
 	var zoom_viewport : SubViewport = zoom_booted[0]
 	var zoom_main : Main = zoom_booted[1]
 	await _focus_map(zoom_main, run)
-	for _i in range(5):
-		zoom_main.wall._unhandled_input(_wheel_event())
-	await _await_camera_transform_settled()
-	check(zoom_main.map_scene.controller.camera.zoom.x > 1.9,
-			"5 real wheel-up notches zoom the map to ~2x",
-			"%.3f" % zoom_main.map_scene.controller.camera.zoom.x)
-	_check_map_token_centred(zoom_main, "1280x720 after zooming to ~2x")
+	var fit := zoom_main.map_scene.controller.camera.zoom.x
+	await _zoom_the_map_in(zoom_main, 5)
+	check(zoom_main.map_scene.controller.camera.zoom.x > 1.9 * fit,
+			"5 real wheel-up notches zoom the map in ~2x past its fit",
+			"%.3f vs fit %.3f" % [zoom_main.map_scene.controller.camera.zoom.x, fit])
+	_check_the_view_stays_on_the_map(zoom_main, "1280x720 after zooming in ~2x")
 	await _free_booted_main(zoom_viewport, zoom_main)
 
 	RunManager._shutdown_saver()
@@ -1667,25 +1675,86 @@ func _focus_map(main: Main, run: RunState) -> void:
 		last = now
 		await get_tree().process_frame
 
-# The map's token renders at the centre of the space left over beside the container, measured in
-# the map's OWN `WallPicture` local space -- `local_rect_beside()` converts the container's window
-# px into that same space, the one owned conversion, so both sides of the check share it.
-func _check_map_token_centred(main: Main, label: String) -> void:
-	var wp : WallPicture = main._pictures[&"map"]
+# The space left over beside the container as far as it has slid in -- all of it at rest -- in the
+# map's OWN `WallPicture` local space. `local_rect_beside()` converts the container's window px into
+# that same space, the one owned conversion, so both sides of every map framing check share it.
+func _map_space(main: Main) -> Rect2:
 	var container : HudContainer = main.wall.get_node(^"%HudContainer")
 	var window : Vector2 = container.get_viewport().get_visible_rect().size
-	var rect := container.container_rect()
 	var top := HudContainer.container_is_top(window, SettingsManager.settings)
-	var expected := wp.local_rect_beside(window, rect, top).get_center()
-	var token_local : Vector2 = wp.viewport.get_canvas_transform() \
-			* main.map_scene.controller.token.position
-	check(token_local.distance_to(expected) <= 2.0,
-			"the map's token centres in the space left over beside the container at %s" % label,
-			"%s vs %s" % [token_local, expected])
+	return main._pictures[&"map"].local_rect_beside(window, container.published_rect(), top)
 
-func _wheel_event() -> InputEventMouseButton:
+## The map image as drawn in its picture's own space, grown by the sea buffer on every edge.
+func _framed_map_rect(main: Main) -> Rect2:
+	var world := main.map_scene.controller.map
+	var corner := world.map_to_local(Vector2.ZERO)
+	var drawn := world.get_global_transform_with_canvas() * Rect2(corner, -2.0 * corner)
+	return drawn.grow(drawn.size.x * SettingsManager.settings.map_edge_buffer_fraction)
+
+## At rest the map and its sea buffer sit inside the space beside the sidebar, centred, filling it on the binding axis.
+func _check_map_fits_the_space(main: Main, label: String) -> void:
+	var space := _map_space(main)
+	var framed := _framed_map_rect(main)
+	check(space.grow(1.0).encloses(framed),
+			"the map and its sea buffer lie inside the space beside the sidebar at %s" % label,
+			"%s in %s" % [framed, space])
+	check(absf(framed.size.x - space.size.x) <= 1.0 or absf(framed.size.y - space.size.y) <= 1.0,
+			"...filling it on the binding axis at %s" % label, "%s vs %s" % [framed.size, space.size])
+	check(framed.get_center().distance_to(space.get_center()) <= 1.0,
+			"...centred in it at %s" % label, "%s vs %s" % [framed.get_center(), space.get_center()])
+
+# On each axis the map either covers the space beside the sidebar -- nothing past its sea buffer
+# shows -- or, narrower than that space, sits centred in it as at the fit.
+func _check_the_view_stays_on_the_map(main: Main, label: String) -> void:
+	var space := _map_space(main)
+	var framed := _framed_map_rect(main)
+	for axis : int in [Vector2.AXIS_X, Vector2.AXIS_Y]:
+		check(_covers_or_centres(framed, space, axis),
+				"nothing past the map's sea buffer shows beside the sidebar on axis %d: %s"
+				% [axis, label], "%s vs %s" % [framed, space])
+
+func _covers_or_centres(framed: Rect2, space: Rect2, axis: int) -> bool:
+	if framed.size[axis] < space.size[axis]:
+		return absf(framed.get_center()[axis] - space.get_center()[axis]) <= 1.0
+	return framed.position[axis] <= space.position[axis] + 1.0 \
+			and framed.end[axis] >= space.end[axis] - 1.0
+
+# Every drawn frame of the LIVE map, with the sidebar at either end of its travel, covers or centres
+# on both axes -- so no frame is blended between a zoomed-in view and the fit. Returns the offenders.
+func _frames_past_the_map(frames: int, done: Callable) -> Array[String]:
+	var wp : WallPicture = _main._pictures[&"map"]
+	var past : Array[String] = []
+	for f : int in range(frames):
+		if done.call(): break
+		var slid := _container.slid_fraction()
+		if wp.is_live and (is_zero_approx(slid) or is_equal_approx(slid, 1.0)):
+			var space := _map_space(_main)
+			var framed := _framed_map_rect(_main)
+			for axis : int in [Vector2.AXIS_X, Vector2.AXIS_Y]:
+				if not _covers_or_centres(framed, space, axis):
+					past.append("f%d %s vs %s" % [f, framed, space])
+		await get_tree().process_frame
+	return past
+
+# THE MAP'S CAMERA RUNS ON PHYSICS INTERPOLATION, so a zoom or a pan reaches the drawn transform
+# over the next few frames rather than the next one. Waited on the framing itself, bounded.
+func _await_map_framing_settled(main: Main) -> void:
+	var last := Rect2()
+	for _i : int in range(180):
+		await get_tree().process_frame
+		var now := _framed_map_rect(main)
+		if now.is_equal_approx(last): return
+		last = now
+
+## Real wheel-up notches through the wall, which hands them to the focused map.
+func _zoom_the_map_in(main: Main, notches: int) -> void:
+	for _i : int in range(notches):
+		main.wall._unhandled_input(_wheel_event(MOUSE_BUTTON_WHEEL_UP))
+	await _await_map_framing_settled(main)
+
+func _wheel_event(button: MouseButton) -> InputEventMouseButton:
 	var event := InputEventMouseButton.new()
-	event.button_index = MOUSE_BUTTON_WHEEL_UP
+	event.button_index = button
 	event.pressed = true
 	return event
 
@@ -3979,6 +4048,165 @@ func _pointer_leaves_every_card(on_a_card: Vector2) -> void:
 	_hover(_off_the_board_point())
 	await get_tree().process_frame
 	await get_tree().process_frame
+
+## At rest the map and its sea buffer fill the space beside the resting sidebar on the binding axis, centred, at any window shape.
+func test_the_map_at_rest_fits_the_space_beside_the_sidebar() -> void:
+	for size : Vector2i in ([Vector2i(1280, 720), Vector2i(600, 1000)] as Array[Vector2i]):
+		await _start_map_fixture(size)
+		_check_map_fits_the_space(_main, "rest %s" % size)
+		await _end_main_fixture()
+
+## The fit is the floor of the zoom: wheeling out stops there, and wheeling out after a zoom in comes back to it exactly.
+func test_zooming_out_stops_at_the_fit() -> void:
+	await _start_map_fixture()
+	var camera := _map.controller.camera
+	var fit := camera.zoom.x
+	await _wheel_the_map_out(5)
+	check(is_equal_approx(camera.zoom.x, fit), "wheeling out at the fit zooms out no further",
+			"%.4f vs fit %.4f" % [camera.zoom.x, fit])
+	_check_map_fits_the_space(_main, "after wheeling out")
+	await _zoom_the_map_in(_main, 2)
+	await _wheel_the_map_out(4)
+	check(is_equal_approx(camera.zoom.x, fit),
+			"...and wheeling out after a zoom in comes back to the fit",
+			"%.4f vs fit %.4f" % [camera.zoom.x, fit])
+	_check_map_fits_the_space(_main, "back at the fit")
+	await _end_main_fixture()
+
+func _wheel_the_map_out(notches: int) -> void:
+	for _i : int in range(notches):
+		_main.wall._unhandled_input(_wheel_event(MOUSE_BUTTON_WHEEL_DOWN))
+	await _await_map_framing_settled(_main)
+
+## At the fit the whole map is on screen, so there is nothing to pan: a drag moves nothing, and neither does the token walking.
+func test_at_the_fit_nothing_pans() -> void:
+	await _start_map_fixture()
+	var before := _framed_map_rect(_main)
+	_pan_map_by(_map_space(_main).get_center(), MAP_PAN_DRAG)
+	await _await_map_framing_settled(_main)
+	check(_framed_map_rect(_main).is_equal_approx(before), "at the fit a drag moves the map nowhere",
+			"%s vs %s" % [_framed_map_rect(_main), before])
+	var frames : Array[Rect2] = []
+	_map.controller.move_to(_map.controller._sorted_next()[0])
+	while _map.controller._moving:
+		frames.append(_framed_map_rect(_main))
+		await get_tree().process_frame
+	var still := frames.all(func(r: Rect2) -> bool: return r.is_equal_approx(before))
+	check(not frames.is_empty() and still, "...and the camera stays put while the token walks",
+			"%d frames" % frames.size())
+	await _wait_out_the_move()
+	await _end_main_fixture()
+
+## Zoomed in, the camera pans, but never so far that anything past the map's sea buffer shows. A Travel is never zoomed in: it starts at the fit.
+func test_zoomed_in_the_view_never_passes_the_maps_edge() -> void:
+	await _start_map_fixture()
+	var camera := _map.controller.camera
+	var fit := camera.zoom.x
+	await _zoom_the_map_in(_main, 10)
+	check(camera.zoom.x > fit, "sanity: the wheel zoomed the map in",
+			"%.3f vs %.3f" % [camera.zoom.x, fit])
+	var start := camera.position
+	_pan_map_by(_map_space(_main).get_center(), _drag_toward_the_map_centre(MAP_PAN_DRAG))
+	await _await_map_framing_settled(_main)
+	check(not camera.position.is_equal_approx(start), "zoomed in, a drag does pan the map",
+			"%s vs %s" % [camera.position, start])
+	for by : Vector2 in ([Vector2(4000.0, 0.0), Vector2(-4000.0, 0.0), Vector2(0.0, 4000.0),
+			Vector2(0.0, -4000.0)] as Array[Vector2]):
+		_pan_map_by(_map_space(_main).get_center(), by)
+		await _await_map_framing_settled(_main)
+		_check_the_view_stays_on_the_map(_main, "zoomed in, after a pan by %s" % by)
+	await _end_main_fixture()
+
+## The return to the fit is a SNAP: from a view zoomed in to the map's edge, no drawn frame of a Travel or a re-entry is blended between that view and the fit.
+func test_no_frame_is_blended_across_a_return_to_the_fit() -> void:
+	await _start_map_fixture()
+	await _zoom_the_map_in_to_its_edge()
+	_map.controller.move_to(_map.controller._sorted_next()[0])
+	var past := await _frames_past_the_map(8, func() -> bool: return false)
+	check(past.is_empty(), "no drawn frame passes the map's sea buffer as a Travel returns it to the fit",
+			"; ".join(past))
+	await _await_map_arrival()
+	await _wait_out_the_move()
+	await _end_main_fixture()
+	await _start_map_fixture()
+	await _zoom_the_map_in_to_its_edge()
+	await _main._go_to_wall_view()
+	var entered : Array[bool] = [false]
+	var enter := func() -> void:
+		await _main._focus_picture(&"map")
+		entered[0] = true
+	enter.call()
+	past = await _frames_past_the_map(600, func() -> bool: return entered[0])
+	check(past.is_empty(), "no drawn frame passes the map's sea buffer as re-entering returns it to the fit",
+			"; ".join(past))
+	await _end_main_fixture()
+
+func _zoom_the_map_in_to_its_edge() -> void:
+	await _zoom_the_map_in(_main, 10)
+	_pan_map_by(_map_space(_main).get_center(), Vector2(4000.0, 4000.0))
+	await _await_map_framing_settled(_main)
+
+## Each Travel puts the map back at the fit the moment it starts: the whole map is in view for the walk.
+func test_a_travel_returns_the_map_to_the_fit() -> void:
+	await _start_map_fixture()
+	var camera := _map.controller.camera
+	var fit := camera.zoom.x
+	await _zoom_the_map_in(_main, 5)
+	check(camera.zoom.x > fit, "sanity: the wheel zoomed the map in",
+			"%.3f vs %.3f" % [camera.zoom.x, fit])
+	_map.controller.move_to(_map.controller._sorted_next()[0])
+	check(is_equal_approx(camera.zoom.x, fit), "a Travel puts the map back at the fit",
+			"%.4f vs fit %.4f" % [camera.zoom.x, fit])
+	await _await_map_arrival()
+	await _wait_out_the_move()
+	await _end_main_fixture()
+
+## Leaving the map picture and coming back finds the map at the fit again.
+func test_leaving_and_reentering_the_map_returns_it_to_the_fit() -> void:
+	await _start_map_fixture()
+	var camera := _map.controller.camera
+	var fit := camera.zoom.x
+	await _zoom_the_map_in(_main, 5)
+	check(camera.zoom.x > fit, "sanity: the wheel zoomed the map in",
+			"%.3f vs %.3f" % [camera.zoom.x, fit])
+	await _main._go_to_wall_view()
+	await _main._focus_picture(&"map")
+	await _await_map_framing_settled(_main)
+	check(is_equal_approx(camera.zoom.x, fit), "re-entering the map picture finds it at the fit",
+			"%.4f vs fit %.4f" % [camera.zoom.x, fit])
+	_check_map_fits_the_space(_main, "after re-entering the map")
+	await _end_main_fixture()
+
+## Within one visit and with no Travel, a zoom in stays through a pan and a pick.
+func test_a_zoom_stays_through_a_visit_without_a_travel() -> void:
+	await _start_map_fixture()
+	var camera := _map.controller.camera
+	await _zoom_the_map_in(_main, 5)
+	var zoomed := camera.zoom.x
+	_pan_map_by(_map_space(_main).get_center(), _drag_toward_the_map_centre(MAP_PAN_DRAG))
+	await _await_map_framing_settled(_main)
+	_map.controller.select_node(_map.controller._sorted_next()[0])
+	await get_tree().process_frame
+	_map.controller.clear_selection()
+	await _await_map_framing_settled(_main)
+	check(is_equal_approx(camera.zoom.x, zoomed), "a pan and a pick leave the player's zoom alone",
+			"%.4f vs %.4f" % [camera.zoom.x, zoomed])
+	await _end_main_fixture()
+
+## The map picture's background is the map's own sea, so the letterbox and the buffer read as open water.
+func test_the_maps_background_is_its_sea() -> void:
+	await _start_map_fixture()
+	await RenderingServer.frame_post_draw
+	var image := _map_viewport.get_texture().get_image()
+	var sea := WorldHeightColorizer.new().ocean_color
+	var framed := _framed_map_rect(_main)
+	var buffer := framed.size.x * SettingsManager.settings.map_edge_buffer_fraction
+	var in_the_buffer := Vector2(framed.get_center().x, framed.position.y + buffer / 2.0)
+	for at : Vector2 in ([Vector2(2.0, 2.0), in_the_buffer] as Array[Vector2]):
+		var seen := image.get_pixelv(Vector2i(at))
+		check(Vector3(seen.r - sea.r, seen.g - sea.g, seen.b - sea.b).length() < 0.02,
+				"the map picture shows the sea at %s" % at, "%s vs %s" % [seen, sea])
+	await _end_main_fixture()
 
 ## A show tears down ITS OWN wiring and nobody else's: the map it hands back to keeps its Deck button and its inset.
 func test_a_finished_show_leaves_the_maps_own_wiring_alive() -> void:
@@ -7136,17 +7364,19 @@ func test_a_tap_picks_the_node_and_no_second_tap_enters_it() -> void:
 	check(_map.controller.selected() == node, "S23.4: ...the pick simply stands")
 	await _end_main_fixture()
 
-## A map is panned with one finger, so the rule that lets a tap NAME a dot must not eat the drag.
+## A zoomed-in map is panned with one finger, so the rule that lets a tap NAME a dot must not eat the drag.
 func test_a_finger_drag_pans_the_map() -> void:
 	await _start_map_fixture()
 	var controller := _map.controller
+	await _zoom_the_map_in(_main, 5)
 	var entered := _count_arrivals()
 	var before := controller.camera.position
+	var drag := _drag_toward_the_map_centre(MAP_PAN_DRAG)
 	_drag_finger_by(WorldMapController.node_screen_rect(controller._sorted_next()[0]).get_center(),
-			MAP_PAN_DRAG)
+			drag)
 	await get_tree().process_frame
 	var moved := before - controller.camera.position
-	var expected := MAP_PAN_DRAG / controller.camera.zoom.x
+	var expected := drag / controller.camera.zoom.x
 	check(moved.is_equal_approx(expected),
 			"Fix 14.1: one finger pans the camera by the distance it dragged",
 			"%s vs %s" % [moved, expected])
@@ -7467,9 +7697,10 @@ func test_no_name_popup_shows_on_the_board() -> void:
 ## A name is pinned to a dot, so the dot moving under the camera has to carry the name with it.
 func test_the_name_follows_its_node_when_the_camera_pans() -> void:
 	await _start_map_fixture()
+	await _zoom_the_map_in(_main, 5)
 	var node := await _hover_a_map_node()
 	var before := WorldMapController.node_screen_rect(node)
-	_pan_map_by(before.get_center(), MAP_PAN_DRAG)
+	_pan_map_by(before.get_center(), _drag_toward_the_map_centre(MAP_PAN_DRAG))
 	var waited := 0.0
 	while waited < CARD_CONTROL_TIMEOUT_SEC:
 		await get_tree().physics_frame
@@ -7500,6 +7731,12 @@ func test_starting_a_run_takes_the_name_off_the_map() -> void:
 	check(not _map.name_popup.visible,
 			"Fix 13.2: starting a run leaves no name on the map")
 	await _end_main_fixture()
+
+# A pan runs the camera AGAINST the drag and stops at the map's edge, so a drag meant to move it by
+# its full length is aimed to send the camera toward the map's centre, where there is room.
+func _drag_toward_the_map_centre(by: Vector2) -> Vector2:
+	var at := _map.controller.camera.position
+	return Vector2(signf(at.x) * absf(by.x), signf(at.y) * absf(by.y))
 
 # The map pans on a mouse DRAG, so the motion has to carry its own `relative`: the controller moves
 # the camera by exactly that, and an event without it pans nothing.
