@@ -453,4 +453,94 @@ RETIRED = {
     "E0297": 'Duplicate of Q1009 (Karagoz & Hacivat): a bound pair that each gain a multiplier while both are out; the owner rules on it there.',  # Q1013
 
     "E0322": "Duplicate of Q0387 (Madame Zora's Eye): the next card of the deck always shown; the owner rules on it there.",  # Q1014
+
+    "E1386": 'Retired: already a rule. A talented card no longer suppresses its own suit effect (board plan, the suit rule), so there is nothing for it to lift.',  # Q1018
+
+    "G0048": 'Duplicate of Q1046 (The Chain Reaction): a prop that finishes spawns a fresh one; the owner rules on it there.',  # Q1045
+
+    "G0420": 'Duplicate of Q1047 (The Collision): two props meeting destroy or merge; the owner rules on it there.',  # Q1049
+
+    "G0419": 'Duplicate of Q1050 (The Overtake): a prop catching another carries it along; the owner rules on it there.',  # Q1051
+
+    "G0421": "Merged into Q1054 (The Endless Round): a looping prop paying more each lap is that effect's level 2; the owner rules on it there.",  # Q1056
+
+    "G0311": "Duplicate of Q1062 (The Bumper): a card that turns a prop's direction; the owner rules on it there.",  # Q1067
+
+    "G0429": 'Retired: already a rule. Burning multiplies the prop effects of the card that carries it.',  # Q1077
+
+    "G0431": 'Duplicate of Q1080 (The Handoff): a prop that carries statuses from card to card; the owner rules on it there.',  # Q1079
+
+    "E0298": "Duplicate of Q1135 (The Advance Man): a consumable that reveals the map's fogged nodes; the owner rules on it there.",  # Q1137
+
+    "E0400": 'Retired: there is no currency and no shop. A town of shops.',  # Q1158
+
+    "E1780": 'Retired: there is no currency and no shop. It stores a shop item.',  # Q1176
+
+    "E0891": 'Retired: there is no currency and no shop. A festival of purchases.',  # Q1191
+
+    "G0063": 'Duplicate of Q0797 (Press Bribery): one failed show a run is survived and the tour continues; the owner rules on it there.',  # Q1212
+
+    "G0480": 'Duplicate of Q0796 (Deus ex Machina): a lost show counts as cleared at exactly its goal; the owner rules on it there.',  # Q1213
+
+    "G0062": 'Duplicate of Q0796 (Deus ex Machina), whose (b) replays a lost show from the start; the owner rules on it there.',  # Q1214
+
+    "G0061": 'Duplicate of Q0797 (Press Bribery): once a run, a failed show is survived and the tour continues; the owner rules on it there.',  # Q1215
+
+    "E1993": 'Retired: there is no currency and no shop. It buys a shorter tour with gold.',  # Q1219
+
+    "G0325": 'Duplicate of Q1222 (Hype Poster): raise the next goal yourself and the rewards scale with it; the owner rules on it there.',  # Q1223
+
+    "E0784": "Duplicate of Q1229 (The Griot): a share of this show's score opens the next; the owner rules on it there.",  # Q1226
+
+    "E0398": 'Duplicate of Q0641 (The Trunk): one card keeps what it gained into the next run; the owner rules on it there.',  # Q1232
+
+    "G0447": 'Duplicate of Q1237 (The Long Memory): a card that records each distinct hand type and pays per record; the owner rules on it there.',  # Q1238
+
+    "E0527": 'Retired: there is no currency and no shop. Prestige points spent mid-run are a meta currency.',  # Q1248
+
+    "G0450": 'Retired: there is no currency and no shop. It converts a card into prestige currency.',  # Q1251
+
+    "E1746": 'Retired: there is no currency and no shop. A difficulty that removes a shop slot.',  # Q1254
+
+    "E1775": 'Retired: stickers do not exist in this game; statuses are the nearest thing, and they already stack.',  # Q1257
+
+    "G0103": 'Duplicate of Q1311 (The Apprenticeship): a card names an objective and finishing it upgrades the card; the owner rules on it there.',  # Q1313
+
+    "G0111": 'Duplicate of Q0495 (Quests (TFT-style)): a hidden condition, revealed once met, that upgrades the card; the owner rules on it there.',  # Q1323
+
+    "G0432": 'Duplicate of Q1331 (The Blank): a card with no rank that stacks on anything and melds as nothing; the owner rules on it there.',  # Q1332
+
+    "G0433": 'Duplicate of Q1363 (The Turk): a card that borrows the rank of a card beside or beneath it; the owner rules on it there.',  # Q1333
+
+    "E1156": 'Duplicate of Q1364 (The Wildcard): becomes whichever card would score its line highest; the owner rules on it there.',  # Q1335
+
+    "G0434": 'Duplicate of Q1352 (The Best Bower): a card that counts as every suit; the owner rules on it there.',  # Q1340
+
+    "E1181": 'Duplicate of Q1344 (Half-Step): a rank that counts as itself or one higher; the owner rules on it there.',  # Q1345
+
+    "G0437": 'Duplicate of Q1371 (The Halving): a rank worth half its printed value; the owner rules on it there.',  # Q1347
+
+    "G0438": 'Duplicate of Q1349 (5 starting suits): a fifth suit, and a line of all five scores as its own hand; the owner rules on it there.',  # Q1353
+
+    "G0439": 'Duplicate of Q1350 (Harlequin): one card carrying two suits at once; the owner rules on it there.',  # Q1354
+
+    "G0067": "Duplicate of Q0080 (The Odd Couple), which the owner wrote: pays the gap between the highest and lowest ranks in a line; the owner's version stands.",  # Q1367
+
+    "G0444": 'Duplicate of Q1368 (The Doubling Act): a rank that doubles each time it scores; the owner rules on it there.',  # Q1369
+
+    "G0442": 'Duplicate of Q1366 (The Abacus): a rank equal to the sum of its neighbours; the owner rules on it there.',  # Q1372
+
+    "G0117": 'Duplicate of Q1374 (The Dropped Bit): paid for lines left incomplete at show end; the owner rules on it there.',  # Q1375
+
+    "G0220": 'Duplicate of Q0421 (The Death Rattle): a destroyed card fires its effect once more; the owner rules on it there.',  # Q1377
+
+    "G0120": 'Duplicate of Q0424 (Blue Joker): a bonus per card still in the deck; the owner rules on it there.',  # Q1380
+
+    "G0399": "Duplicate of Q0057 (The Hunger Artist), which the owner approved: a card that grows for every show it goes unplayed; the owner's version stands.",  # Q1384
+
+    "G0125": 'Duplicate of Q1389 (The Almost Flush): a line one card short of a hand scores anyway; the owner rules on it there.',  # Q1388
+
+    "G0405": 'Duplicate of Q1396 (The Bare Stage): a bonus per empty cell when the show ends; the owner rules on it there.',  # Q1398
+
+    "G0408": 'Duplicate of Q1407 (The Slow Burn): a scoreless refill raises what the next scoring pays; the owner rules on it there.',  # Q1406
 }

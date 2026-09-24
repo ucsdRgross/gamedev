@@ -15,7 +15,7 @@ ROWS = [
  "c"),
 ("G0105","The Commission","U6","structure","The town sets you a task.",
  "Each town states one objective; completing it during that show grants a permanent run-scoped effect",
- "Each town states one objective; completing it grants gold rather than a permanent effect",
+ "Each town states one objective; completing it grants fame rather than a permanent effect",
  "Each town states one objective, and you may accept it for a permanent reward or decline it for a smaller immediate one",
  "c"),
 ("G0106","The Long Game","U6","skill","An objective that spans the whole tour.",

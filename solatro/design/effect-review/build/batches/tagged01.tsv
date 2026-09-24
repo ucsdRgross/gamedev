@@ -162,7 +162,7 @@ E0160	KEEP		E7	skill	Starts each show unable to be moved; frees itself and score
 E0161	KEEP		B8	skill	A column that is one perfect descending run from top to floor pays a large bonus and mints a Knife-suit card.	
 E0162	DROP	ALREADY_A_RULE				
 E0163	KEEP		G6	skill	3 charges per show: cue to deterministically re-roll the ranks of all adjacent cards.	
-E0164	KEEP		R1	hazard	Town rule: Concessions-class cards are disabled and shop prices are doubled.	
+E0164	KEEP		R1	hazard	Town rule: Concessions-class cards are disabled.	
 E0165	KEEP		A6	skill	At payout, before row x column multiplication, shift up to 20% of the larger axis total onto the smaller, costing 2 combo to invoke.	
 E0166	KEEP		D2	skill	This card can be grabbed even while covered; the cards above cascade down one slot.	
 E0167	KEEP		A3	skill	Cue before a show: spend N Gold tokens to multiply that show's fame payout by 1 + N/10.	

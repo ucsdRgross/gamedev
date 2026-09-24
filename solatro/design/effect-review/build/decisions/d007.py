@@ -239,7 +239,7 @@ KEEPS = [
  "Counts as two classes of your choosing, re-chosen at the start of each show",
  "a"),
 ("E1009","U5","structure","Called out by name.",
- "A town champion calls out one of your cards for a duel: win for gold, lose a rank",
+ "A town champion calls out one of your cards for a duel: win for fame, lose a rank",
  "A town champion calls out one of your cards; you may substitute another at a cost",
  "A town champion calls out your highest card for a duel, and refusing costs fame",
  "b"),
