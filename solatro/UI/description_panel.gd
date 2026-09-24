@@ -35,7 +35,10 @@ func show_entry(entry: InfoEntry, panel_size: Vector2) -> void:
 # reachable without scrolling.
 func mount_buttons(row: Control) -> void:
 	_button_row.add_child(row)
-	_button_row.visible = true
+
+## Whether the mounted row may show at all -- the screen that owns it still decides which of its buttons do.
+func show_buttons(shown: bool) -> void:
+	_button_row.visible = shown
 
 ## The sub-pixel part of a scroll, carried to the next call -- the scroll position itself is whole pixels.
 var _scroll_remainder : float = 0.0
@@ -104,7 +107,7 @@ func resize_to(panel_size: Vector2) -> void:
 	size = panel_size
 	_scroll.size = panel_size
 	var content_h := _top_row_height(panel_size.x) + _body_height(panel_size.x)
-	content_h += _button_row.get_combined_minimum_size().y
+	if _button_row.visible: content_h += _button_row.get_combined_minimum_size().y
 	_content.size = Vector2(panel_size.x, content_h)
 	_content.custom_minimum_size.y = content_h
 

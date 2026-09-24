@@ -390,6 +390,7 @@ func set_active_screen(screen: StringName) -> void:
 	visible = _wants_container() and _slide > 0.0
 	_game_hud.visible = screen == GAME_SCREEN
 	_map_hud.visible = screen == MAP_SCREEN
+	_description_panel.show_buttons(screen == MAP_SCREEN)
 
 # THE MENU CARRIES NO HUD, so on that one screen the container's own content decides whether it is
 # there at all: the deck picker publishing a description slides it in, dismissing slides it out.

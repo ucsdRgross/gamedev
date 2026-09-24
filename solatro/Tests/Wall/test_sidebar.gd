@@ -170,6 +170,7 @@ func _ready() -> void:
 	await test_an_edge_key_in_a_viewer_lands_the_focus_on_the_exit_x()
 	await test_the_deck_button_pressed_again_closes_the_viewer_it_opened()
 	await test_the_map_shows_no_travel_or_deck_while_it_describes_a_card()
+	await test_a_card_on_the_game_screen_shows_no_map_buttons_while_a_pack_is_open()
 	await test_the_sidebars_x_over_a_viewer_unsticks_and_closes_together()
 	await test_an_unstuck_viewer_description_goes_when_the_pointer_leaves_the_card()
 	await test_the_deck_button_toggles_by_mouse_while_its_viewer_is_open()
@@ -4625,8 +4626,41 @@ func test_the_map_shows_no_travel_or_deck_while_it_describes_a_card() -> void:
 		await _close_the_open_viewer()
 		check(_map.selection_buttons.visible and _map.travel_button.is_visible_in_tree(),
 				"closing the viewer comes back to the node, and its buttons with it")
+		check(_map.selection_deck_button.is_visible_in_tree(),
+				"...the node's description carrying its Deck button")
 		check(_container.showing_description(),
 				"...describing the node the player picked, not the card they were reading")
+	await _end_main_fixture()
+
+## The map's row belongs to the map: a pack chooser left open there puts no Deck beside a card the game screen describes.
+func test_a_card_on_the_game_screen_shows_no_map_buttons_while_a_pack_is_open() -> void:
+	await _start_game_fixture()
+	var overlay : Node = _main.wall.get_node(^"%Overlay")
+	await _click((overlay.get_node(^"%BackButton") as Control).get_global_rect().get_center(),
+			_booted_viewport)
+	await _wait_out_the_move()
+	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	check(_main._current_focus == &"map" and pack != null,
+			"sanity: Back left the game for a map that offers a pack node", str(_main._current_focus))
+	if pack != null:
+		if pack not in _map.controller.next_nodes_of(_map.controller._current):
+			_map.controller._current = _a_neighbour_leading_to(pack)
+		_map.controller.move_to(pack)
+		await _await_map_arrival()
+		await get_tree().process_frame
+		check(_map.find_child("ChoiceViewer", true, false) != null
+				and _map.selection_deck_button.visible,
+				"sanity: arriving opened the pack's chooser, its sidebar offering the deck")
+		await _click((overlay.get_node(^"%ForwardButton") as Control).get_global_rect().get_center(),
+				_booted_viewport)
+		await _wait_out_the_move()
+		check(_main._current_focus == &"game", "sanity: Forward went back to the live show",
+				str(_main._current_focus))
+		await _hover_a_card_with_a_visual()
+		check(_container.showing_description(), "sanity: the game screen describes a card")
+		check(not _map.selection_deck_button.is_visible_in_tree()
+				and not _map.travel_button.is_visible_in_tree(),
+				"a card described on the game screen carries no Deck or Travel button")
 	await _end_main_fixture()
 
 ## The X is the same one cancel as Escape: over a viewer it lets the stuck card go AND closes the viewer, in one press.

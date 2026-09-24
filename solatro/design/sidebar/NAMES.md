@@ -98,6 +98,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `func _hosting_a_viewer() -> bool` | Whether a Deck/Choice viewer is up, read off `host_viewer`'s own connections: the map's up-into-the-panel route yields to a viewer's focus chain (K10, `GAP-012`=a) |
 | `HudContainer` | `func mount_description_buttons(row: Control) -> void` | Hangs a screen's own row of buttons above the description body; the screen builds the row, decides when it shows and owns the node |
 | `DescriptionPanel` | `func mount_buttons(row: Control) -> void` | The `%ButtonRow` slot: the panel never learns what the buttons do |
+| `DescriptionPanel` | `func show_buttons(shown: bool) -> void` | (added during execution) Whether the mounted row may show at all: `HudContainer.set_active_screen` shows it on the map screen only, so no other screen's card description carries the map's buttons |
 | `WorldMapController` | `func select_node(node: WorldGraphNode) -> void` | A pointer, finger or pad PICKS a reachable node; travelling is the map screen's Travel button |
 | `WorldMapController` | `func clear_selection() -> void` | Back to the basic view: nothing picked, nothing marked |
 | `WorldMapController` | `func _auto_select_if_single() -> void`, `var auto_picking` | One onward node needs no click, so it is picked on population, on a lap flip and on a rest-stop arrival; `auto_picking` is true only while that pick's `node_selected` runs, and `Map` reads it to leave a pack's contents unopened |

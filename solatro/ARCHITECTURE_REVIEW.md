@@ -406,8 +406,9 @@ history stored in forward orientation).
   description and never both, so the pick's Deck button is a second button on the DESCRIPTION
   side: `Map` builds an `HFlowContainer` of Travel / Deck / Possible cards, hands it to
   `HudContainer.mount_description_buttons` and owns it, and hides it whenever nothing is picked.
-  `active_screen_changed` and `description_dismissed` both clear the pick, which is what keeps the
-  row off every other screen. On the map, which never locks, `ui_up` at the top of ANY
+  `active_screen_changed` and `description_dismissed` both clear the pick; the row stays off every
+  other screen because `HudContainer.set_active_screen` shows the panel's row slot on the map only
+  (`DescriptionPanel.show_buttons`) -- a pack chooser left open on the map keeps its Deck button up. On the map, which never locks, `ui_up` at the top of ANY
   shown description carries the pad onto the X (`_navigates_to_exit`); `ui_left` keeps the map's
   backward node cycle, and after the X's accept the wall routes the next press to the map again.
 - **The legal-cell drop map.** `Game.legal_cells_for(held, grids)` is the ONE legality walk — the

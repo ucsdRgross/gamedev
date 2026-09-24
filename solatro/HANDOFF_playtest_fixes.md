@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P50 done (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P50, 6ffa2876): `ALL 51 SUITES: 6906
-CHECKS PASSED`, 21 placeholder warnings, 24 resources + 1150 ObjectDB (TP-92 1 of 2).
-Pending: P51 and the owner's next visual review round, then the close. Gate at the stream's start:
+**State:** P1-P51 done (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P51): `ALL 51 SUITES: 6925 CHECKS PASSED`,
+21 placeholder warnings, 24 resources + 1150 ObjectDB.
+Pending: P52, P53 and the owner's next visual review round, then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -528,9 +528,25 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/UI/hud_container.gd, solatro/Levels/game_view.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar UiViewers DragPlace; the visual review refresh'
   verification_kind: suite
+  status: done
+  evidence: 'Measured route: a live show, overlay Back to the map, Travel onto a pack node - the chooser sets the map row Deck-only (map.gd _show_only_the_deck_button), overlay Forward to the game, hover a board card: its description carried the map row (one row mounted once into the panel both screens share; only map.gd hid it). Fix: HudContainer.set_active_screen -> DescriptionPanel.show_buttons(screen == MAP_SCREEN); mount_buttons no longer shows the slot; resize_to counts the row only when shown. Red: the new SIDEBAR row fails on HEAD. Green: FILTERED 4 of 51 [Sidebar UiViewers DragPlace MapTraversal]: 2264; --logic 2997. Fable review: no blocker. Gate: ALL 51 SUITES: 6925 CHECKS PASSED.'
+  notes: 'Seen in the review shot lifted_focus_elsewhere: the 7 of Knives description with a Deck button under its title. Find the writer (P13 put Deck on the node description; which path adds it to a game-screen card description?).'
+- id: P52
+  description: The pack CHOOSER can be left before its cards are taken - overlay Back/Forward (and Wall?) leave the map with the chooser still up; the owner ruled the chooser is the new focus until Take is pressed.
+  files_touched: [solatro/Levels/main.gd, solatro/UI/choice_viewer.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar UiViewers MapTraversal WallInput'
+  verification_kind: suite
   status: pending
   evidence: ''
-  notes: 'Seen in the review shot lifted_focus_elsewhere: the 7 of Knives description with a Deck button under its title. Find the writer (P13 put Deck on the node description; which path adds it to a game-screen card description?).'
+  notes: 'Owner, answers to the three P33 questions: the rerolling-cards scene "is the new focus until cards are taken for the deck" and "you cannot leave that one until cards have been taken via button press to accept selection". Measured by P51: the chooser swallows only cancel and accept (choice_viewer.gd:97, cards_viewer.gd:96-113); the overlay Back/Forward buttons live in the main window outside the map picture the chooser covers, so a click on them leaves. Measure every leave route (Back, Forward, Wall, wall_back/wall_overview keys, pad) - and whether an in-flight chooser survives and returns on re-entry. Decide nothing the ruling does not cover (e.g. disabled vs hidden overlay buttons) - owner question.'
+- id: P53
+  description: With a show live, closing a pack node's possible-cards viewer on the map lands the sidebar on the HUD instead of back on the node, so Travel is out of reach (measured by P51: panel=false, hud=true, the pick still set; without a live show it comes back to the node).
+  files_touched: [solatro/Levels/game_view.gd, solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar UiViewers MapTraversal'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Viewer paths (6): closing a viewer with nothing sticky on the MAP returns the sidebar to the picked node (Travel live). P51 suspects game_view.gd:122 (play_area.highlight_cleared wired straight to highlight_gone, not limited to the game screen) - unverified, measure first. Related open bug: the container-global viewer fields.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -605,7 +621,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - Picture-wall design DAG warning (Design Loop check): QR6's default (a) reaches nothing - Q76 is gated [QR6=b|c], Q77 [QR6=b]. A design decision for the owner: widen the gates or change the default.
 
 ## Next up
-1. P51 (no Deck button on a card description), then refresh the visual review with the P50 and P51 changes and park on the owner's next round (`/plan-run` "The owner's visual review").
+1. P52 (the chooser cannot be left), P53 (closing the possible-cards viewer returns to the node), then refresh the visual review with the P50 and P51 changes and park on the owner's next round (`/plan-run` "The owner's visual review").
 2. The close per /plan-run, then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list), and the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
