@@ -6,7 +6,7 @@ const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 
 ## THE CARD FACE AS THE SHEET DRAWS IT — one frame of `card_types.png`, in art units (= source texels).
 ## The card the player sees is this plus the outline shader's rim on all four sides.
-const CARD_ART_SIZE := Vector2(38, 52)
+const CARD_ART_SIZE := Vector2(52, 52)
 ## The rim `Shaders/outline.gdshader` paints, in art units. Not a second opinion — `CardOutline` owns it.
 const ART_OUTLINE := CardOutline.WIDTH
 ## The DRAWN card: 40x54, and stated as art + rim rather than typed as a number.
