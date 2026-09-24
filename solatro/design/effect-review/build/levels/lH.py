@@ -2,7 +2,7 @@
 # Family H: (qid, eid, verdict, level2, why) - schema in ../levels.py
 
 ROWS = [
-('Q0526', 'E0001', 'OK', 'It copies two skills at once', ''),
+('Q0526', 'E0001', 'OK', 'The copied skill fires in its level-2 form', ''),
 ('Q0527', 'E0174', 'OK', 'It learns two effects each show', ''),
 ('Q0528', 'E0223', 'OK', "It forges from the run's three top effects", ''),
 ('Q0529', 'E0914', 'OK', "It wears two dead cards' skills at once", ''),

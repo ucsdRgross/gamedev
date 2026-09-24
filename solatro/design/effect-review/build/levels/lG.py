@@ -71,7 +71,7 @@ ROWS = [
 ('Q0499', 'E0374', 'OK', 'Its hidden effect unlocks at once', ''),
 ('Q0500', 'E1830', 'OK', None, ''),
 ('Q0501', 'E1204', 'OK', 'It hatches into a card that matches the mark it sits on', ''),
-('Q0502', 'E0311', 'OK', 'Two of its skills are active at once', ''),
+('Q0502', 'E0311', 'OK', ('You may rotate it by hand at any time, not only each placement', 'You may re-choose once mid-show', 'One of its three runs at full strength, your choice'), ''),
 ('Q0503', 'G0184', 'OK', 'It ripens into the card its mark was copied from', ''),
 ('Q0504', 'E1018', 'OK', 'Both sides are up at once', ''),
 ('Q0505', 'G0270', 'OK', 'It may play both faces once', ''),

@@ -24,7 +24,7 @@ ROWS = [
  "A named chain must be scored in order; the chain is reseeded each show and its order is shown up front",
  "b"),
 
-("G0159","The Salt","B5","rank","Matches its own kind, or anything, and matches any rank mark.",
+("G0159","The Salt","B5","rank","Matches its own kind, or anything, and matches any rank mark, and matches any rank mark.",
  "This card melds either with another of its own kind or with any card at all, your choice at scoring",
  "This card melds with any card at all, but never with another of its own kind",
  "This card melds with anything, and every one used in a meld makes the next one in the deck stricter",

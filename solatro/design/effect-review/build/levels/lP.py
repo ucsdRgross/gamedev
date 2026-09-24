@@ -39,7 +39,7 @@ ROWS = [
 ('Q0975', 'E0389', 'WEAK', 'NONE', 'assumes towns ban classes, which the game does not do'),
 ('Q0976', 'E0007', 'OK', None, ''),
 ('Q0977', 'E0536', 'REWORK', None, '(c) paid a different currency, and there is no currency'),
-('Q0978', 'E0070', 'OK', 'It counts as every class present in its lines', ''),
+('Q0978', 'E0070', 'REWORK', 'It counts as every class present in its lines', "(c) was The One-Man Band's level 2, every class on its grid"),
 ('Q0979', 'G0143', 'OK', None, ''),
 ('Q0980', 'E0192', 'WEAK', 'NONE', 'assumes towns ban classes, which the game does not do'),
 ('Q0981', 'E0905', 'REWORK', None, '(b) and (c) spent or paid heat, a second currency'),

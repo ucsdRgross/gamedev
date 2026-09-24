@@ -22,7 +22,7 @@ ROWS = [
 ('Q0394', 'E0341', 'REWORK', 'Once per Entrance refill instead of once per show', "(c) was Q0390 The Scry's (b)"),
 ('Q0395', 'E0012', 'WEAK', 'You choose which incoming card is discarded', 'it only costs you cards unless something you hold pays for discards'),
 ('Q0396', 'E1836', 'OK', 'After it deals, you may place two cards per turn', ''),
-('Q0397', 'E0055', 'OK', 'You choose the order its completed lines resolve in', ''),
+('Q0397', 'E0055', 'OK', 'Cards it places onto marks they match score their lines twice', ''),
 ('Q0398', 'E0102', 'OK', 'The sort may also move a card between stocks', ''),
 ('Q0399', 'E0135', 'OK', 'The refilled card comes from the stock you choose', ''),
 ('Q0400', 'E0246', 'OK', ('You choose which of the bottom three cards is discarded', 'Look at the three first, and keep one on top instead', 'You choose which of the bottom three cards is discarded'), ''),
