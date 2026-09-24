@@ -69,7 +69,7 @@ ROWS = [
 ('Q0297', 'E0886', 'OK', "The suspended card counts as sitting on this card's mark", ''),
 ('Q0298', 'E0250', 'OK', ('Two Half Cards sharing a matched mark each pay the rank-match bonus', 'Two Half Cards sharing a matched mark each pay the rank-match bonus', 'Its cell-mate counts as matching the mark on rank too'), ''),
 ('Q0299', 'E0323', 'REWORK', 'Six cards are enough', "(c) collapsed into Q0295's (c)"),
-('Q0300', 'E0989', 'OK', 'It may carry its stack onto any cell whose mark it matches', ''),
+('Q0300', 'E0989', 'OK', ('The carried stack also scores as one card', 'The carried stack may be set down on top of another stack', 'The carried stack may be set down on top of another stack'), ''),
 ('Q0301', 'G0014', 'OK', None, ''),
 ('Q0302', 'G0015', 'OK', ('It exempts the cells beside it from the cap too', 'It exempts the cells beside it from the cap too', "Its own stack's height counts twice for its bonus"), ''),
 ('Q0303', 'G0147', 'OK', 'A sealed cell whose card matches its mark scores its lines when sealed', ''),

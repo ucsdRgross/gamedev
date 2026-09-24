@@ -4,9 +4,9 @@
 each with three variants plus reject, and the rulings exported to a single CSV. Done = the owner has
 answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for every one.
 
-**State:** the questionnaire is live: **1,595 askable questions, 83 retired in place**, 0 parser
-errors, 0 warnings. The owner has answered **118**. The current work stream is **S14** (below): the
-level-2 pass. **The S14 checklist under "Next up" is the thing to read first when resuming.**
+**State:** the questionnaire is live: **1,527 askable questions, 270 retired in place**, 0 parser
+errors, 0 warnings. The owner has answered **118**. Round 2 (the level-2 pass, S14) is written and
+reviewed; what is left of it is the merge in the checklist under "Next up".
 
 **Entry docs:** `solatro/design/effect-review/build/GAME_BRIEF.md` (the rulebook every effect must
 fit — read it before judging anything) · `solatro/design/effect-review/build/REVIEW.md` (how to
@@ -48,6 +48,9 @@ the next render silently discards the edit.
 | `build/variants/v*.py` | variants for batch 1, which was tagged separately in `batches/tagged01.tsv` |
 | `build/GAME_BRIEF.md` | the rules brief every mining subagent must be given |
 | `build/TAXONOMY_CODES.md` | the 226 class codes, regenerate with `build_taxonomy_page.py` |
+| `build/levels.py`, `build/levels/l<FAM>.py` | the level-2 pass: one row per question (verdict, level 2, flag reason); `render.py` draws the level 2 and the ⚑ flag from it |
+| `build/generated/g029.py` | family AC, one row per answered effect — **the record for AC rows; edit it directly** |
+| `build/fixkit.py`, `build/retired_questions.py` | `set_options`, `retire`, `patch`, `verify`; every retired question and why, keyed by eid |
 | `build/mine_mods/` | **S13 working set**: the mod-wiki crawl in chunks, per-chunk candidate TSVs, `new_draft.tsv` (the judged keep-list), the subagent briefs, the dedupe groups |
 
 ## Tasks
@@ -205,7 +208,11 @@ the next render silently discards the edit.
   verification_command: 'py solatro/design/effect-review/build/levels.py stat && py -c "import sys; sys.path.insert(0, 'solatro/design/effect-review/build'); import fixkit; fixkit.verify()" && npm --prefix designloop run check -- solatro/effect-review'
   verification_kind: manual
   status: in_progress
-  evidence: ''
+  evidence: >
+    1,527 live, 270 retired (187 this round), 0 errors, 0 warnings, order unchanged Q0001-Q1509.
+    Level rows cover every live question in A-AB (`levels.py stat`); 196 had options rewritten, 210
+    carry a flag; family AB 19 live (Q1679-Q1699, two retired), family AC 98. Every family read by a
+    Fable pair reviewer and the findings applied, then a final review of the round.
   notes: >
     Owner rulings are in `build/GAME_BRIEF.md` § Every matchable effect has two levels. The owner
     answered "go" to: level 2 written once per effect as a change true of all three options, per
@@ -232,11 +239,11 @@ the next render silently discards the edit.
 
 ## Verified vs assumed
 
-- **1,409 questions, 0 errors, 0 warnings, 0 dag-audit defects** — verified,
+- **1,527 live questions, 270 retired, 0 errors, 0 warnings, 0 dag-audit defects** — verified,
   `npm --prefix designloop run check -- solatro/effect-review`.
 - **No class outside family N and feel-only W sits below four effects** — verified by counting
   keepers per class off the rendered document.
-- **No two live effects share a name** — verified; fourteen wave-4 collisions were renamed.
+- **No two live effects share a name** except the pairs listed under "Next up" — verified by grep.
 - **The question screen renders and is answerable** — verified by eye in a browser: header, three
   variants, reject, the recommendation marked for Enter, and the free-text box all present.
 - **The pipeline is machine-independent** — verified, zero absolute paths remain under `build/`,
@@ -260,43 +267,32 @@ None known in the pipeline. Two judgement calls the owner may want to revisit:
 2. **`G0142` The Overhead Show** was classed `C6` (grid shape) rather than treated as family N. It
    is a play zone above the grid, not a camera move — but it is the one call on that boundary.
 
-3. **Nine pre-wave-4 name collisions remain**, ignoring a leading "The": Canvas, Cascade, Double
-   Billing, Fourth Wall, Negative, Ox, Second Sight, Showman, Understudy. Each pair sits in a
-   different class with a different mechanic, so nothing is duplicated — only the names read alike
-   when scanning. Wave 4 has none; its fourteen were renamed as they were found.
-
-## Files touched
-
-```
-solatro/HANDOFF_effect_review.md            new
-solatro/design/effect-review/               new directory
-  meta.json, DESIGN.md, EFFECTS.csv, DROPPED.csv, export_csv.py, ui_meta.json
-  build/                                    new — 20 files + 4 subdirectories (20 generated modules)
-```
-No game code, no tests, no vendored addon touched.
-
 ## Next up — the S14 checklist
 
 To change a row: edit `build/levels/l<FAM>.py` directly (the `levels.py` docstring has the
-schema), rewrite options with `fixkit.set_options`, retire with `fixkit.retire`, patch a head with
-`fixkit.patch`, then `fixkit.verify()`. A Fable pair review reads each family's rows before it is
-ticked; its findings are claims to check, then apply.
+schema), rewrite options with `fixkit.set_options`, retire with `fixkit.retire` (idempotent: to
+change a retired note, edit its line in `retired_questions.py`), patch a head with `fixkit.patch`,
+then `fixkit.verify()`. A family-AC row is edited in `build/generated/g029.py` itself. A slot change
+edits the slot field in the effect's source row; the class stays, so no id moves.
 
-- [x] every family written, A to AA; family AB (18 new effects); family AC (97 level-2 questions)
+- [x] every family written, A to AA; family AB (21 written, 19 live); family AC (98 level-2 questions)
 - [x] level 2 vs level 1 collision sweep across all families (eight fixed)
 - [x] pair review applied: A, B, C, D, E, F
 - [x] pair review applied: G-I · J-M, O-P · Q-T · U-X and W
-- [ ] pair review applied: Y-Z · AA and AB
-- [ ] `header.md` counts; `status.agent.json` summary; final pair review of the round
+- [x] pair review applied: Y-Z · AA and AB
+- [x] `header.md` counts; `status.agent.json` summary; final pair review of the round (applied)
 - [ ] merge into `combine-sidebar-boardplan` (re-read `answers.json` there first, as above)
 
 Open for the owner, found during the pass: ten pairs of live effects share a name across families
 (The Dead End Q1397/Q1477, The Standing Set Q0637/Q1436, The Booking Q0811/Q1432, The Route Book
 Q1146/Q1430, The Quick Change Q0581/Q1441, The Casting Call Q0768/Q1427, The Empty House
 Q1376/Q1444, The Standing Ovation Q1246/Q1415, Understudy Q0531/The Understudy Q1417, Glass
-Q0268/Q0624) — names are sort keys, so renaming waits until a rename cannot move an answered id.
+Q0268/Q0624), plus nine older near-collisions ignoring a leading "The" (Canvas, Cascade, Double
+Billing, Fourth Wall, Negative, Ox, Second Sight, Showman, Understudy), each in a different class
+with a different mechanic — names are sort keys, so renaming waits until a rename cannot move an
+answered id.
 
-Also open: about fifteen live options in families S and T spend or pay fame (Q1126 (c), Q1139 (c),
+Also open: about fifteen live options in families R, S and T spend or pay fame (Q1126 (c), Q1139 (c),
 Q1142 (b), Q1146, Q1147 (c), Q1148 (c), Q1154 (c), Q1156 (c), Q1262 (c) and more), while fame is
 the score a show must earn and the ruling is "no currency". One owner question settles all of them:
 is fame spendable? If not, each clause becomes "skip a reward".

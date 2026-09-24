@@ -201,12 +201,14 @@ for r in ordered:
             head += (". **Level 1 is the plain %s; each option is its level 2**, firing on a %s match"
                      % (level2.lower(), level2.lower()))
         elif level2 == levels.NONE:
-            head += ". **Level 2:** none beyond the flat mult a match pays"
+            head += ". **Level 2:** none beyond the flat %s a match pays" % (
+                "points" if r["slot"] == "rank" else "mult")
         elif level2:
             head += ". **Level 2, on its own mark:** " + clean(level2)
         if verdict == "WEAK":
             head += " ⚑ *pair review: %s*" % clean(why)
-    reject = ("no level 2 — a match pays the flat mult only" if r["fam"] == "AC"
+    reject = ("no level 2 — a match pays the flat %s only" % ("points" if r["slot"] == "rank" else "mult")
+              if r["fam"] == "AC"
               else "reject — this effect does not enter the game")
     out.append(
         "- **%s** `[root]` — %s · **(a)** %s · **(b)** %s · **(c)** %s "

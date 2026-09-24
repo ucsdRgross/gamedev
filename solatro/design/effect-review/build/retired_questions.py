@@ -200,9 +200,9 @@ RETIRED = {
 
     "G0423": 'Duplicate of Q1053 (Curtain Call): the same trigger, target and action; the owner rules on it there.',  # Q1059
 
-    "G0397": 'Duplicate of Q1380 (The Bench): the same trigger, target and action; the owner rules on it there.',  # Q1381
+    "G0397": 'Duplicate of Q0424 (Blue Joker): a bonus per card still in the deck; the owner rules on it there.',  # Q1381
 
-    "G0400": 'Duplicate of Q1380 (The Bench): the same trigger, target and action; the owner rules on it there.',  # Q1385
+    "G0400": 'Duplicate of Q0424 (Blue Joker): a bonus per card still in the deck; the owner rules on it there.',  # Q1385
 
     "E1063": 'Duplicate of Q1364 (The Wildcard): the same trigger, target and action; the owner rules on it there.',  # Q1365
 

@@ -421,7 +421,7 @@ FAMILIES = [
  ("AB4","Called and bounced hits","none","hits you announce, misses that herd marks, hits that carry to the far end of a line"),
 ]),
 ("AC", "Level 2 of effects already ruled on",
- "The owner ruled on these effects before level 2 existed, so the level-2 form is asked here instead of being added to a recorded answer. (d) is not a reject: it keeps the effect with no level 2, so a match pays only the flat mult.", [
+ "The owner ruled on these effects before level 2 existed, so the level-2 form is asked here instead of being added to a recorded answer. (d) is not a reject: it keeps the effect with no level 2, so a match pays only its flat bonus. Not asked: the effects you rejected; types, hazards, statuses and consumables, which never sit on a mark; Q0059, Q0113 and Q0114, which your words made bosses; Q0091 and Q0092, which share Q0088's hand and are asked with it. An option letting an uncovered mark stand in for a card is your Q0109 rule scoped to that hand: take it only if you want the hand to have it without the Paved Joker in the deck.", [
  ("AC1","Level 2 of a ruled effect","none","one question per effect already answered, in question order"),
 ]),
 ]

@@ -4,107 +4,66 @@
 candidate effect, and every answer is a ruling on whether that effect enters the game and in
 which form. Nothing here specifies how anything is built.
 
-**1,526 live questions, plus 270 retired in place.** There is no branching: every question is
-independent, so the count you see is
-the count you answer. Rejecting is one keystroke.
+**1,527 live questions, plus 270 retired in place.** There is no branching: every question is
+independent, so the count you see is the count you answer. Rejecting is one keystroke.
 
-## ⚠ What changed since this document was first written
+## ⚠ What changed since your round-1 answers
 
-**The board this corpus was mined against is gone, and every question has now been re-read against
-the one that exists.** Two passes, then two new families.
+**Every matchable effect now shows its level 2 — its form "when hitting its own mark".** Your
+rulings (`build/GAME_BRIEF.md`, "Every matchable effect has two levels"): a match is same kind to
+same kind, and a property's level 2 is unlocked by its own match only; a suit or rank is plain at
+level 1 and its effect is the level-2 addition; a skill's or stamp's level 2 is its own effect in
+the same class and file; a talent match always pays the flat mult as well. Every question was
+re-read for its level 2, its uniqueness and its fun, and each family was read a second time by a
+pair reviewer before you see it.
 
-**1. A vocabulary sweep, at the source.** The mined effects proposed mechanics keyed to a three-act
-show, a Submit button, an upper/lower tableau and Balatro's ante ladder. Those phrases were
-re-expressed on this mapping:
-
-| was | is now | why |
-|---|---|---|
-| a trigger "each act" | **each placement** | one Submit was one scoring pass; one placement is one |
-| a budget "once per act" / "one card per act" | **once per Entrance refill** | an act was a third of a show and held many cards; a refill is five cards and four to eight a show, so it keeps the written cadence where "per placement" made the effect 7-13x stronger |
-| a scoreless act | a **scoreless refill** | a single placement completes no line most of the time, so "a scoreless placement" fired almost every card |
-| a round / a blind / an ante | a **show** / a **level** / a **lap** | Balatro's structure mapped onto the map's |
-| a discard budget | **discard events** | effects discard cards from the board into a pile that persists to the next show; there is no per-round budget to spend |
-| the tableau, the upper/lower zone | the **grid**, the **Entrance** | the pre-grid board |
-
-**2. An architecture review of every question, because a word list cannot tell whether an effect
-still fits.** Each family was audited against `build/GAME_BRIEF.md`, every flag was adjudicated,
-and the fixes went back into the sources. The verdicts, one per question with its reason, are in
-`build/_verdicts.tsv`.
-
-```
-OK 1365 · STALE 98 · RESCOPE 15 · DUPLICATE 12 · ALREADY 10 · CONTRADICTS 2
-```
-
-What it found that the sweep structurally could not: effects assuming a board deeper than five rows,
-three-card lines, the wrong grid-unlock number, options that grant what the game already does by
-default, a card carrying another card's options, four effects that already WERE the board plan, one
-effect proposing a mechanic a standing owner ruling retired (overscore), and a blurb source file the
-sweep never read.
-
-**3. Twenty-two questions are RETIRED IN PLACE** — their premise was retired architecture, a
-duplicate, or superseded by the board plan. They still render, as a one-line italic note, **because
-the question id is positional**: deleting a row would renumber every question after it and repoint
-every recorded answer at a different effect.
-
-⚠ **Your recorded answers:** two are on questions now retired (`Q0011`, `Q0047`), and every other
-lettered answer still means what you chose — the few whose text moved moved back toward the per-act
-wording you answered, not away from it.
-
-**4. Family Y is new — 66 live effects across thirteen classes** for the board plan's marks: the
-card side (Y1-Y6), the level side (Y7-Y12), and Y13, which asks whether six shipped cell-shaped
-blinds should fold into the mark mechanic. `design/board-plan/DESIGN.md` is the authority on the rules
-they assume.
-
-**5. Family Z is new — 33 live effects across seven classes**, mined from the eighty-two solitaires
-on Solitaire Network, read game by game. Each class names the taxonomy class it would otherwise sit
-in (build legality would be D1, the deal F5, and so on); it is a separate family at the end of the
-document only because the question id is positional. The games whose rules the corpus already held —
-free cells, redeals, pairs adding to thirteen, Gaps, the 5×5 poker square itself — are listed with
-what they folded into in `build/SOURCES.md`.
-
-**6. There is no `rule` slot any more.** Owner ruling: the rules deck is a deck, not an effect. Every
-"Rule: …" question is now a **skill** (the same mechanic, carried by a card); boss, town and
-difficulty shapes are **hazards**; map, deck-preset, quest and meta-progression shapes are
-**structure**; questions about editing the rules deck itself, or about shops and gold, are retired
-in place. Eleven questions found to duplicate another are retired in place, naming their twin.
-
-**7. Family AA is new — 169 live effects across eight classes**, mined from every content mod on the
-Balatro mod wiki and from A Solitaire Mystery, Degenerate Gamblers, Combolands and Zoominoes.
-`build/SOURCES.md` wave 6 records what was read and what each source yielded.
-
-**8. Every effect now has its level 2 — its form "when hitting its own mark".** Your rulings
-(`build/GAME_BRIEF.md`, "Every matchable effect has two levels"): a match is same kind to same kind,
-and a property's level 2 is unlocked by its own match only; a suit or rank is plain at level 1 and
-its effect is the level-2 addition; a skill's or stamp's level 2 is its own effect in the same class
-and file; a talent match always pays the flat mult as well. Every one of the 1,595 questions was
-re-read for its level 2, its uniqueness and its fun, by Opus 5.5 with a Fable 5.1 pair reviewer
-checking each batch. What changed:
-
-- **A level 2 is shown on every skill, stamp, suit and rank** — in the question's head when it is
-  true of all three options, inside each option when the options differ. A suit or rank says
-  "level 1 is the plain suit; each option is its level 2". Type, consumable, status, hazard and
-  structure have none: they never sit on a mark.
-- **187 more questions are retired in place**, each naming why: duplicates and twins (where
-  one effect's level 2 was another's level 1 — the Queen is now the Rook's and the Bishop's level 2),
+- **Where the level 2 is.** In the question's head when it is true of all three options, inside each
+  option when the options differ. A suit or rank says "level 1 is the plain suit; each option is its
+  level 2". Type, consumable, status, hazard and structure have none: they never sit on a mark.
+  **130 skills, stamps and ranks say "none beyond the flat mult"** (points, for a rank): on those, a
+  match pays its flat bonus and nothing more. If you want every effect to have one, say so and they
+  get a second pass.
+- **Your recorded answers still mean what you chose.** Q0011 and Q0047 are still the only answered
+  questions that are retired. Nothing you answered was edited; its level 2 is asked in family AC.
+- **187 more questions are retired in place**, each naming why: duplicates and twins (where one
+  effect's level 2 was another's level 1 — the Queen is now the Rook's and the Bishop's level 2),
   premises the game does not have (shops, gold, selling, the rules deck, stickers), and effects that
   are already rules (undo, straights wrapping through the Ace, talent no longer suppressing a suit).
-- **172 had options rewritten** — a shop or gold clause taken out where the effect survives
-  without it, an "inspection" downside replaced, a broken sentence fixed, an effect that fired at
-  show start (when the card is still in the deck) moved to when it is placed.
+  A retired question still renders as a one-line note because the question id is positional.
+- **196 had options rewritten** — a shop or gold clause taken out where the effect survives without
+  it, an "inspection" downside replaced, an effect that fired at show start (when the card is still
+  in the deck) moved to when it is placed, a second-grid option made to work on one grid.
 - **Ten changed slot** to the one their mechanic needs (a boss filed as a skill is now a hazard, a
   mark rule that carries a hat is now a stamp); the class is kept, so no id moved. **Four defaults
   moved** to the form a board-plan ruling already names.
-- **207 carry a ⚑ pair-review flag** in the head, saying in one line why the effect may not be
-  worth a slot: it only costs you (a hazard filed as a skill), it needs a second grid, it does not
-  say what it does, it depends on another question entering, or it overlaps one of your own
-  answers. The flag is advice; the answer is yours.
-- ⚠ **One question is not in the list: is fame spendable?** About fifteen options in families S and
-  T spend or pay fame, while fame is the score a show must earn and there is no currency. If fame
-  is not spendable, each of those clauses becomes "skip a reward".
-- **Family AB is new — 21 effects written around the mark-hitting loop itself**: streaks and relays
-  of hits, cards built to be realised, plans that answer back, and called and bounced hits.
-- **Family AC is new — the level 2 of every effect you had already ruled on**, one question each,
-  so no recorded answer changed meaning. Its (d) is not a reject: it keeps the effect with no level 2.
+- **210 carry a ⚑ pair-review flag**, saying in one line why the effect may not be worth a slot: it
+  only costs you (a hazard filed as a skill), it needs a second grid, it does not say what it does,
+  it depends on another question entering, or it overlaps one of your own answers. The flag is
+  advice; the answer is yours.
+- ⚠ **One question is not in the list: is fame spendable?** About fifteen options in families R, S
+  and T spend or pay fame, while fame is the score a show must earn and there is no currency. If
+  fame is not spendable, each of those clauses becomes "skip a reward".
+- **Family AB is new — 19 live effects written around the mark-hitting loop itself** (two more were
+  retired at birth as twins of family Y): streaks and relays of hits, cards built to be realised,
+  plans that answer back, and called and bounced hits.
+- **Family AC is new — the level 2 of each effect you had already ruled on**, one question each, so
+  no recorded answer changed meaning. Its (d) is not a reject: it keeps the effect with no level 2.
+  Its heading says which answered effects are not asked, and why.
+
+**Reading the older effects.** They were mined against a board that is gone and re-expressed on this
+one; the rows use this vocabulary:
+
+| was | is now |
+|---|---|
+| a trigger "each act" | **each placement** |
+| a budget "once per act" | **once per Entrance refill** (five cards; four to eight a show) |
+| a round / a blind / an ante | a **show** / a **level** / a **lap** |
+| a discard budget | **discard events**: effects discard cards from the board into a pile that persists |
+| the tableau, the upper/lower zone | the **grid**, the **Entrance** |
+
+Families Y (the board plan's marks), Z (solitaires re-expressed on the grid) and AA (Balatro content
+mods and four solitaire-likes) were new in round 1; `build/SOURCES.md` says what each source yielded,
+and `build/_verdicts.tsv` holds the round-1 architecture review, one verdict per question.
 
 ---
 

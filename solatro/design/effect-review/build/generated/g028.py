@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# Family AB: effects written for the level-2 pass around the mark-hitting loop itself, where aiming a
-# card at the cell whose mark agrees with it is the decision. Checked against family Y (the mark
-# effects already asked) so none restates one. (eid, name, cls, slot, mechanic, a, b, c, default)
+
+# Family AB: effects where aiming a card at the cell whose mark agrees with it is the decision,
+# checked against family Y so none restates a mark effect. (eid, name, cls, slot, mechanic, a, b, c, default)
 SOURCE = "the level-2 pass"
 ROWS = [
 
@@ -39,7 +39,7 @@ ROWS = [
 ("MK0006", "The Triangulation", "AB1", "skill", "Hits that form a shape fire their marks again.",
  "When three hits form an L of three cells, all three marks fire their match bonuses again",
  "When three hits sit in one line with gaps between them, all three marks fire again",
- "When four hits form a two-by-two square, all four marks fire again and the square scores as a four-card hand",
+ "When four hits form a two-by-two square, all four marks fire again and the square scores as the best four-card flush or straight it holds, else High Card",
  "a"),
 
 # ---- AB2 Level 2 is the point: modest at level 1, built to be realised ----
@@ -70,7 +70,7 @@ ROWS = [
 # ---- AB3 The plan answers back: hits and misses rewrite, reveal and move marks ----
 ("MK0011", "The Makeover", "AB3", "skill", "A miss rewrites the mark to agree with you.",
  "When this card is placed on a mark it matches nothing of, the mark is rewritten to a copy of it, and this card counts as hitting it on one property you choose",
- "When any card is placed on a mark it matches nothing of, the mark is rewritten to agree with it on one property you choose",
+ "When any card is placed on a mark it matches nothing of, the mark is rewritten to agree with it on one property you choose, and that card counts as hitting it on that property",
  "When this card misses, the mark takes its rank only, and the next card stacked on it pays a rank match",
  "b"),
 
@@ -117,21 +117,21 @@ ROWS = [
  "c"),
 
 # ---- AB4 Called and bounced hits ----
-("MK0019", "The Called Shot", "AB4", "skill", "Name a cell; the next hit there pays big.",
+("MK0019", "The Call", "AB4", "skill", "Name a cell; the next hit there pays big.",
  "Cue: name an empty cell; the next card to hit its mark there pays its match bonus three times",
- "Cue: name an empty cell and the property it must hit on; a hit on that property there pays three times, and any other card placed there pays nothing",
- "Before each Entrance refill, name a cell; a hit there during that refill pays triple, and leaving it empty for the refill costs a step",
+ "Cue: name an empty cell and the property it must hit on; a hit on that property there pays three times, and any other card placed there pays no match bonus",
+ "Before each Entrance refill, name a cell; a hit there during that refill pays triple; a refill that leaves it empty drops the triple to double until a call lands",
  "a"),
 
-("MK0020", "The Decoy", "AB4", "stamp", "Misses herd the marks.",
- "When the wearer is placed on a mark it matches nothing of, that mark is shoved one cell in a direction you choose, if the cell there is empty",
+("MK0020", "The Herding Hat", "AB4", "stamp", "Misses herd the marks.",
+ "When the wearer is placed on a mark it matches nothing of, that mark is shoved one cell in a direction you choose, swapping with the mark there",
  "When the wearer misses, the mark it covered swaps with the mark of any empty cell in its lines",
- "When the wearer misses, the mark it covered is shoved one cell toward the nearest card that matches it",
+ "When the wearer misses, the mark it covered is shoved one cell toward the nearest card that matches it, swapping with the mark there",
  "a"),
 
 ("MK0021", "The Ricochet", "AB4", "skill", "A hit on the edge bounces to the far end.",
- "When a card hits its mark on an edge cell, the card at the far end of that line pays its match bonus again, if it too sits on a mark it matches",
- "When a card hits its mark on an edge cell, the card at the far end of that line pays its match bonus, whether or not it matches",
+ "When a card hits its mark on an edge cell that is not a corner, the card at the other end of the line that cell ends pays its match bonus again, if it too sits on a mark it matches",
+ "When a card hits its mark on an edge cell that is not a corner, the card at the other end of the line that cell ends pays its match bonus, whether or not it matches",
  "When a card hits its mark on a corner cell, the cards at the far ends of both its lines pay their match bonuses again, if they sit on marks they match",
  "a"),
 ]
