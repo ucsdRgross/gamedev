@@ -53,7 +53,7 @@ KEEPS = [
  "c"),
 ("E1314","S2","structure","Better cards toward the middle.",
  "The map is a square of probability rings, with higher-rank nodes likelier toward the centre",
- "The map is a square of probability rings, and travelling inward costs more fame per step",
+ "The map is a square of probability rings, and each step inward skips one more reward",
  "The map is a square of probability rings, and the centre is only reachable once per run",
  "b"),
 ("E1323","C5","skill","Bombs under the grid.",

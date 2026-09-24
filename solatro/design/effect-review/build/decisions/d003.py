@@ -61,7 +61,7 @@ KEEPS = [
 ("E0423","S2","structure","Festivals on a fixed calendar.",
  "Bonus festivals appear at fixed intervals along the route, every Nth node",
  "Bonus festivals appear at fixed intervals, and reaching one early carries the bonus forward",
- "Bonus festivals appear at fixed intervals, and you may spend fame to move one closer",
+ "Bonus festivals appear at fixed intervals, and you may skip a reward to move one closer",
  "a"),
 ("E0424","H2","skill","Answers what its neighbour does.",
  "When an adjacent card triggers, this card may answer by mirroring that trigger at half power",

@@ -247,7 +247,7 @@ KEEPS = [
 ("E0388","S4","hazard","A town that is never the same twice.",
  "Town: its layout and offers differ every visit, and a map event may burn it down so it rebuilds changed",
  "Town: its layout and offers differ every visit, and each visit makes the next one stranger",
- "Town: its layout and offers are rerolled each visit, and you may pay fame to reroll once more",
+ "Town: its layout and offers are rerolled each visit, and you may skip a reward to reroll once more",
  "c"),
 ("E0389","P6","skill","An animal that is legally a puppet.",
  "Animal effects that register as Puppet-type, immune to animal bans",

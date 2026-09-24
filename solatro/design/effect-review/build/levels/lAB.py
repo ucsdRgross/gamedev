@@ -8,7 +8,7 @@ ROWS = [
 ('Q1682', 'MK0005', 'REWORK', 'Two hits in a row are enough', '(c) could never end: no card can miss while every card counts as matching'),
 ('Q1683', 'MK0003', 'OK', "The relay also passes the first card's level 2 to the second card for that scoring", ''),
 ('Q1684', 'MK0006', 'REWORK', 'Diagonal shapes count too', 'no four-card hand exists unless Q0108 supplies one'),
-('Q1685', 'MK0009', 'REWORK', 'NONE', 'it is a rule about level 2 itself; absorbs Q1422'),
+('Q1685', 'MK0009', 'REWORK', ('The wearer may name two properties', 'The wearer may name three properties', "The wearer's level 2 lasts until the next refill, even after it leaves its mark"), 'it is a rule about level 2 itself; absorbs Q1422'),
 ('Q1686', 'MK0008', 'OK', 'Its options are its level 2; at level 1 it does nothing', ''),
 ('Q1687', 'MK0007', 'OK', 'Its options give both levels', ''),
 ('Q1688', 'MK0010', 'WEAK', 'Its options are its level 2; at level 1 it does nothing', 'fires only when another effect moves or stacks a card'),

@@ -243,7 +243,7 @@ the next render silently discards the edit.
   `npm --prefix designloop run check -- solatro/effect-review`.
 - **No class outside family N and feel-only W sits below four effects** — verified by counting
   keepers per class off the rendered document.
-- **No two live effects share a name** except the pairs listed under "Next up" — verified by grep.
+- **Nineteen pairs of live effects share a name** — measured by grep; renaming waits for the final effects.
 - **The question screen renders and is answerable** — verified by eye in a browser: header, three
   variants, reject, the recommendation marked for Enter, and the free-text box all present.
 - **The pipeline is machine-independent** — verified, zero absolute paths remain under `build/`,
@@ -287,19 +287,12 @@ edits the slot field in the effect's source row; the class stays, so no id moves
       from the main checkout (a fast-forward if nothing new landed there; otherwise re-read
       `answers.json` first, as above)
 
-Open for the owner, found during the pass: ten pairs of live effects share a name across families
-(The Dead End Q1397/Q1477, The Standing Set Q0637/Q1436, The Booking Q0811/Q1432, The Route Book
-Q1146/Q1430, The Quick Change Q0581/Q1441, The Casting Call Q0768/Q1427, The Empty House
-Q1376/Q1444, The Standing Ovation Q1246/Q1415, Understudy Q0531/The Understudy Q1417, Glass
-Q0268/Q0624), plus nine older near-collisions ignoring a leading "The" (Canvas, Cascade, Double
-Billing, Fourth Wall, Negative, Ox, Second Sight, Showman, Understudy), each in a different class
-with a different mechanic — names are sort keys, so renaming waits until a rename cannot move an
-answered id.
-
-Also open: about fifteen live options in families R, S and T spend or pay fame (Q1126 (c), Q1139 (c),
-Q1142 (b), Q1146, Q1147 (c), Q1148 (c), Q1154 (c), Q1156 (c), Q1262 (c) and more), while fame is
-the score a show must earn and the ruling is "no currency". One owner question settles all of them:
-is fame spendable? If not, each clause becomes "skip a reward".
+Owner rulings from reading round 2 (recorded in `build/GAME_BRIEF.md`): fame is not spendable (a
+cost paid in fame is a skipped reward); a property's level 2 is unlocked by its own match only,
+unless an effect says otherwise (`design/board-plan/gaps/GAP-007.md`, dispatch change not yet
+built); a second pass gave a level 2 to every skill, stamp and rank but Q1408, Q1409 and Q1494.
+Shared effect names (nineteen pairs, e.g. The Dead End Q1397/Q1477) wait until the effects are final:
+names are sort keys, and the owner will rename against the final set.
 
 ## The S13 TODO list
 

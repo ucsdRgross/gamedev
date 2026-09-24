@@ -37,7 +37,7 @@ KEEPS = [
 ("E1963","R8","hazard","Every boss you have already beaten, at once.",
  "Boss: carries the abilities of every boss you have beaten this run",
  "Boss: carries the abilities of the three bosses you beat fastest",
- "Boss: carries every beaten boss's ability, and you may disable one for a fame cost",
+ "Boss: carries every beaten boss's ability, and you may disable one by skipping that show's reward",
  "c"),
 ("E1971","I12","consumable","Peels a sticker off.",
  "Consumable: removes one sticker at random from one of your cards",

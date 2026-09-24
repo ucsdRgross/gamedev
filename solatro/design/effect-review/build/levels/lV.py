@@ -24,7 +24,7 @@ ROWS = [
 ('Q1348', 'E0995', 'REWORK', 'You may stop or restart its cycle whenever you choose', 'a turn is not a unit the board has'),
 ('Q1349', 'E1077', 'OK', ('A line through a matched fifth-suit cell holding four suits counts as holding all five', 'A card this skill creates goes to the Entrance slot you choose', 'A line through a matched fifth-suit cell holding four suits counts as holding all five'), 'absorbs Q1353 (The Fifth Suit)'),
 ('Q1350', 'E0076', 'REWORK', 'SUIT', "a suit's options are its level 2; counting as both suits is its level 1"),
-('Q1351', 'E0800', 'WEAK', 'NONE', 'a numeric reskin of Q1349, ten suits for five; only (c) is its own idea'),
+('Q1351', 'E0800', 'WEAK', 'Cards sitting on suit marks they match count as two suits', 'a numeric reskin of Q1349, ten suits for five; only (c) is its own idea'),
 ('Q1352', 'E0179', 'OK', 'On a suit match you choose which prop it fires', 'absorbs Q1340 (The Wild Costume)'),
 ('Q1353', 'G0438', 'DUP', None, 'Q1349'),
 ('Q1354', 'G0439', 'DUP', None, 'Q1350'),

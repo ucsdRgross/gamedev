@@ -41,7 +41,7 @@ ROWS = [
  "c"),
 ("G0468","The Touring Rig","C8","skill","Grids arrive when you earn them, not when the deck grows.",
  "A new grid unlocks each time a show is cleared above target, rather than per fifty-two cards of deck",
- "A new grid unlocks per fifty-two cards as usual, and one more may be bought outright between shows",
+ "Grids unlock per fifty-two cards as usual, and one more unlocks the first show you clear with every mark in a line matched",
  "Grids unlock per fifty-two cards, and one is taken away each time a show is cleared below target",
  "a"),
 ("G0469","The Ring Of Five","C11","skill","A shape that is not a line.",

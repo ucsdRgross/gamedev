@@ -230,7 +230,7 @@ KEEPS = [
 ("E0308","R8","consumable","Raises the stakes for both sides.",
  "Consumable: raises the next rival show's difficulty for both players; if both would pass, you take a quarter of its payout",
  "Consumable: raises the next rival show's difficulty for both; if you pass and the rival does not, you take all of its payout",
- "Consumable: raises the next rival show's difficulty for the rival only, at the cost of fame",
+ "Consumable: raises the next rival show's difficulty for the rival only, at the cost of skipping its reward",
  "b"),
 ("E0309","B2","skill","Money counts as anything.",
  "While spotlit, every Gold token in the deck counts as a wildcard toward any column run",

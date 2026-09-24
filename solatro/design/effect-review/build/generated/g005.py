@@ -37,7 +37,7 @@ ROWS = [
 ("G0137","The Dead List","G10","skill","Destroyed cards get a zone of their own. (lines 905, 995)",
  "Destroyed cards go to a dead list rather than vanishing, and effects may reach into it",
  "Destroyed cards go to a dead list you can see but never reach into",
- "Destroyed cards go to a dead list, and one card may be recovered from it per tour at a fame cost",
+ "Destroyed cards go to a dead list, and one card may be recovered from it per tour by skipping that show's reward",
  "a"),
 
 ("G0138","Sleight of Hand","E9","skill","The card does not land where you put it. (line 937)",

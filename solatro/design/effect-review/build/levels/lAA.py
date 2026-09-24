@@ -14,7 +14,7 @@ ROWS = [
 ('Q1519', 'BM0006', 'OK', None, ''),
 ('Q1520', 'BM0005', 'WEAK', None, 'line kinds have no rate of their own; every kind pays the same hand table'),
 ('Q1521', 'BM0019', 'OK', 'Loose cards sitting on marks they match count twice', ''),
-('Q1522', 'BM0021', 'WEAK', 'NONE', 'real time rewards stalling in a turn-based game'),
+('Q1522', 'BM0021', 'WEAK', ('Its bonus grows twice as fast', 'Its bonus is always the evening rate', 'Cards in its lines are never discarded'), 'real time rewards stalling in a turn-based game'),
 ('Q1523', 'BM0012', 'REWORK', 'SUIT', '(c) was a rank question inside a suit'),
 ('Q1524', 'BM0007', 'OK', 'You choose which side it pays each time', ''),
 ('Q1525', 'BM0016', 'OK', 'Plain cards sitting on marks they match count twice', ''),

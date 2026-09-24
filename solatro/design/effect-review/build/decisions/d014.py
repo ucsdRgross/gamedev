@@ -187,7 +187,7 @@ KEEPS = [
 ("E1902","K5","skill","The goal grows while you think.",
  "The show's goal rises steadily with real time spent in it",
  "The show's goal rises with the number of actions taken, not with real time",
- "The show's goal rises with real time, and pausing stops the clock at a fame cost",
+ "The show's goal rises with real time, and pausing stops the clock at the cost of the show's reward",
  "b"),
 ("E1904","O4","structure","Starts legendary, and might get more.",
  "Deck: starts with a Legendary card, with a chance of gaining another whenever a boss is beaten",

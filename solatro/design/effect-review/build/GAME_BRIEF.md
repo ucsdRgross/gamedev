@@ -132,8 +132,9 @@ only works on the pre-plan board.
 **level 2**, its form "when hitting its mark" (board-plan `PLAN.md` §1.7). Exactly two, ever.
 
 - **A match is same kind to same kind** (owner): suit to suit, rank to rank, hat to hat, skill to
-  skill. **A property's level 2 is unlocked by its own match only.** So a skill's level 2 needs a
-  talent match, a stamp's a hat match; a rank match does nothing for either.
+  skill. **A property's level 2 is unlocked by its own match only, unless an effect says
+  otherwise** (owner). So a skill's level 2 needs a talent match, a stamp's a hat match; a rank
+  match does nothing for either. An effect may unlock on another property by saying so.
 - **Suit and rank: level 1 is the plain suit or rank** — it scores and makes melds everywhere.
   **Level 2 is level 1 plus its additional effect.** Today's suit prop effects already have this
   shape (§1.6), and so does the rank-match points bonus (`plan_rank_match_step`). A suit or rank
@@ -220,6 +221,8 @@ equipment), Producer (token and money cards).
 - **Overscore is retired.** Punishing overperformance breeds sandbagging. An effect that raises
   future goals because you scored well is against a ruling, not merely unbalanced. Scale
   REWARDS, never goals. (A goal that rises with something else - gold held, time taken - is fine.)
+- **Fame is not spendable** (owner). Fame is earned and can be lost as a penalty, but nothing
+  buys anything with it; a cost that was paid in fame is a skipped reward.
 
 ## What makes an effect BAD here
 

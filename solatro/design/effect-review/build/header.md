@@ -20,9 +20,9 @@ pair reviewer before you see it.
 - **Where the level 2 is.** In the question's head when it is true of all three options, inside each
   option when the options differ. A suit or rank says "level 1 is the plain suit; each option is its
   level 2". Type, consumable, status, hazard and structure have none: they never sit on a mark.
-  **130 skills, stamps and ranks say "none beyond the flat mult"** (points, for a rank): on those, a
-  match pays its flat bonus and nothing more. If you want every effect to have one, say so and they
-  get a second pass.
+  Every skill, stamp and rank has one except three: two feel-only effects (Q1408, Q1409) and a
+  card that is never placed (Q1494). A rule or hazard carried by a skill gets a looser form, or
+  relief, while its card sits on its own mark, so there is a reason to aim it.
 - **Your recorded answers still mean what you chose.** Q0011 and Q0047 are still the only answered
   questions that are retired. Nothing you answered was edited; its level 2 is asked in family AC.
 - **187 more questions are retired in place**, each naming why: duplicates and twins (where one
@@ -40,9 +40,9 @@ pair reviewer before you see it.
   only costs you (a hazard filed as a skill), it needs a second grid, it does not say what it does,
   it depends on another question entering, or it overlaps one of your own answers. The flag is
   advice; the answer is yours.
-- ⚠ **One question is not in the list: is fame spendable?** About fifteen options in families R, S
-  and T spend or pay fame, while fame is the score a show must earn and there is no currency. If
-  fame is not spendable, each of those clauses becomes "skip a reward".
+- **Your rulings this round:** fame is not spendable, so an option that bought something with fame
+  now skips a reward instead (fame can still be lost as a penalty); and a property's level 2 is
+  unlocked by its own match only, unless an effect says otherwise.
 - **Family AB is new — 19 live effects written around the mark-hitting loop itself** (two more were
   retired at birth as twins of family Y): streaks and relays of hits, cards built to be realised,
   plans that answer back, and called and bounced hits.
