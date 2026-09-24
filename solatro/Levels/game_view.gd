@@ -119,7 +119,7 @@ func _ready() -> void:
 	play_area.hand_released.connect(_finish_with_the_card)
 	play_area.card_tapped.connect(_on_card_tapped)
 	play_area.info_requested.connect(_relay_info_requested)
-	play_area.highlight_cleared.connect(hud_container.highlight_gone)
+	play_area.highlight_cleared.connect(hud_container.board_highlight_gone)
 	play_area.description_dismiss_requested.connect(_on_description_dismiss_requested)
 	play_area.sidebar_requested.connect(hud_container.focus_sidebar)
 	play_area.hand_changed.connect(hud_container.set_card_in_hand)

@@ -171,6 +171,8 @@ func _ready() -> void:
 	await test_the_deck_button_pressed_again_closes_the_viewer_it_opened()
 	await test_the_map_shows_no_travel_or_deck_while_it_describes_a_card()
 	await test_a_card_on_the_game_screen_shows_no_map_buttons_while_a_node_is_picked()
+	await test_travel_goes_by_mouse_while_a_show_is_frozen_behind_the_map()
+	await test_closing_a_packs_viewer_returns_to_the_node_while_a_show_is_frozen()
 	await test_the_sidebars_x_over_a_viewer_unsticks_and_closes_together()
 	await test_an_unstuck_viewer_description_goes_when_the_pointer_leaves_the_card()
 	await test_the_deck_button_toggles_by_mouse_while_its_viewer_is_open()
@@ -4638,11 +4640,9 @@ func test_the_map_shows_no_travel_or_deck_while_it_describes_a_card() -> void:
 ## The map's row belongs to the map: a node picked there puts no Deck or Travel beside a game-screen card -- a regression net only, green even without that guard now the chooser cannot be left.
 func test_a_card_on_the_game_screen_shows_no_map_buttons_while_a_node_is_picked() -> void:
 	await _start_game_fixture()
-	await _click_overlay(&"BackButton")
-	await _wait_out_the_move()
+	await _back_to_the_map_with_the_show_frozen()
 	var node := _a_map_node_with_role(MapNodeRoles.ROLE_GAME)
-	check(_main._current_focus == &"map" and node != null,
-			"sanity: Back left the game for a map that offers a show node", str(_main._current_focus))
+	check(node != null, "sanity: the map offers a show node")
 	if node != null:
 		await _select_map_node_and_settle(node)
 		check(_map.selection_deck_button.is_visible_in_tree()
@@ -4657,6 +4657,72 @@ func test_a_card_on_the_game_screen_shows_no_map_buttons_while_a_node_is_picked(
 		check(not _map.selection_deck_button.is_visible_in_tree()
 				and not _map.travel_button.is_visible_in_tree(),
 				"a card described on the game screen carries no Deck or Travel button")
+	await _end_main_fixture()
+
+# The overlay's Back is the player's own way out of a show that is still running: the show stays
+# frozen behind the map, its board and its hover alive in their own picture.
+func _back_to_the_map_with_the_show_frozen() -> void:
+	await _click_overlay(&"BackButton")
+	await _wait_out_the_move()
+	for _i : int in range(180):
+		if is_equal_approx(_container.slid_fraction(), 1.0): break
+		await get_tree().process_frame
+	check(_main._current_focus == &"map" and _main._pictures[&"game"].screen_root is GameView,
+			"sanity: Back left a live show frozen behind the map", str(_main._current_focus))
+
+## A reachable node of the kind asked for, picked by a real click on its dot -- the token set down one step short of one when none is reachable yet.
+func _click_a_reachable_node(wants_pack: bool) -> WorldGraphNode:
+	var node : WorldGraphNode = null
+	for next : WorldGraphNode in _map.controller._sorted_next():
+		if (_booster_of(next) != null) == wants_pack: node = next
+	if node == null:
+		node = _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER if wants_pack
+				else MapNodeRoles.ROLE_GAME)
+		_map.controller._current = _a_neighbour_leading_to(node)
+		_map.controller.refresh_visuals()
+# The camera eases on beside the sidebar still sliding in, so the dot is clicked where it RESTS.
+	var at := Vector2.INF
+	for _i : int in range(180):
+		var now := WorldMapController.node_screen_rect(node).get_center()
+		if now.is_equal_approx(at): break
+		at = now
+		await get_tree().process_frame
+	await _click(at, _map_viewport)
+	await get_tree().process_frame
+	return node
+
+## A frozen show's board is not on the screen the player is using: a real click on the map's Travel goes where it was aimed.
+func test_travel_goes_by_mouse_while_a_show_is_frozen_behind_the_map() -> void:
+	await _start_game_fixture()
+	await _back_to_the_map_with_the_show_frozen()
+	var node := await _click_a_reachable_node(false)
+	check(_map.controller.selected() == node and _map.travel_button.is_visible_in_tree(),
+			"sanity: a real click picked a node and put Travel beside its description")
+	var entered := _count_arrivals()
+	check(await _click_button(_map.travel_button, _booted_viewport),
+			"a real click on Travel pressed it with a show frozen behind the map")
+	await _await_map_arrival()
+	check(entered.size() == 1 and entered[0] == node,
+			"...and the token travelled there", str(entered.size()))
+	await _wait_out_the_move()
+	await _end_main_fixture()
+
+## With a show frozen behind the map, closing a pack's possible-cards viewer still comes back to the picked node, Travel within reach.
+func test_closing_a_packs_viewer_returns_to_the_node_while_a_show_is_frozen() -> void:
+	await _start_game_fixture()
+	await _back_to_the_map_with_the_show_frozen()
+	var pack := await _click_a_reachable_node(true)
+	check(_map.controller.selected() == pack and is_instance_valid(DeckViewer._open),
+			"sanity: a real click picked the pack node and opened its possible-cards viewer")
+	await _click(Vector2(_map_viewport.size) - Vector2.ONE, _map_viewport)
+	await get_tree().process_frame
+	check(not is_instance_valid(DeckViewer._open) or DeckViewer._open.is_queued_for_deletion(),
+			"sanity: a click outside the viewer closed it")
+	check(_container.showing_description() and _map.travel_button.is_visible_in_tree(),
+			"closing the viewer comes back to the picked node with Travel in reach")
+	check(_container.showing_description() and _panel.current_entry.title == _map._info_for(pack).title,
+			"...describing the node", _panel.current_entry.title if _panel.current_entry else "none")
+	check(_map.controller.selected() == pack, "...the pick itself untouched")
 	await _end_main_fixture()
 
 ## The X is the same one cancel as Escape: over a viewer it lets the stuck card go AND closes the viewer, in one press.

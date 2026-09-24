@@ -276,6 +276,12 @@ func highlight_gone() -> void:
 		_follow_the_menus_own_content()
 	_refresh_exit_button()
 
+# ⚠ A FROZEN SHOW'S BOARD STILL LOSES ITS FOCUS: a press on the map's Travel, or a viewer closing
+# there, takes it -- measured -- so only the screen being shown may hand the sidebar back.
+## The game board lost its highlight: `highlight_gone()` while the game screen is the one shown, else nothing.
+func board_highlight_gone() -> void:
+	if _active_screen == GAME_SCREEN: highlight_gone()
+
 # STICKY IS THE LOCK, on every surface: a clicked viewer card pins the sidebar exactly as a clicked
 # board card does, and letting it go leaves the highlight free again.
 func _follow_the_viewers_sticky(stuck: bool) -> void:

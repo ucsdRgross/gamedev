@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P52 done (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P52): `ALL 51 SUITES: 7001 CHECKS PASSED`,
+**State:** P1-P53 done (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P53): `ALL 51 SUITES: 7032 CHECKS PASSED`,
 21 placeholder warnings, 24 resources + 1150 ObjectDB.
-Pending: P53, P54, P55 and the owner's next visual review round, then the close. Gate at the stream's start:
+Pending: P54, P55 and the owner's next visual review round, then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -545,8 +545,8 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/Levels/game_view.gd, solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar UiViewers MapTraversal'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'One writer for both symptoms, measured by a stack on every sidebar-hiding call: the FROZEN game board''s deferred focus-exit (play_area.gd _publish_focus_left_cards -> highlight_cleared) reached HudContainer.highlight_gone with the map active and swapped to the HUD - the frozen cell loses focus whenever a control in another viewport takes it. GameView now connects highlight_cleared to HudContainer.board_highlight_gone(), which acts only while the game screen is shown. Red (HEAD): 4 of 53 target checks (Travel pressed, token travelled, Travel in reach, the node described). Green: FILTERED 5 of 51: 2473 (+ an unexplained SIDEBAR row, Open bugs); after the review''s rule-8 rename SIDEBAR 1791. Fable review: rule-8 fix applied; three latent routes recorded (P54, Open bugs). Gate: ALL 51 SUITES: 7032 CHECKS PASSED.'
   notes: 'ALSO measured by P52 (same family, likely the same cause - fix together): with a show running, a mouse click on the map''s Travel button never fires - the press alone swaps the sidebar to the HUD and hides Travel with the pick still selected; two Enters fail the same way; HEAD hud_container.gd too. So a frozen show makes the map untravellable. Viewer paths (6): closing a viewer with nothing sticky on the MAP returns the sidebar to the picked node (Travel live). P51 suspects game_view.gd:122 (play_area.highlight_cleared wired straight to highlight_gone, not limited to the game screen) - unverified, measure first. Related open bug: the container-global viewer fields.'
 - id: P54
   description: Stick a chooser card, open the Deck viewer over the chooser, close it - the chooser's stuck card survives with Take disabled but the sidebar shows the HUD with no X (measured by P52: sticky set, Take disabled, not locked, no description); one Escape clears it.
@@ -555,7 +555,7 @@ a lot of these issues are with lack of parity between different modal input opti
   verification_kind: suite
   status: pending
   evidence: ''
-  notes: 'P52 reads the cause from code: closing the Deck viewer releases the chooser''s lock (HudContainer._close_hosted_viewer) - the container-global viewer fields (Open bugs). Viewer paths (3): a viewer opened over a lock suspends it and restores it on close. Measure first; may share a fix with P53.'
+  notes: 'SAME FAMILY, traced by the P53 review (unmeasured): a DeckViewer opened on the GAME screen stays hosted after overlay Back (the overlay takes no focus, so the viewer''s cancel never runs); on the map, the map''s Deck button or a pack node''s first pick closes it through _close_hosted_viewer with _active_screen == map - the game''s _suspended_lock is re-filed under the MAP key and _entry_under_the_viewer re-shown on the map - and _hosting_a_viewer() is true on the map, so the first arrow publishes a frozen game card onto the map''s sidebar. Measure both routes; one per-screen fix of the viewer fields may cover both. P52 reads the cause from code: closing the Deck viewer releases the chooser''s lock (HudContainer._close_hosted_viewer) - the container-global viewer fields (Open bugs). Viewer paths (3): a viewer opened over a lock suspends it and restores it on close. Measure first; may share a fix with P53.'
 - id: P55
   description: Two frames after Take on the pack chooser the map is drawn off-centre - the map image starts at about x=760, y=190 of a 1280x720 window with an empty grey band above and left of it (P52 shot p52_after_take_live.png, UNVERIFIED whether mid-ease or at rest, and whether HEAD before P52 does the same).
   files_touched: [solatro/Levels/map.gd, solatro/Tests/Wall/test_sidebar.gd]
@@ -563,7 +563,7 @@ a lot of these issues are with lack of parity between different modal input opti
   verification_kind: snapshot
   status: pending
   evidence: ''
-  notes: 'Measure first: sample the map camera / picture framing every frame from Take until it rests, on the current tree AND on the commit before P52; if it settles centred it is a transition, and the only question is whether the owner wants it (fifth round: wall stuff never visible inside a picture - the grey is the picture background, check which). R1: picture edges match window edges.'
+  notes: 'Also seen after overlay Back from a live show (P53 shot p53_a_after_close_show_frozen.png: the map image from about x=784, y=164). Measure first: sample the map camera / picture framing every frame from Take until it rests, on the current tree AND on the commit before P52; if it settles centred it is a transition, and the only question is whether the owner wants it (fifth round: wall stuff never visible inside a picture - the grey is the picture background, check which). R1: picture edges match window edges.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -637,9 +637,12 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - DRAG PLACE timing rows, 1 of 2 runs on the P50 tree (a Sonnet report called them a known flake - they are NOT on any list): "...and bare motion afterwards moves the board not at all" (content x -836.74 -> -837.32), "leaving the picture stops the slide exactly where it stood" and its precondition "the slide was caught part way across" (travelled 1.000). The palette change cannot reach them; measure before naming a cause.
 - Picture-wall design DAG warning (Design Loop check): QR6's default (a) reaches nothing - Q76 is gated [QR6=b|c], Q77 [QR6=b]. A design decision for the owner: widen the gates or change the default.
 - map.gd shows literal user-facing strings ("Tour complete!", "Continue tour", "Fame: %d") that bypass TRANSLATION (found by P52).
+- SIDEBAR "Close fix 2: a new run's map opens on the HUD, not the last run's pack description" failed 1 of 2 SIDEBAR-including runs on the P53 tree, 0 of 8 alone; a map-only fixture with no GameView. Unexplained.
+- Latent, traced by the P53 review (unmeasured): GameView's description_dismissed handler nulls play_area.locked_data with no screen check, so dismissing a MAP description with its X strips the frozen board's lock marking while the game's locked entry survives (Forward re-shows it, the marking gone); exit_accepted likewise rests focus on a frozen cell.
+- OWNER QUESTION for the next round (traced by the P53 review, pre-existing): by keys, a transient (unsticky) game description remembered under the game screen survives overlay Back and is re-shown on Forward, describing a card nothing is on, with no X. HudContainer's _entry_by_screen says a return re-shows; the second playtest (2) says an unsticky description closes when the card is no longer hovered. Which wins?
 
 ## Next up
-1. P53 (closing the possible-cards viewer returns to the node), P54 (the Deck viewer over the chooser drops the chooser's sticky description), P55 (the map framed off-centre after Take - measure first), then refresh the visual review with the P50 and P51 changes and park on the owner's next round (`/plan-run` "The owner's visual review").
+1. P54 (the Deck viewer over the chooser drops the chooser's sticky description), P55 (the map framed off-centre after Take - measure first), then refresh the visual review with the P50 and P51 changes and park on the owner's next round (`/plan-run` "The owner's visual review").
 2. The close per /plan-run, then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list), and the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
