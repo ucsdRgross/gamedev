@@ -249,7 +249,7 @@ E0247	KEEP		T1	skill	Preserves up to 20% of a show's unspent score into the next
 E0248	KEEP		A5	skill	Cue, once per show: replay the previous placement's entire effect sequence against the current board, same effects and order, targets resolved fresh.	
 E0249	KEEP		G2	consumable	Consumable: a random Legendary card joins the deck for exactly 3 shows then departs, kept permanently if a hidden condition is met during its stay.	
 E0250	KEEP		D9	rank	This card has half rank (rounded down) and half size: two copies occupy one grid slot together and meld as one combined card.	
-E0251	KEEP		E7	skill	Cue at show start: lock this card's movement for the show (cannot be grabbed) in exchange for scoring double all show.	
+E0251	KEEP		E7	skill	Locks another card in place, and that card scores double.	
 E0252	KEEP		E3	consumable	Consumable: flips the order of one entire stack, bottom becomes top.	
 E0253	KEEP		A10	skill	At show end, cue to convert the placement's unused combo above the payout into Gold tokens instead of losing it.	
 E0254	KEEP		B4	rank	Aces are renamed and count as either rank 1 or rank 14 in runs, whichever is more favorable, decided at evaluation time.	

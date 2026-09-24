@@ -39,13 +39,13 @@ ROWS = [
 ("G0149","The Forge","D3","skill","Two placements, both onto the same cell.",
  "Cue: place two Entrance cards this turn onto the SAME cell, building height two at once",
  "Cue: place two Entrance cards onto the same cell, and the pair scores as a single card of their summed rank",
- "Cue: place any number of Entrance cards onto one cell this turn, at one patience each",
+ "Cue: place any number of Entrance cards onto one cell this turn; each after the second discards one Entrance card",
  "a"),
 
 ("G0150","The Messenger","E1","skill","Unlimited movement, so long as height never changes.",
- "Cue: move this card any distance across cells of the same height, as many times as you like",
- "Cue: move every card of your choosing any distance, so long as none of them changes height",
- "Cue: move this card any distance at the same height, and it scores per cell crossed",
+ "Cue, once per Entrance refill: move this card any distance across cells of the same height",
+ "Cue, once per Entrance refill: move up to five cards any distance, so long as none changes height",
+ "Cue, once per Entrance refill: move this card any distance at the same height, scoring per cell crossed",
  "b"),
 
 ("G0151","The Bull","E2","skill","Pushes rather than swaps.",

@@ -427,5 +427,7 @@ FAMILIES = [
 ("AD", "New effects from the design review",
  "Proposed by the pair reviewer while making the existing effects better; each fills a gap it found. A separate family only because the question id is positional.", [
  ("AD1","Lines, shapes and buckets","none","new scoring shapes, and what pays into which bucket"),
+ ("AD2","Stocks, slots and the discard","none","the five stocks, the Entrance slots and the discard pile as places that pay"),
+ ("AD3","Stacks and legality","none","what may stack where, and what a stack pays"),
 ]),
 ]

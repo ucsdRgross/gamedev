@@ -189,7 +189,7 @@ KEEPS = [
  "b"),
 ("E0300","E5","skill","Advances and takes on the diagonal.",
  "Stacked under a card, it swaps upward with it on each refresh, two slots if it is bottommost; placed diagonally onto a card, it captures and replaces it",
- "Stacked under a card, it swaps upward on each refresh; it captures diagonally, and reaching the top of its column it becomes any other chess card you own",
+ "Stacked under a card, it swaps upward on each refresh; it captures diagonally, and reaching the top of its stack it becomes any other chess card you own",
  "Stacked under a card, it swaps upward on each refresh; it captures diagonally, and each capture raises its rank by 1",
  "b"),
 ("E0301","R1","hazard","A town that has done its homework.",

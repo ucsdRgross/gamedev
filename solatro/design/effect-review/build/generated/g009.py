@@ -44,7 +44,7 @@ ROWS = [
 
 ("G0172","Hanoi Solitaire","D1","skill","Only smaller on larger, ever.",
  "A card may only be stacked on a card of strictly higher rank",
- "A card may only be stacked on a card of strictly higher rank, and a full descending stack scores as its own meld",
+ "A card may only be stacked on a card of strictly higher rank, and a descending stack of five scores as its own meld",
  "A card may only be stacked on a higher rank, and moving a stack moves only its top card",
  "b"),
 

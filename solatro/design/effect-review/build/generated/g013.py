@@ -7,10 +7,10 @@ SOURCE = "solitaire families, mahjong and incremental games"
 ROWS = [
 
 # --- solitaire structural families -------------------------------------------
-("G0223","The Packer","D1","skill","Build downward in alternating colour.",
- "Stacks build one rank down in alternating colour, and a whole ordered run moves as one",
- "Stacks build one rank down in alternating colour, and only single cards move",
- "Stacks build one rank down in any colour but the same one, and a whole run moves as one",
+("G0223","The Packer","D1","skill","Packs a row into one stack.",
+ "Cue: gather the cards of this card's row that could legally stack, left to right, into one stack on this cell, stopping at the first illegal card",
+ "Cue: gather every card of this card's row that could legally stack into one stack on this cell, skipping the illegal ones",
+ "Cue: gather the legal cards of this card's row, left to right, into one stack on this cell, and the emptied cells have their marks re-dealt",
  "a"),
 
 ("G0224","The Spider Rule","B2","skill","Build loosely, but only clear strictly.",
@@ -46,7 +46,7 @@ ROWS = [
 ("G0229","The Redeal","F8","skill","Gather what is left and lay it out again.",
  "When no legal move remains, you may gather the unplayed cards, shuffle and lay them out again, a limited number of times",
  "When no legal move remains you may redeal without shuffling, preserving the order",
- "You may redeal at any time, not only when stuck, but each redeal costs an Entrance card, discarded",
+ "Cue at any time: gather the Entrance and every stock, shuffle, and deal them out again; each redeal discards one Entrance card",
  "c"),
 
 # --- mahjong ------------------------------------------------------------------

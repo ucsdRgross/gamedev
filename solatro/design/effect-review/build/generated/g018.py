@@ -97,7 +97,7 @@ ROWS = [
 ("G0381","The Narrow Gate","F6","skill","Fewer choices, better cards.",
  "The entrance holds three cards instead of five, and every card in it is drawn from the top third of the deck by rank",
  "The entrance holds three cards, and each placement you may name one property the refresh must match",
- "The entrance holds three cards, refreshes twice as often, and a refresh that goes unused scores a step",
+ "The entrance holds three cards, and a refill whose three cards all land in one line pays a step",
  "a"),
 ("G0382","The Second Door","F6","skill","A separate way onto the board.",
  "While this card is on the grid, a second entrance of two cards opens, feeding only this card's grid",
@@ -119,9 +119,9 @@ ROWS = [
 
 # --- F11 deck-size scaling -------------------------------------------------------
 ("G0385","The Last Cards","F11","skill","Strongest when there is almost nothing left.",
- "This card scores a step for every five cards missing from the deck",
- "This card scores a step for every five cards missing from the deck, and double once the deck is under ten",
- "This card scores nothing until the deck is under ten cards, then scores enormously",
+ "Scores a step for each Entrance stock that has run empty",
+ "Scores a step for each Entrance stock that has run empty, doubled once every stock but one is empty",
+ "Scores nothing until a stock runs empty, then a step for every five cards the remaining stocks hold",
  "a"),
 ("G0386","The Full Company","F11","stamp","Strength from a deck that is still deep.",
  "This card scores a step for every ten cards still in the deck",

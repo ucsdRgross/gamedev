@@ -75,8 +75,8 @@ ROWS = [
 # --- D10 height caps ----------------------------------------------------------
 ("G0013","The Rigging Loft","D10","skill","Sets how high a stack may go.",
  "Stacks may not exceed a fixed height, and a card that would exceed it cannot be placed",
- "Stacks may not exceed a fixed height, and a card that would exceed it pushes the bottom card out instead",
- "There is no height cap, but every level above the fifth costs one patience to place",
+ "Stacks may not exceed a fixed height; a card that would exceed it pushes the bottom card out to the top of the stock you choose",
+ "There is no height cap, but placing above the fifth level discards one Entrance card",
  "b"),
 ("G0014","Low Ceiling","D10","hazard","A venue that will not take a tall act.",
  "Boss: stack height is capped for this show, where it is normally unbounded",

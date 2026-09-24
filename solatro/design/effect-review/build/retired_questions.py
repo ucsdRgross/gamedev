@@ -588,4 +588,8 @@ RETIRED = {
     "MK0018": "Duplicate of Q1450 (The Bad Notice): marks that pay nothing or cost you when hit; that the false ones are hidden is Q1463's question; the owner rules on it there.",  # Q1692
 
     "G0077": 'Retired: a tracked, displayed placement order is interface, and you rejected UI-only effects at Q0038 and Q0076.',  # Q0226
+
+    "G0379": 'Duplicate of Q0370: a card paid for coming back to its cell; the owner rules on it there.',  # Q0373
+
+    "E0102": "Retired: already free. You may place any of the Entrance's five cards in any order, so sorting the Entrance changes nothing.",  # Q0398
 }

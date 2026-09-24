@@ -259,7 +259,7 @@ ROWS = [
 ("E0109",
  "While spotlit, every card in this card's column gains bonus points per level of column height when that column scores",
  "While spotlit, this card scores its rank once for every level of height beneath it",
- "While spotlit, a height line completed in this card's column scores twice",
+ "While spotlit, a height line completed in this card's stack scores twice",
  "c"),
 ("E0110",
  "This card's position in the deck is always visible",
