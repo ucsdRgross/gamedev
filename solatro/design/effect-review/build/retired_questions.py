@@ -209,4 +209,44 @@ RETIRED = {
     "E0822": 'Duplicate of Q1264 (Seasonal crown): the same trigger, target and action; the owner rules on it there.',  # Q1265
 
     "G0114": 'Duplicate of Q1324 (The Conflicting Notes): the same trigger, target and action; the owner rules on it there.',  # Q1325
+
+    "E0254": 'Retired: already a rule. Straights already wrap through the Ace, so (a) restates the game, and its every-rank-shifts variant (c) is Q0110 (Shortcut), which the owner ruled on.',  # Q0122
+
+    "G0207": 'Duplicate of Q0123 (Canasta rank-based wildcards): one named rank is wild in every meld; the owner rules on it there.',  # Q0125
+
+    "E0678": "Duplicate of Q0114 (The Blacklisted Hand): a line already scores exactly one hand, and repeats scoring less is the owner's own wording there.",  # Q0133
+
+    "E0205": 'Duplicate of Q0132 (Lowball): each line scores its worst hand; straights already read regardless of order; the owner rules on it there.',  # Q0135
+
+    "E0352": "Merged into Q0138 (Sword Swallower): four columns of perfect descents is that effect's level 2; the owner rules on it there.",  # Q0141
+
+    "E0361": "Duplicate of Q0136 (Dead Man's Hand): a jackpot for one specific rank combination, reseeded per run; the owner rules on it there.",  # Q0142
+
+    "G0230": 'Duplicate of Q0144 (The Episode Rules): name hand types that score double for the run; the owner rules on it there.',  # Q0145
+
+    "G0001": "Duplicate of Q0155 (The Short Ring): diagonals already score, so (a) restates the game and (c) is Q0155's short diagonals; the owner rules on it there.",  # Q0154
+
+    "G0186": "Merged into Q0229 (The Long Reach): the whole grid counting as adjacent is that effect's level 2; the owner rules on it there.",  # Q0231
+
+    "E0122": 'Retired: OG Placer is a shipped rule card, and the rules deck is a deck, not an effect. Its (a) is the default placement rule the game already plays.',  # Q0239
+
+    "E0121": 'Retired: OG Grabber is a shipped rule card, and the rules deck is a deck, not an effect. Its (a) is the default grab rule the game already plays.',  # Q0244
+
+    "G0263": 'Duplicate of Q0252 (The Backlift): an extra step for each card stacked above it; the owner rules on it there.',  # Q0259
+
+    "E0107": 'Duplicate of Q0284 (Hungry Hippo): eats the cards placed on it for their rank; the owner rules on it there.',  # Q0285
+
+    "E0151": "Merged into Q0282 (Edith's Bayonet): consuming any card, not only its own suit, is that effect's level 2; the owner rules on it there.",  # Q0286
+
+    "E0075": "Merged into Q0309 (The Leotard): moving any card anywhere is that effect's level 2; the owner rules on it there.",  # Q0318
+
+    "E1151": 'Duplicate of Q0314 (Walking Through the Wall): stepping over an occupied cell into the one beyond, chaining as its level 2; the owner rules on it there.',  # Q0336
+
+    "E0306": "Merged into Q0345 (The Rook) and Q0339 (The Bishop): each takes the other's lines as its level 2, which is the queen; the owner rules on it there.",  # Q0346
+
+    "G0374": 'Duplicate of Q0347 (Cards bounce/swap between grids): swapping a card with the same cell in another grid; the owner rules on it there.',  # Q0350
+
+    "E2041": 'Retired: already a rule. Placed cards are already immovable, so (a) restates the game; (c) loosens it and (b) needs a drawback pack that does not exist.',  # Q0355
+
+    "G0237": 'Duplicate of Q0358 (Boss: adjacency-only placement): cards may only go next to cards already down, which is a hazard; the owner rules on it there.',  # Q0364
 }

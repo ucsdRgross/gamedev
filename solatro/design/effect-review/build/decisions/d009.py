@@ -161,7 +161,7 @@ KEEPS = [
  "Enhances whichever scoring type you have used least this run, updating as you play",
  "c"),
 ("E1258","D5","type","Sinks, but not all the way.",
- "Sinks toward the bottom of its stack, stopping at other heavy cards, and costs more at shops",
+ "Sinks toward the bottom of its stack, stopping at other heavy cards",
  "Sinks straight to the bottom of its stack regardless of what is there",
  "Sinks one level per turn until it reaches the bottom or meets another heavy card",
  "a"),

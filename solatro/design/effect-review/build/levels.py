@@ -114,7 +114,7 @@ def cmd_stat():
     check(q2e, lv)
     by = OrderedDict()
     for qid, q in qs.items():
-        if not q["live"] and q2e[qid] not in lv:
+        if q["fam"] == "AC" or (not q["live"] and q2e[qid] not in lv):
             continue
         t = by.setdefault(q["fam"], Counter())
         t["live"] += 1

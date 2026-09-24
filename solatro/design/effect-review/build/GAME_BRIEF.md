@@ -147,10 +147,25 @@ only works on the pre-plan board.
 - ⚠ **A level 2 that equals, or nearly equals, another effect's level 1 is a duplicate** — merge
   the two or drop one.
 
+- **Level 2 lasts while the card sits on the mark it matched** — the hook fires every time a line
+  through the cell scores (board-plan `Q52`=(b)). A level 2 that moves its own card should land it
+  on another mark it matches, or the move ends level 2.
+
 **What makes a good level 2.** The player earned it by placing the right card on the right cell,
 so it should feel like a payoff for aim, not a bigger number: the effect reaches further (its line,
-its grid, the next refill), fires again, turns a cost into a gain, lets the player choose where it
-lands, or changes the mark itself. A flat "×2 the number" is the fallback, not the default.
+the next refill, the height above and below), fires again, turns a cost into a gain, lets the
+player choose where it lands, or changes the mark itself. A flat "×2 the number" is the fallback,
+not the default.
+
+**House wording and the shapes that do nothing**, found by the pair review:
+- "**through its cell**" is this card's own cell; "**through a matched cell**" is any cell whose
+  card matches its mark. Never "through a matched mark", which reads both ways.
+- "**every grid**" is void in a normal run, which plays one grid.
+- Counting **all marks** is a flat bonus fixed at the deal, since every cell has one. Count
+  MATCHED or UNCOVERED marks, which play moves.
+- A mark takes part in a meld only when it is **uncovered and stands in for an empty cell** — the
+  owner's own shape (`Q0098`, `Q0109`). A covered mark is under its card; the card acts, not it.
+- A level 2 must not equal another live effect's level 1; grep `DESIGN.md` before writing one.
 
 ## ⚠ The Entrance is five per-slot STOCKS — confirmed design, not yet built
 

@@ -238,7 +238,7 @@ E0236	KEEP		B1	skill	This card also melds with any adjacent neighbors whose rank
 E0237	KEEP		I10	skill	Cue: apply Burning to every card in this card's entire row; this card becomes Exhausted.	
 E0238	DROP	RESKIN:E0076				
 E0239	DROP	DUPLICATE:E0048				
-E0240	KEEP		B4	rank	This card has an enormous rank that counts as two Aces in melds; if any inspection effect examines it, it is destroyed and the show's fame payout is voided.	
+E0240	KEEP		B4	rank	This card has an enormous rank that counts as two Aces in melds; if a card is ever stacked on it, it is destroyed and the show's fame payout is voided.	
 E0241	KEEP		A12	skill	When a row's score plus its column's score totals exactly 42, the show's combo gains +3.	
 E0242	KEEP		K8	skill	Once per Entrance refill, during scoring resolution, pauses the show to allow one grab/place before resolution continues.	
 E0243	KEEP		I4	skill	Cards dropped on this card are not consumed but returned to the column below it; each one permanently adds +1 to this card's score bonus.	
