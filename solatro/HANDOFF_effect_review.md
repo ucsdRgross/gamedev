@@ -288,7 +288,7 @@ edits the slot field in the effect's source row; the class stays, so no id moves
 - [x] second level-2 pass (owner: "second pass please") and its review
 - [x] design-improvement pass (owner: the reviewer should "improve effects and contribute to
       design"): nine `pair-reviewer` batches, each a BETTER list, applied; family AD (29 new)
-- [ ] fast-forward `combine-sidebar-boardplan` to `effect-levels` again
+- [x] fast-forward `combine-sidebar-boardplan` to `effect-levels` again
 
 Owner rulings from reading round 2 (recorded in `build/GAME_BRIEF.md`): fame is not spendable (a
 cost paid in fame is a skipped reward); a property's level 2 is unlocked by its own match only,
