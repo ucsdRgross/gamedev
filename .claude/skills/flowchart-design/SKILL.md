@@ -234,8 +234,9 @@ included. Confirming an exclusion is cheap; discovering one late is not.
 ### Pair review — a different model reads the work before the owner does
 
 Owner ruling ([[implementer-routing]]): the main agent is Opus 5.5 and asks a Fable 5.1
-`pair-reviewer` to review its work at checkpoints and suggest changes, like pair programming. The
-reviewer is read-only; you decide what to change, and a rejected suggestion needs a reason.
+`pair-reviewer` to review its work at checkpoints and suggest changes, like pair programming —
+both fixes AND better designs (its `BETTER` list); a brief that asks only for defects wastes it.
+The reviewer is read-only; you decide what to change, and a rejected suggestion needs a reason.
 
 | Checkpoint | Why there |
 |---|---|
