@@ -122,6 +122,28 @@ most of them test-to-test setup. About ten touch production code.
    `use_placeholder_content` toggle, **default off**, so the default path still hosts real
    scenes — `solatro/design/picture-wall/gaps/GAP-017.md` records why.
 
+## Working rules
+
+- **The player's save and settings are not yours.** Every probe, harness and suite run gets a
+  private `APPDATA`, so `user://` is isolated — `.claude/hooks/godot-needs-private-appdata.ps1`
+  blocks a launch without one. Back up before any touch you cannot avoid. The editor: hard rule 3.
+- **Track every PID you start.** Before reporting done, no Godot console process you started is
+  left (kill your own, by `-Id`); `.claude/hooks/leftover-godot-warn.ps1` lists survivors at every
+  stop. A suite with no banner inside its timeout is a hang — look for a parse error first.
+- **Plans and design records.** Fold new work and rulings into the EXISTING plan steps and tests
+  unless told otherwise. Record the owner's ACTUAL answer verbatim, never your recommendation
+  ([[charts-from-resolved-answers]]). Answer a question from `PLAN.md`, the handoff and the design
+  docs before asking the owner. A handoff is stateless and portable: no absolute paths, the exact
+  next step and its verification commands. Never delete a plan that has not landed (a landed one is
+  folded and deleted, as above). A magic value is not a design answer — derive it.
+- **Visual bugs.** Reproduce and measure first; list at least two hypotheses, each with the
+  measurement that confirms or refutes it; fix only the confirmed one. Verify on a real render of
+  real art (hard rule 5, `/fx-verify`). In-game behaviour is never "untestable" — build a harness.
+  Engine capability: the engine docs before a repo grep (hard rule 6).
+- **Execution.** Never stop early citing context — compaction exists. One blocked scenario: finish
+  the rest and report the blocker. Commit only the current step's files, staged by path. Subagent
+  presets: model aliases and explicit effort in frontmatter ([[implementer-routing]]).
+
 ## Where to start
 
 | Project | Read first |
@@ -168,3 +190,7 @@ Deliberately NOT installed, each for a measured reason:
   is deterministic (`commit-gate.ps1`); the model-driven passes belong at the work-stream boundary
   where the whole diff exists.
 - **A weaker model as reviewer, ever.** See `/plan-run`'s "The reviewer's model floor".
+- **A parallel implementer swarm in worktrees.** The owner kept hard rule 2: every worktree shares
+  `user://settings.tres`, `godot.log` and the window.
+- **A scripted headless `claude -p` loop, one plan step per call.** It bypasses the overseer, the
+  reviews and the owner's questions.

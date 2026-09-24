@@ -36,6 +36,18 @@ a blank frame at exit 0 is this class of tool's characteristic failure.
 ⚠ `-- --trace` runs a REAL act with `EventLog` recording when the question is about ORDER
 (`HEADLESS_TESTING.md` §0c). `-- --shoot-all` is the still-frame path.
 
+## A visual probe
+
+A visual BUG starts with the hypothesis list in `/CLAUDE.md` "Working rules" — no fix before a
+measurement has confirmed one. Then every probe:
+
+1. A private `APPDATA` in the launching command (a hook blocks it otherwise), and ONE Godot PID.
+2. A BEFORE image and an AFTER image of the same shot.
+3. State in words what is visibly different between them — "no change" is a finding.
+4. Restore state: kill your PID by `-Id`, put back every file you parked.
+5. Register the pair in the visual review (`solatro/visual-review/`, commands in its README) so the
+   owner reviews before/after side by side.
+
 ## Preconditions
 
 - **The owner's Godot editor must be closed** for suite runs. Check first:

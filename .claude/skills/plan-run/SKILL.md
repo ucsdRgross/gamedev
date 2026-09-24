@@ -46,6 +46,9 @@ checked with `git ls-files --eol`, never `grep`: Git Bash's `grep -c $'\r'` coun
 
 **Verify every done-when yourself with a bounded command.** Never accept a self-reported green.
 
+**Verify the recon premise before dispatch** — the site and cause a brief names are a hypothesis
+until a bounded command confirms them ([[brief-premise-is-a-hypothesis]]).
+
 ## Writing a step brief
 
 The implementer's definition already carries the report schema and repo rules, so a brief is short —
@@ -87,6 +90,7 @@ but it MUST carry:
    clock …) in the code and none in the registry — each added mid-step because the plan could not
    foresee it, each recorded in a commit message nobody reads at the next step. The registry is
    authoritative only while it is complete; tell the implementer to append, and check it.
+10. **The report states that no Godot process it started is left running.**
 
 **Never accept `STATUS: done` on a component whose consumer does not exist.**
 
@@ -317,6 +321,8 @@ Run in this order. Earlier items change the diff the later ones read.
 1. **`py .claude/tools/doc_check.py`** — the FULL run, not `--changed`. Overseer runs this itself;
    it reads no source. Phase boundaries use `--changed`; the close needs the whole repo, because a
    doc this run invalidated may live in a file the run never touched.
+1a. **`plan-auditor` subagent writes `AUDIT.md` beside the handoff** — PASS/FAIL per plan item;
+   the run closes only at zero unwaived FAILs. `close-needs-audit-warn.ps1` warns until it exists.
 2. **`adversarial-review` subagent** over `main...HEAD`. Reads the design, plan, test plan and names
    registry, then judges the entire branch. Its `PLAN DRIFT:` section is the half a code review
    cannot produce.

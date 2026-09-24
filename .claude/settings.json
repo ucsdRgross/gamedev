@@ -14,6 +14,10 @@
           },
           {
             "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR\\.claude\\hooks\\godot-needs-private-appdata.ps1\""
+          },
+          {
+            "type": "command",
             "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR\\.claude\\hooks\\commit-gate.ps1\"",
             "timeout": 60
           }
@@ -57,6 +61,16 @@
             "type": "command",
             "command": "py \"$CLAUDE_PROJECT_DIR/.claude/tools/diff_shape.py\" --changed --warn-only",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR\\.claude\\hooks\\leftover-godot-warn.ps1\"",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR\\.claude\\hooks\\close-needs-audit-warn.ps1\"",
+            "timeout": 30
           }
         ]
       }

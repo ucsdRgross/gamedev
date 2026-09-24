@@ -379,6 +379,15 @@ one that overrode the recommendation. Write the diverged nodes first, from that 
 poker-patience the flag fired on 57 of 314 answers — that is the set worth being slow and careful
 about, and it is 18 % of the document, not all of it.
 
+**Before presenting charts or a plan, close the gap `stale` leaves with one table** — built from
+`answer_sheet.mjs`, one row per answer:
+
+| The owner's answer, verbatim | Where it appears (chart node / plan step) | Match? |
+|---|---|---|
+
+Then list every chart node and plan step that no row backs. A `no` or an unbacked node is fixed
+before the owner sees the charts, not after.
+
 ⚠ **Treat a high divergence count as a signal about the QUESTIONNAIRE, not just about the charts.**
 57 overrides means the recommended defaults were wrong more than one time in six, so "the owner
 accepted the defaults" is never a safe assumption when summarising what was decided.

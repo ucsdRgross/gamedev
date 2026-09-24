@@ -41,7 +41,7 @@ RUNTIME_ARTIFACTS = {
     "run.tres", "settings.tres", "answers.json", "answers.log", "meta.json", "graph.json",
     "status.owner.json", "status.agent.json", "test_output_all.log", "test_output_errors.log",
     "summary.log", "visual_log.log", "visual_log_by_frame.log", "package-lock.json",
-    "run.tmp.tres", "annotations.json", "layout.json", "transcript.md", "changelog.md",
+    "run.tmp.tres", "annotations.json", "layout.json", "transcript.md", "changelog.md", "AUDIT.md",
 }
 
 # Generic stand-ins used in prose ("pin `file.gd:line`"), never real paths.
