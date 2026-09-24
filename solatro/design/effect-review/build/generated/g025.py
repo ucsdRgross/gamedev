@@ -36,10 +36,10 @@ ROWS = [
 
 ("BM0060", "The Return Deal", "AA4", "hazard",
  "A finished line goes back in the box.",
- "Hazard: when a line completes and scores, its five cards return to the Entrance stocks",
- "Hazard: when a line completes and scores, the card that completed it returns to an Entrance stock",
+ "Hazard: when a line completes and scores, its five cards return to the bottoms of their stocks; a card returning for a second time is discarded instead",
+ "Hazard: when a line completes and scores, the card that completed it returns to the bottom of its stock and its cell is sealed for the show",
  "Hazard: when a line completes and scores, its five cards return to the stocks and the line's cells are sealed for the show",
- "a"),
+ "c"),
 
 ("BM0061", "The Skewer", "AA4", "skill",
  "Runs everything on one side through.",
@@ -57,14 +57,14 @@ ROWS = [
 
 ("BM0063", "The Tourist", "AA4", "skill",
  "Paid for going somewhere new.",
- "Gains a permanent step each show it occupies a cell it has never occupied before",
+ "Gains a permanent step each show it is placed in a cell it has never occupied, and loses one when placed in a cell it has",
  "Gains a step per cell it has ever occupied, checked when it scores",
  "Gains a permanent step for each new cell, and resets when it has visited every cell of its grid",
  "a"),
 
 ("BM0064", "The Siamese Pair", "AA4", "skill",
  "Place one, and the other comes too.",
- "Cue: bond this card to another; placing either from the Entrance places the other in the mirrored cell of the grid",
+ "Cue: bond this card to another card in the Entrance; placing either places the other in the cell mirrored across the grid's centre, or the nearest empty cell to it",
  "Cue: bond this card to another; placing either places the other in the orthogonally adjacent cell",
  "Cue: bond this card to another; moving either moves the other the same way",
  "a"),
@@ -134,7 +134,7 @@ ROWS = [
 
 ("BM0074", "The No-Repeats", "AA4", "hazard",
  "One of everything.",
- "Hazard: any card in the stocks that exactly matches another in rank and suit is destroyed at show start",
+ "Hazard: any card in the stocks that exactly matches another in rank and suit is set aside for the show",
  "Hazard: any card in the stocks that shares a rank and suit with a card on the board is destroyed",
  "Hazard: a card may not be placed if a card of the same rank and suit is already on the board",
  "a"),
@@ -175,10 +175,10 @@ ROWS = [
  "a"),
 
 ("BM0080", "The Fresh Lock", "AA4", "skill",
- "What just moved cannot move again yet.",
- "A cell a card just entered is locked against every effect for the next two placements",
- "A cell a card just entered is locked against every effect for the rest of the refill",
- "A card that just moved cannot be moved again until a line completes",
+ "What just landed cannot be touched.",
+ "A card cannot be moved, swapped, destroyed or discarded by any hazard or hostile effect for the two placements after it lands",
+ "As (a), for the rest of the Entrance refill",
+ "A card that an effect has just moved cannot be moved again until a line completes",
  "a"),
 
 ("BM0081", "The Chaos Swap", "AA4", "hazard",
@@ -190,17 +190,17 @@ ROWS = [
 
 ("BM0082", "The Loan From Tomorrow", "AA4", "skill",
  "Borrow a card now, return it or lose.",
- "Cue: draw any card from the stocks into the Entrance now; it must be sent back within five placements or the show is lost",
- "Cue: draw any card from the stocks into the Entrance now; it must be sent back within five placements or it is destroyed",
- "Cue: draw the top card of any stock into the Entrance now; the next refill deals one card fewer",
- "a"),
+ "Cue: draw any card from the stocks into an empty Entrance slot now; if it has not been placed within five placements the show is lost",
+ "Cue: draw any card from the stocks into an empty Entrance slot now; an unplaced loan after five placements is destroyed instead",
+ "Cue: draw the top card of any stock into an empty Entrance slot now; the next refill deals that slot nothing",
+ "b"),
 
 ("BM0083", "The Orbit", "AA4", "skill",
  "Columns drift out of phase.",
- "Each column has a phase of three that advances when a card of its suit is placed; a card may only move between columns in the same phase",
+ "Each column has a phase of three that advances when a card is placed in it; a line scores double when every column it crosses is in the same phase",
  "Each column has a phase of three that advances on every placement in it; lines score only across columns in the same phase",
  "Each column has a phase that advances when it scores; a column in phase three pays double and drops back to one",
- "a"),
+ "c"),
 
 # --------------------------------------- AA5 creation, transformation and meta-effects ---
 ("BM0084", "The Colour Wheel", "AA5", "skill",
@@ -247,9 +247,9 @@ ROWS = [
 
 ("BM0090", "The Wild Hat", "AA5", "stamp",
  "A stamp that is every stamp.",
- "This stamp counts as every stamp for any effect that checks a card's stamp",
- "This stamp counts as every stamp for any effect that checks a card's stamp, but grants no bonus of its own",
- "This stamp counts as whichever stamp its neighbours wear most",
+ "This stamp counts as every stamp for any effect that checks a card's stamp, and its wearer matches any hat mark",
+ "As (a), but the hat match pays no mult of its own",
+ "This stamp counts as whichever stamp its orthogonal neighbours wear most, and matches only that hat",
  "a"),
 
 ("BM0091", "The Fuse", "AA5", "skill",
@@ -361,7 +361,7 @@ ROWS = [
  "The top and bottom of the line leave.",
  "When a line completes, its highest- and lowest-ranked cards leave the board to the discard, and this card gains a permanent step per card",
  "When a line completes, its highest-ranked card leaves the board, and this card gains that rank as a permanent bonus",
- "When a line completes, its lowest-ranked card leaves the board, and the line re-scores without it",
+ "When a line completes, its lowest-ranked card leaves the board to the discard, and the line re-scores with the uncovered mark beneath standing in for it (your Q0109 rule)",
  "a"),
 
 ("BM0107", "The Equaliser", "AA5", "skill",

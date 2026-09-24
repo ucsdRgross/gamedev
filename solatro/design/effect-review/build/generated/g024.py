@@ -36,9 +36,9 @@ ROWS = [
 
 ("BM0005", "The Levelling Crowd", "AA1", "hazard",
  "The kind you lean on pays like the kind you neglect.",
- "Hazard: the line kind (row, column, diagonal or height) completed most this show pays at the rate of the kind completed least",
- "Hazard: the line kind completed most this show pays half",
- "Hazard: every line kind pays at the rate of the least-completed kind",
+ "Hazard: lines of the kind completed most this show pay half, and lines of the kind completed least pay double",
+ "Hazard: lines of the kind completed most this show pay half",
+ "Hazard: a line pays in full only if its kind is the one completed least this show, else half",
  "a"),
 
 ("BM0006", "The Inverted Bill", "AA1", "hazard",
@@ -56,18 +56,18 @@ ROWS = [
  "a"),
 
 ("BM0008", "The Triple Entry", "AA1", "skill",
- "One line, three buckets.",
- "Every line this card completes pays into the row, column and special bucket at once",
- "Every line this card completes pays into its own bucket and one other you choose",
- "Every line on this card's grid pays into all three buckets, at a third of its value each",
- "a"),
+ "One line, another bucket.",
+ "Every line this card completes pays into its own bucket and again into the special bucket",
+ "When placed, name a bucket; every line this card completes pays into that bucket instead of its own",
+ "Every line on this card's grid pays into all three buckets at a third of its value each",
+ "b"),
 
 ("BM0009", "The Decrescendo", "AA1", "skill",
  "Paid for coming down.",
  "Gains a permanent multiplier when a line scores less than the previous line, and loses one when it scores more",
  "Gains a permanent multiplier when a line completes as a weaker hand type than the previous line",
  "Gains a permanent multiplier when a line scores less than the previous line; nothing on the way up",
- "a"),
+ "c"),
 
 ("BM0010", "The Encore Line", "AA1", "skill",
  "The same ranks, again.",
@@ -77,10 +77,10 @@ ROWS = [
  "b"),
 
 ("BM0011", "The Even Bill", "AA1", "skill",
- "Paid when every kind of line has had its turn.",
- "Pays a bonus at each line completion while every line kind (row, column, diagonal, height) has completed an equal number of times",
- "Scales with the number of line kinds NOT yet completed this show",
- "Pays a large bonus the first time all four line kinds have completed at least once this show",
+ "Paid when the kinds of line keep pace.",
+ "Pays a step at each line completion while rows, columns and diagonals have each completed the same number of times this show",
+ "Pays a step per line kind (row, column, diagonal, height) not yet completed this show, so it pays most early",
+ "When a line completion brings its kind's count level with the most-completed kind's, it pays a large bonus",
  "c"),
 
 ("BM0012", "The Multiplier Suit", "AA1", "suit",
@@ -107,7 +107,7 @@ ROWS = [
 ("BM0015", "The Crowd Favourite", "AA1", "skill",
  "The commonest rank on the board is the star.",
  "Cards of the board's most common rank score extra",
- "Cards of the board's most common rank score extra, and cards of its least common rank score nothing",
+ "Cards of the board's most common rank score extra, and the placement that makes a new rank the favourite pays that bonus for every card of it on the grid at once",
  "Cards of the board's most common SUIT score extra",
  "a"),
 
@@ -127,9 +127,9 @@ ROWS = [
 
 ("BM0018", "The Wrong Spotlight", "AA1", "hazard",
  "The line completes, and everything else is paid.",
- "Hazard: when a line completes, the cards OUTSIDE it score and the line itself does not",
- "Hazard: when a line completes, both the line and every card outside it score, the line at half",
- "Cue, once per show: swap which cards count as scoring and which do not for one line completion",
+ "Hazard: when a line completes, its hand is paid, but its flat points are the ranks of the cards on the grid outside the line, not its own",
+ "Hazard: as (a), and the line's own ranks pay at half on top",
+ "Cue, once per show: for one line completion, its flat points are the ranks of every card outside it",
  "a"),
 
 ("BM0019", "The Loose Ends", "AA1", "skill",
@@ -140,10 +140,10 @@ ROWS = [
  "a"),
 
 ("BM0020", "The Spare", "AA1", "skill",
- "Its bonus lands on the next two lines, not its own.",
- "This card's bonus applies to the next two lines that complete after its own, not to its own",
- "This card's bonus applies to the next line that completes, at triple strength",
- "This card's bonus applies to every line that completes for the rest of the Entrance refill in which it scored",
+ "Its number lands on the next lines, not its own.",
+ "This card pays nothing in its own line; the next two lines to complete anywhere on the grid each add its rank to their multiplier",
+ "This card pays nothing in its own line; the next line to complete adds three times its rank to its multiplier",
+ "This card pays nothing in its own line; every line completed for the rest of the Entrance refill in which it scored adds its rank to its multiplier",
  "a"),
 
 ("BM0021", "The Matinee Clock", "AA1", "skill",
@@ -219,9 +219,9 @@ ROWS = [
 
 ("BM0031", "The Reunion", "AA2", "skill",
  "The first cards of the last five lines meet again.",
- "The first card of each of the last five completed lines forms a virtual line that scores as a hand",
- "The highest card of each of the last five completed lines forms a virtual line that scores as a hand",
- "The card that completed each of the last five lines forms a virtual line that scores as a hand",
+ "From the fifth completed line on, the first card of each of the last five completed lines forms a virtual line that scores as a hand into the special bucket at every line completion",
+ "As (a), the highest card of each",
+ "As (a), the card that completed each",
  "a"),
 
 ("BM0032", "The Underdog Bill", "AA2", "skill",
@@ -261,9 +261,9 @@ ROWS = [
 
 ("BM0037", "The Full Mansion", "AA2", "skill",
  "A hand built across the whole board.",
- "Three of a kind and four of a kind anywhere on the board at once score as a hand",
- "Two three-of-a-kinds anywhere on the board at once score as a hand",
- "A straight of five and a flush of five anywhere on the board at once score as a hand",
+ "When a placement brings a three of a kind and a four of a kind of different ranks onto the board at once, they score together as a full house into the special bucket, and again whenever a line through one of their cards scores",
+ "As (a), for two three of a kinds",
+ "As (a), for a straight of five and a flush of five",
  "a"),
 
 ("BM0038", "The Status Meld", "AA2", "skill",
@@ -282,7 +282,7 @@ ROWS = [
 
 ("BM0040", "The Binary", "AA2", "skill",
  "Ones and blanks make a number.",
- "A line of rank-1 and rankless cards, read as binary, creates a card of that rank in the Entrance",
+ "A row or column of rank-1 and rankless cards, read as binary, creates a card of that rank in an empty Entrance slot; a value past King makes a King",
  "A stack of rank-1 and rankless cards, read as binary, counts as one card of that rank",
  "A line of rank-1 and rankless cards, read as binary, pays that many flat points",
  "a"),
@@ -311,9 +311,9 @@ ROWS = [
 
 ("BM0044", "The Centre Ring", "AA3", "skill",
  "A different act in a different seat.",
- "This card's talent is one thing anywhere on the grid and a stronger, different thing while it sits in the centre cell",
- "This card's talent is one thing anywhere on the grid and a different thing while it sits in a corner",
- "This card's talent changes with the row it sits in, five talents for five rows",
+ "Pays a step anywhere on the grid; in the centre cell it instead adds +1 to the multiplier of every line through it",
+ "Pays a step anywhere; in a corner it instead pays a step per completed line through the corner's row, column and diagonal",
+ "Pays one step in row 1, two in row 2, up to five in row 5",
  "a"),
 
 ("BM0045", "The Ringside", "AA3", "skill",
@@ -381,7 +381,7 @@ ROWS = [
 
 ("BM0054", "The Tremor", "AA3", "type",
  "When it scores, everything around it re-scores.",
- "When a card of this type scores, every completed line through an orthogonal neighbour re-scores",
+ "When a card of this type scores, every completed line through an orthogonal neighbour that does not hold this card re-scores",
  "When a card of this type scores, every completed line through any of its eight neighbours re-scores, and the card breaks",
  "When a card of this type is placed, every completed line through an orthogonal neighbour re-scores",
  "a"),

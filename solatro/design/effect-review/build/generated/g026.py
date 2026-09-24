@@ -78,7 +78,7 @@ ROWS = [
 
 ("BM0122", "The Ratchet", "AA6", "skill",
  "Every gain adds a rule.",
- "Each time it scores it gains a permanent multiplier and adds a new ban on what may score; breaking any ban resets both",
+ "Each time it scores it gains a permanent multiplier and bans the suit of the card that completed that line; a banned suit scoring resets both",
  "Each time it scores it gains a permanent multiplier and bans the hand type just completed; breaking a ban resets both",
  "Each time it scores it gains a permanent multiplier and bans one rank; breaking a ban destroys this card",
  "a"),
@@ -94,7 +94,7 @@ ROWS = [
  "Odd, even, odd, even.",
  "Gains a multiplier per consecutive card in a completed line whose rank parity flips from the one before",
  "A line whose ranks alternate parity all the way along pays double",
- "Gains a multiplier per consecutive card in a completed line whose SUIT colour flips from the one before",
+ "Gains a multiplier per consecutive card in a completed line whose suit differs from the one before, and double if the line uses only two suits, alternating",
  "a"),
 
 ("BM0125", "The Warmer, Colder", "AA6", "skill",
@@ -176,9 +176,9 @@ ROWS = [
 
 ("BM0136", "The Trophy", "AA6", "skill",
  "It keeps a piece of every boss it beat.",
- "After a hazard show is won, permanently gains a weakened form of that hazard's rule as a benefit",
- "After a hazard show is won, gains that hazard's rule as a benefit for the next show only",
- "After a hazard show is won, choose one card to gain a weakened form of that hazard's rule permanently",
+ "After a hazard show is won, cue once in any later show: that hazard's rule applies to the grid for one Entrance refill, and every line completed under it pays double",
+ "As (a), for the next show only",
+ "As (a), and each invocation adds +1 combo",
  "a"),
 
 ("BM0137", "The Silver Lining", "AA6", "skill",
@@ -207,14 +207,14 @@ ROWS = [
  "Gains a step each Entrance refill until full, then scores nothing until an effect resets it to empty",
  "Gains a step each Entrance refill until full, then scores its whole growth once and resets itself",
  "Gains a step each line completed until full, then scores nothing until it is moved",
- "a"),
+ "b"),
 
 # --------------------------------------------------------------------------- AA7 hazards ---
 ("BM0141", "The Fresh Bill", "AA7", "hazard",
  "Nothing from the last line may return.",
- "Hazard: a line may not share any rank or suit with the previous completed line, or it scores nothing",
- "Hazard: a line may not share any RANK with the previous completed line, or it scores nothing",
- "Hazard: a line that shares a rank or suit with the previous completed line scores half",
+ "Hazard: a line may not share any rank with the previous completed line, except in the cell where the two cross, or it scores nothing",
+ "Hazard: a line may not share its hand type with the previous completed line, or it scores nothing",
+ "Hazard: a line that shares a rank with the previous completed line, the crossing cell excepted, scores half",
  "a"),
 
 ("BM0142", "The Veteran's Card", "AA7", "hazard",
@@ -326,7 +326,7 @@ ROWS = [
  "Every placement must complete a line.",
  "Hazard: a placement is legal only if it completes a line, once the grid holds ten cards",
  "Hazard: a placement that completes no line discards the placed card",
- "Hazard: three placements in a row that complete no line end the show",
+ "Hazard: once the grid holds ten cards, three placements in a row that complete no line end the show",
  "c"),
 
 ("BM0158", "The Locked Column", "AA7", "hazard",
@@ -338,9 +338,9 @@ ROWS = [
 
 ("BM0159", "The River", "AA7", "hazard",
  "Two banks, a boat, and a rule about who may be left together.",
- "Hazard: the grid is split into two halves; you may place only on the half you stand on, placing on the far half crosses you over, and a half may never hold two more cards of a named suit than of another or the show is lost",
+ "Hazard: the grid is split into two halves; you may place only on the half you stand on, placing on the far half crosses you over, and a half may never hold two more cards of the named suit than of any other suit or the show is lost",
  "Hazard: the grid is split into two halves; you may place only on the half you stand on, and every placement crosses you over",
- "Hazard: a half may never hold two more cards of a named suit than of another, or every card of that suit on that half is discarded",
+ "Hazard: a half may never hold two more cards of the named suit than of any other suit, or every card of that suit on that half is discarded",
  "a"),
 
 ("BM0160", "The Kinship Rule", "AA7", "hazard",
@@ -360,7 +360,7 @@ ROWS = [
 
 ("BM0162", "The Garden Plot", "AA8", "skill",
  "Each suit grows in its own shape.",
- "Cards of one suit arranged in that suit's named shape (a square, a column of three, an L, two non-adjacent) with an average rank of seven are harvested: they score and leave the board",
+ "Cards of one suit arranged in that suit's shape (Hoop a ring of four, Knife a row of three, Ball a column of three, Fire an L, Firework two cells apart on a diagonal) with an average rank of seven are harvested: they score as a flush of their count into the special bucket and leave the board",
  "Cards of one suit arranged in that suit's named shape are harvested, whatever their ranks",
  "Any four cards of one suit in a two-by-two block with an average rank of seven are harvested",
  "a"),
