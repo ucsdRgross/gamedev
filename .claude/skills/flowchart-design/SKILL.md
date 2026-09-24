@@ -231,6 +231,25 @@ included. Confirming an exclusion is cheap; discovering one late is not.
 
 ## The procedure
 
+### Pair review — a different model reads the work before the owner does
+
+Owner ruling ([[implementer-routing]]): the main agent is Opus 5.5 and asks a Fable 5.1
+`pair-reviewer` to review its work at checkpoints and suggest changes, like pair programming. The
+reviewer is read-only; you decide what to change, and a rejected suggestion needs a reason.
+
+| Checkpoint | Why there |
+|---|---|
+| after §4's usage table, before §5 writes the questions — it reads §1, §2 and §4, never the §3 sketch | a missed case compounds into every question after it |
+| **always** right before the owner sees a round: before the URL is handed over (round 1, step 4 of the round loop) and before `status.agent.json` goes `ready` (later rounds) | the owner's time is the scarcest thing in the loop |
+| after the answers are folded into `PLAN.md` and `TEST_PLAN.md` (§8b, item 7a) | the plan goes straight to an executor |
+
+Implementation keeps one review per verified step ([[implementer-routing]], which also carries the
+measured yield). **Widen the interval** once two consecutive checkpoints come back
+`NOTHING ACTIONABLE`; the checkpoint before the owner never widens.
+
+⚠ **Ask two to four questions about THIS work's riskiest parts**, not "review this". The reviewer
+counts toward hard rule 2's two-subagent cap and runs no Godot, so it takes the second slot.
+
 ### 1. Research first — the plan is built on code, not on docs
 
 Before writing a single node:
@@ -749,7 +768,8 @@ grammar above is obeyed.
    something that does not exist. The subset is `designloop/design/designloop/PLAN.md` §6; widening it is a plan
    change, not a parser change.
 
-4. **Start the server and hand over the URL.** Not a file path, not "open the doc":
+4. **Run the pair review (§ Pair review), then start the server and hand over the URL.** Not a
+   file path, not "open the doc":
 
    ```
    npm --prefix designloop start
@@ -771,8 +791,9 @@ grammar above is obeyed.
    through as *not relevant* or Enter-defaulted, and whether the owner wrote their own answer.
    **Telling you in chat always works too** — never make the watch the only route.
 
-6. **When it wakes**, read `<project>/design/<slug>/answers.json`, revise the document, and hand the
-   turn back by writing `status.agent.json` (yours; the owner's half is never yours to write):
+6. **When it wakes**, read `<project>/design/<slug>/answers.json`, revise the document, run the
+   pair review (§ Pair review), and hand the turn back by writing `status.agent.json` (yours; the
+   owner's half is never yours to write):
 
    ```json
    { "state": "ready", "mode": "questions", "round": 2, "at": "…",
@@ -1055,6 +1076,9 @@ what happens to the thing being replaced.
    own documents. (The tool's own design living outside the structure its design mandates is exactly
    the kind of thing that greets an implementing agent as a broken path.)
 7. Nothing in the plan is phrased as a question to the owner. The questionnaire is over.
+7a. **The pair review ran on the plan and test plan** (§ Pair review), and every finding was either
+    applied or answered with a reason. It judges the decisions; `plan-auditor` still checks every
+    claim against the code before execution.
 8. **`npm --prefix designloop run check -- <slug>` is clean on the four provenance lines**, not just
    on errors: `in prose` (answers with no letter), `unquoted` (a document paraphrasing a free-text
    answer instead of quoting it), `contracts … unauthorised` (a normative block no `⚑contract`

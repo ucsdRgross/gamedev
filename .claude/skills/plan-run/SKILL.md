@@ -18,11 +18,12 @@ what that shipped. Everything below aims at that failure.
 ## Setup
 
 - A **git worktree on its own branch**, never the main working tree. The owner merges when done.
-- **The overseer session runs Fable 5.1 at high effort. Implementers run Opus 5.5 by full id,
-  and the lever is EFFORT**: `plan-implementer-low` for a step whose writer and row the brief
-  names, `plan-implementer` (medium) for input routing, focus ownership, a modal or lock state
-  machine, a proving deletion, an open-cause diagnosis ([[implementer-routing]] carries the rule
-  and the arithmetic; a Sonnet tier was measured and dropped). Effort lives in the agent
+- **The overseer session runs Opus 5.5 at high effort, with Fable 5.1 as its read-only reviewer.
+  Implementers run Opus 5.5, and the lever is EFFORT**: `plan-implementer-low` for a step whose
+  writer and row the brief names, `plan-implementer` (medium) for input routing, focus ownership,
+  a modal or lock state machine, a proving deletion, an open-cause diagnosis
+  ([[implementer-routing]] carries the rule, the arithmetic, and the Sonnet tier kept for purely
+  mechanical steps). Effort lives in the agent
   frontmatter only - the dispatch cannot override it. A session's model is chosen at startup, so
   check yours before the first dispatch.
 - **The repo's no-commit rule is REVERSED for the overseer on that branch**: commit after every step
@@ -165,9 +166,8 @@ never below it.
 Owner ruling (verbatim): "reviewer ideally fable always, but it never touches the code itself,
 just finds issues." Every reviewer in this list runs `fable` and is read-only; a finding is a
 brief for an implementer ([[implementer-routing]]), never an edit by the reviewer. The floor is
-therefore always cleared whatever the author. `plan-auditor` and `bloat-reviewer`
-run `opus` and clear the floor; the Fable 5.1 overseer clears it too, so the close may run in a
-Fable session. Raising an implementer's tier raises the floor with it.
+therefore always cleared whatever the author. Raising an implementer's tier raises the floor with
+it.
 
 **A review pass REPORTS, never applies.** `/simplify`'s apply phase and `/code-review --fix` are
 not used here: the reviewer never touches the code (owner ruling above); its findings go to an

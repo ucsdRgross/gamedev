@@ -178,6 +178,8 @@ Everything else is a smaller game-jam or study project.
 - **`/docs`** — audit and consolidate the docs and memory. Run it when a work stream lands, when
   the docs feel scattered, and **before writing any new memory file**. Its mechanical half is
   `py .claude/tools/doc_check.py`, which proves every reference still resolves.
+- **`pair-reviewer`** subagent — Fable reads design work (a round, a plan, a content batch) before
+  the owner sees it; `/flowchart-design` § Pair review says when.
 - **`plan-auditor`** subagent — audits a plan or doc against the live code before you execute it.
 - **`bloat-reviewer`** subagent — reads ONE diff and asks only the three questions a single diff can
   answer: hard rules 7 and 8, plus functions with one call site. Cross-file duplication is

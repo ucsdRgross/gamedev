@@ -9,7 +9,7 @@ metadata:
 definitions, effort in each one's frontmatter (the only per-subagent effort control; the `Agent`
 call cannot pass effort): `plan-implementer` (`model: opus`, medium), `plan-implementer-low`
 (`opus`, low), `plan-implementer-sonnet` (`sonnet`, low - mechanical steps only). The presets use
-the aliases so they follow each new version (owner). The overseer (Fable) writes no source.
+the aliases so they follow each new version (owner). The overseer writes no source.
 
 **Route by what the brief already knows, not by how big the step looks:**
 
@@ -19,7 +19,7 @@ the aliases so they follow each new version (owner). The overseer (Fable) writes
 | the writer and row are named: a one-site fix with its `file:line`, a recon-backed bug | `plan-implementer-low` | 34k-69k tokens each; each one either landed or stopped with a measured owner question |
 | the cause is open, a focus/input model across viewports, a modal or lock state machine, a deletion that must prove every caller gone | `plan-implementer` (medium) | 100k-680k tokens per round; split the brief before dispatch - a smaller brief, not a bigger model, is the lever |
 | read-only recon ahead of a step | `Explore` on `sonnet` | grep-and-cite; the implementer measures anyway |
-| every review | `bloat-reviewer` / `plan-auditor` / `adversarial-review` on `fable` | read-only, see below |
+| every review | `bloat-reviewer` / `plan-auditor` / `adversarial-review` / `pair-reviewer` on `fable` | read-only, see below |
 
 **Escalation - by the KIND of miss, not a count.** A low or Sonnet report that calls an unknown
 cause a flake, or leaves a failure unexplained, goes to medium effort on the FIRST such report, with
@@ -44,10 +44,11 @@ looser, which docs now contradict it). About two in three such reviews on the pl
 returned an actionable finding - a hang route, a stale flag across a teardown, a coordinate-space
 mix, a test that could pass vacuously - that the implementer's own green run had not caught.
 
-**The overseer stays Fable for a stream in flight.** Its turns are mostly cache reads ($0.25/MTok
-on Fable 5.1 against $0.20 on Opus 5.5), so switching saves little and costs a context re-read;
-what it buys is judgement over a long context (a report whose exit profile moved, a shot taken
-mid-travel, a "flake" that had passed four gates). Judge a 5.5 overseer on that record.
+**The main agent is Opus 5.5 at high effort, for design and implementation alike, and the
+`/plan-run` overseer with it; Fable 5.1 is its pair reviewer.** Owner, as recorded in the todo: "the
+main agent is Opus 5.5; as it goes it asks a Fable 5.1 subagent to review its work at reasonable
+checkpoints and suggest changes, like pair programming"; the overseer half was a proposal the owner
+answered "go". Design checkpoints: `/flowchart-design` § Pair review.
 
 **Operational gotchas, all measured:**
 - A definition naming a model the app cannot run is SUBSTITUTED by the session's model, and ran at

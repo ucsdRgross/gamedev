@@ -84,26 +84,9 @@ Recorded so they are not forgotten; none is designed yet. Each goes through `/fl
   Fisher-Yates (ARCHITECTURE_REVIEW §3e). `worldgen/` seeds itself. Required before any
   seed-sharing feature and before demo replays.
 
-- ⬜ **Main agent plus a pair reviewer, for design work too.** Owner: the main agent is Opus 5.5;
-  as it goes it asks a Fable 5.1 subagent to review its work at reasonable checkpoints and suggest
-  changes, like pair programming. `/plan-run` already does this for implementation; the owner may
-  bring it to `/flowchart-design` and Design Loop, so a different model reviews the work right
-  before it would have been passed on to the owner. The effect-review pass below is its first use.
-  **Recommended cadence, for the owner to confirm.** Measured on the playtest-fixes stream: about
-  two in three per-step Fable reviews returned an actionable finding the author's own green run
-  had missed (`.claude/memory/implementer-routing.md`), and it ran 57 steps over 20 owner rounds,
-  roughly three reviewed steps per owner review.
-  - Design: two to three reviews per owner round. After the flowcharts cover the braindump and
-    before the question graph is written, where a gap compounds most. Always right before the
-    owner sees a round. Then after the answers are folded into the plan and test plan, before the
-    handoff.
-  - Implementation: one per verified step, as now.
-  - Widen the interval when two consecutive checkpoints return nothing actionable.
-  `implementer-routing.md` makes the overseer Fable for a stream in flight; reconcile that with an
-  Opus main agent when this lands.
-
 - ⬜ **An effect-review pass for each effect's level-2 form "when hitting its mark".** Opus 5.5 is
-  the main agent on high effort and Fable 5.1 is its pair reviewer (above). It goes through
+  the main agent on high effort and Fable 5.1 (`pair-reviewer`) reviews it.
+  **In flight: `HANDOFF_effect_review.md` S14.** It goes through
   `design/effect-review/` (1,595 live questions; `build/dupes.tsv` already lists ~150 duplicate
   candidates) and proposes each effect's level-2 form. Bonus: it weeds out duplicates. Where one
   effect's level 2 is the same as or close to another effect's level 1, merge or drop one.
