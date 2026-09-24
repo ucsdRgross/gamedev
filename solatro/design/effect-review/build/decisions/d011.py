@@ -189,7 +189,7 @@ KEEPS = [
  "You choose at show start how many extra cards to take; each one makes the next card discarded be destroyed instead of kept",
  "c"),
 ("E1530","B6","skill","Levels up a hand type.",
- "Permanently raises the level of the first hand type discarded each show, so that hand scores more for the rest of the run",
+ "Permanently raises the level of the first hand type scored through its cell each show",
  "Permanently raises the level of the first hand type scored each show",
  "Raises the level of the hand type you scored least this show, at show end",
  "c"),

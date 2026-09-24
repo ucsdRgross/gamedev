@@ -159,7 +159,7 @@ KEEPS = [
  "Difficulty: a random card is added at each show's start, and you may remove one by skipping a reward",
  "Difficulty: a random card is added each show, chosen from cards you have already rejected",
  "c"),
-("E1885","C12","skill","Kills the middle one.",
+("E1885","C12","skill","Kills the middle one. The emptied cell keeps its mark, and the next card placed there re-scores the line.",
  "If a line scores a three of a kind, the centre card of that line is destroyed afterwards",
  "If a line scores a three of a kind, the centre card is destroyed and this card takes its rank",
  "The centre cell of any scoring line is destroyed afterwards, whatever the line's length",

@@ -40,7 +40,7 @@ E0038	catalog	CARD_CATALOG	Echoing Trigger		Uncommon	skill;meta-effect;combo	All
 E0039	catalog	CARD_CATALOG	Edith's Bayonet		Rare	skill;Escape Artist;destruction;growth	Cue: permanently destroy one Knives-suit card and add its rank to this card's own, forever.			0
 E0040	catalog	CARD_CATALOG	Electric		Epic	suit;prop;formation;combo	When an Electric card scores, an arc prop hops card-to-card through orthogonally adjacent cards, adding points per link, until it reaches a gap.	Added		0
 E0041	catalog	CARD_CATALOG	Epic		Epic	skill;Producer;economy;meta	While in the deck, doubles the chance of Legendary cards appearing in packs/shops.			0
-E0042	catalog	CARD_CATALOG	Escaramuza		Uncommon	skill;Dancer;formation	When the board's column heights read the same left-to-right as right-to-left at scoring, gain bonus multiplier on the placement.			0
+E0042	catalog	CARD_CATALOG	Escaramuza		Uncommon	skill;Dancer;formation	When the board's column heights read the same left-to-right as right-to-left at scoring, gain bonus multiplier on the placement. A column's height is the number of cards it holds, stacked cards included.			0
 E0043	catalog	CARD_CATALOG	Exchange Voucher		Uncommon	skill;Producer;movement;deck-manip	Usable from anywhere (including the deck): cue to swap this card's position with any card on screen.			0
 E0044	catalog	CARD_CATALOG	Extra Point		Common	skill;meta-effect;combo	Gain extra flat points on score (currently +10).		designdocs	1
 E0045	catalog	CARD_CATALOG	Eye of God		Legendary	skill;god-cycle;info;secret	Reveals all decks (including draw order), the hidden rules deck, and the true identity of every card, including Gaffs, Humbugs, and Riders.			0
@@ -208,7 +208,7 @@ E0206	catalog	CARD_CATALOG	The Convention		Legendary	skill;meta-effect;rule;meta
 E0207	catalog	CARD_CATALOG	The Cooler		Rare	consumable;deck-manip;secret	Consumable, once per run: replaces the remaining draw deck with a copy in a chosen order.			0
 E0208	catalog	CARD_CATALOG	The Costume Fitting		Common	skill;Costume Designer;collection	On show start, copies the stamp of one adjacent card for the duration of the show.			0
 E0209	catalog	CARD_CATALOG	The Costumier		Epic	leader;collection	Leader: all your cards may hold 2 stamps.			0
-E0210	catalog	CARD_CATALOG	The Courier		Epic	skill;Acrobat;formation;combo	While spotlit, this card counts as a member of both its own column's and the adjacent column's melds.			0
+E0210	catalog	CARD_CATALOG	The Courier		Epic	skill;Acrobat;formation;combo	While spotlit, it stands in for one empty cell of a line beside it.			0
 E0211	catalog	CARD_CATALOG	The Critic		Rare	skill;meta-effect;combo;gamble	After each placement, the effect that triggered most is silenced for the next placement; any effect that triggered exactly once scores a bonus.			0
 E0212	catalog	CARD_CATALOG	The Crowd Surf		Rare	skill;Acrobat;gamble;movement	Cue: pass this card across the tops of all columns to the far edge, scoring bonus points per column crossed; if any crossed column is empty, this card is discarded instead.			0
 E0213	catalog	CARD_CATALOG	The Cue Card		Common	skill;meta-effect;combo;charges	Cue: manually fire one adjacent card's trigger hook exactly as if the game had triggered it, including combo credit and stamps.			0

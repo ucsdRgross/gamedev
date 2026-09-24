@@ -133,7 +133,7 @@ ROWS = [
  "a"),
 ("E0029",
  "A hidden meld: two pair, aces over eights, in one line pays a large bonus the first time it is found each run",
- "A hidden meld the game never names, reseeded each run; you have to find out which hand pays",
+ "A hidden meld reseeded each run; every line that scores tells you how many of its cards belong to the hidden meld, so you can work it out",
  "A hidden meld: two pair, aces over eights, pays a large bonus every time and permanently unlocks a card the first time it is found",
  "b"),
 ("E0030",

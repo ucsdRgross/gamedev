@@ -91,8 +91,8 @@ ROWS = [
  "A completed line pays a resource whose kind is set by the line's dominant suit",
  "c"),
 ("G0251","The Cascade","C3","skill","A clear collapses the board and can clear again.",
- "A completed line clears and everything above falls in; a line completed by the fall scores again at a rising multiplier",
- "A completed line clears and everything above falls in, but a chain reaction scores at flat value",
- "A completed line clears and the board collapses; chains are capped at three to keep it bounded",
+ "A completed line through its cell clears; the cards above fall in, and every line the fall completes or re-forms scores again, at a multiplier that rises one per link",
+ "A completed line through its cell clears; the cards above fall in, and every line the fall completes or re-forms scores again at flat value",
+ "A completed line through its cell clears; the cards above fall in, and every line the fall re-forms scores again; chains stop after three links",
  "a"),
 ]

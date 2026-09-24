@@ -37,10 +37,10 @@ ROWS = [
  "A grid's lines have different lengths, and you choose the shape before the show starts",
  "b"),
 
-("G0204","Lowball","B7","skill","The worst hand wins.",
- "Lines are scored on the WORST poker hand they contain rather than the best",
- "Lines are scored on the worst hand, and the ace counts low",
- "One line per grid, named at show start, is scored on its worst hand while the rest score normally",
+("G0204","Lowball","B7","skill","The worst hand pays the most.",
+ "Lines through its cell pay on the inverted ladder: a high card pays as a straight flush, a pair as five of a kind, and so on, down to a straight flush paying as a high card",
+ "Every line on its grid pays on the inverted ladder",
+ "One line per grid, named at show start, pays on the inverted ladder; the rest score normally",
  "c"),
 
 ("G0205","Badugi","B1","skill","A hand made entirely of differences.",

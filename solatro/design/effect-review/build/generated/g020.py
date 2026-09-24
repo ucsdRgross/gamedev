@@ -44,7 +44,7 @@ ROWS = [
  "Grids unlock per fifty-two cards as usual, and one more unlocks the first show you clear with every mark in a line matched",
  "Grids unlock per fifty-two cards, and one is taken away each time a show is cleared below target",
  "a"),
-("G0469","The Ring Of Five","C11","skill","A shape that is not a line.",
+("G0469","The Ring Of Five","C11","skill","A shape that is not a line, paying into the special bucket.",
  "This card scores for every card in the ring of eight cells around it, counting suits and ranks as a hand",
  "This card scores for the ring of eight around it only when all eight are filled, paying as a made hand",
  "This card scores for the ring of eight around it, and the ring may cross into a neighbouring grid",

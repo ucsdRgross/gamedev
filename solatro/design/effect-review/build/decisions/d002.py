@@ -72,7 +72,7 @@ KEEPS = [
 ("E0342","B8","skill","Three full lines in one placement.",
  "Scoring three separate full five-card hands in one placement permanently unlocks a new skill for the rest of the run",
  "Scoring three separate full five-card hands in one placement pays a large bonus, every time",
- "Scoring every row of a grid in one show permanently unlocks a new skill for the rest of the run",
+ "Completing a row, a column and a diagonal with one placement permanently unlocks a new skill for the rest of the run",
  "c"),
 ("E0343","P2","skill","Takes the lid off eating.",
  "Leader: every consumption effect loses its cap, so rank gains from eating are unbounded",

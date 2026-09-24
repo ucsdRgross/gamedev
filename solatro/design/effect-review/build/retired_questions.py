@@ -586,4 +586,6 @@ RETIRED = {
     "MK0014": 'Duplicate of Q1436 (The Standing Set): which marks carry into the next show; the owner rules on it there.',  # Q1691
 
     "MK0018": "Duplicate of Q1450 (The Bad Notice): marks that pay nothing or cost you when hit; that the false ones are hidden is Q1463's question; the owner rules on it there.",  # Q1692
+
+    "G0077": 'Retired: a tracked, displayed placement order is interface, and you rejected UI-only effects at Q0038 and Q0076.',  # Q0226
 }

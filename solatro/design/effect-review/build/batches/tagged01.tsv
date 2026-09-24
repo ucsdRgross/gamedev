@@ -40,7 +40,7 @@ E0038	KEEP		A5	skill	All triggers on the grid repeat once, per card, per scoring
 E0039	KEEP		D7	skill	Cue: permanently destroy one Knives-suit card and add its rank to this card's own, forever.	
 E0040	KEEP		Q2	suit	When this card scores, an arc prop hops card-to-card through orthogonally adjacent cards, adding points per link, until it reaches a gap.	
 E0041	DROP	RESKIN:E0026				
-E0042	KEEP		C13	skill	When the grid's column heights read the same left-to-right as right-to-left at scoring, gain bonus multiplier on the placement.	
+E0042	KEEP		C13	skill	When the grid's column heights read the same left-to-right as right-to-left at scoring, gain bonus multiplier on the placement. A column's height is the number of cards it holds, stacked cards included.	
 E0043	DROP	DUPLICATE:E0058				
 E0044	KEEP		A1	skill	Gain extra flat points on score (+10).	
 E0045	KEEP		M1	skill	Reveals all decks (including draw order), the hidden rules deck, and the true identity of every card, including fakes.	
@@ -208,7 +208,7 @@ E0206	KEEP		O1	skill	Enact one new law chosen from a fixed slate of three; it be
 E0207	KEEP		F4	consumable	Consumable, once per run: replaces the remaining deck with a copy in a chosen order.	
 E0208	KEEP		G3	skill	On show start, copies the stamp of one adjacent card for the duration of the show.	
 E0209	KEEP		H9	skill	All your cards may hold 2 stamps.	
-E0210	KEEP		C10	skill	While spotlit, this card counts as a member of both its own column's and the adjacent column's melds.	
+E0210	KEEP		C10	skill	While spotlit, it stands in for one empty cell of a line beside it.	
 E0211	KEEP		H7	skill	After each placement, the effect that triggered most is silenced for the next placement; any effect that triggered exactly once scores a bonus.	
 E0212	KEEP		E1	skill	Cue: pass this card across the tops of all columns to the far edge, scoring bonus points per column crossed; if any crossed column is empty, this card is discarded instead.	
 E0213	KEEP		H2	skill	Cue: manually fire one adjacent card's trigger hook exactly as if the game had triggered it, including combo credit and stamps.	
