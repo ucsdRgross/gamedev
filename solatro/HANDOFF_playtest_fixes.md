@@ -2,10 +2,11 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** every row is done - P1-P49 (P45 closed without code), each red-then-green and by eye
-where it draws, Fable-reviewed, one verified step per commit. Last gate (P49, e7ead6cc): `ALL 51
-SUITES: 6930 CHECKS PASSED`, 21 placeholder warnings, 24 resources + 1150 ObjectDB, 0 SCRIPT ERROR.
-Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`. Pending: the close only.
+**State:** P1-P50 done (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P49, e7ead6cc): `ALL 51 SUITES: 6930
+CHECKS PASSED`, 21 placeholder warnings, 24 resources + 1150 ObjectDB; P50 has a filtered run only.
+Pending: P51 and the owner's next visual review round, then the close. Gate at the stream's start:
+`ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
