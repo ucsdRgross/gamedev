@@ -6,7 +6,7 @@ answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for
 
 **State:** the questionnaire is live: **1,527 askable questions, 270 retired in place**, 0 parser
 errors, 0 warnings. The owner has answered **118**. Round 2 (the level-2 pass, S14) is written and
-reviewed; what is left of it is the merge in the checklist under "Next up".
+reviewed, and on `combine-sidebar-boardplan`. Next is S9, the owner answering round 2.
 
 **Entry docs:** `solatro/design/effect-review/build/GAME_BRIEF.md` (the rulebook every effect must
 fit — read it before judging anything) · `solatro/design/effect-review/build/REVIEW.md` (how to
@@ -283,9 +283,7 @@ edits the slot field in the effect's source row; the class stays, so no id moves
 - [x] `header.md` counts; `status.agent.json` summary; final pair review of the round (applied)
 - [x] `combine-sidebar-boardplan` merged into `effect-levels` (disjoint files); `answers.json`
       in the owner's checkout was identical, so nothing moved to family AC
-- [ ] once the session holding `combine-sidebar-boardplan` is done, merge `effect-levels` into it
-      from the main checkout (a fast-forward if nothing new landed there; otherwise re-read
-      `answers.json` first, as above)
+- [x] `effect-levels` fast-forwarded into `combine-sidebar-boardplan`
 
 Owner rulings from reading round 2 (recorded in `build/GAME_BRIEF.md`): fame is not spendable (a
 cost paid in fame is a skipped reward); a property's level 2 is unlocked by its own match only,
