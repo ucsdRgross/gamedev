@@ -62,9 +62,9 @@ ROWS = [
  "a"),
 
 ("MK0010", "The Second Nature", "AB2", "skill", "Once realised, it stays realised.",
- "Once it has reached level 2 this show, it keeps level 2 for the rest of the show even after it leaves its mark",
- "Once it has reached level 2, it keeps level 2 until it next scores off its mark",
- "Once it has reached level 2 in three shows, it is at level 2 permanently wherever it sits",
+ "A card that has reached level 2 this show keeps it for the rest of the show even after it leaves its mark",
+ "A card that has reached level 2 keeps it until it next scores off its mark",
+ "A card that has reached level 2 in three shows is at level 2 permanently wherever it sits",
  "a"),
 
 # ---- AB3 The plan answers back: hits and misses rewrite, reveal and move marks ----

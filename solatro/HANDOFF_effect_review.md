@@ -4,9 +4,9 @@
 each with three variants plus reject, and the rulings exported to a single CSV. Done = the owner has
 answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for every one.
 
-**State:** the questionnaire is live: **1,527 askable questions, 270 retired in place**, 0 parser
+**State:** the questionnaire is live: **1,548 askable questions, 278 retired in place**, 0 parser
 errors, 0 warnings. The owner has answered **118**. Round 2 (the level-2 pass, S14) is written and
-reviewed, and on `combine-sidebar-boardplan`. Next is S9, the owner answering round 2.
+reviewed twice (defects, then improvements). Next is S9, the owner answering round 2.
 
 **Entry docs:** `solatro/design/effect-review/build/GAME_BRIEF.md` (the rulebook every effect must
 fit — read it before judging anything) · `solatro/design/effect-review/build/REVIEW.md` (how to
@@ -50,6 +50,7 @@ the next render silently discards the edit.
 | `build/TAXONOMY_CODES.md` | the 226 class codes, regenerate with `build_taxonomy_page.py` |
 | `build/levels.py`, `build/levels/l<FAM>.py` | the level-2 pass: one row per question (verdict, level 2, flag reason); `render.py` draws the level 2 and the ⚑ flag from it |
 | `build/generated/g029.py` | family AC, one row per answered effect — **the record for AC rows; edit it directly** |
+| `build/generated/g030.py` | family AD, the effects the design review proposed — the record for AD rows; its level rows (`levels/lAD.py`) are keyed by qid, and a new AD row renumbers the AD rows after it, so rewrite `lAD.py` after rendering |
 | `build/fixkit.py`, `build/retired_questions.py` | `set_options`, `retire`, `patch`, `verify`; every retired question and why, keyed by eid |
 | `build/mine_mods/` | **S13 working set**: the mod-wiki crawl in chunks, per-chunk candidate TSVs, `new_draft.tsv` (the judged keep-list), the subagent briefs, the dedupe groups |
 
@@ -209,7 +210,7 @@ the next render silently discards the edit.
   verification_kind: manual
   status: in_progress
   evidence: >
-    1,527 live, 270 retired (187 this round), 0 errors, 0 warnings, order unchanged Q0001-Q1509.
+    1,548 live, 278 retired (195 this round), 0 errors, 0 warnings, order unchanged Q0001-Q1509.
     Level rows cover every live question in A-AB (`levels.py stat`); 196 had options rewritten, 210
     carry a flag; family AB 19 live (Q1679-Q1699, two retired), family AC 98. Every family read by a
     Fable pair reviewer and the findings applied, then a final review of the round.
@@ -239,7 +240,7 @@ the next render silently discards the edit.
 
 ## Verified vs assumed
 
-- **1,527 live questions, 270 retired, 0 errors, 0 warnings, 0 dag-audit defects** — verified,
+- **1,548 live questions, 278 retired, 0 errors, 0 warnings, 0 dag-audit defects** — verified,
   `npm --prefix designloop run check -- solatro/effect-review`.
 - **No class outside family N and feel-only W sits below four effects** — verified by counting
   keepers per class off the rendered document.
@@ -284,6 +285,10 @@ edits the slot field in the effect's source row; the class stays, so no id moves
 - [x] `combine-sidebar-boardplan` merged into `effect-levels` (disjoint files); `answers.json`
       in the owner's checkout was identical, so nothing moved to family AC
 - [x] `effect-levels` fast-forwarded into `combine-sidebar-boardplan`
+- [x] second level-2 pass (owner: "second pass please") and its review
+- [x] design-improvement pass (owner: the reviewer should "improve effects and contribute to
+      design"): nine `pair-reviewer` batches, each a BETTER list, applied; family AD (29 new)
+- [ ] fast-forward `combine-sidebar-boardplan` to `effect-levels` again
 
 Owner rulings from reading round 2 (recorded in `build/GAME_BRIEF.md`): fame is not spendable (a
 cost paid in fame is a skipped reward); a property's level 2 is unlocked by its own match only,
@@ -292,6 +297,9 @@ built); a second pass gave a level 2 to every skill, stamp and rank but Q0226, Q
 Q1494, and a Fable review of that pass is applied.
 Shared effect names (nineteen pairs, e.g. The Dead End Q1397/Q1477) wait until the effects are final:
 names are sort keys, and the owner will rename against the final set.
+
+Open for the owner, in the round's header: what "a step" is; where a bonus with no line pays; what
+a "fake" card is (the proposal: a card carrying The Gaff, Q0875); what a token is.
 
 ## The S13 TODO list
 

@@ -731,7 +731,7 @@ ROWS = [
  'You approved: Marriage melds require exact adjacency, and any two adjacent cards that pair score as a meld of their own',
  'Diagonal neighbours count as adjacent for its pairs',
  'An adjacent pair that includes this card scores double',
- 'An uncovered mark beside a card pairs with it when their ranks agree',
+ 'An adjacent pair that includes this card also pairs across a one-cell gap',
  'c'),
 
 ('LVG0205',
@@ -799,7 +799,7 @@ ROWS = [
  'AC1',
  'skill',
  'You approved: A grid holding four triplets and a pair across its rows or its columns scores as a mahjong hand',
- 'One uncovered mark may stand in for a missing tile',
+ 'The mahjong hand may mix rows and columns',
  'The mahjong hand pays double',
  'Triplets may also run diagonally through its cell',
  'a'),
@@ -820,7 +820,7 @@ ROWS = [
  'skill',
  'Your words: skill, when placed immediately scores the lines it is in, using marks for empty cells',
  'It also rescores whenever a card is later placed in its lines',
- 'A mark standing in for an empty cell pays as if a card matching its rank had been placed there',
+ 'The immediate score also reads height lines through its cell',
  'It also scores the lines of every card sitting on a mark it matches',
  'b'),
 
@@ -851,7 +851,7 @@ ROWS = [
  'You approved: Rummy melds score alongside poker hands rather than replacing them',
  'Runs through its cell may bend around one corner',
  'Sets of two same-rank cards count as rummy melds',
- 'A rummy meld through its cell may use an uncovered mark for one missing card',
+ 'A rummy meld through its cell also pays into the special bucket',
  'a'),
 
 ('LVE1437',
@@ -861,7 +861,7 @@ ROWS = [
  'You approved: Any three matching cards on the grid may be cashed in for an effect you choose from three, adding: skill',
  'It offers four effects to choose from instead of three',
  'A set that includes a card on a matched mark counts as two sets',
- 'Two matching cards and an uncovered mark of the same rank make a set',
+ 'A set that includes this card is cashed for two effects',
  'c'),
 
 ('LVE0236',
@@ -870,7 +870,7 @@ ROWS = [
  'skill',
  'Your words: personal meld that scores whenever there is a combination of cards chained together orthogonally that adds to 15, so can score multiple times',
  'Diagonal steps count in the chain',
- 'A chain may pass through uncovered marks, counting their ranks',
+ 'A chain through its cell may pass through one stacked card, counting its top',
  'A chain summing to 30 pays triple',
  'a'),
 
@@ -890,7 +890,7 @@ ROWS = [
  'skill',
  'You approved: Any run of exactly three cards scores as a full meld in its own right, whoever completes it',
  'A run of three through its cell may bend at a corner',
- 'A run of three through its cell also scores one card short, when an uncovered mark fills the gap',
+ 'A run of three through its cell scores again when it grows to four',
  'A run of three through its cell scores as a five-card straight',
  'c'),
 
@@ -900,7 +900,7 @@ ROWS = [
  'skill',
  'Your words: this is just 2 pair or 4 pair, already implemented. therefore should be skill that checks for 4 different pairs across entire board',
  'Three pairs are enough',
- 'A card and the mark under it count as a pair when they agree on rank',
+ 'A pair whose two cards both sit on marks they match counts as two pairs',
  'It pays again for each pair beyond four',
  'b'),
 
@@ -961,7 +961,7 @@ ROWS = [
  'Your words: melds can be made if difference between ranks is same across the cards in an arranged sequence, positioning of cards dont matter. so a scoring hand would contain a sub sequence from these possible builds 1: A,2,3,4,5,6,7,8,9,10,J,Q,K. 2: 2,4,6,8,10,Q,A,3,5,7,9,J,K. 3: 3,6,9,Q,2,5,8,J,A,4,7,10,K. 4: 4,8,Q,3,7,J,2,6,10,A,5,9,K. this means maximum possible meld size is 13',
  'Builds with a difference of 5 or 6 count too',
  'A sequence may skip one step',
- 'A sequence through its cell may count the ranks of uncovered marks',
+ 'A sequence through its cell counts its stacked cards too',
  'a'),
 
 ('LVE1224',

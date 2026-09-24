@@ -11,7 +11,7 @@ ROWS = [
 ('Q1685', 'MK0009', 'REWORK', ('The named property may be changed at each refill', 'The wearer may name three properties', "The wearer's level 2 lasts until the next refill, even after it leaves its mark"), 'it is a rule about level 2 itself; absorbs Q1422'),
 ('Q1686', 'MK0008', 'OK', 'Its options are its level 2; at level 1 it does nothing', ''),
 ('Q1687', 'MK0007', 'OK', 'Its options give both levels', ''),
-('Q1688', 'MK0010', 'WEAK', 'Its options are its level 2; at level 1 it does nothing', 'fires only when another effect moves or stacks a card'),
+('Q1688', 'MK0010', 'WEAK', 'Level 2 kept this way survives the show: the card still has it when next placed, wherever it lands', "'it keeps level 2' had no content: the rule is about other cards"),
 ('Q1689', 'MK0013', 'WEAK', ('The likeness is also left on the cells beside it', 'The likeness is also left on the cells beside it', 'The next hit on each likeness pays double'), 'fires only when another effect moves or stacks a card'),
 ('Q1690', 'MK0016', 'WEAK', ('Its mark cannot be rerolled, swapped or moved, and every line through its cell adds +1 to the multiplier', 'Its lines add +1 to the multiplier', 'Each card in the stack adds +1 to the multiplier of the lines through it'), 'level 1 fires only when another effect moves a card or a mark; the +1 multiplier is the part that works alone'),
 ('Q1691', 'MK0014', 'DUP', None, 'Q1436'),

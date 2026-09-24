@@ -4,7 +4,7 @@
 candidate effect, and every answer is a ruling on whether that effect enters the game and in
 which form. Nothing here specifies how anything is built.
 
-**1,527 live questions, plus 270 retired in place.** There is no branching: every question is
+**1,548 live questions, plus 278 retired in place.** There is no branching: every question is
 independent, so the count you see is the count you answer. Rejecting is one keystroke.
 
 ## ⚠ What changed since your round-1 answers
@@ -15,7 +15,8 @@ same kind, and a property's level 2 is unlocked by its own match only; a suit or
 level 1 and its effect is the level-2 addition; a skill's or stamp's level 2 is its own effect in
 the same class and file; a talent match always pays the flat mult as well. Every question was
 re-read for its level 2, its uniqueness and its fun, and each family was read a second time by a
-pair reviewer before you see it.
+pair reviewer — first for defects, then for how to make each effect more fun, challenging and
+rewarding.
 
 - **Where the level 2 is.** In the question's head when it is true of all three options, inside each
   option when the options differ. A suit or rank says "level 1 is the plain suit; each option is its
@@ -27,18 +28,21 @@ pair reviewer before you see it.
   to aim it.
 - **Your recorded answers still mean what you chose.** Q0011 and Q0047 are still the only answered
   questions that are retired. Nothing you answered was edited; its level 2 is asked in family AC.
-- **187 more questions are retired in place**, each naming why: duplicates and twins (where one
+- **195 more questions are retired in place**, each naming why: duplicates and twins (where one
   effect's level 2 was another's level 1 — the Queen is now the Rook's and the Bishop's level 2),
   premises the game does not have (shops, gold, selling, the rules deck, stickers), and effects that
   are already rules (undo, straights wrapping through the Ace, talent no longer suppressing a suit).
   A retired question still renders as a one-line note because the question id is positional.
-- **196 had options rewritten** — a shop or gold clause taken out where the effect survives without
-  it, an "inspection" downside replaced, an effect that fired at show start (when the card is still
-  in the deck) moved to when it is placed, a second-grid option made to work on one grid.
-- **Ten changed slot** to the one their mechanic needs (a boss filed as a skill is now a hazard, a
-  mark rule that carries a hat is now a stamp); the class is kept, so no id moved. **Four defaults
-  moved** to the form a board-plan ruling already names.
-- **210 carry a ⚑ pair-review flag**, saying in one line why the effect may not be worth a slot: it
+- **421 had options rewritten.** The first read took out shops and gold, moved effects that fired at
+  show start (when the card is still in the deck) to when it is placed, and made second-grid options
+  work on one grid. The improvement read went further: effects now name the bucket they pay into
+  (under the product rule the bucket is the value), bosses and hazards got a counterplay, "stuck" and
+  "failure" were redefined as things a plain board produces (no Entrance card matching an uncovered
+  mark; a bust, a line no better than High Card), and many effects were re-aimed at the marks.
+- **Eleven changed slot** to the one their mechanic needs (a boss filed as a skill is now a hazard, a
+  mark rule that carries a hat is now a stamp); the class is kept, so no id moved. About forty
+  **defaults moved** — to the form a board-plan ruling names, or off an option that could not fire.
+- **203 carry a ⚑ pair-review flag**, saying in one line why the effect may not be worth a slot: it
   only costs you (a hazard filed as a skill), it needs a second grid, it does not say what it does,
   it depends on another question entering, or it overlaps one of your own answers. The flag is
   advice; the answer is yours.
@@ -51,6 +55,23 @@ pair reviewer before you see it.
 - **Family AC is new — the level 2 of each effect you had already ruled on**, one question each, so
   no recorded answer changed meaning. Its (d) is not a reject: it keeps the effect with no level 2.
   Its heading says which answered effects are not asked, and why.
+- **Family AD is new — 29 effects the pair reviewer proposed** while improving the others, each
+  filling a gap it found: new scoring shapes and bucket play, the five stocks and the slot above
+  each column as places that pay, cues and bets on marks, and a card that stays on stage.
+- ⚠ **Four questions are not in the list**, because each is a rule for the whole game that many
+  effects lean on:
+  1. **What is "a step"?** Thirty-one effects pay "an extra step" and nothing defines it. The two
+     readings: the line pays as the next hand type up the ladder, or +50% of the line's hand score
+     (the engine's one copy-escalation step).
+  2. **Where does a bonus with no line pay?** A bonus fired by a line pays into that line's bucket;
+     one fired by a cue, a show's end or a wager names no bucket. The recommendation: the bucket of
+     your choice, chosen when it pays.
+  3. **What is a "fake" card?** Family M's fake and inspection effects assume a system the game does
+     not have. The one defined fake is The Gaff (Q0875), a rank that shows one value and holds
+     another; making "a fake" mean "a card carrying the Gaff" would make four of them work and let
+     the rest retire.
+  4. **What is a token?** Many effects mint "a rank-1 token". The suggestion: a rank-1 card of no
+     suit that counts as matching any suit mark it is placed on, discarded at show end.
 
 **Reading the older effects.** They were mined against a board that is gone and re-expressed on this
 one; the rows use this vocabulary:
