@@ -194,7 +194,7 @@ KEEPS = [
  "b"),
 ("E0301","R1","hazard","A town that has done its homework.",
  "Boss: everything is pre-inspected, revealing and disabling every fake, masked and disguised card for the show",
- "Boss: everything is pre-inspected and disabled, but each disguised card disabled pays you its rank in gold",
+ "Boss: everything is pre-inspected and disabled, but each disguised card disabled adds one to the combo",
  "Boss: one card per Entrance refill is inspected and disabled, chosen by the boss, in descending order of value",
  "c"),
 ("E0302","D6","skill","Keeps one card in the light.",

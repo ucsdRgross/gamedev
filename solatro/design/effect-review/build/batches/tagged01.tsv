@@ -232,7 +232,7 @@ E0230	KEEP		F10	skill	When discarded, reveals part of the world map's fog of war
 E0231	KEEP		K2	skill	Free undo becomes 2 per turn, and all debuffs on your cards expire one show sooner.	E0060
 E0232	KEEP		A12	skill	When a placement finishes resolving, cue to convert unused combo above 3 into flat points at a fixed rate, or spend points to pre-register +1 combo for the next placement.	
 E0233	KEEP		I4	skill	Scores bonus points per card destroyed or lost this run.	
-E0234	KEEP		R7	skill	Boss attack, telegraphed one turn ahead: destroys an entire column except one exact row slot.	
+E0234	KEEP		R7	hazard	Boss attack, telegraphed one turn ahead: destroys an entire column except one exact row slot.	
 E0235	KEEP		A5	skill	After all scoring resolves, each meld that raised the show's combo pays again at 25%.	
 E0236	KEEP		B1	skill	This card also melds with any adjacent neighbors whose ranks sum to 15 with it.	
 E0237	KEEP		I10	skill	Cue: apply Burning to every card in this card's entire row; this card becomes Exhausted.	

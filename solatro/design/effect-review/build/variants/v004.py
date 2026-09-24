@@ -318,7 +318,7 @@ ROWS = [
  "a"),
 ("E0257",
  "Town hazard: after each placement, the lowest-ranked card on the grid is discarded unless it scored that placement",
- "Town hazard: after each placement, the lowest-ranked card in every grid is discarded unless it scored",
+ "Town hazard: after each placement, the lowest-ranked card in the row just placed into is discarded unless it scored",
  "Town hazard: after each placement, the card that has been on the grid longest without scoring is discarded",
  "c"),
 ("E0258",

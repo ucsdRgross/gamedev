@@ -475,13 +475,13 @@ RETIRED = {
 
     "E0891": 'Retired: there is no currency and no shop. A festival of purchases.',  # Q1191
 
-    "G0063": 'Duplicate of Q0797 (Press Bribery): one failed show a run is survived and the tour continues; the owner rules on it there.',  # Q1212
+    "G0063": 'Duplicate of Q0796 (Deus ex Machina): one failed show a run is survived and the tour continues; the owner rules on it there.',  # Q1212
 
     "G0480": 'Duplicate of Q0796 (Deus ex Machina): a lost show counts as cleared at exactly its goal; the owner rules on it there.',  # Q1213
 
     "G0062": 'Duplicate of Q0796 (Deus ex Machina), whose (b) replays a lost show from the start; the owner rules on it there.',  # Q1214
 
-    "G0061": 'Duplicate of Q0797 (Press Bribery): once a run, a failed show is survived and the tour continues; the owner rules on it there.',  # Q1215
+    "G0061": 'Duplicate of Q0796 (Deus ex Machina): once a run, a failed show is survived and the tour continues; the owner rules on it there.',  # Q1215
 
     "E1993": 'Retired: there is no currency and no shop. It buys a shorter tour with gold.',  # Q1219
 
@@ -570,4 +570,8 @@ RETIRED = {
     "E0137": 'Duplicate of Q0796 (a consumable that turns a lost show into a win, once); the owner rules on it there.',  # Q0797
 
     "E0327": "Duplicate of Q0387 (Madame Zora's Eye): the top of the deck always shown, the top of every stock at level 2, and sending it to the bottom once per show; the owner rules on it there.",  # Q0956
+
+    "G0305": 'Duplicate of Q1024: props this card spawns slowed, firing twice on each card they cross; the owner rules on it there.',  # Q1034
+
+    "G0359": "Duplicate of Q1229 (The Griot): score from this show carried into the next show's opening total; the owner rules on it there.",  # Q1231
 }

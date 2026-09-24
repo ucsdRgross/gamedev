@@ -203,7 +203,7 @@ KEEPS = [
 ("E1304","R7","skill","Strikes the tallest thing on the board.",
  "Lightning strikes the highest-value card on the board, applying a shock effect",
  "Lightning strikes the highest-value card and arcs to everything orthogonally adjacent to it",
- "Lightning strikes the highest-value card in each grid at once",
+ "Lightning strikes the highest-value card in each column at once",
  "b"),
 ("E1305","G2","skill","Borrowed, and due back.",
  "Creates a temporary card that lasts a few shows and then leaves",

@@ -186,7 +186,7 @@ ROWS = [
  "Cue at show start: raise the target by any amount you name; the payout scales with how much you raised it",
  "c"),
 ("G0326","The Standing Wager","S9","structure","The stake carries between shows.",
- "A stake raised in one show carries into the next at the same level unless you pay to lower it",
+ "A stake raised in one show carries into the next at the same level unless you skip that show's reward to lower it",
  "A stake raised in one show carries into the next and rises again automatically each show you clear",
  "A stake raised in one show resets at the next, but clearing it banks a permanent reward",
  "b"),

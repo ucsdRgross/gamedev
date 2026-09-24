@@ -127,7 +127,7 @@ KEEPS = [
 ("E1619","R9","skill","Paid for setting off the trap.",
  "Scores bonus points whenever a line you score triggers the boss's ability",
  "Scores bonus points and +1 combo whenever a line you score triggers the boss's ability",
- "Scores bonus points whenever the boss's ability fires at all, whoever set it off",
+ "Scores bonus points whenever the boss's ability fires at all, whatever set it off",
  "b"),
 ("E1623","G5","skill","Turns face cards to gold.",
  "Face cards become Gold cards when they score",
