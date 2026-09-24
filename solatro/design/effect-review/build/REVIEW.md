@@ -28,6 +28,8 @@ Edit the sources, then re-render. Never edit `DESIGN.md` by hand.
 | `AUDIT_PROMPT.md` | the instructions an auditor follows, including every false positive earlier auditors made |
 | `spot.py` | prints every question in a family matching a known damage shape, for the overseer's own pass |
 | `record.py` | records a family's verdicts, OK unless adjudicated otherwise |
+| `levels.py` | the level-2 pass: `levels/l*.py` holds one row per question (verdict, level 2, why); `fam X` dumps a family, `stat` shows coverage; `render.py` draws the level 2 and the ⚑ flag from it |
+| `generated/g029.py` | family AC: the level 2 of each effect answered before level 2 existed, eid `LV` + the ruled effect's eid |
 
 ## House translations
 

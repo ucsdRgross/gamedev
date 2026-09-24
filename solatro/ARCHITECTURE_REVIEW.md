@@ -806,6 +806,12 @@ that by re-checking every cell of `Line.cells` against the live board.
   modifier changing a card's suit emits `data_changed` rather than bumping `revision`, so a
   revision-keyed verdict would answer stale. What a match PAYS is §3a, what it FIRES — at the
   landing and again at every line score through the cell — is §1.4, what it LIGHTS is §4j.
+- **Level 2** — a modifier's form "when hitting its own mark", fired through the mark hooks'
+  `level` argument. Owner rulings: a property's level 2 is unlocked by its own match only, and a
+  modifier writes its level-2 form as a second effect beside its level-1 form in the same class
+  and file, never a subclass. ⚠ Today `level` reaches every modifier of a card on any match:
+  `design/board-plan/gaps/GAP-007.md`. Each effect's level 2 is ruled on in
+  `design/effect-review/`.
 - **Content writes marks through `CardEffectApi`**: `mark_at`, `reroll_mark`, `reroll_line`,
   `reroll_grid`, `grant_mark`, `swap_marks`, each bumping `revision` once after the write. ⚠ A
   reroll's offer EXCLUDES the face it replaces and the cell is cleared only once a replacement is in

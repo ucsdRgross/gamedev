@@ -72,6 +72,32 @@ in place. Eleven questions found to duplicate another are retired in place, nami
 Balatro mod wiki and from A Solitaire Mystery, Degenerate Gamblers, Combolands and Zoominoes.
 `build/SOURCES.md` wave 6 records what was read and what each source yielded.
 
+**8. Every effect now has its level 2 — its form "when hitting its own mark".** Your rulings
+(`build/GAME_BRIEF.md`, "Every matchable effect has two levels"): a match is same kind to same kind,
+and a property's level 2 is unlocked by its own match only; a suit or rank is plain at level 1 and
+its effect is the level-2 addition; a skill's or stamp's level 2 is its own effect in the same class
+and file; a talent match always pays the flat mult as well. Every one of the 1,595 questions was
+re-read for its level 2, its uniqueness and its fun, by Opus 5.5 with a Fable 5.1 pair reviewer
+checking each batch. What changed:
+
+- **A level 2 is shown on every skill, stamp, suit and rank** — in the question's head when it is
+  true of all three options, inside each option when the options differ. A suit or rank says
+  "level 1 is the plain suit; each option is its level 2". Type, consumable, status, hazard and
+  structure have none: they never sit on a mark.
+- **About 170 more questions are retired in place**, each naming why: duplicates and twins (where
+  one effect's level 2 was another's level 1 — the Queen is now the Rook's and the Bishop's level 2),
+  premises the game does not have (shops, gold, selling, the rules deck, stickers), and effects that
+  are already rules (undo, straights wrapping through the Ace, talent no longer suppressing a suit).
+- **About 90 had options rewritten** — a shop or gold clause taken out where the effect survives
+  without it, an "inspection" downside replaced, a broken sentence fixed.
+- **About 170 carry a ⚑ pair-review flag** in the head, saying in one line why the effect may not be
+  worth a slot: it only costs you (a hazard filed as a skill), it needs a second grid, it does not
+  say what it does, or it overlaps one of your own answers. The flag is advice; the answer is yours.
+- **Family AB is new — 18 effects written around the mark-hitting loop itself**: streaks and relays
+  of hits, cards built to be realised, and plans that answer back.
+- **Family AC is new — the level 2 of every effect you had already ruled on**, one question each,
+  so no recorded answer changed meaning. Its (d) is not a reject: it keeps the effect with no level 2.
+
 ---
 
 ## 0. How to review this document
@@ -110,6 +136,10 @@ choosing it.
   a class code are competing for the same design space, which is why they are next to each other.
 - **provenance** — the document or wiki it was mined from, or `generated` if it was written to
   fill a class the corpus left empty.
+- **Level 2, on its own mark** — what the effect adds while its card sits on a mark it matches on
+  its own property. Choosing an option approves both levels; to change only the level 2, write your
+  own.
+- **⚑ pair review** — a one-line reason the effect may not earn a slot.
 
 ### The order
 

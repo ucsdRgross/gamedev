@@ -277,19 +277,23 @@ No game code, no tests, no vendored addon touched.
 
 ## Next up — the S14 checklist
 
-Per family: `py build/levels.py fam X`, write that family's file under `build/levels/` (one row
-per live question; the `levels.py` docstring has the schema), rewrite or retire through `fixkit`,
-add a family-AC row under `build/generated/` for each answered matchable effect, re-render, then the
-Fable pair review of that family's rows before the next one lands. Tick each family when its review
-is applied.
+To change a row: edit `build/levels/l<FAM>.py` directly (the `levels.py` docstring has the
+schema), rewrite options with `fixkit.set_options`, retire with `fixkit.retire`, patch a head with
+`fixkit.patch`, then `fixkit.verify()`. A Fable pair review reads each family's rows before it is
+ticked; its findings are claims to check, then apply.
 
-- [ ] A · [ ] B · [ ] C · [ ] D · [ ] E · [ ] F · [ ] G · [ ] H · [ ] I · [ ] J · [ ] K · [ ] L
-- [ ] M · [ ] N · [ ] O · [ ] P · [ ] Q · [ ] R · [ ] S · [ ] T · [ ] U · [ ] V · [ ] X · [ ] W
-- [ ] Y · [ ] Z · [ ] AA
-- [ ] family AB, new mark-hitting effects under `build/generated/`, checked against family Y
-- [ ] cross-family duplicate sweep: every level 2 against every other level 1
-- [ ] `header.md` section for the round; `status.agent.json` summary; final pair review before the owner sees it
-- [ ] merge back into `combine-sidebar-boardplan` (the AC re-read above first)
+- [x] every family written, A to AA; family AB (18 new effects); family AC (97 level-2 questions)
+- [x] level 2 vs level 1 collision sweep across all families (eight fixed)
+- [x] pair review applied: A, B, C, D, E, F
+- [ ] pair review applied: G-I · J-M, O-P · Q-X and W · Y-Z · AA · AB
+- [ ] `header.md` counts; `status.agent.json` summary; final pair review of the round
+- [ ] merge into `combine-sidebar-boardplan` (re-read `answers.json` there first, as above)
+
+Open for the owner, found during the pass: ten pairs of live effects share a name across families
+(The Dead End Q1397/Q1477, The Standing Set Q0637/Q1436, The Booking Q0811/Q1432, The Route Book
+Q1146/Q1430, The Quick Change Q0581/Q1441, The Casting Call Q0768/Q1427, The Empty House
+Q1376/Q1444, The Standing Ovation Q1246/Q1415, Understudy Q0531/The Understudy Q1417, Glass
+Q0268/Q0624) — names are sort keys, so renaming waits until a rename cannot move an answered id.
 
 ## The S13 TODO list
 

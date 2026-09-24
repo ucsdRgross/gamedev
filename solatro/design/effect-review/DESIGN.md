@@ -72,6 +72,32 @@ in place. Eleven questions found to duplicate another are retired in place, nami
 Balatro mod wiki and from A Solitaire Mystery, Degenerate Gamblers, Combolands and Zoominoes.
 `build/SOURCES.md` wave 6 records what was read and what each source yielded.
 
+**8. Every effect now has its level 2 — its form "when hitting its own mark".** Your rulings
+(`build/GAME_BRIEF.md`, "Every matchable effect has two levels"): a match is same kind to same kind,
+and a property's level 2 is unlocked by its own match only; a suit or rank is plain at level 1 and
+its effect is the level-2 addition; a skill's or stamp's level 2 is its own effect in the same class
+and file; a talent match always pays the flat mult as well. Every one of the 1,595 questions was
+re-read for its level 2, its uniqueness and its fun, by Opus 5.5 with a Fable 5.1 pair reviewer
+checking each batch. What changed:
+
+- **A level 2 is shown on every skill, stamp, suit and rank** — in the question's head when it is
+  true of all three options, inside each option when the options differ. A suit or rank says
+  "level 1 is the plain suit; each option is its level 2". Type, consumable, status, hazard and
+  structure have none: they never sit on a mark.
+- **About 170 more questions are retired in place**, each naming why: duplicates and twins (where
+  one effect's level 2 was another's level 1 — the Queen is now the Rook's and the Bishop's level 2),
+  premises the game does not have (shops, gold, selling, the rules deck, stickers), and effects that
+  are already rules (undo, straights wrapping through the Ace, talent no longer suppressing a suit).
+- **About 90 had options rewritten** — a shop or gold clause taken out where the effect survives
+  without it, an "inspection" downside replaced, a broken sentence fixed.
+- **About 170 carry a ⚑ pair-review flag** in the head, saying in one line why the effect may not be
+  worth a slot: it only costs you (a hazard filed as a skill), it needs a second grid, it does not
+  say what it does, or it overlaps one of your own answers. The flag is advice; the answer is yours.
+- **Family AB is new — 18 effects written around the mark-hitting loop itself**: streaks and relays
+  of hits, cards built to be realised, and plans that answer back.
+- **Family AC is new — the level 2 of every effect you had already ruled on**, one question each,
+  so no recorded answer changed meaning. Its (d) is not a reject: it keeps the effect with no level 2.
+
 ---
 
 ## 0. How to review this document
@@ -110,6 +136,10 @@ choosing it.
   a class code are competing for the same design space, which is why they are next to each other.
 - **provenance** — the document or wiki it was mined from, or `generated` if it was written to
   fill a class the corpus left empty.
+- **Level 2, on its own mark** — what the effect adds while its card sits on a mark it matches on
+  its own property. Choosing an option approves both levels; to change only the level 2, write your
+  own.
+- **⚑ pair review** — a one-line reason the effect may not earn a slot.
 
 ### The order
 
@@ -2426,12 +2456,12 @@ the mirror of every other family in the document.
 
 ### Y13 - Existing blinds, re-expressed
 
-- **Q1471** `[root]` — **Dress Code, as a mark** — hazard, Y13, from design/board-plan. Ships in levels.csv: some cells demand a named suit and refuse anything else. A mark already IS a cell asking for a suit · **(a)** Keep it bespoke: a demanding cell stays its own rule, separate from marks · **(b)** Fold it in: a demanding cell is a mark that REFUSES anything not matching its suit · **(c)** Fold it in, and generalise: a mark may refuse on any one of its four properties, not only suit · **(d)** reject — this effect does not enter the game · *default* (c)
-- **Q1472** `[root]` — **Sight Unseen, as a mark** — hazard, Y13, from design/board-plan. Ships in levels.csv: every card is face down in the Entrance and only turns face up once placed. The plan is the mirror of this - the board is legible while the hand is not · **(a)** Keep it bespoke: the Entrance blindfold has nothing to do with the plan · **(b)** Pair them: the Entrance is blind AND the plan is fully visible, so the plan is the only information you have · **(c)** Invert it: the Entrance is visible and the plan is blind · **(d)** reject — this effect does not enter the game · *default* (b)
-- **Q1473** `[root]` — **The Dye Vat, as a mark** — hazard, Y13, from design/board-plan. Ships in levels.csv: some cells convert whatever is placed on them to a named suit · **(a)** Keep it bespoke: a converting cell stays its own rule · **(b)** Fold it in: a converting cell is a mark that rewrites what covers it to its own suit · **(c)** Fold it in, and generalise: a mark may rewrite any one property of what covers it · **(d)** reject — this effect does not enter the game · *default* (b)
-- **Q1474** `[root]` — **The Ranked Floor, as a mark** — hazard, Y13, from design/board-plan. Ships in levels.csv: scattered cells add or subtract from the rank of whatever is placed on them, shown before you commit · **(a)** Keep it bespoke: a rank-shifting cell stays its own rule · **(b)** Fold it in: the shift is the mark's own rank bonus, applied whether or not the card matches · **(c)** Fold it in as the mirror: a mark you MISS applies its rank as a penalty instead of a bonus · **(d)** reject — this effect does not enter the game · *default* (b)
-- **Q1475** `[root]` — **The Sealed Envelope, as a mark** — hazard, Y13, from design/board-plan. Ships in levels.csv: one card starts face down somewhere in a grid and is revealed when a card is placed beside it · **(a)** Keep it bespoke: the envelope stays a placed card, not a mark · **(b)** Fold it in: the envelope is a face-down mark revealed by an adjacent placement · **(c)** Fold it in, and pay for it: a face-down mark pays double when matched blind · **(d)** reject — this effect does not enter the game · *default* (b)
-- **Q1476** `[root]` — **The Understudy Fills In, as a mark** — hazard, Y13, from design/board-plan. Ships in levels.csv: any grid you place nothing into during a refill has a random card placed in it for you · **(a)** Keep it bespoke: the random placement stays unrelated to the plan · **(b)** Fold it in: the card placed for you is the one the plan marked for that cell · **(c)** Fold it in: the card placed for you is the plan's mark, and it counts as matched · **(d)** reject — this effect does not enter the game · *default* (b)
+- **Q1471** `[root]` — **Dress Code, as a mark** — hazard, Y13, from design/board-plan. Ships in blinds.csv: some cells demand a named suit and refuse anything else. A mark already IS a cell asking for a suit · **(a)** Keep it bespoke: a demanding cell stays its own rule, separate from marks · **(b)** Fold it in: a demanding cell is a mark that REFUSES anything not matching its suit · **(c)** Fold it in, and generalise: a mark may refuse on any one of its four properties, not only suit · **(d)** reject — this effect does not enter the game · *default* (c)
+- **Q1472** `[root]` — **Sight Unseen, as a mark** — hazard, Y13, from design/board-plan. Ships in blinds.csv: every card is face down in the Entrance and only turns face up once placed. The plan is the mirror of this - the board is legible while the hand is not · **(a)** Keep it bespoke: the Entrance blindfold has nothing to do with the plan · **(b)** Pair them: the Entrance is blind AND the plan is fully visible, so the plan is the only information you have · **(c)** Invert it: the Entrance is visible and the plan is blind · **(d)** reject — this effect does not enter the game · *default* (b)
+- **Q1473** `[root]` — **The Dye Vat, as a mark** — hazard, Y13, from design/board-plan. Ships in blinds.csv: some cells convert whatever is placed on them to a named suit · **(a)** Keep it bespoke: a converting cell stays its own rule · **(b)** Fold it in: a converting cell is a mark that rewrites what covers it to its own suit · **(c)** Fold it in, and generalise: a mark may rewrite any one property of what covers it · **(d)** reject — this effect does not enter the game · *default* (b)
+- **Q1474** `[root]` — **The Ranked Floor, as a mark** — hazard, Y13, from design/board-plan. Ships in blinds.csv: scattered cells add or subtract from the rank of whatever is placed on them, shown before you commit · **(a)** Keep it bespoke: a rank-shifting cell stays its own rule · **(b)** Fold it in: the shift is the mark's own rank bonus, applied whether or not the card matches · **(c)** Fold it in as the mirror: a mark you MISS applies its rank as a penalty instead of a bonus · **(d)** reject — this effect does not enter the game · *default* (b)
+- **Q1475** `[root]` — **The Sealed Envelope, as a mark** — hazard, Y13, from design/board-plan. Ships in blinds.csv: one card starts face down somewhere in a grid and is revealed when a card is placed beside it · **(a)** Keep it bespoke: the envelope stays a placed card, not a mark · **(b)** Fold it in: the envelope is a face-down mark revealed by an adjacent placement · **(c)** Fold it in, and pay for it: a face-down mark pays double when matched blind · **(d)** reject — this effect does not enter the game · *default* (b)
+- **Q1476** `[root]` — **The Understudy Fills In, as a mark** — hazard, Y13, from design/board-plan. Ships in blinds.csv: any grid you place nothing into during a refill has a random card placed in it for you · **(a)** Keep it bespoke: the random placement stays unrelated to the plan · **(b)** Fold it in: the card placed for you is the one the plan marked for that cell · **(c)** Fold it in: the card placed for you is the plan's mark, and it counts as matched · **(d)** reject — this effect does not enter the game · *default* (b)
 
 ## Family Z - Classic solitaire, re-expressed
 
