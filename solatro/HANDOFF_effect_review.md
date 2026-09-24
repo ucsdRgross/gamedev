@@ -281,7 +281,11 @@ edits the slot field in the effect's source row; the class stays, so no id moves
 - [x] pair review applied: G-I · J-M, O-P · Q-T · U-X and W
 - [x] pair review applied: Y-Z · AA and AB
 - [x] `header.md` counts; `status.agent.json` summary; final pair review of the round (applied)
-- [ ] merge into `combine-sidebar-boardplan` (re-read `answers.json` there first, as above)
+- [x] `combine-sidebar-boardplan` merged into `effect-levels` (disjoint files); `answers.json`
+      in the owner's checkout was identical, so nothing moved to family AC
+- [ ] once the session holding `combine-sidebar-boardplan` is done, merge `effect-levels` into it
+      from the main checkout (a fast-forward if nothing new landed there; otherwise re-read
+      `answers.json` first, as above)
 
 Open for the owner, found during the pass: ten pairs of live effects share a name across families
 (The Dead End Q1397/Q1477, The Standing Set Q0637/Q1436, The Booking Q0811/Q1432, The Route Book
