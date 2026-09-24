@@ -61,9 +61,9 @@ ROWS = [
 
 ("M0043", "The Rent Book", "Y8", "hazard",
  "The plan costs to use.",
- "Level: matching a mark costs gold equal to its rank, and you may decline to match",
+ "Level: matching a mark discards a card from the Entrance, and you may decline to match",
  "Level: matching a mark costs a placement's worth of Entrance refill",
- "Level: the first match each show is free and every later one costs gold",
+ "Level: the first match each show is free and every later one discards a card from the Entrance",
  "c"),
 
 ("M0044", "The Understudy Riot", "Y8", "hazard",

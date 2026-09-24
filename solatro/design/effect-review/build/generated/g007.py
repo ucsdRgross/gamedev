@@ -75,6 +75,6 @@ ROWS = [
 ("G0155","The Line of Sight","E5","skill","Clears what is directly beyond.",
  "Moving this card into a cell destroys whatever sits in the next cell along the same direction",
  "Moving this card into a cell destroys whatever sits in the next cell along, and this card gains its rank",
- "Moving this card into a cell pushes everything in that direction one cell, destroying only what falls off the grid",
+ "Moving this card into a cell pushes everything in that direction one cell, and what falls off the grid returns to the Entrance",
  "c"),
 ]

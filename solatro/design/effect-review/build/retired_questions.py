@@ -240,7 +240,6 @@ RETIRED = {
 
     "E0075": "Merged into Q0309 (The Leotard): moving any card anywhere is that effect's level 2; the owner rules on it there.",  # Q0318
 
-    "E1151": 'Duplicate of Q0314 (Walking Through the Wall): stepping over an occupied cell into the one beyond, chaining as its level 2; the owner rules on it there.',  # Q0336
 
     "E0306": "Merged into Q0345 (The Rook) and Q0339 (The Bishop): each takes the other's lines as its level 2, which is the queen; the owner rules on it there.",  # Q0346
 
@@ -252,7 +251,6 @@ RETIRED = {
 
     "E0841": 'Duplicate of Q0357 (The Light and Heavy Chest): light when you move it, immovable to effects; the owner rules on it there.',  # Q0381
 
-    "G0280": "Merged into Q0419 (The Voice From The Wings): working from the discard is that effect's level 2; the owner rules on it there.",  # Q0422
 
     "G0386": 'Duplicate of Q0424 (Blue Joker): paid by the cards still in the deck; the owner rules on it there.',  # Q0425
 
@@ -370,7 +368,6 @@ RETIRED = {
 
     "G0363": "Duplicate of Q0059, which the owner wrote: patience drops per Entrance refill and a scored meld restores it; the owner's version stands.",  # Q0737
 
-    "G0148": "Merged into Q0253 (The Forge): placing two Entrance cards in one turn, into different cells, is that effect's level 2; the owner rules on it there.",  # Q0749
 
     "G0167": 'Retired: already a rule. Undo is a button with a capped history (Game.undo_cap) that rewinds the board with the deck order unchanged. Rewinding the grid with the deck order unchanged is the button.',  # Q0758
 
@@ -543,4 +540,14 @@ RETIRED = {
     "G0405": 'Duplicate of Q1396 (The Bare Stage): a bonus per empty cell when the show ends; the owner rules on it there.',  # Q1398
 
     "G0408": 'Duplicate of Q1407 (The Slow Burn): a scoreless refill raises what the next scoring pays; the owner rules on it there.',  # Q1406
+
+    "G0226": 'Retired: you place anywhere on a grid, so a line that builds downward from a fixed top has no meaning on this board.',  # Q0262
+
+    "E1341": "Retired with the pre-grid board: every option assumes a board whose boundaries settle as you place, and the 5x5 grid's are fixed.",  # Q0362
+
+    "E0307": 'Retired: there is no currency and no shop. Every option buys the look with gold.',  # Q0389
+
+    "G0217": 'Retired: no rival draws from a shared pool in this game.',  # Q0415
+
+    "E0749": 'Retired: there is no scoring pass to scan the deck with; lines bank as they complete.',  # Q0418
 }

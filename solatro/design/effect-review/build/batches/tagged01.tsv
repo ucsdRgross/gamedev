@@ -104,7 +104,7 @@ E0102	KEEP		F5	skill	On Entrance refresh, all Animal-class cards in the Entrance
 E0103	KEEP		D6	type	While this card sits in the Entrance its skill is active globally; on the grid it has no effect.	
 E0104	KEEP		I12	stamp	The first time this card would be destroyed or debuffed, prevent it and mint 2 Gold tokens instead.	
 E0105	KEEP		A7	hazard	Town rule: the show's first placement scores 0 fame.	
-E0106	KEEP		F8	skill	After it activates, repeated actions for the rest of the show never repeat identical results.	
+E0106	KEEP		F8	skill	Once it scores, random outcomes stop repeating.	
 E0107	KEEP		D7	skill	Consumes prop (skill-less) cards dropped on it, gaining +1 rank per card eaten, with no cap, permanently.	E0087
 E0108	KEEP		F3	skill	The next card to be drawn is always visible above the deck slot while this card is anywhere in play.	
 E0109	KEEP		D3	skill	While spotlit, every card in this card's column gains bonus points per row of column height when the column scores.	

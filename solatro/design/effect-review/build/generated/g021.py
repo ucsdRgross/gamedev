@@ -109,9 +109,9 @@ ROWS = [
 
 ("M0014", "The Second Billing", "Y2", "skill",
  "Its stronger form only on its own mark.",
- "This card's skill fires at its stronger form when the card matches its mark on ANY property, not only on talent",
- "This card's skill fires ONLY when the card is placed on a mark it matches, and does nothing otherwise",
- "This card's skill fires at its stronger form when placed on any mark at all",
+ "This card's skill reaches level 2 when it matches its mark on ANY property, not only on talent",
+ "This card's skill fires only at level 2: placed on a mark it does not match, it does nothing",
+ "This card's skill reaches level 2 on any mark at all, matched or not",
  "a"),
 
 ("M0015", "The Reserved Cell", "Y2", "type",
@@ -195,7 +195,7 @@ ROWS = [
 
 ("M0026", "The Cancelled Date", "Y4", "skill",
  "Destroys the plan for profit.",
- "Cue: destroy any unmatched mark and gain gold equal to its rank",
+ "Cue: destroy any unmatched mark and gain flat points equal to its rank",
  "Cue: destroy any unmatched mark and gain a permanent mult",
  "Cue: destroy every unmatched mark in one line and gain a large one-off score",
  "b"),

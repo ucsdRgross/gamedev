@@ -36,7 +36,7 @@ ROWS = [
 ('Q0746', 'E0155', 'OK', 'The free move may put a card on any cell whose mark it matches, whatever the legality', ''),
 ('Q0747', 'E1684', 'REWORK', 'It costs one Entrance slot instead of two', '(c) was sold, and there is no shop'),
 ('Q0748', 'G0236', 'WEAK', 'NONE', 'it does not say which actions it automates or what automatic means'),
-('Q0749', 'G0148', 'TWIN', None, 'Q0253'),
+('Q0749', 'G0148', 'OK', 'If both cards land on marks they match, a third card may be placed', ''),
 ('Q0750', 'G0161', 'OK', 'A cheat onto a cell whose mark the card matches is free', ''),
 ('Q0751', 'E1081', 'OK', 'Twice per show', ''),
 ('Q0752', 'E1901', 'OK', "It also counts every Entrance refill as the show's first", ''),

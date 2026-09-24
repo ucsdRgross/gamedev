@@ -69,7 +69,7 @@ ROWS = [
 ("E0015",
  "A token sits on one column and rotates one column per Entrance refresh; a line scored through that column pays double",
  "A token sits on one cell and walks one cell per placement; the card placed on that cell scores twice",
- "A token sits on the same column in every grid at once; scoring that column in all grids in one placement pays a large bonus",
+ "A token sits on one cell, and a line scored through it in every direction at once pays a large bonus",
  "a"),
 ("E0016",
  "Banks points each show instead of scoring them; a card ever stacked on it forfeits the whole bank",

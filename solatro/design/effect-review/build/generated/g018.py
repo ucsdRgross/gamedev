@@ -91,7 +91,7 @@ ROWS = [
 # --- F6 entrance size ------------------------------------------------------------
 ("G0380","The Wide Doorway","F6","skill","More cards waiting to come on.",
  "The entrance holds seven cards instead of five",
- "The entrance holds seven cards, but refills only when fully empty",
+ "The entrance holds seven cards, and refills when three are empty",
  "The entrance holds seven cards, and the two extra slots are refilled only once per Entrance refill",
  "a"),
 ("G0381","The Narrow Gate","F6","skill","Fewer choices, better cards.",

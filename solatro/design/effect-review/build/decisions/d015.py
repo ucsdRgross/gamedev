@@ -72,7 +72,7 @@ KEEPS = [
 ("E1988","E7","hazard","Some cards get pinned in place.",
  "Difficulty: a proportion of cards arrive pinned and cannot be moved from their position",
  "Difficulty: a proportion arrive pinned to the first position, blocking that slot",
- "Difficulty: a proportion arrive pinned, and unpinning one costs gold",
+ "Difficulty: a proportion arrive pinned, and a pinned card that completes a line unpins",
  "c"),
 ("E1989","G4","skill","Sacrifices a card out of the best hand.",
  "If a line scores as the highest hand, one named card in it is destroyed and a rare card is created",

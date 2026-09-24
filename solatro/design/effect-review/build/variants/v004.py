@@ -309,7 +309,7 @@ ROWS = [
 ("E0255",
  "Cue: drop this card from the top of its column to the bottom, scoring per row fallen",
  "Cue: drop this card from the top of its column to the bottom, scoring per row fallen and applying a status to each card it passes",
- "Cue: drop this card through its column and on into the same column of the grid below, scoring per row fallen",
+ "Cue: drop this card through its column and on into the same column of the neighbouring grid, scoring per row fallen",
  "b"),
 ("E0256",
  "Stores one card outside the game across shows; cue once per run to insert it into any stack at any moment, and a town search loses it",

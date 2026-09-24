@@ -93,7 +93,7 @@ KEEPS = [
 ("E1200","E3","consumable","Shakes the board apart.",
  "Scrambles the positions of every card on one grid",
  "Scrambles the positions of every card on one grid, and any line the scramble happens to complete scores",
- "Scrambles every card on every grid",
+ "Scrambles every card on one grid except those sitting on marks they match",
  "b"),
 ("E1204","G9","skill","Hatches into something better.",
  "When a line scores, becomes a completely random other card of higher rank",

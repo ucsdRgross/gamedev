@@ -57,7 +57,7 @@ ROWS = [
 
 # --- D4 compaction ------------------------------------------------------------
 ("G0010","Dead Weight","D4","skill","What happens to the pile above.",
- "Removing a card drops everything above it down one level, which is what already happens - this option keeps the default",
+ "Removing a card drops everything above it, and the card that lands on the mark pays its match again",
  "Removing a card leaves a gap in the stack that only another card can fill",
  "Removing a card drops everything above it, and each card that falls scores its rank",
  "c"),

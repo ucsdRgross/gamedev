@@ -104,7 +104,7 @@ E0102	catalog	CARD_CATALOG	Liberty Horses		Uncommon	skill;Animal Trainer;deck-ma
 E0103	catalog	CARD_CATALOG	Lithograph		Rare	type;spotlight	While this card sits in the Grand Entrance its skill is active globally; on the board it has no effect.			0
 E0104	catalog	CARD_CATALOG	Lloyd's Policy		Rare	stamp;protection;economy	The first time this card would be destroyed or debuffed, prevent it and mint 2 Gold tokens instead.		designdocs	1
 E0105	catalog	CARD_CATALOG	Lot Lice		Common	hazard;economy	Town hazard: the show's first placement scores 0 fame.		designdocs	1
-E0106	catalog	CARD_CATALOG	Lucky Streak		Uncommon	skill;Fortune Teller;meta;random	After it activates, repeated actions for the rest of the show never repeat identical results.			0
+E0106	catalog	CARD_CATALOG	Lucky Streak		Uncommon	skill;Fortune Teller;meta;random	Once it scores, random outcomes stop repeating.			0
 E0107	catalog	CARD_CATALOG	Mabel's Tigers		Rare	skill;Animal Trainer;destruction;growth	Consumes prop (skill-less) cards dropped on it, gaining +1 rank per card eaten, with no cap, permanently.			0
 E0108	catalog	CARD_CATALOG	Madame Zora's Eye		Rare	skill;Fortune Teller;info	The next card to be drawn is always visible above the deck slot while this card is anywhere in play.		designdocs	1
 E0109	catalog	CARD_CATALOG	Mallakhamb Pole		Uncommon	skill;Acrobat;formation;combo	While spotlit, every card in this card's column gains bonus points per row of column height when the column scores.			0
