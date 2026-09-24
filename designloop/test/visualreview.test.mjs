@@ -23,7 +23,8 @@ async function fixture() {
   await writeFile(join(DIR, 'after', 'one.png'), PNG);
   await writeJsonAtomic(join(DIR, 'manifest.json'), {
     shots: [
-      { id: 'one', title: 'The first', row: 'P1', scene: 'res://a.tscn', env: {}, png: 'user://a.png', seen: 'a board' },
+      { id: 'one', title: 'The first', row: 'P1', scene: 'res://a.tscn', env: {}, png: 'user://a.png', seen: 'a board',
+        crops: [{ label: 'the rim', x: 1, y: 2, w: 3, h: 4 }] },
       { id: 'two', title: 'The second', row: 'P2', scene: 'res://b.tscn', env: {}, png: 'user://b.png', seen: 'a sidebar' },
     ],
   });
@@ -67,6 +68,7 @@ test('the API reports the manifest, the verdicts and which side of each pair exi
     const got = await fetch(`${s.url}/api/visual-review/demoproject`).then((r) => r.json());
     assert.deepEqual(got.manifest.shots.map((shot) => shot.id), ['one', 'two']);
     assert.deepEqual(got.review, { shots: {} });
+    assert.deepEqual(got.manifest.shots[0].crops, [{ label: 'the rim', x: 1, y: 2, w: 3, h: 4 }]);
     assert.ok(got.files.one.after, 'after/one.png exists');
     assert.equal(got.files.one.before, null, 'no before/one.png: the page shows "no before"');
     assert.equal(got.files.two.after, null);

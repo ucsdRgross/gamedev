@@ -11,6 +11,10 @@
   .frame { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #111; }
   .frame img { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
   .none { color: #777; }
+  #crops { display: flex; gap: 12px; padding: 4px; overflow-x: auto; }
+  #crops:empty { display: none; }
+  .crop h3 { margin: 0 0 2px; font-size: 12px; font-weight: normal; }
+  .crop canvas { height: 160px; margin-right: 4px; background: #111; image-rendering: pixelated; }
   #panel { padding: 6px 8px; border-top: 1px solid #444; }
   #seen { margin: 4px 0; max-height: 72px; overflow: auto; }
   #comment { width: 100%; box-sizing: border-box; height: 38px; background: #111; color: #ddd; border: 1px solid #555; }
@@ -22,6 +26,7 @@
   <div class="side"><h2>BEFORE (base)</h2><div class="frame" id="before"></div></div>
   <div class="side"><h2>AFTER (this work)</h2><div class="frame" id="after"></div></div>
 </div>
+<div id="crops"></div>
 <div id="panel">
   <div><b id="counter"></b> <b id="title"></b> <span id="row"></span> <span id="verdict"></span></div>
   <div id="seen"></div>
@@ -44,6 +49,36 @@ let at = 0;
 
 const $ = (id) => document.getElementById(id);
 
+function imageSrc(side, shot) {
+  return `/visual-review/${project}/${side}/${shot.id}.png?t=${encodeURIComponent(data.files[shot.id][side])}`;
+}
+
+function cropCanvas(side, shot, crop) {
+  const canvas = document.createElement('canvas');
+  canvas.width = crop.w;
+  canvas.height = crop.h;
+  canvas.title = side;
+  const img = new Image();
+  img.onload = () => canvas.getContext('2d').drawImage(img, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+  img.src = imageSrc(side, shot);
+  return canvas;
+}
+
+function crops(shot) {
+  $('crops').replaceChildren();
+  for (const crop of shot.crops || []) {
+    const box = document.createElement('div');
+    box.className = 'crop';
+    const label = document.createElement('h3');
+    label.textContent = crop.label;
+    box.append(label);
+    for (const side of ['before', 'after']) {
+      if (data.files[shot.id][side]) box.append(cropCanvas(side, shot, crop));
+    }
+    $('crops').append(box);
+  }
+}
+
 function image(side, shot) {
   const frame = $(side);
   const written = data.files[shot.id][side];
@@ -51,7 +86,7 @@ function image(side, shot) {
     frame.innerHTML = `<span class="none">no ${side}</span>`;
     return;
   }
-  const src = `/visual-review/${project}/${side}/${shot.id}.png?t=${encodeURIComponent(written)}`;
+  const src = imageSrc(side, shot);
   frame.innerHTML = `<a href="${src}" target="_blank"><img src="${src}" alt="${side}"></a>`;
 }
 
@@ -60,6 +95,7 @@ function show() {
   const given = data.review.shots[shot.id];
   image('before', shot);
   image('after', shot);
+  crops(shot);
   $('counter').textContent = `${at + 1} / ${data.manifest.shots.length}`;
   $('title').textContent = shot.title;
   $('row').textContent = shot.row;

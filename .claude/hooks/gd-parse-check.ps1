@@ -16,6 +16,8 @@ function Tell([string]$text) {
     exit 0
 }
 
+. "$PSScriptRoot\_godot_console.ps1"
+if (Get-GodotConsole) { Tell '[gd-parse-check] another Godot is running - parse check skipped.' }
 if (-not $env:GODOT_BIN) { Tell '[gd-parse-check] GODOT_BIN is unset - parse check skipped.' }
 
 $work = Join-Path $env:TEMP 'claude-gd-parse-check'

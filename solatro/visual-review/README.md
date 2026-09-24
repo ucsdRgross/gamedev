@@ -22,8 +22,13 @@ A shot:
 { "id": "grid3_overview", "title": "Three grids, the every-grid overview", "row": "P43",
   "scene": "res://Tests/Visual/grid_zoom_shot.tscn", "env": { "GRID_COUNT": "3" },
   "png": "user://reveal_shots/grid_zoom_3_overview.png",
-  "seen": "what the worker saw in after/grid3_overview.png, written after reading it" }
+  "seen": "what the worker saw in after/grid3_overview.png, written after reading it",
+  "crops": [{ "label": "what to look at", "x": 437, "y": 294, "w": 68, "h": 84 }] }
 ```
+
+`crops` is optional: every region the worker zoomed into, as a box in the image's own pixels. The
+page shows each under the pair, the same box cut from BEFORE and AFTER side by side, scaled up
+with no smoothing; a shot with no BEFORE shows only the AFTER crop.
 
 `scene` must be a shot scene in the repo that writes `png` and quits by itself; `env` is how
 the scenes take their knobs. Shots with the same `scene` and `env` share one Godot run.
@@ -39,7 +44,7 @@ the scenes take their knobs. Shots with the same `scene` and `env` share one God
    absent or fails on the base leaves no BEFORE, and the page says "no before"; a shot that fails
    on the working tree fails the command.
 3. **Read every AFTER PNG yourself and write its `seen`** — what the image shows, not what the
-   change was meant to do. Look at every BEFORE too.
+   change was meant to do. Look at every BEFORE too. Every crop you looked at goes in `crops`.
 4. **Park:** `npm --prefix designloop run watch -- visual-review/solatro`. It wakes when the owner
    presses Done, prints every verdict with its comment, and marks the worker `working`. Park only
    after a shoot: a Done older than the last shoot does not count, so parking again without one

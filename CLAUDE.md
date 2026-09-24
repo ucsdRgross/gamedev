@@ -130,6 +130,8 @@ most of them test-to-test setup. About ten touch production code.
 - **Track every PID you start.** Before reporting done, no Godot console process you started is
   left (kill your own, by `-Id`); `.claude/hooks/leftover-godot-warn.ps1` lists survivors at every
   stop. A suite with no banner inside its timeout is a hang — look for a parse error first.
+- **A `.gd` edit is parse-checked** by `.claude/hooks/gd-parse-check.ps1` in ~3-4 s, warn-only,
+  skipped while another Godot console process runs.
 - **Plans and design records.** Fold new work and rulings into the EXISTING plan steps and tests
   unless told otherwise. Record the owner's ACTUAL answer verbatim, never your recommendation
   ([[charts-from-resolved-answers]]). Answer a question from `PLAN.md`, the handoff and the design

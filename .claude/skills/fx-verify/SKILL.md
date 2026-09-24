@@ -104,6 +104,7 @@ measurement has confirmed one. Then every probe:
    Register its shots in `solatro/visual-review/manifest.json` — existing shot scenes in the repo,
    never a scratch probe — then `py solatro/visual-review/review.py refresh` with `GODOT_BIN` set.
    Read every `after/` PNG and write its `seen` from what the image shows; look at every `before/`.
+   Every region you zoomed into goes in the shot's `crops` as a pixel box with a label.
 
 ## Reporting
 

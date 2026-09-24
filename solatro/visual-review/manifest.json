@@ -9,6 +9,9 @@
         "GRID_COUNT": "3"
       },
       "png": "user://reveal_shots/grid_zoom_3_overview.png",
+      "crops": [
+        { "label": "grid 1 top-left card: the 1 px pink line along its bottom edge", "x": 437, "y": 294, "w": 68, "h": 84 }
+      ],
       "seen": "1555x875 game picture. The dark HUD panel fills the left 389 px (Goal 1000000000, Total 1, Deck / Discard / Rules, Undo / Marks). Right of it, three 5x5 grids sit side by side with two equal gaps, every card of each fully on screen; measured, the cell block spans x 447..1497, which leaves 57 px on each side of the area right of the panel, so the set is centred. Grid 1 (labelled 1) has its top row placed face-up (6, 4, 8, 3, A), the other cells hold cards drawn on the dark cell paper, and the five-card Entrance (Q, 10, 7, 6, J) sits under grid 1. No white horizontal line crosses the board anywhere. One detail I cannot account for: a 1 px pink line runs along the bottom edge of the placed 6 at top-left and nowhere else."
     },
     {

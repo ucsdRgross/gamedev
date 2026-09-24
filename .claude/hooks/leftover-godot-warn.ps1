@@ -3,8 +3,8 @@
 # Why: a run you started and lost track of holds the window and user:// and fabricates failures in
 # the next run. Editor processes (-e / --editor) are the owner's and are not listed. Never kills.
 
-$procs = Get-CimInstance Win32_Process -Filter "Name LIKE '%godot%'" |
-    Where-Object { $_.CommandLine -notmatch '(?i)(^|\s)(-e|--editor)(\s|$)' }
+. "$PSScriptRoot\_godot_console.ps1"
+$procs = Get-GodotConsole
 if (-not $procs) { exit 0 }
 
 Write-Output "[godot-check] Godot processes still running - kill only your own, by -Id:"
