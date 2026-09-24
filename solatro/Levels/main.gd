@@ -39,6 +39,7 @@ var _window_size : Vector2
 
 func _ready() -> void:
 	map_scene.enter_game.connect(enter_game)
+	map_scene.chooser_changed.connect(_refresh_overlay)
 	map_scene.info_hovered.connect(_on_screen_info_hovered)
 	menu_scene.new_run_requested.connect(_on_new_run)
 	menu_scene.continue_requested.connect(_on_continue)
@@ -82,7 +83,7 @@ func _ready() -> void:
 # No ceremony, matching the camera above: start_menu's music begins immediately at full
 # volume, with nothing to fade FROM.
 	wall.start_music(_entries[&"start_menu"])
-	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
+	_refresh_overlay()
 
 	get_viewport().size_changed.connect(_on_window_resized)
 #A run already set means a suite mounted this Main, and a throwaway show would write into that run.
@@ -187,8 +188,7 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 # An unlock builds brand-new pictures, and a fresh `%Frame` is visible. Re-stating the wall's
 # current answer is what keeps one from appearing on top of a focused picture.
 	_set_frames_visible(_frames_visible)
-	var overlay : WallOverlay = wall.get_node(^"%Overlay")
-	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
+	_refresh_overlay()
 	_print_wall_debug_readout()
 
 # The window changed shape. The wall is RE-PACKED at the new aspect, so the ellipse and every
@@ -332,6 +332,21 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 # The flag lives here because `Main`, not the transition, owns "a move is happening".
 var _move_in_flight : bool = false
 
+func _refuses_a_move() -> bool:
+	return _move_in_flight or _the_chooser_holds_the_player()
+
+# ⚠ THE PACK CHOOSER IS THE PLAYER'S FOCUS UNTIL TAKE, so no way off the map is open while it is up.
+# Only while the MAP is focused: a walk can land on a pack after the player has left, and the way
+# back to it must stay open or Take is out of reach for good.
+func _the_chooser_holds_the_player() -> bool:
+	return _current_focus == &"map" and map_scene.chooser_is_up()
+
+## The overlay's buttons re-stated from the stack, the wall and the chooser -- greyed while the chooser holds the player.
+func _refresh_overlay() -> void:
+	var overlay : WallOverlay = wall.get_node(^"%Overlay")
+	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"",
+			_the_chooser_holds_the_player())
+
 # The in-flight `WallTransition`, or null at rest — needed only so a resize or unlock can
 # `retarget()` it. The destination id is kept alongside because `_current_focus` still names the
 # SOURCE until the transition lands.
@@ -351,7 +366,7 @@ func _set_frames_visible(shown: bool) -> void:
 		_pictures[id].set_frame_visible(shown)
 
 func _focus_picture(id: StringName, record_visit: bool = true) -> void:
-	if _move_in_flight: return
+	if _refuses_a_move(): return
 # Requesting the current picture does nothing.
 	if id == _current_focus: return
 	_move_in_flight = true
@@ -418,8 +433,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	wall.focus_changed.emit(id)
 	if record_visit:
 		_focus_stack.visit(id)
-	var overlay : WallOverlay = wall.get_node(^"%Overlay")
-	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
+	_refresh_overlay()
 	_settle_camera()
 	_move_in_flight = false
 # Backstop: the early unlock above may never have had a frame to fire in.
@@ -435,7 +449,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 # Same re-entrancy guard as `_focus_picture()`: this is the OTHER path animating the shared
 # Camera2D, so a Wall press racing an in-flight enter would fight it for position and zoom.
-	if _move_in_flight: return
+	if _refuses_a_move(): return
 	_move_in_flight = true
 # Just as much a transition to the player. No `WallTransition`, so no early unlock -- input
 # clears on landing.
@@ -459,8 +473,7 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 		wall.enter_wall_view(_current_focus)
 	_current_focus = &""
 	hud_container.set_active_screen(&"")
-	var overlay : WallOverlay = wall.get_node(^"%Overlay")
-	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
+	_refresh_overlay()
 	_move_in_flight = false
 	wall.unlock_input()
 	_settle_after_deferred_resize()
@@ -482,7 +495,7 @@ func _on_back_pressed() -> void:
 # ⚠ The guard has to be on the HANDLER, because the handler is what MUTATES. The movers carry
 # their own, but they only see it after `back()` has already popped an entry — so a second
 # press mid-move pops and then refuses to navigate, losing a picture from the stack for good.
-	if _move_in_flight: return
+	if _refuses_a_move(): return
 # In WALL VIEW the stack's top is still the picture the player just left, since wall view is
 # never an entry — so one step back from here is THAT picture. `back()` would step PAST it and
 # push it onto the forward list, leaving it "ahead of you" having never been revisited.
@@ -499,7 +512,7 @@ func _on_back_pressed() -> void:
 
 func _on_forward_pressed() -> void:
 # Same reason as Back above -- forward() mutates too.
-	if _move_in_flight: return
+	if _refuses_a_move(): return
 	var target := _focus_stack.forward()
 	if target != &"":
 		await _focus_picture(target, false)
@@ -538,7 +551,7 @@ func _on_continue() -> void:
 
 # ⚠ ORDER AND `await` BOTH MATTER. `enter_game()` is a coroutine: calling it un-awaited runs it as
 # far as its first await — inside `_focus_picture()`, AFTER `_move_in_flight = true` — and returns,
-# so the reveal below hits its own `if _move_in_flight: return` and does nothing.
+# so the reveal below hits its own `_refuses_a_move()` guard and does nothing.
 	await _go_to_wall_view(SettingsManager.settings.wall_reveal_delay_scale)
 	if save_info.pending_node_id >= 0:
 		await enter_game()

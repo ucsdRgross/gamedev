@@ -170,7 +170,7 @@ func _ready() -> void:
 	await test_an_edge_key_in_a_viewer_lands_the_focus_on_the_exit_x()
 	await test_the_deck_button_pressed_again_closes_the_viewer_it_opened()
 	await test_the_map_shows_no_travel_or_deck_while_it_describes_a_card()
-	await test_a_card_on_the_game_screen_shows_no_map_buttons_while_a_pack_is_open()
+	await test_a_card_on_the_game_screen_shows_no_map_buttons_while_a_node_is_picked()
 	await test_the_sidebars_x_over_a_viewer_unsticks_and_closes_together()
 	await test_an_unstuck_viewer_description_goes_when_the_pointer_leaves_the_card()
 	await test_the_deck_button_toggles_by_mouse_while_its_viewer_is_open()
@@ -181,6 +181,9 @@ func _ready() -> void:
 	await test_right_off_the_sidebar_never_reaches_the_board_behind_an_empty_viewer()
 	await test_the_chooser_covers_the_map_and_its_sidebar_offers_the_deck()
 	await test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser()
+	await test_no_route_leaves_the_chooser_until_take()
+	await test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it()
+	await test_leaving_mid_walk_onto_a_pack_never_strands_the_chooser()
 	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
 	await test_the_start_menus_inspect_viewer_publishes_into_the_container()
 	await test_the_start_menus_inspect_viewer_publishes_on_hover()
@@ -4632,27 +4635,20 @@ func test_the_map_shows_no_travel_or_deck_while_it_describes_a_card() -> void:
 				"...describing the node the player picked, not the card they were reading")
 	await _end_main_fixture()
 
-## The map's row belongs to the map: a pack chooser left open there puts no Deck beside a card the game screen describes.
-func test_a_card_on_the_game_screen_shows_no_map_buttons_while_a_pack_is_open() -> void:
+## The map's row belongs to the map: a node picked there puts no Deck or Travel beside a game-screen card -- a regression net only, green even without that guard now the chooser cannot be left.
+func test_a_card_on_the_game_screen_shows_no_map_buttons_while_a_node_is_picked() -> void:
 	await _start_game_fixture()
-	var overlay : Node = _main.wall.get_node(^"%Overlay")
-	await _click((overlay.get_node(^"%BackButton") as Control).get_global_rect().get_center(),
-			_booted_viewport)
+	await _click_overlay(&"BackButton")
 	await _wait_out_the_move()
-	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
-	check(_main._current_focus == &"map" and pack != null,
-			"sanity: Back left the game for a map that offers a pack node", str(_main._current_focus))
-	if pack != null:
-		if pack not in _map.controller.next_nodes_of(_map.controller._current):
-			_map.controller._current = _a_neighbour_leading_to(pack)
-		_map.controller.move_to(pack)
-		await _await_map_arrival()
-		await get_tree().process_frame
-		check(_map.find_child("ChoiceViewer", true, false) != null
-				and _map.selection_deck_button.visible,
-				"sanity: arriving opened the pack's chooser, its sidebar offering the deck")
-		await _click((overlay.get_node(^"%ForwardButton") as Control).get_global_rect().get_center(),
-				_booted_viewport)
+	var node := _a_map_node_with_role(MapNodeRoles.ROLE_GAME)
+	check(_main._current_focus == &"map" and node != null,
+			"sanity: Back left the game for a map that offers a show node", str(_main._current_focus))
+	if node != null:
+		await _select_map_node_and_settle(node)
+		check(_map.selection_deck_button.is_visible_in_tree()
+				and _map.travel_button.is_visible_in_tree(),
+				"sanity: the pick's description offers its Deck and Travel buttons")
+		await _click_overlay(&"ForwardButton")
 		await _wait_out_the_move()
 		check(_main._current_focus == &"game", "sanity: Forward went back to the live show",
 				str(_main._current_focus))
@@ -4936,6 +4932,189 @@ func test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser() -> void
 			chooser.queue_free()
 			await get_tree().process_frame
 	await _end_main_fixture()
+
+## The chooser is the new focus until Take: no route off the map leaves it, and once Take has accepted the pack every one of them leaves again.
+func test_no_route_leaves_the_chooser_until_take() -> void:
+	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
+	check(chooser != null, "sanity: arriving on a pack opened its chooser, a picture behind the map and one ahead")
+	if chooser != null:
+		for button_name : StringName in [&"BackButton", &"ForwardButton", &"WallButton"]:
+			check(_overlay_button(button_name).focus_mode == Control.FOCUS_NONE,
+					"no key or pad focus reaches the overlay's %s, so a click is its one route" % button_name)
+			check(_overlay_button(button_name).disabled,
+					"with the chooser up, the overlay's %s shows disabled" % button_name)
+		for route : Array in _routes_off_the_map():
+			await (route[1] as Callable).call()
+			await _wait_out_the_move()
+			check(_main._current_focus == &"map" and _chooser_is_up(chooser),
+					"with the chooser up, %s leaves neither the map nor the chooser" % route[0],
+					"focus=%s chooser_up=%s" % [_main._current_focus, _chooser_is_up(chooser)])
+			if _main._current_focus != &"map":
+				await (route[2] as Callable).call()
+				await _wait_out_the_move()
+		check(await _click_button(chooser.confirm_button, _map_viewport),
+				"a real click on Take pressed it")
+		await get_tree().process_frame
+		check(not _overlay_button(&"BackButton").disabled and not _overlay_button(&"WallButton").disabled
+				and _overlay_button(&"ForwardButton").disabled == not _main._focus_stack.can_forward(),
+				"after Take, Back and Wall are live again and Forward follows its own stack rule",
+				"forward disabled=%s can_forward=%s" % [_overlay_button(&"ForwardButton").disabled,
+						_main._focus_stack.can_forward()])
+		for route : Array in _routes_off_the_map():
+			await (route[1] as Callable).call()
+			await _wait_out_the_move()
+			check(_main._current_focus != &"map",
+					"after Take, %s leaves the map again" % route[0], str(_main._current_focus))
+			await (route[2] as Callable).call()
+			await _wait_out_the_move()
+			check(_main._current_focus == &"map", "sanity: back on the map after %s" % route[0],
+					str(_main._current_focus))
+			check(_hud_is_up(),
+					"...and its sidebar is back on the HUD, not on a card the chooser took with it")
+	await _end_main_fixture()
+
+## A pack reached while the player is already leaving the map still lets them back to it: the chooser waits there, and Take closes it.
+func test_leaving_mid_walk_onto_a_pack_never_strands_the_chooser() -> void:
+	await _start_map_fixture()
+	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	check(pack != null, "the generated map offers a talent-pack node")
+	if pack != null:
+		await _select_map_node_and_settle(pack)
+		await _close_the_open_viewer()
+		check(await _click_button(_map.travel_button, _booted_viewport), "a real click on Travel pressed it")
+# ⚠ THE KEY, NOT A CLICK: a push is handled at once, so the leave starts while the token walks; a
+# click's hover and release frames let a short edge arrive first, and the chooser then refuses it.
+		check(_map.controller._moving, "sanity: the token is still walking as wall_back is pressed")
+		await _tap_key(KEY_BRACKETLEFT)
+		var waited := 0.0
+		while waited < CARD_CONTROL_TIMEOUT_SEC and (_map.find_child("ChoiceViewer", true, false) == null
+				or _main._move_in_flight):
+			await get_tree().process_frame
+			waited += get_process_delta_time()
+		var chooser := _map.find_child("ChoiceViewer", true, false) as ChoiceViewer
+		check(chooser != null and _main._current_focus == &"start_menu",
+				"sanity: the leave landed while the walk arrived on the pack and opened its chooser",
+				str(_main._current_focus))
+		await _click_overlay(&"ForwardButton")
+		await _wait_out_the_move()
+		check(_main._current_focus == &"map",
+				"from where the leave landed, Forward brings the player back to the chooser",
+				str(_main._current_focus))
+		if chooser != null and _main._current_focus == &"map":
+			check(await _click_button(chooser.confirm_button, _map_viewport),
+					"...where a real click on Take presses it")
+	await _end_main_fixture()
+
+## The chooser's own Deck button opens the run deck over it, and closing that viewer comes back to the chooser, still holding the map.
+func test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it() -> void:
+	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
+	check(chooser != null, "sanity: arriving on a pack opened its chooser")
+	if chooser != null:
+		await _click(chooser.cards().controls[0].get_global_rect().get_center(), _map_viewport)
+		check(_container.is_locked() and _map.selection_deck_button.is_visible_in_tree(),
+				"sanity: a click stuck a chosen card, its description offering the deck")
+		check(await _click_button(_map.selection_deck_button, _booted_viewport),
+				"a real click on the chooser's Deck button pressed it")
+		await get_tree().process_frame
+		check(is_instance_valid(DeckViewer._open) and _chooser_is_up(chooser),
+				"the run deck opens over the chooser, which stays up underneath")
+		await _click_overlay(&"BackButton")
+		await _wait_out_the_move()
+		check(_main._current_focus == &"map" and _chooser_is_up(chooser),
+				"...and Back is refused while the deck viewer sits over the chooser",
+				str(_main._current_focus))
+		await _tap_key(KEY_ESCAPE)
+		check(not is_instance_valid(DeckViewer._open) or DeckViewer._open.is_queued_for_deletion(),
+				"a cancel closes the deck viewer")
+		check(_main._current_focus == &"map" and _chooser_is_up(chooser),
+				"...and the player is back on the chooser, the map still the screen",
+				str(_main._current_focus))
+	await _end_main_fixture()
+
+# Reached the way a player reaches it: a live show, Back to the map, then onto a pack node -- so
+# the stack holds a picture behind the map AND one ahead, and Back and Forward are both live.
+func _open_the_chooser_with_pictures_behind_and_ahead() -> ChoiceViewer:
+	await _start_game_fixture()
+	await _click_overlay(&"BackButton")
+	await _wait_out_the_move()
+	if _container.slid_fraction() < 1.0: await _container.slide_settled
+	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	if _main._current_focus != &"map" or pack == null: return null
+	if pack not in _map.controller.next_nodes_of(_map.controller._current):
+		_map.controller._current = _a_neighbour_leading_to(pack)
+	_map.controller.move_to(pack)
+	await _await_map_arrival()
+	var waited := 0.0
+	while waited < CARD_CONTROL_TIMEOUT_SEC and _map.find_child("ChoiceViewer", true, false) == null:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	await get_tree().process_frame
+	return _map.find_child("ChoiceViewer", true, false) as ChoiceViewer
+
+func _chooser_is_up(chooser: ChoiceViewer) -> bool:
+	return is_instance_valid(chooser) and not chooser.is_queued_for_deletion()
+
+## Every way off the map screen a player has, each beside the press that brings them back to it: `[label, leave, return]`.
+func _routes_off_the_map() -> Array[Array]:
+	var back := _click_overlay.bind(&"BackButton")
+	var forward := _click_overlay.bind(&"ForwardButton")
+	return [
+		["a click on the overlay's Back", back, forward],
+		["a click on the overlay's Forward", forward, back],
+		["a click on the overlay's Wall", _click_overlay.bind(&"WallButton"), back],
+		["wall_back's key", _tap_key.bind(KEY_BRACKETLEFT), forward],
+		["wall_forward's key", _tap_key.bind(KEY_BRACKETRIGHT), back],
+		["wall_overview's key", _tap_key.bind(KEY_TAB), back],
+		["wall_back's pad button", _tap_pad.bind(JOY_BUTTON_LEFT_SHOULDER), forward],
+		["wall_forward's pad button", _tap_pad.bind(JOY_BUTTON_RIGHT_SHOULDER), back],
+		["wall_overview's pad button", _tap_pad.bind(JOY_BUTTON_BACK), back],
+		["a pinch in", _pinch_in, back],
+		["a wall_jump key to another picture", _tap_key.bind(_jump_key_off_the_map()), back],
+	]
+
+func _overlay_button(button_name: StringName) -> Button:
+	return _main.wall.get_node(^"%Overlay").get_node(NodePath("%" + button_name)) as Button
+
+func _click_overlay(button_name: StringName) -> void:
+	var at := _overlay_button(button_name).get_global_rect().get_center()
+	_hover_in(_booted_viewport, at)
+	await get_tree().process_frame
+	await _click(at, _booted_viewport)
+
+func _tap_pad(button: JoyButton) -> void:
+	for pressed : bool in [true, false]:
+		var event := InputEventJoypadButton.new()
+		event.button_index = button
+		event.pressed = pressed
+		_booted_viewport.push_input(event)
+		await get_tree().process_frame
+
+## Two fingers closing past the wall's pinch threshold, over the middle of the window.
+func _pinch_in() -> void:
+	var centre := Vector2(_booted_viewport.size) / 2.0
+	var spread := WallPicture.settings().wall_pinch_threshold_px * 3.0
+	for index : int in [0, 1]:
+		var touch := InputEventScreenTouch.new()
+		touch.index = index
+		touch.pressed = true
+		touch.position = centre + Vector2(spread * index, 0.0)
+		_booted_viewport.push_input(touch)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 1
+	drag.position = centre + Vector2(spread / 3.0, 0.0)
+	_booted_viewport.push_input(drag)
+	await get_tree().process_frame
+	for index : int in [0, 1]:
+		var lift := InputEventScreenTouch.new()
+		lift.index = index
+		lift.position = centre
+		_booted_viewport.push_input(lift)
+	await get_tree().process_frame
+
+## The number key that jumps straight to the first picture on the wall that is not the map.
+func _jump_key_off_the_map() -> Key:
+	var off_the_map := 1 if _main.wall._packed_ids_in_placement_order()[0] == &"map" else 0
+	return (KEY_1 + off_the_map) as Key
 
 ## A real left press on a listed control, through the signal Godot's own GUI pass fires.
 func _click_a_listed_card(control: ControlCard) -> void:

@@ -271,6 +271,7 @@ func highlight_gone() -> void:
 	elif _entry_under_the_viewer: show_description(_entry_under_the_viewer)
 	else:
 		_release_shown_entry()
+		_release_remembered_entry(_active_screen, null)
 		_swap_to_hud()
 		_follow_the_menus_own_content()
 	_refresh_exit_button()

@@ -5,6 +5,9 @@ class_name Map
 
 signal enter_game
 
+## A pack chooser opened, or Take closed it -- what may leave this screen changed.
+signal chooser_changed
+
 @onready var controller: WorldMapController = %WorldMapController
 @onready var ui_layer: CanvasLayer = $UI
 @onready var name_popup: MapNamePopup = %NamePopup
@@ -159,10 +162,19 @@ func _start_show(node: WorldGraphNode) -> void:
 func _open_booster(node: WorldGraphNode) -> void:
 	var booster: BoosterTemplate = node.meta.get(MapNodeRoles.BOOSTER_KEY)
 	var viewer : ChoiceViewer = await booster.on_map_picked(ui_layer)
+	_chooser = viewer
+	chooser_changed.emit()
 	viewer.confirmed.connect(_on_booster_confirmed)
 	hud_container.host_viewer(viewer, wall_picture, info_hovered)
 	_show_only_the_deck_button(true)
 	viewer.confirmed.connect(_show_only_the_deck_button.bind(false).unbind(1))
+
+## The pack chooser this screen opened, dropped the moment Take accepts it, a frame before it is freed.
+var _chooser : ChoiceViewer = null
+
+## Whether a pack chooser is up: it is the player's focus until Take, so nothing may leave this screen.
+func chooser_is_up() -> bool:
+	return is_instance_valid(_chooser)
 
 # ⚠ THE CHOOSER HAS NO NODE, so the row a picked node owns is borrowed for its one useful button:
 # the description of a card being chosen still has to offer a look at the deck it is joining.
@@ -174,6 +186,8 @@ func _show_only_the_deck_button(chooser_is_up: bool) -> void:
 	selection_deck_button.visible = true
 
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
+	_chooser = null
+	chooser_changed.emit()
 	for card in cards:
 		Main.save_info.card_datas.append(card)
 	RunManager.mark_deck_dirty()

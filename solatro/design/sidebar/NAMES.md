@@ -141,6 +141,8 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `func _the_arrows_belong_to_the_hosted_viewer(event) -> bool` | The sidebar reads keys BEFORE the GUI pass, so its page scroll and its up-to-the-X would answer a grid key the focused viewer's own neighbour search can use: while a listed card holds the focus the arrows are left alone, and only one that finds no neighbour comes back as `sidebar_requested` |
 | `ChoiceViewer` | `var _backdrop`, node `Backdrop` (was `Dim`) | The chooser is the new focus until Take: an OPAQUE whole-picture cover, so the map behind it is not visible at all |
 | `Map` | `func _show_only_the_deck_button(chooser_is_up: bool)` | The chooser has no node, so the row a picked node owns is borrowed for its one useful button |
+| `Map` | `func chooser_is_up() -> bool` | (added during execution) A pack chooser is up: `Main._refuses_a_move()` reads it, so no route leaves the map until Take |
+| `WallOverlay` | `func refresh(stack, picture_count, in_wall_view, held: bool = false)` | (added during execution) `held` shows Back, Forward and Wall disabled; `Main._refresh_overlay()` passes `Map.chooser_is_up()` |
 | `CardsViewer` | `signal highlight_left`, `var _hovering`, `func _enter_highlight(data)`, `func _leave_highlight()` | A later hover BORROWS the description while it lasts; the pointer leaving every listed card hands it back to the stuck card, or takes an unstuck one away |
 | `DeckViewer` / `ChoiceViewer` | `func cards() -> CardsViewer`, `func close_from_sidebar() -> void` | How the host reaches the shared model, and how the sidebar's X asks the viewer to go |
 | `ChoiceViewer` | `func _follow_the_pick()`, `func _held_by_a_sticky_description() -> bool`, `static func _hold(button, held)` | The pick's ink, and every button beyond reach — pointer AND pad — while a sticky description is up |
@@ -203,6 +205,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `PlayArea` | `sidebar_requested` | A left press off the board's own left edge; `GameView` hands it to `HudContainer.focus_sidebar()` |
 | `WorldMapController` | `sidebar_requested` | A left press with no node picked; `Map` hands it to `HudContainer.focus_sidebar()` |
 | `PlayArea` | `hand_changed(held: bool)` | Added during execution: the hand went from empty to holding or back, emitted by the `selected_cards` setter; `GameView` hands it to `HudContainer.set_card_in_hand()` |
+| `Map` | `chooser_changed` | Added during execution: a pack chooser opened or Take closed it; `Main` re-states the overlay, whose buttons show disabled while one is up |
 
 ## 8. Test suites
 

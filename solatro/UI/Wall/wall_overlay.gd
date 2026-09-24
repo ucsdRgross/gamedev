@@ -49,10 +49,12 @@ func _grow_to(button: Button, target: float) -> void:
 # Back and Forward VISIBLY disable rather than doing nothing; Wall hides with one picture or fewer.
 # ⚠ In wall view Back returns to the stack's top, so it is live while the stack has ANY entry --
 # `can_back()` alone greys it out on cold launch -> Escape while Escape and pad Back still work.
-func refresh(stack: FocusStack, picture_count: int = 2, in_wall_view: bool = false) -> void:
-	_back_button.disabled = not (stack.current() != &"" if in_wall_view else stack.can_back())
-	_forward_button.disabled = not stack.can_forward()
+func refresh(stack: FocusStack, picture_count: int = 2, in_wall_view: bool = false,
+		held: bool = false) -> void:
+	_back_button.disabled = held or not (stack.current() != &"" if in_wall_view else stack.can_back())
+	_forward_button.disabled = held or not stack.can_forward()
 	_wall_button.visible = picture_count > 1
+	_wall_button.disabled = held
 
 ## The grown row's bottom edge, read off the buttons themselves rather than re-typed elsewhere.
 func button_band_bottom() -> float:
