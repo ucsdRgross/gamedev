@@ -927,6 +927,16 @@ func test_the_legal_cell_lights_the_face_and_the_focus_lights_the_rim() -> void:
 			"the focus draws the card's OUTER RIM in the ink a matching mark wears, and changes "
 			+ "nothing else -- the face it used to brighten is left alone",
 			"%d of %d changed pixels came out in the match ink" % [inked, changed])
+	var tones := PixelProbe.palette_of(_without(plain_face, rim), area)
+	var paper : Color = tones.keys().reduce(func(a: Color, b: Color) -> Color:
+			return a if tones[a] >= tones[b] else b)
+	var on_paper := rim.filter(func(p: Vector2i) -> bool:
+			return _channels_within(focused_face.get_pixel(p.x, p.y), paper, PIXEL_TOLERANCE)).size()
+	check(on_paper == 0 and not _channels_within(match_ink, paper, PIXEL_TOLERANCE),
+			"the focus rim is drawn in an ink the card's paper is not, so a focused Entrance card "
+			+ "reads outlined the way a focused cell does",
+			"paper %s, rim ink %s, %d of %d rim pixels in the paper's colour"
+			% [paper, match_ink, on_paper, rim.size()])
 	var focused_pips := await _shoot_card(false, true, false)
 	check(focused_pips.get_data() == plain_pips.get_data(),
 			"...and the rank, suit, stamp and art are byte-identical under it too",

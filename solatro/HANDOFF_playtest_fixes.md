@@ -142,6 +142,7 @@ a lot of these issues are with lack of parity between different modal input opti
 - **Fourteenth round (verbatim), P45.** After the measurement (Godot omits a setting equal to its default from a saved .tres, so every file saved under the old 0.45 default loads the new 0.15): "a: close, already done".
 - **Fifteenth round (verbatim), P43.** The board scroller's draw_focus_border (the two white lines across the board while a card holds focus, and the 4 px content inset that pushes 3 grids off centre): "a: remove them". Then the 8 authored px horizontal-scrollbar band SHOW_NEVER does not keep (the border's margin had filled it): "a: remove the band" - everywhere, the static furniture height included, so the game picture's design size moves.
 - **Sixteenth round (verbatim), P48 keyboard route.** Up after a key lift: "b: Up stays on board" - while a card is in hand Up goes to the grid, the X is reached by Left into the sidebar. Down from the bottom row of a grid the committed Entrance is not under: "b: go to the Entrance" - focus it and bring the view to its grid. Down from an Entrance card: "a: nothing". Up/Down in the 2-grid overview: "a: screen geometry". Down on the bottom row while HOLDING a card: "a: nothing" - the aim stays on the grid. A focused Entrance card's mark: "a: same rim as a cell".
+- **Seventeenth round (verbatim), P49.** The focus/match rim ink was palette 31, the Entrance card's own paper, so a focused Entrance card showed no rim: "c: pink" - match_rim becomes palette 15 (255,140,255), for the focus rim and the would-match rim alike; supersedes the fourth round's rim ink.
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -509,8 +510,8 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd]
   verification_command: 'run_tests.py --filter DragPlace Sidebar VisualLayers SettingsRange UiProps; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'Measured: the Entrance card already drew the SAME rim as a cell (CardVisual._rim_style, ink match_rim, width 1) - invisible because match_rim was palette 31, the Entrance paper (2800 of 2800 rim pixels = the paper colour). Owner (seventeenth round): match_rim -> 15 pink in roles.tres (script default mirrored). Red (HEAD roles): PIXELS "the focus rim is drawn in an ink the card''s paper is not" 1 FAILED; green FILTERED 7 of 51: 2755; --logic 3010. Fable review: 0 findings; three living docs corrected. Gate: ALL 51 SUITES: 6930 CHECKS PASSED.'
   notes: 'R6 and its follow-ups own the focus look: the outer outline changes on focus (fourth round: the rim ink is option a; black before focus), no difference between the focus outline and the mark outline, brightness on the Type polygon only. Find why an Entrance card (a CardVisual in the Entrance strip, not a grid cell control) draws the weaker form - measure both paths first.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
@@ -578,12 +579,13 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - UI VIEWERS "a later arrow never drags the focus back to the first card" failed 1 of 2 overseer gates on the P47 tree (its failure line interleaved with WALL TRANSITION's soak output): the row grabs focus on a standalone DeckViewer's second card, waits ONE frame, and the focus is gone. P47 cannot reach it (no PlayArea in that fixture; its new branch grabs no focus). Suspect a focus steal from a concurrently running suite in the same window - measure before naming a cause.
 - A freed-instance SCRIPT ERROR x20 at PlayArea._deal_next_mark ("Trying to assign invalid previously freed instance") during the WALL FOCUS soak: 1 of 3 runs on the P43 tree (2 implementer combined runs + 1 overseer gate), 0 of 5 overseer gates between P44 (5b) and P47. The plan-mark deal is released at go-live since (5b); suspect a Main freed mid-deal by the soak. Measure before naming a cause.
 - GRID VIEW TP-138 "the board at rest is already where an explicit pan puts it" (rest -445.7 vs pan -443.3, 1 px bound): 1 of 5 runs on the P43 tree.
+- FOR /docs AT THE CLOSE: the rim-ink records - design/board-plan/gaps/GAP-004.md ("match_rim = 31 ... stand") and design/sidebar/ASSUMPTIONS.md ~993 (the fourth-round ink ruling) with no pointer to the seventeenth round; ARCHITECTURE_REVIEW.md ~1599 and board-plan ASSUMPTIONS.md ~306 now give 15 but still reason "the ruling says WHITE, so" - pink was chosen because cream vanished on the Entrance paper.
 - FOR /docs AT THE CLOSE: the design records still quote the pre-P43 picture (1576x887, inset 394, 262.7, 733.808, the 27+8 band): design/sidebar/{DESIGN,PLAN,TEST_PLAN,ASSUMPTIONS}.md, gaps GAP-001/GAP-002, design/poker-patience/gaps/GAP-039.md, Tests/Visual/grid_zoom_shot.gd ~214, todo.md ~107; test_grid_layout.gd ~1709 has a tab-joined line.
 - PLAN VISUALS TP-92 failed 3 of 4 runs on the P48 tree (all three in the implementer's filtered runs, passed the overseer gate) against ~1 of 3 gates before; a wall-clock stagger row. Measure before naming a cause.
 - Latent, recorded by the P48 review: HudContainer._leaves_the_sidebar_for_the_picture reads the container-global _hosted_viewer (the existing per-screen bug above gains a reader); a Down pressed within a pan's ease picks the Entrance stop from a mid-flight x.
 
 ## Next up
-1. P49 (the Entrance focus rim), then the close per /plan-run in a NEW session.
+1. The close per /plan-run in a NEW session.
 2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)

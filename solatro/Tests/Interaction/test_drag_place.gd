@@ -107,6 +107,8 @@ func _ready() -> void:
 	await test_down_with_a_card_in_hand_moves_nothing()
 	await test_down_under_another_grid_carries_the_view_to_the_entrance()
 	await test_a_lift_and_a_quick_placement_never_pair_into_a_tap()
+	behavior_section("EVERY FOCUSED CARD WEARS ONE RIM")
+	await test_a_focused_entrance_card_wears_the_rim_a_focused_cell_does()
 	finish()
 
 # ==============================================================================
@@ -858,9 +860,7 @@ func _resting_focus_control() -> Control:
 func _is_outlined(data: CardData) -> bool:
 	var visual : CardVisual = _pa.data_card.get(data)
 	if not visual: return false
-	var mat := visual.type.material as ShaderMaterial
-	var ink : int = mat.get_shader_parameter(&"u_outline_index")
-	return ink == PaletteDB.ROLES.match_rim
+	return _rim_ink_and_width(visual).x == PaletteDB.ROLES.match_rim
 
 func _lock_str(data: CardData) -> String:
 	return "locked %s, showing %s, outlined %s, %s" % [str(_container.is_locked()),
@@ -2385,3 +2385,31 @@ func _grid_width_sum() -> int:
 	for grid : GridData in _game.state.grids:
 		total += grid.grid_width
 	return total
+
+# ==============================================================================
+# ONE RIM -- the Entrance card and the grid cell wear the same focus outline
+# ==============================================================================
+
+func test_a_focused_entrance_card_wears_the_rim_a_focused_cell_does() -> void:
+	await _start_fixture()
+	var card : CardData = _pa.ui_data[_entrance_controls()[0]]
+	var visual : CardVisual = _pa.data_card[card]
+	var own := Vector2i(visual.outline_style().outline_index, visual.outline_style().width)
+	check(_rim_ink_and_width(visual) == own,
+			"unfocused, an Entrance card wears its own type's rim",
+			"%s, own %s" % [_rim_ink_and_width(visual), own])
+	await _focus_the_card(card)
+	var entrance_rim := _rim_ink_and_width(visual)
+	var cell := _reachable_cells()[0]
+	cell.grab_focus()
+	await get_tree().process_frame
+	var cell_rim := _rim_ink_and_width(_pa.data_card[_pa.ui_data[cell]])
+	check(entrance_rim == cell_rim and entrance_rim.x == PaletteDB.ROLES.match_rim,
+			"a focused Entrance card wears the rim a focused cell wears, ink and width",
+			"Entrance %s, cell %s" % [entrance_rim, cell_rim])
+	await _end_fixture()
+
+func _rim_ink_and_width(visual: CardVisual) -> Vector2i:
+	var mat := CardOutline.material_of(visual.type)
+	return Vector2i(mat.get_shader_parameter(&"u_outline_index") as int,
+			mat.get_shader_parameter(&"u_outline_width") as int)

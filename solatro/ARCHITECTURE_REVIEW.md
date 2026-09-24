@@ -1596,7 +1596,7 @@ reassign to different colors especially if the palette changes."*
   migration for a palette change.
 - **The match rims are ROLES, not colours.** `match_rim` is what a mark's agreeing elements wear
   while a card is held, `match_rim_active` what a landed card's agreeing elements wear (§3e, §4j).
-  ⚠ The owner's ruling says WHITE and this palette has no white entry, so they are 31 (cream) and
+  ⚠ The owner's ruling says WHITE and this palette has no white entry, so they are 15 (pink) and
   6 (gold); every test asserts the ROLE, so re-pointing one moves one number in `roles.tres` and
   nothing else. The activated one additionally SHIMMERS along `ramp_match`, which opens on entry 6.
 
