@@ -396,21 +396,26 @@ static func _container_px(window: Vector2, top: bool, settings_res: PlayerSettin
 	if not band_axis_outruns_reference: return px
 	return minf(px, settings_res.container_size_max_px)
 
-## The description each screen was last showing, so coming back returns to what you were reading rather than the HUD.
+## The description each screen is showing, kept across leaving it only while it is stuck.
 var _entry_by_screen : Dictionary[StringName, InfoEntry] = {}
 ## Which screen's description is on the panel now -- the key a new one is remembered under.
 var _active_screen : StringName = &""
 
 # Keyed by `Main`'s own focus id: `&"game"`, `&"map"`, `&"start_menu"` (shown, neither HUD up) and
-# `&""` for wall view (hidden). Leaving a screen DETACHES its description rather than freeing it,
-# so coming back re-shows exactly what was being read.
+# `&""` for wall view (hidden). A HIGHLIGHT NOTHING CLICKED DOES NOT OUTLIVE ITS SCREEN: leaving
+# keeps only the lock, or what a viewer left open holds, to re-show on return.
 func set_active_screen(screen: StringName) -> void:
 	if screen != _active_screen:
 		_description_panel.detach_entry()
-		_active_screen = screen
 		var remembered : InfoEntry = _entry_by_screen.get(_active_screen)
-		if remembered == null or _screen_is_processing(): _swap_to_hud()
-		else: show_description(remembered)
+		var kept : InfoEntry = remembered if remembered and _held_by_a_viewer(remembered) \
+				else _locked_entry_by_screen.get(_active_screen)
+		_release_remembered_entry(_active_screen, kept)
+		if kept: _entry_by_screen[_active_screen] = kept
+		_active_screen = screen
+		var returning_to : InfoEntry = _entry_by_screen.get(_active_screen)
+		if returning_to == null or _screen_is_processing(): _swap_to_hud()
+		else: show_description(returning_to)
 		active_screen_changed.emit()
 # A screen that wants nothing shown gets the container OFF THE WINDOW AT ONCE, never tweened: the
 # leave already awaited the way out, and wall view arrives after it.
@@ -433,8 +438,7 @@ func show_hud() -> void:
 	description_dismissed.emit()
 	_follow_the_menus_own_content()
 
-# A DISMISSAL ENDS WHAT WAS BEING READ, so the screen forgets it: leaving and coming back finds the
-# HUD. The cascade's hold is not a dismissal and goes through `show_hud()`, keeping the memory.
+# A DISMISSAL ENDS WHAT WAS BEING READ, so the screen forgets it at once, not only on leaving.
 func dismiss_description() -> void:
 	_release_shown_entry()
 	_release_remembered_entry(_active_screen, null)
