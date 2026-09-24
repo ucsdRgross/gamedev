@@ -142,13 +142,13 @@ ROWS = [
  "c"),
 ("G0389","The Doubled Next","O5","skill","One refill, two deals.",
  "While this card is on the grid, each Entrance refill deals twice, discarding the first deal",
- "While this card is on the grid, each Entrance refill deals twice and you keep the better of the two",
+ "While this card is on the grid, each Entrance refill deals twice and you keep whichever five you choose",
  "While this card is on the grid, each Entrance refill deals twice and both sets are available at once",
  "b"),
 ("G0390","The Third Button","O5","skill","A control the game did not have.",
  "A third button is added beside End and Undo that swaps the contents of two grid cells, usable once per Entrance refill",
  "A third button is added beside End and Undo that slides one row one cell along, wrapping, usable once per Entrance refill",
- "A third button is added; a skill defines what it does, and only the currently spotlit skill's version applies",
+ "A third button is added beside End and Undo that swaps one grid card with one Entrance card, usable once per Entrance refill",
  "c"),
 
 # --- V5 non-transitive comparison ------------------------------------------------

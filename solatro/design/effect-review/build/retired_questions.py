@@ -592,4 +592,6 @@ RETIRED = {
     "G0379": 'Duplicate of Q0370: a card paid for coming back to its cell; the owner rules on it there.',  # Q0373
 
     "E0102": "Retired: already free. You may place any of the Entrance's five cards in any order, so sorting the Entrance changes nothing.",  # Q0398
+
+    "E2067": 'Retired: twin of the alternate boss you wrote on Q0066, where every other Entrance pass scores nothing and the next doubles; your version stands.',  # Q1114
 }

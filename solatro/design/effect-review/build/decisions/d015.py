@@ -131,7 +131,7 @@ KEEPS = [
  "c"),
 ("E2030","O4","skill","One suit, all the way down.",
  "While spotlit, every card on this card's grid counts as this card's suit, and no card may ever change suit",
- "While spotlit, every card on this card's grid counts as this card's suit, and flushes score nothing",
+ "While spotlit, every card on this card's grid counts as this card's suit for props and for suit marks, but keeps its own suit for melds",
  "While spotlit, every card on this card's grid counts as one suit, and the suit changes each show",
  "b"),
 ("E2032","G3","skill","Copies one card and destroys the rest.",

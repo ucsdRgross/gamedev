@@ -189,7 +189,7 @@ ROWS = [
 ("E0040",
  "On score, an arc hops between orthogonally adjacent cards adding points per link, stopping at the first gap",
  "On score, an arc hops between every card of the same suit in the grid regardless of adjacency, adding points per link",
- "On score, an arc hops between orthogonally and diagonally adjacent cards adding points per link, and can cross into the next grid at the same row",
+ "On score, an arc hops between orthogonally and diagonally adjacent cards, stopping at the first gap, and each link pays a step into the special bucket",
  "c"),
 ("E0042",
  "If the grid's column heights read the same left to right as right to left when a line scores, the placement gains a large multiplier",

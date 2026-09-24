@@ -282,6 +282,6 @@ KEEPS = [
 ("E1706","R4","hazard","Boss: exactly five, every time.",
  "Boss: no line scores until all five cards of the current Entrance refill have been placed",
  "Boss: each Entrance refill's five cards must all go into a single row or column",
- "Boss: any card still in the Entrance when it refills is destroyed",
+ "Boss: the five cards of each Entrance refill must each be placed in a different column",
  "a"),
 ]

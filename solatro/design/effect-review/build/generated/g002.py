@@ -73,7 +73,7 @@ ROWS = [
 
 # --- Q5 prop persistence ------------------------------------------------------
 ("G0049","The Endless Round","Q5","skill","A prop that does not stop.",
- "Props this card spawns wrap at the grid edge and keep travelling until the placement finishes resolving",
+ "Props this card spawns wrap at the grid edge and keep travelling until they have crossed as many cards as the spawner's rank",
  "Props this card spawns wrap at the edge and keep travelling for a fixed number of laps",
  "Props this card spawns wrap and keep travelling, weakening by one step per lap",
  "c"),
@@ -99,11 +99,11 @@ ROWS = [
  "This suit's props travel across every grid, but only fire on the grid they started in",
  "This suit's props travel across every grid, and score for each grid boundary they cross",
  "c"),
-("G0054","The Relay","Q7","skill","Props hand off between grids.",
- "A prop reaching the grid edge is caught by any card in the same row of the next grid, which respawns it",
- "A prop reaching the grid edge is caught only by a card of the same suit in the next grid",
- "A prop reaching the edge is caught by the next grid and respawned one row lower, snaking down the board",
- "c"),
+("G0054","The Relay","Q7","skill","A prop that snakes down the grid.",
+ "A prop reaching the grid edge re-enters from the opposite edge one row lower and keeps going, snaking down the grid until it runs off the bottom",
+ "As (a), but it re-enters only if the last card it crossed shares its spawner's suit",
+ "As (a), and it is a step stronger on each row than the last",
+ "a"),
 
 # --- Q8 prop inheritance ------------------------------------------------------
 ("G0055","The Costume Change","Q8","skill","Props carry their spawner's statuses.",
@@ -125,7 +125,7 @@ ROWS = [
 # --- R5 requirement gates -----------------------------------------------------
 ("G0058","The Set List","R5","hazard","You must play the named hand.",
  "Boss: a hand type is named each Entrance refill, and that refill's lines score nothing unless that hand is among what you complete",
- "Boss: a hand type is named for the whole show, and only that hand scores",
+ "Boss: a hand type is named each Entrance refill; that refill's lines of any other type score half",
  "Boss: a hand type is named each Entrance refill, and completing it doubles that refill's lines rather than gating them",
  "a"),
 ("G0059","The Audition","R5","hazard","Prove it before you may continue.",

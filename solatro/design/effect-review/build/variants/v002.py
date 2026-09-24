@@ -95,7 +95,7 @@ ROWS = [
  "Counts as a Clown-class card in addition to its own class",
  "Counts as one additional class of your choice, fixed when the stamp is applied",
  "Counts as the class printed on the mark it sits on, as well as its own",
- "b"),
+ "c"),
 ("E0071",
  "Each placement it would score, it hops one column instead and banks the points; when it cannot hop, it pays out the whole bank",
  "Each placement it would score, it banks the points instead; cue at any time to pay the bank out",

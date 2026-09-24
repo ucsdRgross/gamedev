@@ -41,7 +41,7 @@ ROWS = [
  "a"),
 ("G0185","The Census Taker","P1","skill","Counts one named thing, anywhere.",
  "Scores a bonus per card of one named class anywhere on the board, however far away",
- "Scores a bonus per card of one named class in its own grid only",
+ "Scores a bonus per card of one named class in its lines",
  "Scores a bonus per card of the class it has seen least this run, so it chases variety",
  "a"),
 ("G0186","The Telescope","C15","stamp","Treats the whole board as adjacent.",
