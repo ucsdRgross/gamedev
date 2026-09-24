@@ -550,4 +550,12 @@ RETIRED = {
     "G0217": 'Retired: no rival draws from a shared pool in this game.',  # Q0415
 
     "E0749": 'Retired: there is no scoring pass to scan the deck with; lines bank as they complete.',  # Q0418
+
+    "SN0009": 'Duplicate of Q0746 (Soundcheck): a free move of one placed card, once per placement or refill; the owner rules on it there.',  # Q1485
+
+    "SN0028": 'Duplicate of Q0321 (The Bull): a card placed at the edge shoves the whole line along; the owner rules on it there.',  # Q1504
+
+    "BM0026": 'Duplicate of Q0128 (Burnt Joker), whose (c) levels the hand type you scored least; the owner rules on it there.',  # Q1548
+
+    "BM0042": 'Duplicate of Q0214 (Escaramuza), whose (c) pays a line that reads the same both ways; the owner rules on it there.',  # Q1550
 }
