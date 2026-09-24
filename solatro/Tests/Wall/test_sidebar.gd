@@ -5375,7 +5375,7 @@ func test_the_choosers_deck_button_stays_up_and_closes_its_open_deck() -> void:
 				"sanity: a click stuck a chosen card, its X up and Take held")
 		var presses : Array[Array] = [
 			["a click", _click_button.bind(_map.selection_deck_button, _booted_viewport)],
-			["a keyboard accept", _accept_on.bind(_map.selection_deck_button)],
+			["a keyboard accept", _open_viewer_by_accept.bind(_map.selection_deck_button)],
 		]
 		for press : Array in presses:
 			await _click_button(_map.selection_deck_button, _booted_viewport)
@@ -5389,7 +5389,8 @@ func test_the_choosers_deck_button_stays_up_and_closes_its_open_deck() -> void:
 			await get_tree().process_frame
 			check(not is_instance_valid(viewer) or viewer.is_queued_for_deletion(),
 					"pressing the chooser's Deck again by %s closes the deck" % press[0])
-			var shown_title := _panel.current_entry.title 					if _container.showing_description() and _panel.current_entry else "HUD"
+			var shown_title := _panel.current_entry.title \
+					if _container.showing_description() and _panel.current_entry else "HUD"
 			check(_container.is_locked() and shown_title == stuck_title and _exit_button().visible,
 					"...giving back the chooser's stuck card with its X (%s)" % press[0],
 					"locked=%s shown=%s x=%s" % [_container.is_locked(), shown_title,
@@ -5398,10 +5399,6 @@ func test_the_choosers_deck_button_stays_up_and_closes_its_open_deck() -> void:
 					"...Take held as before (%s)" % press[0])
 		chooser.queue_free()
 	await _end_main_fixture()
-
-func _accept_on(button: Button) -> void:
-	button.grab_focus()
-	await _tap_key(KEY_ENTER)
 
 ## A game deck viewer the player left open behind the overlay's Back is the game's alone: on the map the Deck button, a pack's first pick and an arrow each behave exactly as with no viewer anywhere, and Forward finds the game sane.
 func test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map() -> void:
