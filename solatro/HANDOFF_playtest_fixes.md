@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P56 done (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P56): `ALL 51 SUITES: 7158 CHECKS PASSED`,
+**State:** P1-P57 done (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P57): `ALL 51 SUITES: 7184 CHECKS PASSED`,
 21 placeholder warnings, 24 resources + 1150 ObjectDB.
-Pending: P57, the owner's visual review round 2, the square-card task (P58a-d), then the close. Gate at the stream's start:
+Pending: the owner's visual review round 2, the square-card task (P58a-d), then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -580,8 +580,8 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar UiViewers DragPlace'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'Measured on HEAD by real input: a key-focused card (5 of Knives) and a hovered one (5 of Hoops), unstuck, both re-shown after overlay Back and Forward. HudContainer.set_active_screen now keeps, on leaving, only the screen lock or an entry a hosted viewer holds, and frees the rest. A map pick is not a lock but the map clears it on every screen change (map.gd active_screen_changed -> clear_selection -> release_screen(MAP)), so nothing stuck is lost; the chooser card is a real lock. Red (HEAD hud_container.gd): SIDEBAR 1943 passed, 2 FAILED (the two new rows). Green: FILTERED 4 of 51 [Sidebar UiViewers DragPlace MapTraversal]: 2509; --logic 3040. Fable review: 3 findings (a cascade row made vacuous, a one-call helper, the map pick under a viewer) - fixed / inlined / measured not re-shown (guard row); re-review 0. Gates: 7168 passed, 2 FAILED (UI VIEWERS test_pack_click_selects x2, unreachable from P57 - measured, Open bugs); ALL 51 SUITES: 7184 CHECKS PASSED.'
   notes: 'Traced by the P53 review: _entry_by_screen[game] keeps a transient entry across set_active_screen; board_highlight_gone (P53) is swallowed while the map is shown, so nothing forgets it. The smallest shape the review proposed: on leaving a screen, release its remembered entry when it is transient and the screen is not locked. Measure the key route first; keep a stuck description and a lock re-shown on return (the _on_return rows).'
 - id: P58a
   description: Merge main into combine-sidebar-boardplan (the square-card commits 2b49618c, ab83344a, 93a1ee4c - CardVisual.CARD_ART_SIZE 38x52 -> 52x52, the card polygons in card_visual.tscn re-authored), per /merge-branches; conflicts resolved against both sides; the full gate as the new baseline (rows pinned to the old 40x54 card go red here - list them, re-point in P58b, do not weaken them here).
@@ -693,12 +693,14 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - OWNER QUESTION for the next round (traced by the P53 review, pre-existing): by keys, a transient (unsticky) game description remembered under the game screen survives overlay Back and is re-shown on Forward, describing a card nothing is on, with no X. HudContainer's _entry_by_screen says a return re-shows; the second playtest (2) says an unsticky description closes when the card is no longer hovered. Which wins?
 - Latent, traced by the P54 review (unmeasured): with the deck open over the chooser and nothing stuck, an arrow off a deck card may land on Take under it (Godot's neighbour search ignores occlusion); if Take closes the chooser while the deck is open, the deck's own stuck lock is freed with its sticky left set.
 - FOR /docs AT THE CLOSE: design/picture-wall/DESIGN.md ~150 and ~890 still cite the map's ZOOM_MIN 0.5 (deleted by P55).
+- UI VIEWERS test_pack_click_selects "the click also focuses the card it picked, so the sidebar can stay on it" (focus owner null) and "the moving focus takes the rim while it is on the picked card" failed together in 1 of 2 overseer gates on the P57 tree, WALL TRANSITION running just before; 0 of 10 filtered runs (UiViewers alone x3, with WallTransition x2, each on the P57 tree and on HEAD's hud_container.gd). A standalone ChoiceViewer fixture P57 cannot reach - same shape as the later-arrow row above (focus gone a frame later). Measure before naming a cause.
+- FOR /simplify AT THE CLOSE (P57 re-review): HudContainer.set_active_screen's keep-what-a-viewer-holds branch may be dead - on the game screen no opener hosts a viewer while a description is up, and on the map release_screen frees the pick's covered entry; what is left is a chooser card that is already a suspended lock.
+- AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
-1. P57 (an unstuck description is forgotten on leaving; measure the key route first).
-2. The owner's visual review, round 2: register shots for P50-P57 (the cream rim; no Deck on a game card description; the chooser with the overlay greyed; the map fitted with its 3% sea buffer, zoomed, and after Travel; the deck over the chooser with its Deck toggle; a hovered run-deck card over the chooser carrying Deck - P56 review Finding 2, the owner rules), refresh, Read every AFTER, write `seen`, park on the watch; every reject/comment becomes the next step with the owner's words verbatim.
-3. The square-card task, in order: P58a (merge main), P58b (one card size; the hardcoded-literal audit, by subsystem), P58c (the four tool bugs), P58d (its visual review round).
-4. The close per /plan-run (the plan-auditor writes AUDIT.md), then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list; the intermittents are the close's input), and the owner merges the branch.
+1. The owner's visual review, round 2: register shots for P50-P57 (the cream rim; no Deck on a game card description; the chooser with the overlay greyed; the map fitted with its 3% sea buffer, zoomed, and after Travel; the deck over the chooser with its Deck toggle; a hovered run-deck card over the chooser carrying Deck - P56 review Finding 2, the owner rules), refresh, Read every AFTER, write `seen`, park on the watch; every reject/comment becomes the next step with the owner's words verbatim.
+2. The square-card task, in order: P58a (merge main), P58b (one card size; the hardcoded-literal audit, by subsystem), P58c (the four tool bugs), P58d (its visual review round).
+3. The close per /plan-run (the plan-auditor writes AUDIT.md), then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list; the intermittents are the close's input), and the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
 

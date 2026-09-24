@@ -98,6 +98,8 @@ func _ready() -> void:
 	await test_leaving_and_returning_restores_the_screens_own_description()
 	await test_a_description_dismissed_with_the_x_stays_dismissed_on_return()
 	await test_a_description_a_placement_took_down_stays_down_on_return()
+	await test_a_focused_card_is_forgotten_across_back_and_forward()
+	await test_a_hovered_card_is_forgotten_across_back_and_forward()
 	await test_a_new_entry_frees_the_visual_it_replaces()
 	behavior_section("S6: THE LOCK AND THE EXIT X")
 	await test_a_click_grabs_the_card_and_locks_its_description()
@@ -276,6 +278,7 @@ func _ready() -> void:
 	await test_the_decks_viewer_comes_back_to_the_same_pick()
 	await test_the_picks_buttons_never_show_on_another_screen()
 	await test_cancel_drops_the_pick_before_it_leaves_the_picture()
+	await test_a_pick_under_an_open_viewer_is_not_re_shown_on_return()
 	await test_a_dropped_pick_leaves_the_map_nothing_to_come_back_to()
 	await test_every_new_button_is_written_in_the_locale()
 	await test_a_pack_lists_its_possible_cards_on_the_first_pick_only()
@@ -2537,17 +2540,16 @@ func test_a_pad_focus_describes_a_board_card_without_sticking_it() -> void:
 				"...so the focus leaving the board closes the description")
 	await _end_main_fixture()
 
-## 1.14/B15/B16/Q19=c/Q20=b: each screen remembers its own last description and gets it back on return.
+## 1.14/B15/B16/Q19=c/Q20=b: each screen remembers its own stuck description and gets it back on return.
 func test_leaving_and_returning_restores_the_screens_own_description() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
 	var slot : Control = _panel.get_node(^"%VisualSlot")
-	var controls := await _hoverable_card_controls()
-	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+	var controls := await _entrance_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a clickable Entrance card",
 			str(controls.size()))
 	if not controls.is_empty():
-		_hover(controls[0].get_global_rect().get_center())
-		await get_tree().process_frame
+		await _lock_without_holding(controls[0])
 		var shown : InfoEntry = _panel.current_entry
 		check(shown != null, "the game screen has a description to remember")
 
@@ -2613,6 +2615,39 @@ func test_a_description_a_placement_took_down_stays_down_on_return() -> void:
 		await _leave_the_game_and_return_by_the_wall()
 		check(_hud_is_up(),
 				"Close fix 4: a description a placement took down does not come back on return (Q64=a, B11)")
+	await _end_main_fixture()
+
+## An arrow's description sticks nothing, so Back and Forward find the HUD, not a card nothing is on.
+func test_a_focused_card_is_forgotten_across_back_and_forward() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to focus",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(_off_the_board_point())
+		await get_tree().process_frame
+		await _tap_key(KEY_RIGHT)
+		check(_container.showing_description() and not _container.is_locked(),
+				"sanity: an arrow described a board card and stuck nothing")
+		await _leave_the_game_and_return_by_the_wall()
+		check(_hud_is_up(), "P57: an unstuck focused card is not re-shown on Forward (nineteenth round a)",
+				str(_panel.current_entry.title if _panel.current_entry else null))
+	await _end_main_fixture()
+
+## A hover's description sticks nothing, so Back and Forward find the HUD, not the card the pointer left.
+func test_a_hovered_card_is_forgotten_across_back_and_forward() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(controls[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		check(_container.showing_description() and not _container.is_locked(),
+				"sanity: a hover described a board card and stuck nothing")
+		await _leave_the_game_and_return_by_the_wall()
+		check(_hud_is_up(), "P57: an unstuck hovered card is not re-shown on Forward (nineteenth round a)",
+				str(_panel.current_entry.title if _panel.current_entry else null))
 	await _end_main_fixture()
 
 ## The panel OWNS the mounted visual: the next entry frees the last, so reading along a row of cards leaks no preview.
@@ -4234,7 +4269,7 @@ func test_a_finished_show_leaves_the_maps_own_wiring_alive() -> void:
 			"...and the map's own Deck button still opens its viewer after a show")
 	await _end_main_fixture()
 
-## A description held back by a cascade is still that screen's own memory, and the next one to show frees it rather than orphaning it.
+## Leaving a screen mid-cascade frees the description it was left on, a cascade's hold sticking nothing.
 func test_a_remembered_entry_dropped_by_a_cascade_is_freed() -> void:
 	var container := _build_container()
 	container.set_active_screen(&"game")
@@ -4243,15 +4278,10 @@ func test_a_remembered_entry_dropped_by_a_cascade_is_freed() -> void:
 	container.show_description(read)
 	container.set_processing(true)
 	container.set_active_screen(&"")
-	container.set_active_screen(&"game")
-	check(not container.showing_description(), "a screen mid-cascade is returned to on the HUD")
-	check(is_instance_valid(read.visual) and read.visual.get_parent() == null,
-			"...with the description it was left on detached, not freed")
-	container.set_processing(false)
-	container.show_description(InfoEntry.new())
 	await get_tree().process_frame
-	check(not is_instance_valid(read.visual),
-			"the next description frees the one it replaces, mounted or detached")
+	check(not is_instance_valid(read.visual), "leaving after a cascade frees the remembered entry")
+	container.set_active_screen(&"game")
+	check(not container.showing_description(), "...and the return finds the HUD")
 	container.queue_free()
 
 # Split so this suite never itself contains the retired name, which the deletion gate greps for.
@@ -7628,6 +7658,27 @@ func test_cancel_drops_the_pick_before_it_leaves_the_picture() -> void:
 	check(_hud_is_up(), "...back to the basic view")
 	check(_main._current_focus == &"map", "...and stays inside the map picture",
 			str(_main._current_focus))
+	await _end_main_fixture()
+
+## A viewer open over the pick does not make the pick stuck: leaving the map drops both, and the return finds no description of it.
+func test_a_pick_under_an_open_viewer_is_not_re_shown_on_return() -> void:
+	await _start_map_fixture()
+	var node := _a_map_node_with_role(MapNodeRoles.ROLE_GAME)
+	await _select_map_node_and_settle(node)
+	var described := _panel.current_entry.title
+	check(await _click_button(_map.selection_deck_button, _booted_viewport),
+			"sanity: the pick's Deck button opened the run deck over the pick")
+	await get_tree().process_frame
+	await _main._go_to_wall_view()
+	await _wait_out_the_move()
+	await _main._focus_picture(&"map")
+	await _wait_out_the_move()
+	await get_tree().process_frame
+	check(_map.controller.selected() == null, "sanity: leaving the map dropped the pick")
+	check(not (_container.showing_description() and _panel.current_entry
+			and _panel.current_entry.title == described),
+			"P57: the dropped pick is not re-shown on return, a viewer having covered it",
+			str(_panel.current_entry.title if _panel.current_entry else null))
 	await _end_main_fixture()
 
 ## A pick dropped on the map, or dropped by leaving it, is not what the map comes back to: the HUD is, with its own Deck button.
