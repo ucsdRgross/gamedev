@@ -143,6 +143,7 @@ a lot of these issues are with lack of parity between different modal input opti
 - **Fifteenth round (verbatim), P43.** The board scroller's draw_focus_border (the two white lines across the board while a card holds focus, and the 4 px content inset that pushes 3 grids off centre): "a: remove them". Then the 8 authored px horizontal-scrollbar band SHOW_NEVER does not keep (the border's margin had filled it): "a: remove the band" - everywhere, the static furniture height included, so the game picture's design size moves.
 - **Sixteenth round (verbatim), P48 keyboard route.** Up after a key lift: "b: Up stays on board" - while a card is in hand Up goes to the grid, the X is reached by Left into the sidebar. Down from the bottom row of a grid the committed Entrance is not under: "b: go to the Entrance" - focus it and bring the view to its grid. Down from an Entrance card: "a: nothing". Up/Down in the 2-grid overview: "a: screen geometry". Down on the bottom row while HOLDING a card: "a: nothing" - the aim stays on the grid. A focused Entrance card's mark: "a: same rim as a cell".
 - **Seventeenth round (verbatim), P49.** The focus/match rim ink was palette 31, the Entrance card's own paper, so a focused Entrance card showed no rim: "c: pink" - match_rim becomes palette 15 (255,140,255), for the focus rim and the would-match rim alike; supersedes the fourth round's rim ink.
+- **Visual review, round 1 (verbatim, solatro/visual-review/review.json).** grid3_overview: "pink looks off. go with the cream color after all for the outlines since its closest we have to white. after image looks fine, gap is much smaller than before." grid3_focused, grid1_focused, window_show_open: approved. lifted_focus_elsewhere: "deck button should not be in description sidebar. the only exception i mentioned for that was showing deck button when showing a map node." Asked whether a focused Entrance card needs another cue once the rim is cream again: "yes cream everywhere which is what it used to be. its fine since the paper cards already have a brown border so it should be clear. lift on focus should be on everything that is clicked and going to move, not just restricted to entrance cards which implies hardcoding special cases which we want to avoid whenever possible. try not to hardcode it since lifting may be replacing with animation in future of card being \"excited\" and doing little hops." This reverses the seventeenth round (pink).
 - **Plain bugs, ruled already:** B9 the drop map obeys `committed_grid` (board-plan ASSUMPTIONS "a
   cell the show cannot place into"); B11 the face-down stock card must not raise the Entrance cards
   above it (sidebar `Q249`/`Q265`: the lift belongs to the held card alone); B15 cancel works from
@@ -513,6 +514,22 @@ a lot of these issues are with lack of parity between different modal input opti
   status: done
   evidence: 'Measured: the Entrance card already drew the SAME rim as a cell (CardVisual._rim_style, ink match_rim, width 1) - invisible because match_rim was palette 31, the Entrance paper (2800 of 2800 rim pixels = the paper colour). Owner (seventeenth round): match_rim -> 15 pink in roles.tres (script default mirrored). Red (HEAD roles): PIXELS "the focus rim is drawn in an ink the card''s paper is not" 1 FAILED; green FILTERED 7 of 51: 2755; --logic 3010. Fable review: 0 findings; three living docs corrected. Gate: ALL 51 SUITES: 6930 CHECKS PASSED.'
   notes: 'R6 and its follow-ups own the focus look: the outer outline changes on focus (fourth round: the rim ink is option a; black before focus), no difference between the focus outline and the mark outline, brightness on the Type polygon only. Find why an Entrance card (a CardVisual in the Entrance strip, not a grid cell control) draws the weaker form - measure both paths first.'
+- id: P50
+  description: The focus and would-match rim ink goes back to cream (palette 31) everywhere - the owner's visual review reversed P49's pink.
+  files_touched: [solatro/Assets/Palette/roles.tres, solatro/Scripts/palette_roles.gd, solatro/Tests/Visual/test_pixels.gd, solatro/ARCHITECTURE_REVIEW.md, solatro/design/board-plan/ASSUMPTIONS.md, solatro/design/board-plan/PLAN.md]
+  verification_command: 'run_tests.py --filter Pixels DragPlace VisualLayers UiProps SettingsRange; the visual review refresh'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'match_rim 15 -> 31 in roles.tres and its mirrored script default. The P49 PIXELS row "the focus rim is drawn in an ink the card''s paper is not" enforced the reversed ruling - delete it (the DRAG PLACE equal-rim row stays). Docs P49 touched go back to 31, stating the owner''s reason (closest to white; the paper cards'' brown border keeps a focused paper card readable). Lift: the owner ruled a lift belongs to everything clicked and about to move, never special-cased - REPORT whether CardVisual''s held lift is already one general state (not Entrance-specific); change nothing about it here.'
+- id: P51
+  description: A card description in the game screen's sidebar shows a Deck button; only a MAP NODE's description carries one (the owner's visual review; second playtest: no Travel/Deck on a card description; sixth round: a node description shows Deck).
+  files_touched: [solatro/UI/hud_container.gd, solatro/Levels/game_view.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar UiViewers DragPlace; the visual review refresh'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Seen in the review shot lifted_focus_elsewhere: the 7 of Knives description with a Deck button under its title. Find the writer (P13 put Deck on the node description; which path adds it to a game-screen card description?).'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
   files_touched: [solatro/Tests/Wall/test_sidebar.gd]
@@ -585,7 +602,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - Latent, recorded by the P48 review: HudContainer._leaves_the_sidebar_for_the_picture reads the container-global _hosted_viewer (the existing per-screen bug above gains a reader); a Down pressed within a pan's ease picks the Entrance stop from a mid-flight x.
 
 ## Next up
-1. The close per /plan-run in a NEW session (prompt below), then `/docs` folds this file away -
+1. P50, P51 (the owner's first visual review), then the close per /plan-run in a NEW session (prompt below), then `/docs` folds this file away -
    the Open bugs "FOR /docs AT THE CLOSE" lines are its list - and the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
