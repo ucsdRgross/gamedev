@@ -161,7 +161,7 @@ ROWS = [
 ("G0358","The Struck Name","P4","consumable","Take a class off the bill.",
  "Consumable: name a class; no card of that class may be placed for the rest of the show, and every other class scores an extra step",
  "Consumable: name a class; no card of that class may be drawn for the rest of the show",
- "Consumable: name a class; cards of that class are removed from the deck for the rest of the run, and you are paid for each one removed",
+ "Consumable: name a class; cards of that class are removed from the deck for the rest of the run, and each one removed scores its rank now",
  "a"),
 
 # --- Persistence across the show boundary ---------------------------------------
@@ -192,7 +192,7 @@ ROWS = [
  "b"),
 ("G0364","The Interval","K5","consumable","Buy the room back.",
  "Consumable: restore the patience total to full, once per show",
- "Consumable: restore half the patience total, usable any number of times at a rising cost",
+ "Consumable: restore half the patience total, usable any number of times, each use discarding a stock's top card",
  "Consumable: restore the patience total to full, and the next placement does not spend any",
  "b"),
 ("G0365","The Long Memory","T2","skill","A card that remembers what it did.",

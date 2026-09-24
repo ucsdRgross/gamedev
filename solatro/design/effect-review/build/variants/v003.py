@@ -152,7 +152,7 @@ ROWS = [
  "Consumable: +3 rank to one card this show; on the 1-in-4 failure it instead loses 3 rank",
  "b"),
 ("E0155",
- "At show start, one free grab-and-place before the first Entrance refresh, costing no placement",
+ "Once per show, while this card is on the grid, one free grab-and-place costing no placement",
  "At the start of every placement, one free grab-and-place costing no placement",
  "At show start, one free grab-and-place, and another every time a grid is completely filled",
  "b"),

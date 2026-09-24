@@ -188,8 +188,8 @@ KEEPS = [
  "Some leaders fear one suit and cannot be placed on it, but score double when they end a show next to it",
  "c"),
 ("E0637","K2","skill","Undo mid-resolution.",
- "Pressing Undo during a resolving act cancels it: resolution fast-forwards and the pre-act board returns, costing no placement",
- "Pressing Undo during a resolving act cancels it, but the placement is still spent",
- "Pressing Undo during a resolving act pauses it, letting you resume or cancel after seeing what has resolved so far",
+ "Pressing Undo during a resolving placement cancels it: resolution fast-forwards and the board before it returns, costing no placement",
+ "Pressing Undo during a resolving placement cancels it, but the placement is still spent",
+ "Pressing Undo during a resolving placement pauses it, letting you resume or cancel after seeing what has resolved so far",
  "c"),
 ]

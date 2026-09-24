@@ -147,7 +147,7 @@ ROWS = [
  "b"),
 ("G0390","The Third Button","O5","skill","A control the game did not have.",
  "A third button is added beside End and Undo that swaps the contents of two grid cells, usable once per Entrance refill",
- "A third button is added beside End and Undo that re-deals one Entrance slot, usable a fixed number of times per show",
+ "A third button is added beside End and Undo that slides one row one cell along, wrapping, usable once per Entrance refill",
  "A third button is added; a skill defines what it does, and only the currently spotlit skill's version applies",
  "c"),
 

@@ -562,4 +562,12 @@ RETIRED = {
     "E0786": 'Duplicate of Q0532 (Call-and-response): re-firing what an adjacent card just triggered; the owner rules on it there.',  # Q0535
 
     "E0334": 'Duplicate of Q0664 (The Incubator): removes one debuff a turn from the card or cards this one covers; the owner rules on it there.',  # Q0666
+
+    "E0127": 'Duplicate of Q0760: one show or town passed automatically for reduced or no rewards; the owner rules on it there.',  # Q0759
+
+    "E0290": 'Duplicate of Q0729: discarding Entrance cards and refilling their slots; the owner rules on it there.',  # Q0719
+
+    "E0137": 'Duplicate of Q0796 (a consumable that turns a lost show into a win, once); the owner rules on it there.',  # Q0797
+
+    "E0327": "Duplicate of Q0387 (Madame Zora's Eye): the top of the deck always shown, the top of every stock at level 2, and sending it to the bottom once per show; the owner rules on it there.",  # Q0956
 }

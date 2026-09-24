@@ -150,7 +150,7 @@ ROWS = [
 # --- L11 determinism control --------------------------------------------------
 ("G0096","The Prepared Deck","L11","skill","Makes an outcome stop being random.",
  "Cue: the next probability check this show succeeds automatically",
- "Cue: the next probability check this show is rolled twice and the better result kept",
+ "Cue: the next probability check this show fails automatically, and the two after it succeed",
  "Cue: fix the next probability check's result now, before you know what it will be used for",
  "c"),
 ("G0097","No Two Alike","L11","skill","Repeated actions stop repeating.",

@@ -188,7 +188,7 @@ ROWS = [
  "c"),
 ("E0228",
  "Gamble-tagged cards have their destruction odds halved",
- "Gamble-tagged cards roll every probability twice, keeping the better",
+ "Gamble-tagged cards that survive a destruction roll gain +1 rank",
  "Each gamble-tagged card on the grid raises every other one's payout",
  "c"),
 ("E0230",

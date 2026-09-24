@@ -65,7 +65,7 @@ KEEPS = [
  "c"),
 ("E0932","P6","skill","A prop that lends its class.",
  "While held, lets its holder perform Acrobat moves regardless of the holder's class",
- "While held, lets its holder count as any one class you name",
+ "While held, lets its holder perform the moves of any one class you name",
  "While held, lets its holder perform the moves of whichever class is adjacent to it",
  "b"),
 ("E0933","S3","hazard","Needs the right keys.",

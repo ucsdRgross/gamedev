@@ -154,7 +154,7 @@ ROWS = [
 ("G0027","Contradiction","O2","skill","Two stacking rules at once.",
  "Two stacking rules apply at once, and a build is legal if it satisfies either",
  "Two stacking rules apply at once, and a build is legal only if it satisfies both",
- "Two stacking rules apply, one per grid, so different grids build differently",
+ "Two stacking rules apply, alternating by column, so neighbouring columns build differently",
  "c"),
 
 # --- O3 change scoring defaults ----------------------------------------------

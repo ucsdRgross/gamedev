@@ -23,8 +23,8 @@ ROWS = [
  "b"),
 
 ("G0135","The Loose Card","K1","skill","Discard whatever is connected to nothing. (line 845)",
- "Any card with no connection to anything else in its column may be discarded freely, and the column closes up behind it",
- "Any card with no connection to anything else in its column may be discarded freely, and a replacement is drawn onto that column",
+ "Any card with no connection to anything else in its column may be discarded freely, and its cell is free again",
+ "Any card with no connection to anything else in its column may be discarded freely, and the top of a stock you choose is flipped into the Entrance",
  "Any card that is part of no potential meld at all may be discarded freely, whatever its column",
  "c"),
 

@@ -57,8 +57,8 @@ ROWS = [
  "b"),
 
 ("G0231","Concealed Versus Exposed","M2","skill","A hand built in the open is worth less.",
- "A line built entirely from face-down cards pays more than the same line built face up",
- "A line built entirely face down pays double, and revealing any card of it forfeits the bonus",
+ "You may place any card face down; a line built entirely from face-down cards pays more than the same line built face up",
+ "You may place any card face down; a line built entirely face down pays double, and revealing any card of it forfeits the bonus",
  "A line built face down pays more, and you choose per card whether to place it face up or down",
  "c"),
 
