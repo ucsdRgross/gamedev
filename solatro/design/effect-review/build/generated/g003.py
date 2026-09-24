@@ -114,10 +114,10 @@ ROWS = [
  "b"),
 
 # --- K10 spatial cost ---------------------------------------------------------
-("G0090","The Big Top","K10","skill","Priced in board space.",
- "This card blocks the four cells around it, which can never be filled, and scores hugely for it",
- "This card blocks the four cells around it, and scores in proportion to how many it is blocking",
- "This card blocks its neighbours until it scores, then releases them",
+("G0090","The Big Top","K10","skill","Priced in board space; its row and column can never complete, so only a diagonal scores it.",
+ "This card blocks the four cells beside it for the show, and every diagonal through it pays triple",
+ "This card blocks the four cells beside it, and each diagonal through it pays a step per cell still blocked",
+ "This card blocks its neighbours until a diagonal through it scores, then releases them and its row and column open",
  "c"),
 ("G0091","The Deposit","K10","skill","Pay a cell to fire.",
  "Cue: permanently destroy one empty cell on the grid to fire this card's effect",

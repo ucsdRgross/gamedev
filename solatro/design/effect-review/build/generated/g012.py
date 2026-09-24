@@ -31,10 +31,10 @@ ROWS = [
  "You earn interest on banked gold, and the cap rises each time you finish a show without spending",
  "a"),
 
-("G0215","The Streak","I4","skill","Winning or losing in a row both pay.",
- "Consecutive wins pay a rising bonus, and so do consecutive losses, so committing to either is a strategy",
- "Consecutive wins pay a rising bonus; losses pay nothing",
- "Consecutive wins pay a rising bonus and consecutive losses pay a larger one, so a deliberate slump is a real line of play",
+("G0215","The Streak","I4","skill","Scoring in a row and going scoreless in a row both pay.",
+ "Each consecutive placement that completes a line adds a rising bonus to that line's bucket; a scoreless placement resets it",
+ "Each consecutive scoreless placement adds one to a slump; the next line to score pays the slump squared as flat points into its bucket and resets it, so filling the board without completing lines is a line of play",
+ "Both counters run at once, and whichever breaks pays",
  "c"),
 
 ("G0216","Three Of A Kind Merges","G3","skill","Copies combine into something stronger.",

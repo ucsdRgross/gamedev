@@ -22,15 +22,15 @@ ROWS = [
  "A few abilities trend at a time, and using a trending ability enough times makes it trend permanently for the rest of the run",
  "b"),
 
-("G0135","The Loose Card","K1","skill","Discard whatever is connected to nothing. (line 845)",
- "Any card with no connection to anything else in its column may be discarded freely, and its cell is free again",
- "Any card with no connection to anything else in its column may be discarded freely, and the top of a stock you choose is flipped into the Entrance",
- "Any card that is part of no potential meld at all may be discarded freely, whatever its column",
- "c"),
+("G0135","The Loose Card","K1","skill","Discard whatever the plan has no use for",
+ "A card sitting on a mark it matches on nothing may be discarded freely, and its cell is empty again",
+ "As (a), and the top of a stock you choose is flipped into the Entrance",
+ "As (a), and the discarded card goes to the bottom of its stock instead of the discard pile",
+ "a"),
 
 ("G0136","The Witch's Gold","G11","skill","Tokens that pay out by detonating. (line 901)",
- "Spawns gold tokens that explode at the end of the placement, paying out and destroying whatever cell they sat in",
- "Spawns gold tokens that explode at the end of the placement, paying out and damaging their neighbours",
+ "Spawns gold tokens that explode at the end of the placement, paying its rank into the special bucket and destroying whatever cell they sat in",
+ "Spawns gold tokens that explode at the end of the placement, paying its rank into the special bucket and damaging their neighbours",
  "Spawns gold tokens that explode when a placement finishes resolving unless you have placed them first, so holding them in the Entrance is the gamble",
  "c"),
 

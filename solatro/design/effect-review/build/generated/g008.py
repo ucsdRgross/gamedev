@@ -31,9 +31,9 @@ ROWS = [
  "a"),
 
 ("G0160","The Unlocked Cell","I2","skill","Capacity is a reward, not a starting stat.",
- "Completing a set of four permanently unlocks one extra free cell for the rest of the run",
- "Completing a set of four unlocks an extra free cell for the rest of the show only",
- "Every set of four completed unlocks a cell, and every card lost locks one again",
+ "Scoring a four of a kind widens the Entrance by one slot for the rest of the run; the new slot deals from its own stock",
+ "Scoring a four of a kind widens the Entrance by one slot for the rest of the show, the new slot filled from the deepest stock",
+ "Every four of a kind widens the Entrance by one slot, and every card of yours destroyed narrows it by one",
  "a"),
 
 ("G0161","The Sanctioned Cheat","K7","skill","You may break placement legality, carefully.",

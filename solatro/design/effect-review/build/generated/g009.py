@@ -61,7 +61,7 @@ ROWS = [
  "b"),
 
 ("G0175","Tap Solitaire","I1","skill","Tapping is the only verb.",
- "A show where cards are never placed, only cued, and scoring comes entirely from what the cues trigger",
+ "A show where cards are only cued from the Entrance, except that a card may be placed where the cell's mark matches it",
  "A show where placement is free but every card must also be cued once before it can score",
  "A show where you may either place or cue each turn, never both",
  "c"),
@@ -73,10 +73,10 @@ ROWS = [
  "c"),
 
 ("G0177","Garden Solitaire","I4","skill","Cards grow where you plant them.",
- "A card left in place gains rank each turn it is not disturbed, and is harvested when its line completes",
- "A card left in place gains rank each turn, and loses it all if moved",
- "A card left in place gains rank, and a card adjacent to two grown cards grows twice as fast",
- "c"),
+ "A card in no complete line gains +1 rank at each Entrance refill; when a line through it completes it is harvested: the ranks it gained are paid as flat points into that line's bucket and its rank returns to printed",
+ "As (a), but a harvested card keeps its grown rank, and a grown card that is moved or covered loses all of it",
+ "As (a), and a card orthogonally adjacent to two growing cards gains +2 per refill",
+ "a"),
 
 ("G0178","Cheatdeck Solitaire","F8","skill","The deck is not honest.",
  "The deck quietly favours cards you do not need, and an effect can expose and correct it",

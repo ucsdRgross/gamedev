@@ -33,7 +33,7 @@ ROWS = [
 ("G0148","The Double Harvest","K7","skill","Two placements, never the same cell.",
  "Cue: place two Entrance cards this turn instead of one, into different cells",
  "Cue: place two Entrance cards this turn into different cells, and only the second may complete a line",
- "Cue: place two Entrance cards into different cells, and a bonus if they land in different grids",
+ "Cue: place two Entrance cards into different cells; a line that both of them complete scores twice",
  "c"),
 
 ("G0149","The Forge","D3","skill","Two placements, both onto the same cell.",
@@ -69,7 +69,7 @@ ROWS = [
 ("G0154","The Forethought","K8","skill","Acts on both sides of its own move.",
  "Cue: this card acts once before it moves and once after, at the cost of never being able to gain height that turn",
  "Cue: this card acts before and after it moves, with no cost",
- "Cue: choose per turn whether this card acts before moving, after, or both at the cost of its height",
+ "Cue: choose per placement whether this card acts before moving, after, or both at the cost of its height",
  "c"),
 
 ("G0155","The Line of Sight","E5","skill","Clears what is directly beyond.",

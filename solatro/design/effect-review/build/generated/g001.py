@@ -134,10 +134,10 @@ ROWS = [
  "Consumable: write down a prediction now, opened at show end, and you may change it once",
  "Consumable: write a prediction that is opened three shows later, paying more the longer it waited",
  "c"),
-("G0024","Second Sight","M4","skill","Predicts the board, not the hand.",
- "At each Entrance refill, name a cell; if a card scores there before the next refill, gain a bonus",
- "At each Entrance refill, name a cell; if a card scores there before the next refill, gain a bonus, and if none does, lose one",
- "At each Entrance refill, name a cell and a rank; matching both before the next refill pays enormously and matching one pays a little",
+("G0024","Second Sight","M4","skill","Predicts the line, not the hand.",
+ "At each Entrance refill, name an incomplete line; if it completes before the next refill, +1 combo",
+ "As (a); if it completes, +2 combo, and if a different line completes first, -1",
+ "At each Entrance refill, name an incomplete line and its hand; the line completing pays +1 combo, the hand being right pays +3",
  "c"),
 
 # --- O2 change stacking defaults ---------------------------------------------

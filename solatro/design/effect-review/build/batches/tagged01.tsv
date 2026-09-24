@@ -183,7 +183,7 @@ E0181	KEEP		V1	rank	This card has no rank or suit: it can stack on anything and 
 E0182	KEEP		Q6	skill	Absorbs one Knife prop per show, banking it as flat points instead of being hit.	
 E0183	KEEP		L7	skill	Declares a goal/term for the show (e.g. score X with no Knife melds); fulfilling it grants bonus fame, missing it triggers a worse penalty.	
 E0184	KEEP		H5	skill	Passes a buff down its row card-to-card without triggering, invisible to effects that count or punish triggers.	
-E0185	KEEP		L6	skill	When scored in the Spotlight, scores 10x rank, but has a seeded 1-in-13 chance of being destroyed instead.	
+E0185	KEEP		L6	skill	When scored, scores 10x rank, but has a seeded 1-in-13 chance of being destroyed instead.	
 E0186	KEEP		C4	skill	Moves one slot automatically every other turn; every slot it leaves permanently grants bonus points to the next card scored there.	
 E0187	KEEP		G11	skill	Cue: create two rank-1 paper-token cards of any suit that drift down one chosen column, one row per Entrance refresh.	
 E0188	KEEP		A12	skill	Gains +1 combo for every different class that scored this placement.	

@@ -267,7 +267,7 @@ KEEPS = [
 ("E1701","K4","hazard","Boss: one placement only.",
  "Boss: the show has a single Entrance refill, at a proportionally lower goal",
  "Boss: the show has a single Entrance refill at the full goal",
- "Boss: the show has a single Entrance refill, and every line completed in it scores twice",
+ "Boss: the show has a single Entrance refill at a proportionally lower goal, and the one line it can complete pays into all three buckets",
  "a"),
 ("E1703","J8","hazard","Boss: your favourite hand costs you everything.",
  "Boss: scoring your most-played hand type sets your gold to nothing",

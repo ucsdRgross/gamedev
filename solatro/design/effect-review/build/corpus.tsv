@@ -183,7 +183,7 @@ E0181	catalog	CARD_CATALOG	The Blank		Common	pip;movement;freakshow	This card ha
 E0182	catalog	CARD_CATALOG	The Blockhead		Common	skill;Escape Artist;prop;protection	Absorbs one Knife prop per show, banking it as flat points instead of being hit.			0
 E0183	catalog	CARD_CATALOG	The Booking		Uncommon	rule;gamble;economy	Declares a goal/term for the show (e.g. score X with no Knife melds); fulfilling it grants bonus fame, missing it triggers a worse penalty.			0
 E0184	catalog	CARD_CATALOG	The Boot Code		Rare	skill;Special Effects;secret;combo	Passes a buff down its row card-to-card without triggering, invisible to effects that count or punish triggers.			0
-E0185	catalog	CARD_CATALOG	The Bullet Catch		Legendary	skill;Magician;gamble;destruction	When scored in the Spotlight, scores 10x rank, but has a seeded 1-in-13 chance of being destroyed instead.		designdocs	1
+E0185	catalog	CARD_CATALOG	The Bullet Catch		Legendary	skill;Magician;gamble;destruction	When scored, scores 10x rank, but has a seeded 1-in-13 chance of being destroyed instead.		designdocs	1
 E0186	catalog	CARD_CATALOG	The Butoh Walker		Rare	skill;Dancer;movement;growth	Moves one slot automatically every other turn; every slot it leaves permanently grants bonus points to the next card scored there.			0
 E0187	catalog	CARD_CATALOG	The Butterfly Trick		Common	skill;Magician;token;movement	Cue: create two rank-1 paper-token cards of any suit that drift down one chosen column, one row per Next.			0
 E0188	catalog	CARD_CATALOG	The Calliope		Uncommon	skill;Special Effects;combo	Gains +1 combo for every different class that scored this placement.			0

@@ -39,7 +39,7 @@ ROWS = [
 
 ("G0228","Everything Face Up","M1","skill","Nothing is hidden; the difficulty is the puzzle.",
  "The whole deck is visible from the start, so the show is pure planning with no unknowns",
- "The whole deck is visible but its order is not, so you know what is coming but not when",
+ "The next card of every stock is visible, so you always know the five cards after these five",
  "The whole deck is visible for the show's first placement only, then hidden again",
  "c"),
 
