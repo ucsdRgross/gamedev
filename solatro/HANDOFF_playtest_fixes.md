@@ -11,8 +11,8 @@ solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
 **IMPLEMENTED-BY:** P1-P37 and P41: `general-purpose` on `opus` (Opus 5); P38 Sonnet 5 then Opus 5;
 P39-P40 Opus 5; P44 onward: `plan-implementer` (medium) / `plan-implementer-low` (low) on Opus 5.5,
-`plan-implementer-sonnet` (Sonnet 5, low) for mechanical steps. Overseer Fable 5.1, writes no source;
-every reviewer Fable, read-only.
+`plan-implementer-sonnet` (Sonnet 5, low) for mechanical steps. Overseer Fable 5.1 through P44 (4),
+Opus 5.5 from P44 (3) to P49; writes no source. Every reviewer Fable, read-only.
 
 ## Owner rulings (verbatim where quoted; each overturns or extends the design it names)
 
