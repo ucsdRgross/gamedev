@@ -182,12 +182,12 @@ var _chooser : ChoiceViewer = null
 func chooser_is_up() -> bool:
 	return is_instance_valid(_chooser)
 
-# ⚠ THE CHOOSER HAS NO NODE, so the row a picked node owns is borrowed for its one useful button:
-# the description of a card being chosen still has to offer a look at the deck it is joining.
-func _show_only_the_deck_button(chooser_is_up: bool) -> void:
-	selection_buttons.visible = chooser_is_up
-	travel_button.visible = not chooser_is_up
-	if not chooser_is_up: return
+# ⚠ A CARD HAS NO NODE, so the row a picked node owns is borrowed for its one useful button: a
+# chooser card, or one stuck in a pack's possible cards, still offers a look at the run deck.
+func _show_only_the_deck_button(deck_only: bool) -> void:
+	selection_buttons.visible = deck_only
+	travel_button.visible = not deck_only
+	if not deck_only: return
 	possible_cards_button.visible = false
 	selection_deck_button.visible = true
 
@@ -243,8 +243,7 @@ func _on_node_selected(node: WorldGraphNode) -> void:
 	var entry := _info_for(node)
 	info_hovered.emit(entry)
 	name_popup.show_above(entry.title, node)
-	selection_buttons.visible = true
-	possible_cards_button.visible = _booster_of(node) != null
+	_show_the_picks_row(node)
 # ⚠ A PICK NOBODY CLICKED DOES NOT OPEN THE PACK: an auto-pick is not the player asking to read
 # one, and Possible cards is still there to ask with.
 	if not controller.auto_picking: await _open_possible_cards_once(node)
@@ -269,13 +268,19 @@ func _open_possible_cards_once(node: WorldGraphNode) -> void:
 	await _show_possible_cards(node)
 
 # Every card this pack could roll, in the SAME viewer the run deck opens in and hosted the same way,
-# so its cards publish to the sidebar as any viewer's do. Closing it comes back to the node.
+# so its cards publish to the sidebar as any viewer's do. Closing it comes back to the node; a card
+# stuck in it carries the Deck row, a hovered one none.
 func _show_possible_cards(node: WorldGraphNode) -> void:
 	var cards := await _booster_of(node).get_possible_preview_cards()
 	var viewer := DeckViewer.show_deck(self, cards, possible_cards_button)
 	_host_map_viewer(viewer)
-	_read_close_while_open(possible_cards_button, &"MAP_POSSIBLE_CARDS", &"MAP_CLOSE_POSSIBLE_CARDS",
-			viewer)
+	if viewer: viewer.cards().sticky_changed.connect(_follow_a_stuck_possible_card.bind(viewer))
+
+# ⚠ A LIST CLOSED WITH A CARD STUCK lets it go AFTER the pick has its whole row back, so that late
+# unstick is not the player's and leaves the row alone.
+func _follow_a_stuck_possible_card(stuck: bool, viewer: DeckViewer) -> void:
+	if viewer.is_queued_for_deletion(): return
+	_show_only_the_deck_button(stuck)
 
 # ⚠ HOSTED FIRST, REPUBLISHED SECOND: the container's close handler takes the viewer's card out of
 # the sidebar, so a pick put back before it would be wiped by it. The pick is what every viewer
@@ -291,7 +296,14 @@ func _host_map_viewer(viewer: DeckViewer) -> void:
 func _republish_the_pick() -> void:
 	var picked := controller.selected()
 	selection_buttons.visible = picked != null or chooser_is_up()
-	if picked: info_hovered.emit(_info_for(picked))
+	if picked:
+		_show_the_picks_row(picked)
+		info_hovered.emit(_info_for(picked))
+
+func _show_the_picks_row(node: WorldGraphNode) -> void:
+	selection_buttons.visible = true
+	travel_button.visible = true
+	possible_cards_button.visible = _booster_of(node) != null
 
 func _info_for(node: WorldGraphNode) -> InfoEntry:
 	return MapHoverPanel.get_info(node, run, controller.lap_target())
@@ -313,13 +325,4 @@ func _on_deck_clicked() -> void:
 			else hud_container.map_deck_button
 	var viewer := DeckViewer.show_deck(self, Main.save_info.card_datas, opener)
 	_host_map_viewer(viewer)
-	if opener == selection_deck_button:
-		_read_close_while_open(selection_deck_button, &"MAP_DECK", &"MAP_CLOSE_DECK", viewer)
-
-# THE OPENER IS ALSO THE CLOSER while its viewer is up, a second press toggling it shut, so it says
-# so until the viewer leaves the tree, however it goes. A button freed first takes the connection.
-func _read_close_while_open(opener: Button, open_key: StringName, close_key: StringName,
-		viewer: DeckViewer) -> void:
-	if viewer == null: return
-	opener.text = TRANSLATION.find(close_key)
-	viewer.tree_exiting.connect(opener.set_text.bind(TRANSLATION.find(open_key)))
+	DeckViewer.read_close_while_open(opener, &"MAP_CLOSE_DECK", viewer)

@@ -99,6 +99,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `func mount_description_buttons(row: Control) -> void` | Hangs a screen's own row of buttons at the head of the description, above its name and visual; the screen builds the row, decides when it shows and owns the node |
 | `DescriptionPanel` | `func mount_buttons(row: Control) -> void` | The `%ButtonRow` slot: the panel never learns what the buttons do |
 | `DescriptionPanel` | `func show_buttons(shown: bool) -> void` | (added during execution) Whether the mounted row may show at all: `HudContainer.set_active_screen` shows it on the map screen only, so no other screen's card description carries the map's buttons |
+| `DeckViewer` | `static func read_close_while_open(opener: Button, close_key: StringName, viewer: DeckViewer) -> void` | (added during execution) The opener reads its Close label while its own viewer is up and gets its own text back when the viewer leaves the tree; `Map` and `GameView` call it for every opener |
 | `WorldMapController` | `func select_node(node: WorldGraphNode) -> void` | A pointer, finger or pad PICKS a reachable node; travelling is the map screen's Travel button |
 | `WorldMapController` | `func clear_selection() -> void` | Back to the basic view: nothing picked, nothing marked |
 | `WorldMapController` | `func _auto_select_if_single() -> void`, `var auto_picking` | One onward node needs no click, so it is picked on population, on a lap flip and on a rest-stop arrival; `auto_picking` is true only while that pick's `node_selected` runs, and `Map` reads it to leave a pack's contents unopened |
@@ -229,6 +230,8 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `SIDEBAR_CLOSE` | The exit X's tooltip (C16) |
 | `SIDEBAR_BACK` | `%Back`'s tooltip (K9, `GAP-010`=c) |
 | `SIDEBAR_STOCK_REMAINING` | The face-down stock's description: how many remain (I10) |
+| `MAP_CLOSE_DECK` | (added during execution) The map's Deck opener while the run deck it opened is up |
+| `GAME_CLOSE_DECK` / `GAME_CLOSE_DISCARD` / `GAME_CLOSE_RULES` | (added during execution) The game's pile openers while their own viewer is up |
 | `GAME_UNDO` | The outcome screen's own Undo, beside Continue (J13, `GAP-009`=b) |
 
 ⚠ **Leave a new row's third column EMPTY.** Godot's CSV importer reads it as the message CONTEXT, so

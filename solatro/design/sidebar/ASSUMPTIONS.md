@@ -898,7 +898,7 @@
   writes it as the left and right margin of `GameHudMargin` and `DescriptionMargin`, beside the band
   top, and both contents fit to the new `HudContainer._content_size()` (was `_description_size()`)
   through the new `_fit_content()`.
-- Close fix E: `DescriptionPanel`'s `%ExitColumn` is an empty control closing the name's row, widened
+- Close fix E: `DescriptionPanel`'s `%ExitColumn` is an empty control closing the button row and the name's row, widened
   by `HudContainer._place_panel_controls()` to the X's touch target, so the wrapped name stops before the
   X's column while the body keeps the full width.
 - Close fix E: `GameHudMargin` grows DOWN, not both ways: a band shorter than the HUD (measured at a

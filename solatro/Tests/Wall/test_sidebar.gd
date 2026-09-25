@@ -201,7 +201,8 @@ func _ready() -> void:
 	await test_the_choosers_deck_button_stays_up_and_closes_its_open_deck()
 	await test_the_description_row_sits_under_the_band_above_the_described_card()
 	await test_the_choosers_deck_button_reads_close_deck_while_its_deck_is_open()
-	await test_possible_cards_reads_close_while_its_viewer_is_open()
+	await test_a_card_stuck_in_the_possible_cards_carries_only_the_deck_row()
+	await test_every_pile_opener_reads_close_while_its_viewer_is_open()
 	await test_a_keyboard_reaches_every_row_button_from_the_x()
 	await test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map()
 	await test_leaving_mid_walk_onto_a_pack_never_strands_the_chooser()
@@ -5473,6 +5474,8 @@ func test_the_description_row_sits_under_the_band_above_the_described_card() -> 
 	await _close_the_open_viewer()
 	await get_tree().process_frame
 	_check_the_row_heads_the_description("a picked pack node")
+	await _resize_viewport(_booted_viewport, INSET_WINDOWS[-1])
+	_check_the_row_heads_the_description("a picked pack node, top-band window")
 	await _end_main_fixture()
 	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
 	check(chooser != null, "sanity: arriving on a pack opened its chooser")
@@ -5526,19 +5529,64 @@ func test_the_choosers_deck_button_reads_close_deck_while_its_deck_is_open() -> 
 		chooser.queue_free()
 	await _end_main_fixture()
 
-# ⚠ ITS ROW IS HIDDEN WHILE ITS VIEWER COVERS THE PICK, so the label is read, not clicked.
-func test_possible_cards_reads_close_while_its_viewer_is_open() -> void:
+# A CARD STUCK IN A PACK'S POSSIBLE CARDS OFFERS THE RUN DECK; one merely hovered offers nothing,
+# and closing the list sets the pick's whole row back.
+func test_a_card_stuck_in_the_possible_cards_carries_only_the_deck_row() -> void:
 	await _start_map_fixture()
 	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
-	var button := _map.possible_cards_button
-	check(is_instance_valid(DeckViewer._open), "sanity: the first pick listed the pack")
-	check(button.text == TRANSLATION.find(&"MAP_CLOSE_POSSIBLE_CARDS")
-			and button.text != "MAP_CLOSE_POSSIBLE_CARDS",
-			"with its viewer open, Possible cards reads Close possible cards", button.text)
+	var viewer := DeckViewer._open
+	check(is_instance_valid(viewer), "sanity: the first pick listed the pack")
+	var at := viewer.cards().controls[0].get_global_rect().get_center()
+	_hover_in(_map_viewport, at)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(_container.showing_description() and not _map.selection_buttons.is_visible_in_tree(),
+			"a hovered possible card is described with no row",
+			"described=%s row=%s" % [_container.showing_description(),
+			_map.selection_buttons.is_visible_in_tree()])
+	await _click(at, _map_viewport)
+	await get_tree().process_frame
+	check(viewer.cards().sticky != null, "sanity: a click stuck the possible card")
+	check(_map.selection_deck_button.is_visible_in_tree()
+			and not _map.travel_button.is_visible_in_tree()
+			and not _map.possible_cards_button.is_visible_in_tree(),
+			"a stuck possible card carries the row with Deck only",
+			"deck=%s travel=%s possible=%s" % [_map.selection_deck_button.is_visible_in_tree(),
+			_map.travel_button.is_visible_in_tree(), _map.possible_cards_button.is_visible_in_tree()])
 	await _close_the_open_viewer()
-	check(button.text == TRANSLATION.find(&"MAP_POSSIBLE_CARDS"),
-			"...and reads Possible cards again once it closed", button.text)
+	check(_map.travel_button.visible and _map.selection_deck_button.visible
+			and _map.possible_cards_button.visible,
+			"closing the list restores the pick's whole row, not the Deck-only one",
+			"travel=%s deck=%s possible=%s" % [_map.travel_button.visible,
+			_map.selection_deck_button.visible, _map.possible_cards_button.visible])
 	await _end_main_fixture()
+
+# EVERY OPENER IS ALSO ITS VIEWER'S CLOSER and says so while it is open, on either screen.
+func test_every_pile_opener_reads_close_while_its_viewer_is_open() -> void:
+	await _start_map_fixture()
+	await _check_the_opener_reads_close(_container.map_deck_button, &"MAP_CLOSE_DECK")
+	await _end_main_fixture()
+	await _start_game_fixture()
+	for pile : Control in [_container.deck_ui, _container.discard_ui, _container.rules_ui] as Array[Control]:
+		var close_key : StringName = {_container.deck_ui: &"GAME_CLOSE_DECK",
+				_container.discard_ui: &"GAME_CLOSE_DISCARD", _container.rules_ui: &"GAME_CLOSE_RULES"}[pile]
+		await _check_the_opener_reads_close(pile.get_node(^"Button") as Button, close_key)
+	await _end_main_fixture()
+
+func _check_the_opener_reads_close(opener: Button, close_key: StringName) -> void:
+	var open_text := opener.text
+	check(await _click_button(opener, _booted_viewport), "a real click pressed %s" % open_text)
+	await get_tree().process_frame
+	var viewer := DeckViewer._open
+	check(is_instance_valid(viewer) and not viewer.is_queued_for_deletion(),
+			"sanity: %s opened its viewer" % open_text)
+	check(opener.text == TRANSLATION.find(close_key) and opener.text != String(close_key),
+			"with its viewer open, %s reads %s" % [open_text, close_key], opener.text)
+	check(await _click_button(opener, _booted_viewport), "a real click pressed %s" % opener.text)
+	await get_tree().process_frame
+	check(not is_instance_valid(viewer) or viewer.is_queued_for_deletion(),
+			"...and it closed the viewer %s opened" % open_text)
+	check(opener.text == open_text, "...and reads %s again" % open_text, opener.text)
 
 # One device end to end: accept on the map hands the pad the row, Up reaches the X above it, and
 # Down from the X comes back into the row, so every row button and the X are one walk.

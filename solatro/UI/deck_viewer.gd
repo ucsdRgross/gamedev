@@ -41,6 +41,13 @@ static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control) -> 
 	_open = viewer
 	return viewer
 
+# THE OPENER IS ALSO THE CLOSER while its viewer is up, a second press toggling it shut, so it says
+# so until the viewer leaves the tree, however it goes. A button freed first takes the connection.
+static func read_close_while_open(opener: Button, close_key: StringName, viewer: DeckViewer) -> void:
+	if viewer == null: return
+	viewer.tree_exiting.connect(opener.set_text.bind(opener.text))
+	opener.text = TRANSLATION.find(close_key)
+
 # ⚠ ANNOUNCED BEFORE THE FOCUS IS HANDED BACK: the sidebar falls back to what was under this
 # viewer first, so the opener is on screen again by the time the focus goes looking for it.
 func _close() -> void:

@@ -106,13 +106,16 @@ func _ready() -> void:
 	hud_container.connect_for_screen(self, plan_layer_button.pressed, _on_plan_layer_pressed)
 	var deck_button := deck_ui.get_node(^"Button") as Button
 	hud_container.connect_for_screen(self, deck_button.pressed,
-			func() -> void: _open_deck_viewer(sorted_stock_union(game.state), deck_button))
+			func() -> void: _open_deck_viewer(sorted_stock_union(game.state), deck_button,
+					&"GAME_CLOSE_DECK"))
 	var discard_button := discard_ui.get_node(^"Button") as Button
 	hud_container.connect_for_screen(self, discard_button.pressed,
-			func() -> void: _open_deck_viewer(game.state.discard_deck, discard_button))
+			func() -> void: _open_deck_viewer(game.state.discard_deck, discard_button,
+					&"GAME_CLOSE_DISCARD"))
 	var rules_button := rules_ui.get_node(^"Button") as Button
 	hud_container.connect_for_screen(self, rules_button.pressed,
-			func() -> void: _open_deck_viewer(game.state.rules_deck, rules_button))
+			func() -> void: _open_deck_viewer(game.state.rules_deck, rules_button,
+					&"GAME_CLOSE_RULES"))
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.card_dragged.connect(_pick_up)
 	play_area.card_dropped.connect(_on_card_dropped)
@@ -307,9 +310,10 @@ static func sorted_stock_union(state: GameData) -> Array[CardData]:
 # The deck, discard and rules viewers are publishers exactly like the board: they hand their
 # highlights to this view, which relays them the same way, and closing one hands the sidebar back
 # to whatever was locked behind it.
-func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
+func _open_deck_viewer(cards: Array[CardData], opener: Button, close_key: StringName) -> void:
 	var viewer := DeckViewer.show_deck(self, cards, opener)
 	if not viewer: return
+	DeckViewer.read_close_while_open(opener, close_key, viewer)
 	hud_container.host_viewer(viewer, wall_picture, info_requested, HudContainer.GAME_SCREEN)
 	viewer.highlight_cleared.connect(_rest_the_board_behind_another_screen)
 
