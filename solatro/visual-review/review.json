@@ -2,29 +2,64 @@
   "shots": {
     "grid3_overview": {
       "verdict": "comment",
-      "comment": "pink looks off. go with the cream color after all for the outlines since its closest we have to white. after image looks fine, gap is much smaller than before.",
-      "at": "2026-09-24T02:44:13Z"
+      "comment": "before we switched to grids, cards stacked on top of a cell/zone would shift slightly to reveal the zone beneath if holding a card and the zone below was a legal spot to place a card. otherwise it should select card on top since no reason to view the zone/cell. otherwise looks fine.",
+      "at": "2026-09-25T00:46:09Z"
     },
     "grid3_focused": {
       "verdict": "approve",
       "comment": "",
-      "at": "2026-09-24T02:44:54Z"
+      "at": "2026-09-25T00:46:24Z"
     },
     "grid1_focused": {
-      "verdict": "approve",
-      "comment": "",
-      "at": "2026-09-24T02:45:11Z"
+      "verdict": "comment",
+      "comment": "sidebar doesnt show current chips x mult and total score so far.",
+      "at": "2026-09-25T00:47:06Z"
     },
     "window_show_open": {
       "verdict": "approve",
       "comment": "",
-      "at": "2026-09-24T02:45:27Z"
+      "at": "2026-09-25T00:47:26Z"
     },
     "lifted_focus_elsewhere": {
       "verdict": "comment",
-      "comment": "deck button should not be in description sidebar. the only exception i mentioned for that was showing deck button when showing a map node.",
-      "at": "2026-09-24T02:46:50Z"
+      "comment": "looks fine except for x on the card description which implies card has been clicked on but that shouldnt be possible since an entrance card has also been clicked on?",
+      "at": "2026-09-25T00:48:37Z"
+    },
+    "entrance_focus_rim": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-25T00:48:57Z"
+    },
+    "chooser_overlay_greyed": {
+      "verdict": "comment",
+      "comment": "covering whole map looks off. have it be a square window which pack chooser and its elements are inside of instead. outside of the sub window you can still see map so you know which picture you are in. also no reason to lock out the back forward and wall, if you leave you can just come back to the in progress chooser",
+      "at": "2026-09-25T00:50:58Z"
+    },
+    "map_fit": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-25T00:51:45Z"
+    },
+    "map_zoomed_edge": {
+      "verdict": "comment",
+      "comment": "looks fine. i assume edges missing between nodes is expected from it no longer being reachable? if not thats an issue",
+      "at": "2026-09-25T00:52:36Z"
+    },
+    "map_after_travel": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-25T00:53:14Z"
+    },
+    "deck_over_chooser": {
+      "verdict": "comment",
+      "comment": "deck button should be close deck, and should be before any of the descriptive stuff at very top, not in middle of card and descriptors. i think we can do better though, by having an x button tab sticking out the side of the deck viewer window instead similar to a bookmark sticking out which is used to close the viewer since that is more intuitive. ",
+      "at": "2026-09-25T00:59:28Z"
+    },
+    "deck_card_hover_over_chooser": {
+      "verdict": "comment",
+      "comment": "as mentioned in previous comment, deck button should not be in middle of description, it should be on top but below the back forward wall row.",
+      "at": "2026-09-25T01:00:56Z"
     }
   },
-  "updated": "2026-09-24T02:46:50Z"
+  "updated": "2026-09-25T01:00:56Z"
 }
