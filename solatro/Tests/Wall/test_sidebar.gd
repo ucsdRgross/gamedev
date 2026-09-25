@@ -199,6 +199,10 @@ func _ready() -> void:
 	await test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it()
 	await test_closing_the_deck_viewer_over_the_chooser_gives_back_its_stuck_card()
 	await test_the_choosers_deck_button_stays_up_and_closes_its_open_deck()
+	await test_the_description_row_sits_under_the_band_above_the_described_card()
+	await test_the_choosers_deck_button_reads_close_deck_while_its_deck_is_open()
+	await test_possible_cards_reads_close_while_its_viewer_is_open()
+	await test_a_keyboard_reaches_every_row_button_from_the_x()
 	await test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map()
 	await test_leaving_mid_walk_onto_a_pack_never_strands_the_chooser()
 	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
@@ -5459,6 +5463,111 @@ func test_the_choosers_deck_button_stays_up_and_closes_its_open_deck() -> void:
 			check(chooser.cards().sticky != null and chooser.confirm_button.disabled,
 					"...Take held as before (%s)" % press[0])
 		chooser.queue_free()
+	await _end_main_fixture()
+
+# THE ROW COMES BEFORE ANYTHING DESCRIPTIVE: under the overlay's own band, above the described card
+# and its name, wherever it shows -- a picked node, and the chooser's stuck card.
+func test_the_description_row_sits_under_the_band_above_the_described_card() -> void:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	await _close_the_open_viewer()
+	await get_tree().process_frame
+	_check_the_row_heads_the_description("a picked pack node")
+	await _end_main_fixture()
+	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
+	check(chooser != null, "sanity: arriving on a pack opened its chooser")
+	if chooser != null:
+		await _click(chooser.cards().controls[0].get_global_rect().get_center(), _map_viewport)
+		await get_tree().process_frame
+		_check_the_row_heads_the_description("the chooser's stuck card")
+		chooser.queue_free()
+	await _end_main_fixture()
+
+func _check_the_row_heads_the_description(where: String) -> void:
+	var band_bottom := -INF
+	for button_name : StringName in [&"BackButton", &"ForwardButton", &"WallButton"] as Array[StringName]:
+		band_bottom = maxf(band_bottom, _overlay_button(button_name).get_global_rect().end.y)
+	var row := _map.selection_buttons.get_global_rect()
+	var described := (_panel.get_node(^"%VisualSlot") as Control).get_global_rect() \
+			.merge((_panel.get_node(^"%Title") as Control).get_global_rect())
+	check(_map.selection_buttons.is_visible_in_tree() and row.position.y >= band_bottom - 0.5,
+			"the row sits below the Back/Forward/Wall band (%s)" % where,
+			"row top %s band bottom %s" % [row.position.y, band_bottom])
+	check(row.end.y <= described.position.y + 0.5,
+			"the row sits above the described card and its name (%s)" % where,
+			"row bottom %s described top %s" % [row.end.y, described.position.y])
+	var x := _exit_button().get_global_rect()
+	for button : Button in _map.selection_buttons.get_children():
+		if not button.is_visible_in_tree(): continue
+		check(not (_exit_button().visible and button.get_global_rect().intersects(x)),
+				"%s is not under the X (%s)" % [button.text, where],
+				"%s vs %s" % [button.get_global_rect(), x])
+
+# THE OPENER IS ALSO THE CLOSER while its own viewer is up, and says so; closing it puts the name back.
+func test_the_choosers_deck_button_reads_close_deck_while_its_deck_is_open() -> void:
+	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
+	check(chooser != null, "sanity: arriving on a pack opened its chooser")
+	if chooser != null:
+		await _click(chooser.cards().controls[0].get_global_rect().get_center(), _map_viewport)
+		var deck := _map.selection_deck_button
+		check(deck.text == TRANSLATION.find(&"MAP_DECK"), "sanity: Deck reads Deck", deck.text)
+		check(await _click_button(deck, _booted_viewport), "a real click pressed Deck")
+		await get_tree().process_frame
+		check(is_instance_valid(DeckViewer._open) and not DeckViewer._open.is_queued_for_deletion(),
+				"sanity: the run deck opened over the chooser")
+		check(deck.text == TRANSLATION.find(&"MAP_CLOSE_DECK") and deck.text != "MAP_CLOSE_DECK",
+				"with its deck open, the chooser's Deck reads Close deck", deck.text)
+		var viewer := DeckViewer._open
+		check(await _click_button(deck, _booted_viewport), "a real click pressed Close deck")
+		await get_tree().process_frame
+		check(not is_instance_valid(viewer) or viewer.is_queued_for_deletion(),
+				"...and it closed the deck")
+		check(deck.text == TRANSLATION.find(&"MAP_DECK"), "...and reads Deck again", deck.text)
+		chooser.queue_free()
+	await _end_main_fixture()
+
+# ⚠ ITS ROW IS HIDDEN WHILE ITS VIEWER COVERS THE PICK, so the label is read, not clicked.
+func test_possible_cards_reads_close_while_its_viewer_is_open() -> void:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	var button := _map.possible_cards_button
+	check(is_instance_valid(DeckViewer._open), "sanity: the first pick listed the pack")
+	check(button.text == TRANSLATION.find(&"MAP_CLOSE_POSSIBLE_CARDS")
+			and button.text != "MAP_CLOSE_POSSIBLE_CARDS",
+			"with its viewer open, Possible cards reads Close possible cards", button.text)
+	await _close_the_open_viewer()
+	check(button.text == TRANSLATION.find(&"MAP_POSSIBLE_CARDS"),
+			"...and reads Possible cards again once it closed", button.text)
+	await _end_main_fixture()
+
+# One device end to end: accept on the map hands the pad the row, Up reaches the X above it, and
+# Down from the X comes back into the row, so every row button and the X are one walk.
+func test_a_keyboard_reaches_every_row_button_from_the_x() -> void:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	await _close_the_open_viewer()
+	_push_key(_map_viewport, KEY_ENTER, true)
+	_push_key(_map_viewport, KEY_ENTER, false)
+	await get_tree().process_frame
+	var visited : Array[Control] = [_booted_viewport.gui_get_focus_owner()]
+	check(visited[0] == _map.travel_button, "sanity: accept on the map hands the pad Travel",
+			str(visited[0]))
+	for keycode : Key in [KEY_RIGHT, KEY_DOWN] as Array[Key]:
+		await _tap_key(keycode)
+		visited.append(_booted_viewport.gui_get_focus_owner())
+	var names : Array[String] = []
+	for control : Control in visited:
+		names.append((control as Button).text if control is Button else str(control))
+	for button : Button in _map.selection_buttons.get_children():
+		check(button in visited, "Right then Down from Travel reaches %s" % button.text,
+				", ".join(names))
+	await _tap_key(KEY_UP)
+	check(_booted_viewport.gui_get_focus_owner() == _exit_button(),
+			"Up from the row reaches the X", str(_booted_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_DOWN)
+	var below := _booted_viewport.gui_get_focus_owner()
+	check(below != null and below.get_parent() == _map.selection_buttons,
+			"...and Down from the X comes back into the row", str(below))
 	await _end_main_fixture()
 
 ## A game deck viewer the player left open behind the overlay's Back is the game's alone: on the map the Deck button, a pack's first pick and an arrow each behave exactly as with no viewer anywhere, and Forward finds the game sane.

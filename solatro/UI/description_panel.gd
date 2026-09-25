@@ -31,8 +31,8 @@ func show_entry(entry: InfoEntry, panel_size: Vector2) -> void:
 	visible = true
 
 # ⚠ THE PANEL NEVER LEARNS WHAT THESE DO. A screen whose description is a thing you can act on hands
-# its own row of buttons in and owns the node; this only gives it a place above the body, where it is
-# reachable without scrolling.
+# its own row of buttons in and owns the node; this only gives it the head of the description, before
+# the name and the visual, where it is reachable without scrolling.
 func mount_buttons(row: Control) -> void:
 	_button_row.add_child(row)
 

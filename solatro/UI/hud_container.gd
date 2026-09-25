@@ -493,7 +493,7 @@ func show_description(entry: InfoEntry) -> void:
 	_refresh_exit_button()
 	_follow_the_menus_own_content()
 
-## Hangs a screen's own row of buttons above the description body. The screen builds the row, decides when it shows and owns the node.
+## Hangs a screen's own row of buttons at the head of the description, above its name and visual. The screen builds the row, decides when it shows and owns the node.
 func mount_description_buttons(row: Control) -> void:
 	_description_panel.mount_buttons(row)
 

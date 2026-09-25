@@ -272,7 +272,10 @@ func _open_possible_cards_once(node: WorldGraphNode) -> void:
 # so its cards publish to the sidebar as any viewer's do. Closing it comes back to the node.
 func _show_possible_cards(node: WorldGraphNode) -> void:
 	var cards := await _booster_of(node).get_possible_preview_cards()
-	_host_map_viewer(DeckViewer.show_deck(self, cards, possible_cards_button))
+	var viewer := DeckViewer.show_deck(self, cards, possible_cards_button)
+	_host_map_viewer(viewer)
+	_read_close_while_open(possible_cards_button, &"MAP_POSSIBLE_CARDS", &"MAP_CLOSE_POSSIBLE_CARDS",
+			viewer)
 
 # ⚠ HOSTED FIRST, REPUBLISHED SECOND: the container's close handler takes the viewer's card out of
 # the sidebar, so a pick put back before it would be wiped by it. The pick is what every viewer
@@ -308,4 +311,15 @@ func _update_hud() -> void:
 func _on_deck_clicked() -> void:
 	var opener : Button = selection_deck_button if selection_buttons.visible \
 			else hud_container.map_deck_button
-	_host_map_viewer(DeckViewer.show_deck(self, Main.save_info.card_datas, opener))
+	var viewer := DeckViewer.show_deck(self, Main.save_info.card_datas, opener)
+	_host_map_viewer(viewer)
+	if opener == selection_deck_button:
+		_read_close_while_open(selection_deck_button, &"MAP_DECK", &"MAP_CLOSE_DECK", viewer)
+
+# THE OPENER IS ALSO THE CLOSER while its viewer is up, a second press toggling it shut, so it says
+# so until the viewer leaves the tree, however it goes. A button freed first takes the connection.
+func _read_close_while_open(opener: Button, open_key: StringName, close_key: StringName,
+		viewer: DeckViewer) -> void:
+	if viewer == null: return
+	opener.text = TRANSLATION.find(close_key)
+	viewer.tree_exiting.connect(opener.set_text.bind(TRANSLATION.find(open_key)))

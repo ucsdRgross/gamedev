@@ -96,7 +96,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `signal slide_settled` | The slide reached its aim, or the container is leaving the tree, which releases `slide_to()`'s waiters too |
 | `HudContainer` | `func _join_focus_while_shown(button: Button, shown: bool) -> void` | The one rule for the X: a panel control is visible and in the focus chain for exactly the same span (C16) |
 | `HudContainer` | `func _shown_hosted_viewer() -> _HostedViewer` | (changed during execution) The newest viewer up on the screen being shown, or null -- a viewer left open on another screen answers nothing here: the map's up-into-the-panel route yields to a viewer's focus chain (K10, `GAP-012`=a) |
-| `HudContainer` | `func mount_description_buttons(row: Control) -> void` | Hangs a screen's own row of buttons above the description body; the screen builds the row, decides when it shows and owns the node |
+| `HudContainer` | `func mount_description_buttons(row: Control) -> void` | Hangs a screen's own row of buttons at the head of the description, above its name and visual; the screen builds the row, decides when it shows and owns the node |
 | `DescriptionPanel` | `func mount_buttons(row: Control) -> void` | The `%ButtonRow` slot: the panel never learns what the buttons do |
 | `DescriptionPanel` | `func show_buttons(shown: bool) -> void` | (added during execution) Whether the mounted row may show at all: `HudContainer.set_active_screen` shows it on the map screen only, so no other screen's card description carries the map's buttons |
 | `WorldMapController` | `func select_node(node: WorldGraphNode) -> void` | A pointer, finger or pad PICKS a reachable node; travelling is the map screen's Travel button |
