@@ -2,8 +2,8 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P57 done (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P57): `ALL 51 SUITES: 7184 CHECKS PASSED`,
+**State:** P1-P57 and P59 done (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P59): `ALL 51 SUITES: 7186 CHECKS PASSED`,
 21 placeholder warnings, 24 resources + 1150 ObjectDB.
 Pending: the round-2 review steps P59-P64 and their review round, the square-card task (P58a-d), then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
@@ -587,11 +587,11 @@ a lot of these issues are with lack of parity between different modal input opti
   notes: 'Traced by the P53 review: _entry_by_screen[game] keeps a transient entry across set_active_screen; board_highlight_gone (P53) is swallowed while the map is shown, so nothing forgets it. The smallest shape the review proposed: on leaving a screen, release its remembered entry when it is transient and the screen is not locked. Measure the key route first; keep a stuck description and a lock re-shown on return (the _on_return rows).'
 - id: P59
   description: A card description shows the X only while it is the STUCK entry; with a card lifted, a focused or hovered other card/cell is described without an X (visual review round 2, lifted_focus_elsewhere).
-  files_touched: [solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]
+  files_touched: [solatro/UI/hud_container.gd, solatro/UI/play_area.gd, solatro/UI/cards_viewer.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar UiViewers DragPlace'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'Measured on HEAD (real input: lift an Entrance card, Up onto a cell): the cell described, is_locked true, X up. Two causes: _refresh_exit_button read is_locked(); and a re-highlight of the stuck card published a COPY of its entry, so shown == lock alone lost the X on the stuck card itself. Now: the X shows only when the shown entry is the lock (no lock: not transient, as before); PlayArea._publish_info hands a highlight of locked_data back to the lock; CardsViewer re-sticks when the sticky card is highlighted; focus_sidebar returns to the lock before aiming at the X. Escape still cancels a lift with the X hidden; a focused X that hides leaves no focus behind. Red (HEAD three UI files): SIDEBAR 1958 passed, 3 FAILED. Green: FILTERED 3 of 51 [Sidebar UiViewers DragPlace]: 2481; --logic 3030. Re-pointed: test_a_stuck_card_survives_hovers_and_the_pointer_reaching_the_sidebar (asserted the X stays up through a hover - reversed by this ruling). Fable review: 1 latent (Open bugs). Gate: ALL 51 SUITES: 7186 CHECKS PASSED.'
   notes: 'Owner: "looks fine except for x on the card description which implies card has been clicked on but that shouldnt be possible since an entrance card has also been clicked on?" Second playtest (7): the X exists only on sticky descriptions. Suspected writer HudContainer._refresh_exit_button (reads is_locked(), not whether the shown entry IS the lock). Keyboard cancel stays Escape/right-click/pad; the X returns when the stuck entry is shown again.'
 - id: P60
   description: The game sidebar shows Goal, the current Total (live_total) and board_total x combo, each always (twenty-second round); the Combo label's hide-below-1 goes.
@@ -753,10 +753,11 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - FOR /docs AT THE CLOSE: design/picture-wall/DESIGN.md ~150 and ~890 still cite the map's ZOOM_MIN 0.5 (deleted by P55).
 - UI VIEWERS test_pack_click_selects "the click also focuses the card it picked, so the sidebar can stay on it" (focus owner null) and "the moving focus takes the rim while it is on the picked card" failed together in 1 of 2 overseer gates on the P57 tree, WALL TRANSITION running just before; 0 of 10 filtered runs (UiViewers alone x3, with WallTransition x2, each on the P57 tree and on HEAD's hud_container.gd). A standalone ChoiceViewer fixture P57 cannot reach - same shape as the later-arrow row above (focus gone a frame later). Measure before naming a cause.
 - FOR /simplify AT THE CLOSE (P57 re-review): HudContainer.set_active_screen's keep-what-a-viewer-holds branch may be dead - on the game screen no opener hosts a viewer while a description is up, and on the map release_screen frees the pick's covered entry; what is left is a chooser card that is already a suspended lock.
+- Latent, traced by the P59 review: a window resize while another card is described over a board lock leaves the lock's detached preview at its old size - HudContainer.resize_preview re-sizes only the mounted visual, and return_to_lock re-mounts the lock's without re-sizing (P59 removed the re-hover republish that used to redraw it).
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
-1. The round-2 review steps, one at a time, each gated: P59 (X only on the stuck entry), P60 (score HUD), P61 (the map shots' fake current node), P62 (reveal the legal mark under a held card), P63a (the button row at the top, Close <viewer>), P63b (the viewer X tab), P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
+1. The round-2 review steps, one at a time, each gated: P60 (score HUD), P61 (the map shots' fake current node), P62 (reveal the legal mark under a held card), P63a (the button row at the top, Close <viewer>), P63b (the viewer X tab), P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
 2. The square-card task, in order: P58a (merge main), P58b (one card size; the hardcoded-literal audit, by subsystem), P58c (the four tool bugs), P58d (its visual review round).
 3. The close per /plan-run (the plan-auditor writes AUDIT.md), then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list; the intermittents are the close's input), and the owner merges the branch.
 

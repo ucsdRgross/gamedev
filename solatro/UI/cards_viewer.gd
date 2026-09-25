@@ -76,7 +76,6 @@ func _on_card_gui_input(event: InputEvent, data: CardData, control: ControlCard)
 func stick_to(data: CardData) -> void:
 	sticky = data
 	_publish_highlight(data)
-	sticky_changed.emit(true)
 
 ## Lets the stuck card go, so the highlight describes whatever it is on again.
 func unstick() -> void:
@@ -113,10 +112,12 @@ func modal_verdict(event: InputEvent) -> Modal:
 	return Modal.PASS
 
 # Remembered rather than only relayed: a list that has been re-sized owes the description it
-# published the same card again, drawn at the size this list now draws it at.
+# published the same card again. Only the stuck entry carries the X, so the stuck card's fresh
+# description is re-stuck rather than shown as a highlight over its own lock.
 func _publish_highlight(data: CardData) -> void:
 	_highlighted = data
 	_on_inspect.call(data)
+	if data == sticky: sticky_changed.emit(true)
 
 # HOW A KEY OR PAD PLAYER ENTERS A LIST THAT OPENED WITH NOTHING FOCUSED. Answers whether it took
 # the press, so the caller knows whether the screen beneath may still have it.

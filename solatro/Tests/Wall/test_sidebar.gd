@@ -215,6 +215,8 @@ func _ready() -> void:
 	await test_a_click_locked_card_keeps_its_description_until_it_is_placed()
 	await test_a_following_card_leaving_its_cell_reverts_to_the_hud()
 	await test_a_lifted_card_that_is_not_following_keeps_the_description()
+	await test_only_the_stuck_entry_carries_the_x_while_a_card_is_lifted()
+	await test_only_the_stuck_viewer_card_carries_the_x()
 	test_the_choice_viewer_owns_no_inspector_panel()
 	behavior_section("S15: NOTHING IS HELD UNTIL THE PLAYER ACTS")
 	await test_a_fresh_show_holds_nothing_and_shows_the_hud()
@@ -3113,7 +3115,7 @@ func test_leaving_everything_returns_to_the_locked_card() -> void:
 					"...so leaving everything CLOSES an unstuck description (R, overturns B4)")
 	await _end_main_fixture()
 
-## Viewer-path answer (2) on the BOARD: a click sticks and shows the X, other cards borrow the sidebar only while hovered, and the stuck one is back once the pointer is on nothing -- or on the sidebar itself.
+## Viewer-path answer (2) on the BOARD: a click sticks and shows the X, other cards borrow the sidebar without the X only while hovered, and the stuck one is back once the pointer is on nothing -- or on the sidebar itself.
 func test_a_stuck_card_survives_hovers_and_the_pointer_reaching_the_sidebar() -> void:
 	await _start_game_fixture()
 	var title : Label = _panel.get_node(^"%Title")
@@ -3131,12 +3133,13 @@ func test_a_stuck_card_survives_hovers_and_the_pointer_reaching_the_sidebar() ->
 					"hovering another card borrows the sidebar while it lasts", title.text)
 			check(_container.is_locked() and _play_area.locked_data == stuck,
 					"...without unsticking the clicked one")
-			check(_exit_button().is_visible_in_tree(), "...and the X stays up through the hover")
+			check(not _exit_button().is_visible_in_tree(),
+					"...with no X: the borrowed description is not the stuck one")
 			_hover(_bare_board_point(controls))
 			await get_tree().process_frame
 			await get_tree().process_frame
-			check(title.text == _expected_text(stuck)[0],
-					"...and the stuck card is back once no card is hovered", title.text)
+			check(title.text == _expected_text(stuck)[0] and _exit_button().is_visible_in_tree(),
+					"...and the stuck card is back, with its X, once no card is hovered", title.text)
 
 		var borrowed := await _hover_another_card(controls, _play_area.data_ui[stuck])
 		check(borrowed != null, "the pointer can borrow the sidebar a second time")
@@ -6184,6 +6187,82 @@ func test_a_lifted_card_that_is_not_following_keeps_the_description() -> void:
 				"a card that was NOT following dismisses nothing when the pointer leaves (1.8)",
 				str(dismissals.size()))
 		check(not visual.following, "...and that motion started no following either")
+	await _end_main_fixture()
+
+## Round 2 review: with a card lifted, the focus moved off it describes its new cell with NO X; the X comes back with the lifted card's own description.
+func test_only_the_stuck_entry_carries_the_x_while_a_card_is_lifted() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to lift",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lift_by_click(entrance[0])
+		var title : Label = _panel.get_node(^"%Title")
+		var lifted_title := title.text
+		check(_container.is_locked() and _exit_button().visible,
+				"sanity: the click lifted and stuck the card, X shown")
+		await _push_arrow(_game_viewport, KEY_UP)
+		var elsewhere := _game_viewport.gui_get_focus_owner()
+		print("P59 MEASURE after Up: focus=%s title=%s locked=%s x=%s held=%d"
+				% [elsewhere, title.text, _container.is_locked(), _exit_button().visible,
+						_play_area.selected_cards.size()])
+		check(elsewhere != entrance[0] and _container.showing_description()
+				and _panel.current_entry != _container._locked_entry_by_screen[&"game"],
+				"Up moved the focus off the lifted card and the sidebar describes the new cell",
+				title.text)
+		check(not _exit_button().visible and _exit_button().focus_mode == Control.FOCUS_NONE,
+				"...with no X, and no X in the focus chain: the stuck card is not what is shown",
+				str(_exit_button().visible))
+		entrance[0].grab_focus()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(title.text == lifted_title and _exit_button().visible,
+				"the focus back on the lifted card shows its description and the X again",
+				"%s x=%s" % [title.text, _exit_button().visible])
+		await _push_arrow(_game_viewport, KEY_UP)
+		_play_area.sidebar_requested.emit()
+		await get_tree().process_frame
+		check(_booted_viewport.gui_get_focus_owner() == _exit_button() and title.text == lifted_title,
+				"a key into the sidebar from another cell brings the stuck entry back and lands on its X",
+				"%s %s" % [_booted_viewport.gui_get_focus_owner(), title.text])
+		_hover(_another_card_control(await _hoverable_card_controls(),
+				_play_area.ui_data[entrance[0]]).get_global_rect().get_center())
+		await get_tree().process_frame
+		print("P59 MEASURE hover while X focused: x=%s overlay_focus=%s title=%s"
+				% [_exit_button().visible, _booted_viewport.gui_get_focus_owner(), title.text])
+		check(_exit_button().visible or _booted_viewport.gui_get_focus_owner() != _exit_button(),
+				"a hover that hides the X leaves no focus stranded on it",
+				str(_booted_viewport.gui_get_focus_owner()))
+		_hover(_off_the_board_point())
+		await get_tree().process_frame
+		await _push_arrow(_game_viewport, KEY_UP)
+		_push_key(_game_viewport, KEY_ESCAPE, true)
+		_push_key(_game_viewport, KEY_ESCAPE, false)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(_play_area.selected_cards.is_empty(),
+				"with the X hidden a key cancel still puts the lifted card down",
+				str(_play_area.selected_cards.size()))
+	await _end_main_fixture()
+
+## Round 2 review: a stuck viewer card gives the X up while another viewer card is focused, and takes it back with its own description.
+func test_only_the_stuck_viewer_card_carries_the_x() -> void:
+	await _start_game_fixture()
+	_container.show_hud()
+	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+	check(cards.size() >= 2, "the deck viewer lists cards to point at", str(cards.size()))
+	if cards.size() >= 2:
+		await _click(cards[0].get_global_rect().get_center(), _game_viewport)
+		check(_container.is_locked() and _exit_button().visible,
+				"sanity: the click stuck the first card, X shown")
+		cards[1].grab_focus()
+		await get_tree().process_frame
+		check(_container.is_locked() and not _exit_button().visible,
+				"another viewer card focused is described with no X", str(_exit_button().visible))
+		cards[0].grab_focus()
+		await get_tree().process_frame
+		check(_exit_button().visible, "back on the stuck card, the X is back",
+				str(_exit_button().visible))
 	await _end_main_fixture()
 
 # ------------------------------------------------ S15: NOTHING IS HELD UNTIL THE PLAYER ACTS

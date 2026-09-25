@@ -329,12 +329,13 @@ func _forget_hosted_viewer(viewer: Node) -> void:
 static func _hosts(hosted: _HostedViewer, viewer: Node) -> bool:
 	return hosted.viewer == viewer
 
-# THE X PROMISES THE DESCRIPTION WILL STAY: a highlight nothing has clicked will not, wherever it
-# was published, so it carries no X until a click locks it.
+# THE X PROMISES THE DESCRIPTION WILL STAY: a highlight nothing has clicked will not, and neither
+# will one shown over a lock, which gives way to the stuck entry -- only that entry carries the X.
 func _refresh_exit_button() -> void:
-	_join_focus_while_shown(_exit_button,
-			showing_description()
-			and (is_locked() or not _description_panel.current_entry.transient))
+	var shown : InfoEntry = _description_panel.current_entry
+	var lock : InfoEntry = _locked_entry_by_screen.get(_active_screen)
+	_join_focus_while_shown(_exit_button, showing_description()
+			and (shown == lock if lock else not shown.transient))
 
 # A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD, re-fitted after its screen's own inset. It republishes
 # only while a description is UP, redrawing the preview at its own card size: a dismissal is the
@@ -663,11 +664,11 @@ func _enters_the_hosted_viewer(event: InputEvent) -> bool:
 			return (hosted.viewer.call(&"cards") as CardsViewer).focus_first()
 	return false
 
-# A DESCRIPTION NOTHING STUCK IS ALREADY ON ITS WAY OUT, the focus having left the card it
-# describes, so the HUD is brought back first and its own controls are what the press lands on.
+# A HIGHLIGHT IS ALREADY ON ITS WAY OUT, the focus having left the card it describes, so the stuck
+# entry and its X come back first -- or, with nothing stuck, the HUD whose controls the press lands on.
 ## The sidebar takes the focus: the X while a stuck description holds the panel, else the HUD's first control.
 func focus_sidebar() -> void:
-	if showing_description() and not is_locked(): highlight_gone()
+	if showing_description(): highlight_gone()
 	var target := _exit_button if showing_description() else _hud_stack.find_next_valid_focus()
 # ⚠ THE ONE PRODUCER OF AN OFF-SCREEN TARGET is the board asking while a viewer is hosted, which
 # hides the HUD stack the search just walked. The board should not be asking at all from under a

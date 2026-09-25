@@ -3644,8 +3644,13 @@ func _publish_focus_left_cards() -> void:
 	if not is_inside_tree(): return
 	if not ui_data.has(get_viewport().gui_get_focus_owner()): highlight_cleared.emit()
 
-# THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike.
+# THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike. The
+# locked card is already described by its lock, and only that entry carries the X, so a highlight
+# landing back on it hands the sidebar back to the lock instead of publishing a copy.
 func _publish_info(data: CardData) -> void:
+	if data == locked_data:
+		highlight_cleared.emit()
+		return
 	highlight_info(data,
 			CardVisual.preview_window_px(picture_to_window_scale)).relay_to(info_requested)
 
