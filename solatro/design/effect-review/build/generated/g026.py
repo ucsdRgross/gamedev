@@ -366,7 +366,7 @@ ROWS = [
  "a"),
 
 ("BM0163", "The Production Line", "AA8", "skill",
- "Raw, refined, consumed.",
+ "Raw, refined, consumed. Its tokens are ghosts: they leave the deck when the show ends.",
  "Three cards form a chain: when the first scores it makes a token; a token reaching the second is converted; the third consumes converted tokens for points",
  "Two cards form a chain: when the first scores it makes a token, and the second consumes tokens for points",
  "Three cards form a chain along a row, and the chain pays only when all three score in the same refill",

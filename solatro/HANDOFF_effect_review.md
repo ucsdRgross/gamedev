@@ -301,7 +301,7 @@ names are sort keys, and the owner will rename against the final set.
 Owner rulings on the whole-game questions are in `build/GAME_BRIEF.md`: a bonus with no line goes
 to special; a fake is a ghost card, which leaves the deck when its show ends; a token is any card,
 and the effect decides whether a card it creates stays; a step is flat points, tuned per effect.
-23 live token effects do not yet say whether their token stays.
+Every effect that creates a card now says whether it stays or is a ghost, in its description.
 
 ## The S13 TODO list
 

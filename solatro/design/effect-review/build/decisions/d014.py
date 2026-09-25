@@ -204,7 +204,7 @@ KEEPS = [
  "As (a), but the hits are counted anywhere on the grid, not in the line",
  "As (a), and the requirement resets each show",
  "a"),
-("E1918","P4","skill","Purges everything but one class.",
+("E1918","P4","skill","Purges everything but one class. The tokens it creates stay in the deck, in place of what it destroyed.",
  "When placed, destroys every other card on the board not of a named class, creating a token for each destroyed",
  "When placed, destroys every other card on the board not of a named class, with no compensation",
  "When placed, destroys every other card on the board not of the class you own most of, creating a token for each",

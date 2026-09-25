@@ -28,7 +28,7 @@ ROWS = [
  "As (a), and the discarded card goes to the bottom of its stock instead of the discard pile",
  "a"),
 
-("G0136","The Witch's Gold","G11","skill","Tokens that pay out by detonating. (line 901)",
+("G0136","The Witch's Gold","G11","skill","Tokens that pay out by detonating. A token that never explodes is a ghost",
  "Spawns gold tokens that explode at the end of the placement, paying its rank into the special bucket and destroying whatever cell they sat in",
  "Spawns gold tokens that explode at the end of the placement, paying its rank into the special bucket and damaging their neighbours",
  "Spawns gold tokens that explode when a placement finishes resolving unless you have placed them first, so holding them in the Entrance is the gamble",

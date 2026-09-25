@@ -146,7 +146,7 @@ KEEPS = [
  "As (a), for one adjacent card per Entrance refill",
  "Every card in this card's line goes from flat to mult only",
  "a"),
-("E1782","G11","skill","Fills a basket over the tour.",
+("E1782","G11","skill","Fills a basket over the tour. The basket keeps its tokens between shows; a released token is a ghost.",
  "Accumulates tokens as shows are beaten, more for bosses; cue to release them all",
  "Accumulates tokens as shows are beaten and releases one per show automatically",
  "Accumulates tokens as shows are beaten, and the basket's contents upgrade the longer they sit",

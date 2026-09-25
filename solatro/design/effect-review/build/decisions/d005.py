@@ -45,7 +45,7 @@ KEEPS = [
  "Each suit acts as an element, and any line with three or more elements casts a random spell",
  "Each suit acts as an element, and this card lets you choose which spell each combination casts",
  "a"),
-("E0642","P2","skill","A leader who prints cards.",
+("E0642","P2","skill","A leader who prints cards. The cards it prints stay in the deck.",
  "Leader: produces one token card per show",
  "Leader: produces one token card per Entrance refill, whose suit you choose",
  "Leader: produces a token card whenever a line scores with no token in it",

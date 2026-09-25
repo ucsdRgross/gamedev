@@ -88,7 +88,7 @@ ROWS = [
  'The Human Pyramid',
  'AD3',
  'skill',
- 'A hit builds upward.',
+ 'A hit builds upward. Its tokens are ghosts: they leave the deck when the show ends.',
  "When a card hits its mark, a rank-1 token of the mark's suit is stacked on it; a token spawns no token",
  "As (a), only when the matched card's row or column is already complete, so pyramids rise on scored lines",
  'As (a), and a stack that reaches five pays into the special bucket twice',

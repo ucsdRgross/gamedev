@@ -92,7 +92,7 @@ ROWS = [
 ('Q0520', 'E1994', 'OK', ('It survives the first time it fires', 'It may also fire by cue', 'It survives the first time it fires'), ''),
 ('Q0521', 'E0187', 'OK', ('The tokens take the suit of each mark they drift over', 'The tokens take the rank and suit printed on the marks of the cells they are placed in', 'The tokens take the suit of each mark they drift over'), ''),
 ('Q0522', 'E0190', 'WEAK', 'A line through its cell mints two stubs', 'it mints Ticket Stubs, whose only value was trade at a shop'),
-('Q0523', 'E0202', 'OK', ('The token carries the rank and suit of any uncovered mark you name', 'The token takes the rank and suit printed on the mark of the cell it goes onto', 'The token takes the rank and suit printed on the mark of the cell it goes onto'), ''),
+('Q0523', 'E0202', 'REWORK', ('The token carries the rank and suit of any uncovered mark you name', 'The token takes the rank and suit printed on the mark of the cell it goes onto', 'The token takes the rank and suit printed on the mark of the cell it goes onto'), 'a turn is not a unit the board has'),
 ('Q0524', 'G0136', 'REWORK', 'An exploding token also pays for each uncovered mark adjacent to it', "'paying out' named no number and no bucket"),
 ('Q0525', 'E0362', 'DUP', None, 'no shop'),
 ]

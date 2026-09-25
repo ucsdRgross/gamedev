@@ -73,7 +73,7 @@ ROWS = [
 ('Q0655', 'E0003', 'OK', ('It ignores every hazard', 'It ignores every hazard', 'Whatever its height'), ''),
 ('Q0656', 'E0018', 'OK', None, ''),
 ('Q0657', 'E0033', 'OK', None, ''),
-('Q0658', 'E0090', 'OK', 'A hit it prevents mints two rank-1 token cards', "absorbs Q0659 (Lloyd's Policy)"),
+('Q0658', 'E0090', 'OK', 'A hit it prevents mints two rank-1 token cards, which are ghosts', "absorbs Q0659 (Lloyd's Policy)"),
 ('Q0659', 'E0104', 'TWIN', None, 'Q0658'),
 ('Q0660', 'E0113', 'OK', ('Twice per show', 'Twice per show', "Every card in the target's lines sheds them too"), ''),
 ('Q0661', 'E1971', 'DUP', None, 'Q0663'),

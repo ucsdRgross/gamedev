@@ -95,7 +95,7 @@ E0093	catalog	CARD_CATALOG	Juggletown's Snub		Uncommon	hazard;prop;status	Town h
 E0094	catalog	CARD_CATALOG	Jumbo		Epic	skill;Animal Trainer;formation;movement	Heavy: no cards may be placed on this card, but it can be placed on anything; scores bonus points per card beneath it when scored.		designdocs	1
 E0095	catalog	CARD_CATALOG	Karagöz & Hacivat		Rare	skill;Dancer;formation;spotlight	Bound pair: each gains bonus multiplier while they are in opposite zones (one in the Entrance, one on the board).			0
 E0096	catalog	CARD_CATALOG	Kayfabe		Epic	rule;secret;gamble	While in play, all Gaff/Humbug/fake cards count as real and score as what they pretend to be; removing this card reverts that.			0
-E0097	catalog	CARD_CATALOG	Klyaksa		Common	skill;Animal Trainer;Clown;token	Comes with a free rank-1 token card that shuffles into the deck and follows this card's column when drawn.			0
+E0097	catalog	CARD_CATALOG	Klyaksa		Common	skill;Animal Trainer;Clown;token	Comes with a free rank-1 token card that shuffles into the deck and follows this card's column when drawn. The token it comes with stays in the deck; tokens it mints are ghosts.			0
 E0098	catalog	CARD_CATALOG	Knifetown's Snub		Uncommon	hazard;prop	Town hazard: Knives-suit effects score nothing here.			0
 E0099	catalog	CARD_CATALOG	Knives		Common	suit;prop;economy	Knife props launch from the opposite row edge and score plain non-skill prop cards they pass; the spawner also scores itself.	Added	braindump	1
 E0100	catalog	CARD_CATALOG	Kuroko		Rare	stamp;spotlight;protection	This card does not block Spotlight beneath it and cannot be targeted by boss or town effects.			0
@@ -259,7 +259,7 @@ E0257	catalog	CARD_CATALOG	The Hook		Uncommon	hazard;discard	Town hazard: after 
 E0258	catalog	CARD_CATALOG	The Hunger Artist		Rare	skill;Escape Artist;persistence;gamble	Gains bonus points for every consecutive show it stays in the deck unplayed; when finally played and scored, pays it all at once and resets to zero.			0
 E0259	catalog	CARD_CATALOG	The Illustrated		Rare	stamp;Costume Designer;collection	This card may hold unlimited stamps, but can never hold a skill.			0
 E0260	catalog	CARD_CATALOG	The Imitator		Rare	skill;Magician;gamble;secret	Choose a deck card at acquisition: this card scores 150% of that card's base points, but only while the original is not on the board.			0
-E0261	catalog	CARD_CATALOG	The Impresario		Common	pip;Producer;economy	Kings are renamed and count as Producer-class cards.	Vetoed (reference can be recycled)		0
+E0261	catalog	CARD_CATALOG	The Impresario		Common	pip;Producer;economy	Kings are renamed and count as Producer-class cards. The tokens Kings mint are ghosts.	Vetoed (reference can be recycled)		0
 E0262	catalog	CARD_CATALOG	The Incubator		Rare	skill;Concessions;status;protection;growth	Each turn a card is covered by this card, it removes one debuff and restores 1 lost rank from that card.			0
 E0263	catalog	CARD_CATALOG	The Invisible Wall		Uncommon	skill;Escape Artist;protection;movement	Cue: block one empty column so no card may enter or leave it for one turn, hazards included.			0
 E0264	catalog	CARD_CATALOG	The Joey		Common	pip;Clown	Jacks are renamed and count as Clown-class cards for group effects.	Vetoed (rank that is always 11 is boring, joey should be a clown token with actual effect)		0
