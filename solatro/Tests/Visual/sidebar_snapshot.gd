@@ -111,6 +111,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	_capture(MAP_HUD_OUT_PATH)
+	_report_the_map(main.map_scene.controller, "map_hud")
 
 	_hover_a_pack_node(main.map_scene)
 	await get_tree().process_frame
@@ -118,10 +119,13 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	_capture(MAP_POPUP_OUT_PATH)
 
+	var token_node := main.map_scene.controller._current
 	await _describe_a_card_on_the_map(main)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(MAP_CARD_DESCRIPTION_OUT_PATH)
+	_report_the_map(main.map_scene.controller, "map_card_description")
+	_stand_the_token_on(main.map_scene.controller, token_node)
 	print("SIDEBAR_SNAPSHOT map_card_description buttons_visible=%s"
 			% main.map_scene.selection_buttons.visible)
 	if is_instance_valid(DeckViewer._open): DeckViewer._open.free()
@@ -136,6 +140,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	_capture(MAP_HUD_TOP_OUT_PATH)
+	_report_the_map(main.map_scene.controller, "map_hud_top")
 	DisplayServer.window_set_size(window_size)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -288,7 +293,7 @@ func _ready() -> void:
 	_capture(OUTCOME_BUTTONS_OUT_PATH)
 	_report_the_outcome_buttons(main, view)
 
-# LAST: the walk moves the token and its arrival rolls a pack, which no earlier still may inherit.
+# LAST: the walk moves the token and its arrival opens a pack or a show, which no earlier still may inherit.
 	await main._focus_picture(&"map")
 	await _await_the_camera_still(main.wall.get_node(^"%Camera2D") as Camera2D)
 	await _shoot_the_zoomed_map(main)
@@ -700,13 +705,36 @@ func _make_the_node_reachable(controller: WorldMapController, node: WorldGraphNo
 	if node in controller.next_nodes_of(controller._current): return
 	for n : WorldGraphNode in controller.map.overlay().nodes():
 		if node in controller.next_nodes_of(n):
-			controller._current = n
-			controller.refresh_visuals()
+			_stand_the_token_on(controller, n)
 			return
 
-## The generated map's first talent-pack node, whose pick opens a viewer of its possible cards.
+# The map draws its edges from the node the token stands on, so the two move together.
+func _stand_the_token_on(controller: WorldMapController, n: WorldGraphNode) -> void:
+	controller._current = n
+	controller.token.position = n.position
+	controller.refresh_visuals()
+
+# A still of the map is one a player can reach only if the edges are drawn from the node the token
+# stands on, so both are printed with the count of edges shown.
+func _report_the_map(controller: WorldMapController, shot: String) -> void:
+	var token_node := -1
+	var edges := 0
+	var packs_next := 0
+	for n : WorldGraphNode in controller.map.overlay().nodes():
+		if n.position == controller.token.position: token_node = n.id
+		for e : Dictionary in n.outgoing:
+			var line := n.edge_line(controller.map.overlay().node(e["to"] as int))
+			if line and line.visible: edges += 1
+	for n : WorldGraphNode in controller.next_nodes_of(controller._current):
+		if n.meta.get(MapNodeRoles.ROLE_KEY, "") == MapNodeRoles.ROLE_BOOSTER: packs_next += 1
+	print("SIDEBAR_SNAPSHOT map_state %s current=%d token_node=%d visible_edges=%d packs_next=%d"
+			% [shot, controller._current.id, token_node, edges, packs_next])
+
+## A talent-pack node, whose pick opens a viewer of its possible cards: one step from the token when the seed put one there.
 func _the_pack_node(map: Map) -> WorldGraphNode:
-	for node : WorldGraphNode in map.controller.map.overlay().nodes():
+	var packs := map.controller.next_nodes_of(map.controller._current)
+	packs.append_array(map.controller.map.overlay().nodes())
+	for node : WorldGraphNode in packs:
 		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == MapNodeRoles.ROLE_BOOSTER: return node
 	return null
 
@@ -802,6 +830,7 @@ func _shoot_the_zoomed_map(main: Main) -> void:
 	await _drag_the_map(main, middle - Vector2(map_viewport.size.x, 0.0))
 	await RenderingServer.frame_post_draw
 	_capture(MAP_ZOOMED_EDGE_OUT_PATH)
+	_report_the_map(controller, "map_zoomed_edge")
 	assert(controller.camera.zoom.x > fit, "the wheel zoomed the map in")
 	var bounds := controller._framed_map()
 	var half := controller._space / (2.0 * controller.camera.zoom.x)
@@ -819,7 +848,8 @@ func _shoot_the_map_after_travel(main: Main) -> void:
 	var zoomed := controller.camera.zoom.x
 	map._show_only_the_deck_button(false)
 	var node := _the_pack_node(map)
-	assert(node in controller.next_nodes_of(controller._current), "the pack is one step from the token")
+	if node not in controller.next_nodes_of(controller._current):
+		node = controller.next_nodes_of(controller._current)[0]
 # The map is generated afresh every run, so the zoomed view may not hold the pack's dot: a real
 # drag carries it toward the middle of the space beside the sidebar, clamped as a player's pan is.
 	var middle := _middle_beside_the_sidebar(main)
@@ -841,11 +871,12 @@ func _shoot_the_map_after_travel(main: Main) -> void:
 	_push_click(get_viewport(), travel, false)
 	await RenderingServer.frame_post_draw
 	_capture(MAP_AFTER_TRAVEL_OUT_PATH)
+	_report_the_map(controller, "map_after_travel")
 	print("SIDEBAR_SNAPSHOT map_after_travel zoom_before=%.4f zoom_after=%.4f moving=%s token=%s"
 			% [zoomed, controller.camera.zoom.x, controller._moving, controller.token.position])
-	await map.chooser_changed
+	await controller.node_entered
 	await get_tree().process_frame
-	map._chooser.free()
+	if map.chooser_is_up(): map._chooser.free()
 	await get_tree().process_frame
 
 func _middle_beside_the_sidebar(main: Main) -> Vector2:

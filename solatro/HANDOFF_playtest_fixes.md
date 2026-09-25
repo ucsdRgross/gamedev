@@ -2,8 +2,8 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P57, P59, P60 done (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P60): `ALL 51 SUITES: 7224 CHECKS PASSED`,
+**State:** P1-P57, P59-P61 done (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P61): `ALL 51 SUITES: 7201 CHECKS PASSED`,
 21 placeholder warnings, 24 resources + 1150 ObjectDB.
 Pending: the round-2 review steps P59-P64 and their review round, the square-card task (P58a-d), then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
@@ -606,8 +606,8 @@ a lot of these issues are with lack of parity between different modal input opti
   files_touched: [solatro/Tests/Visual/sidebar_snapshot.gd]
   verification_command: 'the shot scene; by eye (edges present on the zoomed island)'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'The world seed is random per run; a pack sits one step from the start in about a third of runs. The pack pick now uses a pack one step from the token when there is one, else stages the token (position and _current) on the node before the pack and restores both, edges redrawn, right after the map_card_description capture; the travel shot picks from the real current node and awaits node_entered (the old chooser_changed await hung when the token landed on a game node - the likely cause of a 400 s no-exit). map_state prints at every capture: current == token node, 135 visible edges at map_hud / map_hud_top / map_zoomed_edge. Scene exit 0 in 40.1 s. By eye (implementer): full edge networks on every island in map_zoomed_edge and map_after_travel. Fable review: 2 latent (the staged pick stays selected until the next step clears it; the travel await is unbounded if the pick click misses - review.py''s hard timeout makes it loud). Gate: ALL 51 SUITES: 7201 CHECKS PASSED.'
   notes: 'Recon: world_map_controller.gd refresh_visuals hides an untravelled edge whose source is not reachable from _current (by design); the shot scene sets _current at ~703 and only move_to/lap/populate refresh again. Stage the pack by real play or restore _current and refresh before the later map shots.'
 - id: P62
   description: While a card is held, an occupied grid cell whose mark is a legal drop shifts its top card slightly to reveal the mark beneath (with its legal glow); otherwise focus selects the card on top (twenty-second round context; visual review round 2, grid3_overview).
@@ -757,7 +757,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
-1. The round-2 review steps, one at a time, each gated: P61 (the map shots' fake current node), P62 (reveal the legal mark under a held card), P63a (the button row at the top, Close <viewer>), P63b (the viewer X tab), P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
+1. The round-2 review steps, one at a time, each gated: P62 (reveal the legal mark under a held card), P63a (the button row at the top, Close <viewer>), P63b (the viewer X tab), P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
 2. The square-card task, in order: P58a (merge main), P58b (one card size; the hardcoded-literal audit, by subsystem), P58c (the four tool bugs), P58d (its visual review round).
 3. The close per /plan-run (the plan-auditor writes AUDIT.md), then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list; the intermittents are the close's input), and the owner merges the branch.
 
