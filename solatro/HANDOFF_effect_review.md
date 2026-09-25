@@ -298,8 +298,9 @@ Q1494, and a Fable review of that pass is applied.
 Shared effect names (nineteen pairs, e.g. The Dead End Q1397/Q1477) wait until the effects are final:
 names are sort keys, and the owner will rename against the final set.
 
-Open for the owner, in the round's header: what "a step" is; where a bonus with no line pays; what
-a "fake" card is (the proposal: a card carrying The Gaff, Q0875); what a token is.
+Owner rulings on the whole-game questions are in `build/GAME_BRIEF.md` (a bonus with no line goes
+to special; a fake is a ghost card; a token is any card). Still open, in the round's header: what "a
+step" is; the recommendation is a fixed flat amount, one tunable value about a Pair's worth.
 
 ## The S13 TODO list
 

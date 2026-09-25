@@ -37,7 +37,7 @@ ROWS = [
 ('Q0804', 'G0320', 'WEAK', 'Lines through its cell pay triple past the goal', 'the show ends the moment its goal is met, so nothing scores after it'),
 ('Q0805', 'E1406', 'WEAK', "Tricks attempted from its lines fail at the lower tier's rate", 'it does not say what a trick is'),
 ('Q0806', 'E0185', 'REWORK', 'Its destruction chance halves', 'a scored card is always spotlit'),
-('Q0807', 'E0848', 'WEAK', 'Landing on its own mark is the test, and it passes', 'it does not say what scrutiny is; you rejected inspection-by-looking at Q0076'),
+('Q0807', 'E0848', 'REWORK', 'The ghost may copy any card on the grid, stamps and skill included', 'a fake is a ghost card (owner): the test is whether it earns its place'),
 ('Q0808', 'E0939', 'WEAK', None, 'a duel needs an opponent, and a solitaire has none'),
 ('Q0809', 'E1213', 'WEAK', 'A winning wager on a refill whose cards landed on matched cells pays double', 'it does not say what is staked; (c) sold the Entrance, and there is no currency'),
 ('Q0810', 'E0660', 'WEAK', ('Twice per tour', 'Twice per tour', 'The reward does not fall'), 'depends on Q0811 (The Booking) entering'),

@@ -176,7 +176,8 @@ not the default.
   show" never fires.
 - "**Turn**" is not a unit: write placement or Entrance refill. The player has no discard or
   destroy action; an effect that waits on one waits on another effect.
-- A payout outside a line names its bucket; under the product rule the bucket is the value.
+- A payout outside a line names its bucket; under the product rule the bucket is the value. With
+  no bucket named, it goes to special (owner, below).
 - Rarity is declared but carried by nothing yet, and suits have no colour: an effect keyed on
   either does nothing today.
 
@@ -229,6 +230,12 @@ equipment), Producer (token and money cards).
 - **Overscore is retired.** Punishing overperformance breeds sandbagging. An effect that raises
   future goals because you scored well is against a ruling, not merely unbalanced. Scale
   REWARDS, never goals. (A goal that rises with something else - gold held, time taken - is fine.)
+- **A bonus with no line goes to the special bucket** (owner: "bonus with no line goes to the
+  special score bucket").
+- **A fake card is a ghost card** (owner: "a fake card or ghost card is a card that does not stay in
+  deck when game ends"). There is no hidden-fake system to find or expose.
+- **A token is any card** (owner: "presumably you can choose or treat any card as a token"): an
+  effect that makes a token names the card, or you choose it.
 - **Fame is not spendable** (owner). Fame is earned and can be lost as a penalty, but nothing
   buys anything with it; a cost that was paid in fame is a skipped reward.
 

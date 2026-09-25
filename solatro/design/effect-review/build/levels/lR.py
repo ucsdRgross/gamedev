@@ -7,7 +7,7 @@ ROWS = [
 ('Q1083', 'E0164', 'REWORK', None, 'every option doubled shop prices, and there is no shop'),
 ('Q1084', 'E0280', 'OK', None, ''),
 ('Q1085', 'E1704', 'OK', None, ''),
-('Q1086', 'E0301', 'WEAK', None, '(b) paid gold, and there is no currency'),
+('Q1086', 'E0301', 'WEAK', None, "you defined a fake as a ghost card, one that does not stay in the deck when the game ends; this effect's premise, a hidden fake to find, is not that"),
 ('Q1087', 'E1724', 'REWORK', None, 'the player has no discard or destroy action, so the boss never lifted'),
 ('Q1088', 'G0241', 'OK', None, ''),
 ('Q1089', 'E1407', 'WEAK', ('While it sits on its own mark, robbers skip cards sitting on marks they match', 'While it sits on its own mark, robbers skip cards sitting on marks they match', 'A robber caught in its lines drops what it stole into the Entrance'), "'turns', 'steal' and 'catching' were undefined"),

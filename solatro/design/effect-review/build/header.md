@@ -58,20 +58,13 @@ rewarding.
 - **Family AD is new — 29 effects the pair reviewer proposed** while improving the others, each
   filling a gap it found: new scoring shapes and bucket play, the five stocks and the slot above
   each column as places that pay, cues and bets on marks, and a card that stays on stage.
-- ⚠ **Four questions are not in the list**, because each is a rule for the whole game that many
-  effects lean on:
-  1. **What is "a step"?** Thirty-one effects pay "an extra step" and nothing defines it. The two
-     readings: the line pays as the next hand type up the ladder, or +50% of the line's hand score
-     (the engine's one copy-escalation step).
-  2. **Where does a bonus with no line pay?** A bonus fired by a line pays into that line's bucket;
-     one fired by a cue, a show's end or a wager names no bucket. The recommendation: the bucket of
-     your choice, chosen when it pays.
-  3. **What is a "fake" card?** Family M's fake and inspection effects assume a system the game does
-     not have. The one defined fake is The Gaff (Q0875), a rank that shows one value and holds
-     another; making "a fake" mean "a card carrying the Gaff" would make four of them work and let
-     the rest retire.
-  4. **What is a token?** Many effects mint "a rank-1 token". The suggestion: a rank-1 card of no
-     suit that counts as matching any suit mark it is placed on, discarded at show end.
+- **Your rulings on the whole-game questions:** a bonus with no line goes to the special bucket; a
+  fake card is a ghost card, one that does not stay in the deck when the game ends (Kayfabe and The
+  Committee are rewritten around it, and six effects that assumed a hidden fake to find are
+  flagged); a token is any card, named by the effect or chosen by you.
+- ⚠ **One is still open: what is "a step"?** Thirty-one effects pay one. The recommendation is a
+  fixed number of flat points, one tunable value about the size of a Pair, paid into the line's
+  bucket, or into special when there is no line.
 
 **Reading the older effects.** They were mined against a board that is gone and re-expressed on this
 one; the rows use this vocabulary:
