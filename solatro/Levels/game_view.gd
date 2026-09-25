@@ -215,10 +215,7 @@ func _refresh_hud() -> void:
 #The show's score is DERIVED, every grid's total times the combo, and always current: there is no
 #act payout and no banking moment, so there is no stored total to show.
 	total_label.text = str(state.live_total())
-	var combo := state.combo_mult()
-	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
-#Hidden at x1.0 (owner ruling).
-	combo_label.visible = combo > 1.0
+	combo_label.text = TRANSLATION.find('GAME_SCORE_LINE') % [state.board_total(), state.combo_mult()]
 	_mark_goal_met(state.has_met_goal())
 
 # The Goal reads as reached the instant the running total passes it, which is one beat before the

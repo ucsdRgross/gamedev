@@ -2,8 +2,8 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P57 and P59 done (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P59): `ALL 51 SUITES: 7186 CHECKS PASSED`,
+**State:** P1-P57, P59, P60 done (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P60): `ALL 51 SUITES: 7224 CHECKS PASSED`,
 21 placeholder warnings, 24 resources + 1150 ObjectDB.
 Pending: the round-2 review steps P59-P64 and their review round, the square-card task (P58a-d), then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
@@ -595,12 +595,12 @@ a lot of these issues are with lack of parity between different modal input opti
   notes: 'Owner: "looks fine except for x on the card description which implies card has been clicked on but that shouldnt be possible since an entrance card has also been clicked on?" Second playtest (7): the X exists only on sticky descriptions. Suspected writer HudContainer._refresh_exit_button (reads is_locked(), not whether the shown entry IS the lock). Keyboard cancel stays Escape/right-click/pad; the X returns when the stuck entry is shown again.'
 - id: P60
   description: The game sidebar shows Goal, the current Total (live_total) and board_total x combo, each always (twenty-second round); the Combo label's hide-below-1 goes.
-  files_touched: [solatro/UI/hud_container.tscn, solatro/UI/hud_container.gd, solatro/Levels/game_view.gd, solatro/Locale/localization.csv, solatro/Tests/Wall/test_sidebar.gd]
+  files_touched: [solatro/UI/hud_container.tscn, solatro/Levels/game_view.gd, solatro/Locale/localization.csv, solatro/Locale/localization.en.translation, solatro/Tests/Wall/test_sidebar.gd, solatro/design/poker-patience/DESIGN.md, solatro/design/sidebar/ASSUMPTIONS.md]
   verification_command: 'run_tests.py --filter Sidebar; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
-  notes: 'Owner: "should show, goal, current total, score/chips x combo/mult always. no hiding a label until its past 0". Today: HudContainer GameHud/Numbers holds Goal and Total; game_view.gd ~217-221 writes Total = state.live_total() and shows combo_label only when combo > 1. GameData.board_total() and combo_mult() are the two numbers. Any new player-facing string goes through TRANSLATION.'
+  status: done
+  evidence: 'The Combo label is now the always-shown score line GAME_SCORE_LINE "%d x %.1f" = board_total x combo_mult, written by GameView._refresh_hud (the one writer: state_changed, combo_changed, a new bind), shown by default in hud_container.tscn; GAME_COMBO retired. Red (HEAD): SIDEBAR 1973 passed, 3 FAILED. Green: FILTERED 3 of 51 [Sidebar SettingsRange UiProps]: 2132; --logic 3040. By eye (overseer, sidebar_snapshot game_hud / game_hud_top): Goal: 1, Total: 0, 0 x 1.0 on three lines, no overlap, in the side sidebar and the top band. Fable review: a redundant check (replaced by a bare-key check), two doc lines (Q118 annotated overturned). Gate: ALL 51 SUITES: 7224 CHECKS PASSED. Owner question for round 3: the combo keeps one decimal (x 1.0).'
+  notes: 'Owner: "should show, goal, current total, score/chips x combo/mult always. no hiding a label until its past 0". GameData.board_total() and combo_mult() are the two numbers. Any new player-facing string goes through TRANSLATION.'
 - id: P61
   description: The map shots in sidebar_snapshot.gd stop leaving a fake current node behind - _make_the_node_reachable writes controller._current directly and never restores it, so later map shots draw edges from a node the token is not on (the owner asked about missing edges in map_zoomed_edge).
   files_touched: [solatro/Tests/Visual/sidebar_snapshot.gd]
@@ -757,7 +757,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
-1. The round-2 review steps, one at a time, each gated: P60 (score HUD), P61 (the map shots' fake current node), P62 (reveal the legal mark under a held card), P63a (the button row at the top, Close <viewer>), P63b (the viewer X tab), P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
+1. The round-2 review steps, one at a time, each gated: P61 (the map shots' fake current node), P62 (reveal the legal mark under a held card), P63a (the button row at the top, Close <viewer>), P63b (the viewer X tab), P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
 2. The square-card task, in order: P58a (merge main), P58b (one card size; the hardcoded-literal audit, by subsystem), P58c (the four tool bugs), P58d (its visual review round).
 3. The close per /plan-run (the plan-auditor writes AUDIT.md), then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list; the intermittents are the close's input), and the owner merges the branch.
 

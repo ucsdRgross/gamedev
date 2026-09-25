@@ -40,6 +40,7 @@ func _ready() -> void:
 	await test_overlay_buttons_draw_above_the_hud_container()
 	await test_every_hud_member_is_visible_and_reachable()
 	await test_number_captions_and_values_do_not_overlap()
+	await test_the_hud_always_shows_goal_total_and_the_score_line()
 	await test_game_hud_members_start_below_the_overlay_button_band()
 	await test_pressing_end_reaches_the_live_game_views_handler()
 	await test_a_second_shows_view_receives_the_press_after_the_first_tears_down()
@@ -718,8 +719,6 @@ func test_every_hud_member_is_visible_and_reachable() -> void:
 		check(viewport.gui_get_hovered_control() == control,
 				"%s's rect centre hit-tests to itself" % ctx)
 
-	## Forced visible purely to measure geometry -- Combo's own x1.0 hiding is tested elsewhere.
-	container.combo_label.visible = true
 	var readable : Dictionary = {
 		"Goal": container.goal_label.get_parent() as Control,
 		"Total": container.total_label.get_parent() as Control,
@@ -738,7 +737,6 @@ func test_number_captions_and_values_do_not_overlap() -> void:
 	var viewport : SubViewport = booted[0]
 	var wall : Wall = booted[1]
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
-	container.combo_label.visible = true
 	await get_tree().process_frame
 	var labels : Array[Control] = [
 		container.goal_label.get_parent().get_node(^"Caption") as Control,
@@ -756,6 +754,38 @@ func test_number_captions_and_values_do_not_overlap() -> void:
 					"%s and %s do not overlap" % [labels[i].get_parent().name, labels[j].get_parent().name])
 	await _free_booted_main(viewport, wall)
 
+## Goal, Total and board-total-times-combo are on screen from the first frame, combo 1 included, and track GameData after a scoring placement.
+func test_the_hud_always_shows_goal_total_and_the_score_line() -> void:
+	await _start_game_fixture()
+	var state := CardEnvironment.get_current_game().state
+	state.goal = GOAL_OUT_OF_REACH
+	await _check_the_hud_reads(state, "before any score")
+	for attempt : int in ENTRANCE_REFILL_PLACEMENTS:
+		if state.board_total() > 0.0: break
+		if await _lift_and_place_a_card() == null: break
+	check(state.board_total() > 0.0, "a few placements score on the board",
+			str(state.board_total()))
+	await _check_the_hud_reads(state, "after a scoring placement")
+	await _end_main_fixture()
+
+func _check_the_hud_reads(state: GameData, moment: String) -> void:
+	await get_tree().process_frame
+	var labels : Dictionary[String, Label] = {"Goal": _container.goal_label,
+			"Total": _container.total_label, "Score line": _container.combo_label}
+	for label_name : String in labels:
+		check(labels[label_name].is_visible_in_tree(), "%s: %s is on screen" % [moment, label_name],
+				labels[label_name].text)
+	check(_container.goal_label.text == str(state.goal), "%s: Goal reads the goal" % moment,
+			_container.goal_label.text)
+	check(_container.total_label.text == str(state.live_total()),
+			"%s: Total reads live_total()" % moment, _container.total_label.text)
+	var line := TRANSLATION.find('GAME_SCORE_LINE') % [state.board_total(), state.combo_mult()]
+	check(_container.combo_label.text == line,
+			"%s: the score line reads board_total x combo_mult" % moment,
+			"%s vs %s" % [_container.combo_label.text, line])
+	check(_container.combo_label.text != "GAME_SCORE_LINE",
+			"%s: the score line's key resolves in the locale" % moment, _container.combo_label.text)
+
 # S2d/Q46: the HUD's CONTENT must start below the overlay's Back/Forward/Wall row -- the panel
 # itself may still draw under it (draw order is `test_overlay_buttons_draw_above_the_hud_container`).
 func test_game_hud_members_start_below_the_overlay_button_band() -> void:
@@ -765,7 +795,6 @@ func test_game_hud_members_start_below_the_overlay_button_band() -> void:
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
 	var game_hud : Control = container.get_node(^"%GameHud")
-	container.combo_label.visible = true
 	await get_tree().process_frame
 	var band_bottom := overlay.button_band_bottom()
 	var names : Array[StringName] = []
@@ -786,7 +815,6 @@ func test_game_hud_members_stay_inside_the_container_at_a_side_window() -> void:
 	var wall : Wall = booted[1]
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
 	var game_hud : Control = container.get_node(^"%GameHud")
-	container.combo_label.visible = true
 	await get_tree().process_frame
 	check(game_hud.get_combined_minimum_size().x <= container.size.x,
 			"the HUD's minimum width never exceeds the container",

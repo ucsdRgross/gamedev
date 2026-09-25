@@ -777,7 +777,7 @@
   the wall from boot, so Button's default true left End flagged visible for every frame before a
   GameView existed to write it; `GameView._refresh_end_reveal()` is still the only writer.
   `TestSidebar.test_every_hud_member_is_visible_and_reachable` forces it visible to measure
-  geometry, the way that test already forces the Combo label.
+  geometry.
 - Phase 7 fix 11: the resolved show leaves nothing armed. `GameView._on_show_resolved` calls the
   existing `PlayArea.ungrab_cards()` BEFORE `disable_board_focus()` -- ungrab runs a rebuild whose
   fresh controls are born FOCUS_ALL, so the disable must come last. New test name
