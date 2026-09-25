@@ -205,6 +205,9 @@ func _ready() -> void:
 	await test_deck_from_a_stuck_possible_card_opens_over_the_list()
 	await test_closing_the_possible_cards_with_a_card_stuck_returns_to_the_pick()
 	await test_the_deck_over_the_possible_cards_by_keys_alone()
+	await test_a_click_on_the_viewers_close_tab_closes_it()
+	await test_the_viewers_close_tab_by_keys_or_pad_alone()
+	await test_the_viewers_close_tab_sticks_out_clear_of_the_sidebar_and_its_cards()
 	await test_every_pile_opener_reads_close_while_its_viewer_is_open()
 	await test_a_keyboard_reaches_every_row_button_from_the_x()
 	await test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map()
@@ -5410,6 +5413,7 @@ func test_closing_the_deck_viewer_over_the_chooser_gives_back_its_stuck_card() -
 		var closes : Array[Array] = [
 			["a cancel", _tap_key.bind(KEY_ESCAPE)],
 			["a click outside it", _click.bind(Vector2(_map_viewport.size) - Vector2.ONE, _map_viewport)],
+			["its close tab", _click_the_open_viewers_tab.bind(_map_viewport)],
 		]
 		for close : Array in closes:
 			check(await _click_button(_map.selection_deck_button, _booted_viewport),
@@ -5568,7 +5572,8 @@ func test_a_card_stuck_in_the_possible_cards_carries_only_the_deck_row() -> void
 # reading Close deck, and closing the deck -- by Close deck, a cancel or a click outside it -- finds
 # the list still open with its card still stuck.
 func test_deck_from_a_stuck_possible_card_opens_over_the_list() -> void:
-	for close : String in ["Close deck", "a cancel", "a click outside the deck"] as Array[String]:
+	for close : String in ["Close deck", "a cancel", "a click outside the deck", "the deck's tab"] \
+			as Array[String]:
 		var list := await _stick_a_possible_card()
 		var stuck := list.cards().sticky
 		check(await _click_button(_map.selection_deck_button, _booted_viewport),
@@ -5590,6 +5595,7 @@ func test_deck_from_a_stuck_possible_card_opens_over_the_list() -> void:
 				check(await _click_button(_map.selection_deck_button, _booted_viewport),
 						"a real click pressed Close deck")
 			"a cancel": await _tap_key(KEY_ESCAPE)
+			"the deck's tab": await _click_the_open_viewers_tab(_map_viewport)
 			_: await _click_outside_the_map_viewer()
 		await get_tree().process_frame
 		check(not is_instance_valid(deck) or deck.is_queued_for_deletion(),
@@ -5599,6 +5605,9 @@ func test_deck_from_a_stuck_possible_card_opens_over_the_list() -> void:
 				"...and only the deck: the list is back on top, its card still stuck (%s)" % close,
 				"list=%s open=%s" % [is_instance_valid(list) and not list.is_queued_for_deletion(),
 				DeckViewer._open])
+		check(is_instance_valid(list) and _close_tab_of(list) != null
+				and _close_tab_of(list).is_visible_in_tree(),
+				"...still carrying its own close tab (%s)" % close)
 		check(_container.is_locked() and _previewed_card() == stuck and _exit_button().visible,
 				"...its stuck card described, with its X (%s)" % close,
 				"locked=%s shown=%s x=%s" % [_container.is_locked(), _described_title(),
@@ -5614,12 +5623,13 @@ func test_deck_from_a_stuck_possible_card_opens_over_the_list() -> void:
 # The owner's "Back to the pick": closing the list with one of its cards stuck -- a click outside,
 # a cancel or its X -- comes back to the pack node's description with Travel live.
 func test_closing_the_possible_cards_with_a_card_stuck_returns_to_the_pick() -> void:
-	for close : String in ["a click outside", "a cancel", "its X"] as Array[String]:
+	for close : String in ["a click outside", "a cancel", "its X", "its tab"] as Array[String]:
 		var list := await _stick_a_possible_card()
 		var pack := _map.controller.selected()
 		match close:
 			"a click outside": await _click_outside_the_map_viewer()
 			"a cancel": await _tap_key(KEY_ESCAPE)
+			"its tab": await _click_the_open_viewers_tab(_map_viewport)
 			_: check(await _click_button(_exit_button(), _booted_viewport), "a real click pressed the X")
 		await get_tree().process_frame
 		check(not is_instance_valid(list) or list.is_queued_for_deletion(),
@@ -5711,6 +5721,119 @@ func _click_outside_the_map_viewer() -> void:
 func _described_title() -> String:
 	if not _container.showing_description() or _panel.current_entry == null: return "HUD"
 	return _panel.current_entry.title
+
+# ------------------------------------------------------------------ the viewer's close tab
+
+## The close tab `viewer` carries on its window's side, or null while it carries none.
+func _close_tab_of(viewer: DeckViewer) -> Button:
+	return viewer.get_node_or_null(^"%CloseTab") as Button
+
+## A real click on the close tab of the viewer on top, in the picture it is drawn in.
+func _click_the_open_viewers_tab(viewport: SubViewport) -> void:
+	var tab := _close_tab_of(DeckViewer._open)
+	check(tab != null, "the viewer on top carries a close tab to click")
+	if tab == null: return
+	check(await _click_button(tab, viewport), "a real click on the viewer's close tab pressed it")
+
+## The mouse: a click on the tab closes the viewer, and the focus goes back where every close sends it.
+func test_a_click_on_the_viewers_close_tab_closes_it() -> void:
+	await _start_game_fixture()
+	var deck := _container.deck_ui.get_node(^"Button") as Button
+	_container.show_hud()
+	await _open_viewer_by_accept(deck)
+	var viewer := DeckViewer._open
+	check(is_instance_valid(viewer), "sanity: accept on Deck opened the deck viewer")
+	await _click_the_open_viewers_tab(_game_viewport)
+	await get_tree().process_frame
+	check(not is_instance_valid(viewer) or viewer.is_queued_for_deletion(),
+			"a click on the close tab closes the viewer")
+	check(_hud_is_up() and deck.has_focus(),
+			"...back to the HUD with the focus on the button that opened it",
+			"hud=%s focus=%s" % [_hud_is_up(), _booted_viewport.gui_get_focus_owner()])
+	await _end_main_fixture()
+
+# ONE DEVICE REACHES AND PRESSES THE TAB: the first Right enters the list, Right on along the row
+# lands on the tab sticking out of that side, Left goes back into the list, and accept on the tab
+# closes the viewer -- the keyboard's arrows and Enter, and the pad's d-pad and A.
+func test_the_viewers_close_tab_by_keys_or_pad_alone() -> void:
+	await _start_game_fixture()
+	var deck := _container.deck_ui.get_node(^"Button") as Button
+	var devices : Array[Array] = [
+		["keys", _tap_key.bind(KEY_RIGHT), _tap_key.bind(KEY_LEFT), _tap_key.bind(KEY_ENTER)],
+		["the pad", _tap_pad.bind(JOY_BUTTON_DPAD_RIGHT), _tap_pad.bind(JOY_BUTTON_DPAD_LEFT),
+				_tap_pad.bind(JOY_BUTTON_A)],
+	]
+	for device : Array in devices:
+		var by : String = device[0]
+		var right : Callable = device[1]
+		_container.show_hud()
+		await _open_viewer_by_accept(deck)
+		var viewer := DeckViewer._open
+		var tab := _close_tab_of(viewer) if is_instance_valid(viewer) else null
+		check(tab != null, "the deck viewer opened by accept carries a close tab (%s)" % by)
+		if tab == null:
+			await _close_the_open_viewer()
+			continue
+		var cards := viewer.cards().controls
+		await right.call()
+		check(cards[0].has_focus(), "sanity: the first Right enters the list (%s)" % by,
+				str(_game_viewport.gui_get_focus_owner()))
+		for step : int in cards.size():
+			if tab.has_focus(): break
+			await right.call()
+		check(tab.has_focus(), "Right off the list's right edge lands on the close tab (%s)" % by,
+				str(_game_viewport.gui_get_focus_owner()))
+		await (device[2] as Callable).call()
+		var back := _game_viewport.gui_get_focus_owner() as ControlCard
+		check(back != null and cards.has(back),
+				"...Left from the tab goes back into the list (%s)" % by,
+				str(_game_viewport.gui_get_focus_owner()))
+		await right.call()
+		check(tab.has_focus(), "...and Right comes back to the tab (%s)" % by,
+				str(_game_viewport.gui_get_focus_owner()))
+		await (device[3] as Callable).call()
+		check(not is_instance_valid(viewer) or viewer.is_queued_for_deletion(),
+				"accept on the tab closes the viewer (%s)" % by)
+		check(deck.has_focus(), "...handing the focus back to the button that opened it (%s)" % by,
+				str(_booted_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+# THE TAB STICKS OUT OF THE WINDOW'S RIGHT SIDE, a touch target across, inside the visible picture
+# and clear of the sidebar and of every listed card -- at the side window and the top band alike.
+func test_the_viewers_close_tab_sticks_out_clear_of_the_sidebar_and_its_cards() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		await _start_game_fixture(size)
+		var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+		var tab := _close_tab_of(DeckViewer._open)
+		check(tab != null and tab.is_visible_in_tree(),
+				"the open deck viewer shows a close tab (%s)" % size)
+		if tab != null:
+			var at := tab.get_global_rect()
+			var frame := (DeckViewer._open.margin_container.get_node(^"ColorRect") as Control) \
+					.get_global_rect()
+			check(absf(at.position.x - frame.end.x) <= 1.0 and at.position.y >= frame.position.y - 1.0
+					and at.position.y < frame.end.y,
+					"...sticking out of the window's right side, attached to it (%s)" % size,
+					"tab %s window %s" % [at, frame])
+			var wp : WallPicture = _main._pictures[&"game"]
+			var beside := _space_beside_the_container(wp, _container)
+			check(beside.encloses(at),
+					"...inside the visible picture and clear of the sidebar (%s)" % size,
+					"tab %s beside %s" % [at, beside])
+			var scroll := DeckViewer._open.flow_container.get_parent() as Control
+			var covered : Array[Rect2] = []
+			for card : ControlCard in cards:
+				if card.get_global_rect().intersects(at): covered.append(card.get_global_rect())
+			check(not scroll.get_global_rect().intersects(at) and covered.is_empty(),
+					"...and over none of the viewer's cards (%s)" % size,
+					"tab %s list %s covered %s" % [at, scroll.get_global_rect(), covered])
+			var window : Vector2 = _container.get_viewport().get_visible_rect().size
+			var target := WallInput.touch_target_px(window, SettingsManager.settings)
+			var across := minf(at.size.x, at.size.y) * _container.window_scale(wp)
+			check(across >= target - 0.5,
+					"...at least one touch target across, in window pixels (%s)" % size,
+					"%.1f vs %.1f" % [across, target])
+		await _end_main_fixture()
 
 # EVERY OPENER IS ALSO ITS VIEWER'S CLOSER and says so while it is open, on either screen.
 func test_every_pile_opener_reads_close_while_its_viewer_is_open() -> void:

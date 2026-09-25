@@ -11,6 +11,8 @@ signal highlight_cleared
 
 @onready var flow_container: FlowContainer = %FlowContainer
 @onready var margin_container: MarginContainer = $MarginContainer
+## The X tab sticking out of the window's side, closing this viewer alone; its host sizes it to a touch target.
+@onready var close_tab: Button = %CloseTab
 
 var deck : Array[CardData]
 ## Owns this viewer's listed cards (the shared listing logic; see CardsViewer).
@@ -76,6 +78,7 @@ func _hand_the_focus_back() -> void:
 # (`HudContainer` hands it over, the two being in different viewports).
 func update_viewer() -> void:
 	_cards = CardsViewer.new(flow_container)
+	_cards.close_tab = close_tab
 	_cards.populate(deck, _publish_info)
 
 # The card the highlight reached, drawn at this viewer's own card size.

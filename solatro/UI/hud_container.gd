@@ -113,12 +113,15 @@ func _position_below_overlay_buttons() -> void:
 # to the HUD, parked in the container's top-right BELOW the overlay's button band, with its column
 # keeping the name clear of it.
 func _place_panel_controls() -> void:
-	var target := WallInput.touch_target_px(get_viewport().get_visible_rect().size,
-			PlayArea.settings())
+	var target := _touch_target_px()
 	_exit_button.offset_left = -target
 	_exit_button.offset_top = _band_top
 	_exit_button.offset_bottom = _band_top + target
 	_exit_column.custom_minimum_size.x = target
+
+## The smallest a control that closes something may be, in this container's own window pixels.
+func _touch_target_px() -> float:
+	return WallInput.touch_target_px(get_viewport().get_visible_rect().size, PlayArea.settings())
 
 ## The container's own rect at the current window size -- what `PlayArea.board_inset_left`/`board_inset_top` are derived from.
 func container_rect() -> Rect2:
@@ -340,9 +343,13 @@ func _refresh_exit_button() -> void:
 
 # A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD, re-fitted after its screen's own inset. It republishes
 # only while a description is UP, redrawing the preview at its own card size: a dismissal is the
-# player's act and a window change is not one.
+# player's act and a window change is not one. Its close tab is the same touch target as the X.
 func _fit_viewer(viewer: Node, picture: WallPicture) -> void:
-	viewer.call(&"fit_beside", resting_rect_beside(picture), window_scale(picture))
+	var picture_scale := window_scale(picture)
+	viewer.call(&"fit_beside", resting_rect_beside(picture), picture_scale)
+	if viewer is DeckViewer:
+		(viewer as DeckViewer).close_tab.custom_minimum_size = \
+				Vector2.ONE * _touch_target_px() / picture_scale
 	if showing_description(): viewer.call(&"republish_highlight")
 
 ## Sets this control's own rect to `container_rect()` offset by the slide, and tells listeners it moved.

@@ -29,6 +29,13 @@ theme_override_constants/margin_bottom = 80
 layout_mode = 2
 color = Color(1, 0.384314, 0.498039, 0.141176)
 
+[node name="CloseTab" type="Button" parent="MarginContainer/ColorRect" unique_id=902417365]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+text = "X"
+
 [node name="SmoothScrollContainer" type="ScrollContainer" parent="MarginContainer" unique_id=1191871683]
 layout_mode = 2
 follow_focus = true
@@ -47,4 +54,5 @@ size_flags_vertical = 3
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [connection signal="gui_input" from="MarginContainer" to="." method="_on_margin_container_gui_input"]
+[connection signal="pressed" from="MarginContainer/ColorRect/CloseTab" to="." method="_close"]
 [connection signal="hidden" from="MarginContainer/SmoothScrollContainer/FlowContainer" to="." method="_on_flow_container_hidden"]

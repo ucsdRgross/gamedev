@@ -126,8 +126,12 @@ func focus_first() -> bool:
 	controls[0].grab_focus()
 	return true
 
-## Whether one of the listed cards holds the keyboard/pad focus: the one test for "the player is navigating inside this list".
+## The viewer's own close tab beside the list, or null: an arrow off the list's edge reaches it, so it counts as inside.
+var close_tab : Control = null
+
+## Whether a listed card, or the viewer's close tab, holds the keyboard/pad focus: the one test for "the player is navigating inside this list".
 func focus_is_inside() -> bool:
+	if close_tab and close_tab.has_focus(): return true
 	for control : ControlCard in controls:
 		if control.has_focus(): return true
 	return false

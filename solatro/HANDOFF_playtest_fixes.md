@@ -2,8 +2,8 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P57, P59-P61, P62b, P63a, P63a2, P63c done (P62 closed) (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P63c): `ALL 51 SUITES: 7429 CHECKS PASSED`,
+**State:** P1-P57, P59-P61, P62b, P63a, P63a2, P63b, P63c done (P62 closed) (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P63b): `ALL 51 SUITES: 7507 CHECKS PASSED`,
 21 placeholder warnings, 24 resources + 1150 ObjectDB.
 Pending: the round-2 review steps P59-P64 and their review round, the square-card task (P58a-d), then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
@@ -653,11 +653,11 @@ a lot of these issues are with lack of parity between different modal input opti
   notes: 'Owner: "Open over the list", "Back to the pick". DeckViewer is single-instance (show_deck closes the open one) - the chooser is a ChoiceViewer, which is why the deck opens over it. P54 is the lock-set-aside pattern (_HostedViewer suspended_lock). Delete map.gd _follow_a_stuck_possible_card (the P63a2 review: its guard has no producer).'
 - id: P63b
   description: Every viewer (Deck, Discard, Rules, Possible cards, the chooser's deck) carries a bookmark-style X tab sticking out of its side that closes it (twenty-second round "Both").
-  files_touched: [solatro/UI/deck_viewer.gd, solatro/UI/cards_viewer.gd, solatro/Tests/UI/test_ui_viewers.gd]
+  files_touched: [solatro/UI/deck_viewer.tscn, solatro/UI/deck_viewer.gd, solatro/UI/cards_viewer.gd, solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd, solatro/Tests/UI/test_ui_viewers.gd, solatro/design/sidebar/NAMES.md]
   verification_command: 'run_tests.py --filter UiViewers Sidebar; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'A CloseTab button on every DeckViewer (game Deck/Discard/Rules, the map run deck and Possible cards, the deck over the chooser or over a list, the menu Inspect viewer), flush outside the window right side at the top; pressed -> _close (the top of a stack only; the one beneath keeps its own tab, covered). Sized from the sidebar X touch target through one helper HudContainer._touch_target_px(). Keys/pad: Right off a row end -> the tab, Left -> back into the list, accept closes and returns focus to the opener; Up/Left with a card stuck still reach the sidebar X. The chooser has none. Red: FILTERED 3 of 51 [UiViewers Sidebar MapTraversal]: 2289 passed, 25 FAILED. Green: 2340, clean exit profile; --logic 3016. By eye (overseer): a dark square with a white X outside the viewer top-right, clear of the sidebar and the cards, side and top-band layouts. Fable review: 0 findings. Gates: 7501 passed, 1 FAILED (TP-92, drift 0.082 s), rerun ALL 51 SUITES: 7507 CHECKS PASSED. For review round 3 (implementer questions): the right edge at the top band (vs the bottom edge, literally away from the sidebar there); a plain button vs a bookmark look.'
   notes: 'Owner: "i think we can do better though, by having an x button tab sticking out the side of the deck viewer window instead similar to a bookmark sticking out which is used to close the viewer since that is more intuitive." One-device principle: the tab must be reachable by keys/pad too.'
 - id: P64
   description: The pack chooser is a square window sized to its contents, centred beside the sidebar, the map visible and inert around it; Back/Forward/Wall stay live and returning finds the chooser in progress (visual review round 2 + twenty-second round; overturns P52's lock-out and the P33 "cover the map entirely").
@@ -767,7 +767,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - GRID VIEW TP-138 "the board at rest is already where an explicit pan puts it" (rest -445.7 vs pan -443.3, 1 px bound): 1 of 5 runs on the P43 tree.
 - FOR /docs AT THE CLOSE: the rim-ink records - design/board-plan/gaps/GAP-004.md ("match_rim = 31 ... stand") and design/sidebar/ASSUMPTIONS.md ~993 (the fourth-round ink ruling) with no pointer to the seventeenth round; ARCHITECTURE_REVIEW.md ~1599 and board-plan ASSUMPTIONS.md ~306 now give 15 but still reason "the ruling says WHITE, so" - pink was chosen because cream vanished on the Entrance paper.
 - FOR /docs AT THE CLOSE: the design records still quote the pre-P43 picture (1576x887, inset 394, 262.7, 733.808, the 27+8 band): design/sidebar/{DESIGN,PLAN,TEST_PLAN,ASSUMPTIONS}.md, gaps GAP-001/GAP-002, design/poker-patience/gaps/GAP-039.md, Tests/Visual/grid_zoom_shot.gd ~214; test_grid_layout.gd ~1709 has a tab-joined line.
-- PLAN VISUALS TP-92 failed 1 of 2 overseer gates on the P56-nit tree (worst drift 0.116 s, a test-only diff in SIDEBAR). TP-92 also failed 1 of 2 overseer gates on the P50 tree (worst drift 0.086 s against a 0.080 s stagger) and 3 of 4 runs on the P48 tree (all three in the implementer's filtered runs, passed the overseer gate) against ~1 of 3 gates before; a wall-clock stagger row. Measure before naming a cause.
+- PLAN VISUALS TP-92 failed 1 of 2 overseer gates on the P56-nit tree (worst drift 0.116 s, a test-only diff in SIDEBAR) and 1 of 2 on the P63b tree (0.082 s). TP-92 also failed 1 of 2 overseer gates on the P50 tree (worst drift 0.086 s against a 0.080 s stagger) and 3 of 4 runs on the P48 tree (all three in the implementer's filtered runs, passed the overseer gate) against ~1 of 3 gates before; a wall-clock stagger row. Measure before naming a cause.
 - Latent, recorded by the P48 review: a Down pressed within a pan's ease picks the Entrance stop from a mid-flight x.
 - DRAG PLACE timing rows, 1 of 2 runs on the P50 tree (a Sonnet report called them a known flake - they are NOT on any list): "...and bare motion afterwards moves the board not at all" (content x -836.74 -> -837.32), "leaving the picture stops the slide exactly where it stood" and its precondition "the slide was caught part way across" (travelled 1.000). The palette change cannot reach them; measure before naming a cause.
 - Picture-wall design DAG warning (Design Loop check): QR6's default (a) reaches nothing - Q76 is gated [QR6=b|c], Q77 [QR6=b]. A design decision for the owner: widen the gates or change the default.
@@ -786,7 +786,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
-1. The round-2 review steps, one at a time, each gated: P63b (the viewer X tab), P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
+1. The round-2 review steps, one at a time, each gated: P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
 2. The square-card task, in order: P58a (merge main), P58b (one card size; the hardcoded-literal audit, by subsystem), P58c (the four tool bugs), P58d (its visual review round).
 3. The close per /plan-run (the plan-auditor writes AUDIT.md), then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list; the intermittents are the close's input), and the owner merges the branch.
 

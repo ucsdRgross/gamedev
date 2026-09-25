@@ -44,7 +44,28 @@ func _ready() -> void:
 	await test_a_viewer_opens_with_nothing_focused_and_nothing_published()
 	await test_the_first_navigation_press_enters_the_list()
 	await test_the_pack_chooser_covers_its_whole_picture_opaquely()
+	await test_a_deck_viewer_carries_a_close_tab_and_the_pack_chooser_none()
 	finish()
+
+## Every deck viewer carries its close tab; the pack chooser carries none, Take being its only way out.
+func test_a_deck_viewer_carries_a_close_tab_and_the_pack_chooser_none() -> void:
+	var published : Array[String] = []
+	var viewer := _two_card_viewer(published)
+	await get_tree().process_frame
+	var tab := viewer.get_node_or_null(^"%CloseTab") as Button
+	check(tab != null and tab.is_visible_in_tree(), "a deck viewer carries a visible close tab")
+	var tab_text := tab.text if tab else ""
+	await _drop_viewer(viewer)
+	var chooser : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0)
+	await get_tree().process_frame
+	var named : Array[String] = []
+	for button : Node in chooser.find_children("*", "Button", true, false):
+		named.append((button as Button).text)
+	check(chooser.find_children("CloseTab", "", true, false).is_empty()
+			and not named.has(tab_text),
+			"...and the pack chooser carries none", str(named))
+	chooser.queue_free()
+	await get_tree().process_frame
 
 ## A viewer opens with no card focused and nothing published: a focus is a highlight, and a highlight would hold the sidebar against the HUD the player still has to reach.
 func test_a_viewer_opens_with_nothing_focused_and_nothing_published() -> void:
