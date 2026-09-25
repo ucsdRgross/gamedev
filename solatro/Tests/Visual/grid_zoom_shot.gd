@@ -103,6 +103,10 @@ func _ready() -> void:
 	if not await _shoot(pa, vp, "pickup"): return
 	pa.ungrab_cards()
 
+#THE FOCUS IS PUT ON THE FIRST GRID'S ORIGIN CELL BY THE POINTER, then the pointer leaves: the card
+#placed there next must wear the rim, not the mark it covers. Left to itself it varies run to run.
+	await _hover_the_origin_cell(pa, vp)
+
 #Cards on the board, so the shot shows what a player sees rather than an empty lattice.
 	for gi : int in _grid_count:
 		var grid : GridData = g.state.grids[gi]
@@ -116,6 +120,7 @@ func _ready() -> void:
 	pa.open_zoomed_out()
 	if not await _await_still(view, "overview"): return
 	if not await _shoot(pa, vp, "overview"): return
+	print("[grid_zoom_shot] overview focus rim on %s" % pa.focused_visual.data)
 	pa.focus_grid(_grid_count / 2)
 	if not await _await_still(view, "focused"): return
 	if not await _shoot(pa, vp, "focused"): return
@@ -299,6 +304,18 @@ func _legal_cell_in_grid(g: Game, held: CardData, gi: int) -> BoardCoord:
 		if grid.cell_types[i] in legal:
 			return BoardCoord.new(gi, i % grid.grid_width, i / grid.grid_width, 0)
 	return BoardCoord.new(-1, 0, 0, 0)
+
+func _hover_the_origin_cell(pa: PlayArea, vp: SubViewport) -> void:
+	var origin := pa._cell_focus_control(BoardCoord.new(0, 0, 0, 0))
+	assert(origin, "the first grid's origin cell has a control to hover")
+	var away := _bare_board_point(pa)
+	for at : Vector2 in [origin.get_global_rect().get_center(), away]:
+		var motion := InputEventMouseMotion.new()
+		motion.position = at
+		motion.global_position = at
+		vp.push_input(motion)
+		await get_tree().process_frame
+	print("[grid_zoom_shot] focus owner after the hover: %s" % pa.ui_data.get(vp.gui_get_focus_owner()))
 
 ## A point inside the board's window that no card control answers to: a press there is a PAN.
 func _bare_board_point(pa: PlayArea) -> Vector2:

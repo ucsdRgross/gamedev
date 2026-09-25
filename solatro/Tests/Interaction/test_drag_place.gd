@@ -109,6 +109,12 @@ func _ready() -> void:
 	await test_a_lift_and_a_quick_placement_never_pair_into_a_tap()
 	behavior_section("EVERY FOCUSED CARD WEARS ONE RIM")
 	await test_a_focused_entrance_card_wears_the_rim_a_focused_cell_does()
+	behavior_section("A PLACEMENT ONTO THE FOCUSED CELL MOVES ITS RIM ONTO THE CARD")
+	await test_a_click_placement_onto_the_focused_cell_rims_the_card()
+	await test_a_drag_placement_onto_the_focused_cell_rims_the_card()
+	await test_a_key_placement_onto_the_focused_cell_rims_the_card()
+	await test_an_undo_hands_the_focused_cells_rim_back_to_its_mark()
+	await test_a_removed_top_card_hands_the_rim_back_to_its_mark()
 	finish()
 
 # ==============================================================================
@@ -2413,3 +2419,124 @@ func _rim_ink_and_width(visual: CardVisual) -> Vector2i:
 	var mat := CardOutline.material_of(visual.type)
 	return Vector2i(mat.get_shader_parameter(&"u_outline_index") as int,
 			mat.get_shader_parameter(&"u_outline_width") as int)
+
+# ==============================================================================
+# THE FOCUSED CELL'S RIM FOLLOWS WHAT ITS FOCUSED CONTROL NOW SHOWS -- a rebind moves no focus.
+# ==============================================================================
+
+func test_a_click_placement_onto_the_focused_cell_rims_the_card() -> void:
+	await _start_fixture()
+	await _click_the_leftmost_onto_the_origin()
+	await _end_fixture()
+
+func test_a_drag_placement_onto_the_focused_cell_rims_the_card() -> void:
+	await _start_fixture()
+	var entrance := _entrance_controls()
+	var dragged : CardData = _pa.ui_data[entrance[0]] if not entrance.is_empty() else null
+	var origin := _resting_focus_control()
+	if _origin_is_ready(dragged, origin):
+		await _drag(_control_centre(entrance[0]), _control_centre(origin))
+		_check_the_rim_is_on_the_top_card(dragged, "a drag")
+	await _end_fixture()
+
+func test_a_key_placement_onto_the_focused_cell_rims_the_card() -> void:
+	await _open_a_grid_by_keys(1)
+	var held := await _lift_by_keys()
+	await _tap(KEY_UP)
+	await _tap_to_the_origin_cell()
+	if _origin_is_ready(held, _focus_owner()):
+		await _tap(KEY_ENTER)
+		await _await_the_deal()
+		_check_the_rim_is_on_the_top_card(held, "the keys")
+	await _end_fixture()
+
+func test_an_undo_hands_the_focused_cells_rim_back_to_its_mark() -> void:
+	await _start_fixture()
+	if await _click_the_leftmost_onto_the_origin():
+		check(await _click_undo(), "the HUD's Undo button takes a real click", _hand_str())
+		await _frames(8)
+		_check_the_rim_is_on_the_mark("an undo")
+	await _end_fixture()
+
+func test_a_removed_top_card_hands_the_rim_back_to_its_mark() -> void:
+	await _start_fixture()
+	var held := await _click_the_leftmost_onto_the_origin()
+	if held:
+		await _game.remove_card_from_grid(held)
+		await _frames(8)
+		_check_the_rim_is_on_the_mark("a removal")
+	await _end_fixture()
+
+## Clicks the leftmost Entrance card onto the origin cell, which holds the focus: the card placed, or null.
+func _click_the_leftmost_onto_the_origin() -> CardData:
+	var held := await _lift_the_leftmost()
+	var origin := _resting_focus_control()
+	if not _origin_is_ready(held, origin): return null
+	var at := _control_centre(origin)
+	await _drag(at, at)
+	_check_the_rim_is_on_the_top_card(held, "a click")
+	return held
+
+## The rows above place onto the origin cell, where a hand with nothing in it rests the focus.
+func _origin_is_ready(card: CardData, origin: Control) -> bool:
+	var on_screen := Rect2(Vector2.ZERO, Vector2(_picture_viewport.size))
+	var usable := card != null and origin != null and origin == _resting_focus_control() \
+			and _is_reachable(origin, on_screen)
+	check(usable, "precondition: a card to place and the empty origin cell on screen to place it on",
+			"card %s, origin %s, %s" % [card != null, origin, _hand_str()])
+	return usable
+
+func _check_the_rim_is_on_the_top_card(placed: CardData, route: String) -> void:
+	var cell := _game.state.grid_position_of(placed)
+	check(not cell.is_nowhere() and cell.x == 0 and cell.y == 0,
+			"%s placed the card onto the origin cell, which held the focus" % route, _hand_str())
+	if cell.is_nowhere(): return
+	var mark := _game.state.cell_type_at(BoardCoord.new(cell.grid, cell.x, cell.y, 0))
+	check(_focus_owner() == _pa.data_ui[placed],
+			"...and the focus is on the placed card's own control after %s" % route,
+			"%s, placed %s" % [_focus_owner(), _pa.data_ui[placed]])
+	check(_pa.data_card[placed].focused and _is_outlined(placed),
+			"...so the placed card wears the focus rim after %s" % route,
+			"focused %s, outlined %s" % [_pa.data_card[placed].focused, _is_outlined(placed)])
+	check(not _pa.data_card[mark].focused and not _is_outlined(mark),
+			"...and the mark hidden under it wears none after %s" % route,
+			"focused %s, outlined %s" % [_pa.data_card[mark].focused, _is_outlined(mark)])
+
+# An undo restores the board from a copy, so the cell's cards are read back rather than kept.
+func _check_the_rim_is_on_the_mark(route: String) -> void:
+	var origin := BoardCoord.new(_pa.selected_grid, 0, 0, 0)
+	var mark := _game.state.cell_type_at(origin)
+	check(_game.state.card_at(origin) == null,
+			"%s left the origin cell bare" % route, _hand_str())
+	check(_pa.data_card[mark].focused and _is_outlined(mark),
+			"...and its mark wears the focus rim again after %s" % route,
+			"focused %s, outlined %s, owner %s" % [_pa.data_card[mark].focused, _is_outlined(mark),
+			_focus_owner()])
+	var rimmed : Array[CardData] = []
+	for data : CardData in _pa.data_card:
+		if _is_outlined(data) and data != mark: rimmed.append(data)
+	check(rimmed.is_empty(), "...and no other card on the board wears it after %s" % route,
+			str(rimmed))
+
+## Left, then Up, to the grid's origin cell: the cell a placement leaves the focus resting on.
+func _tap_to_the_origin_cell() -> void:
+	for _i : int in _game.state.grids[0].grid_width:
+		if _pa._coord_of_control(_focus_owner()).x == 0: break
+		await _tap(KEY_LEFT)
+	for _i : int in _game.state.grids[0].grid_height:
+		if _pa._coord_of_control(_focus_owner()).y == 0: break
+		await _tap(KEY_UP)
+
+## A real click on the HUD's Undo, in the viewport it is drawn in: true when it pressed.
+func _click_undo() -> bool:
+	var button := _container.undo_button
+	var presses : Array[int] = [0]
+	button.pressed.connect(func() -> void: presses[0] += 1, CONNECT_ONE_SHOT)
+	var at := button.get_global_rect().get_center()
+	_viewport.push_input(_motion(at))
+	await get_tree().process_frame
+	_viewport.push_input(_mouse_button(at, true))
+	await get_tree().process_frame
+	_viewport.push_input(_mouse_button(at, false))
+	await get_tree().process_frame
+	return presses[0] == 1

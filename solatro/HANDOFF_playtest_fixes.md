@@ -2,8 +2,8 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P57, P59-P61 done (P45 closed without code), each red-then-green and by eye where it draws,
-Fable-reviewed, one verified step per commit. Last full gate (P61): `ALL 51 SUITES: 7201 CHECKS PASSED`,
+**State:** P1-P57, P59-P61, P62b done (P62 closed) (P45 closed without code), each red-then-green and by eye where it draws,
+Fable-reviewed, one verified step per commit. Last full gate (P62b): `ALL 51 SUITES: 7267 CHECKS PASSED`,
 21 placeholder warnings, 24 resources + 1150 ObjectDB.
 Pending: the round-2 review steps P59-P64 and their review round, the square-card task (P58a-d), then the close. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
@@ -620,11 +620,11 @@ a lot of these issues are with lack of parity between different modal input opti
   notes: 'Owner: "before we switched to grids, cards stacked on top of a cell/zone would shift slightly to reveal the zone beneath if holding a card and the zone below was a legal spot to place a card. otherwise it should select card on top since no reason to view the zone/cell." Recon: the old mechanisms (on_control_focus_entered top-slot shrink, 6b9e2b6a; held-stack expansion, e0dcfe08/14aaf147) fired on ANY focus/hold and were retired by owner ruling in f53f3922 and 4d972aa3 (tombstone play_area.gd ~2942); none was legality-gated. The new rule is narrower: held card AND the cell legal. Today an occupied cell gives focus to the placed card (_size_stack_slot ~2328-2344) and the legal brightening lands on the mark under it (hidden). Measure first what grid_zoom_shot focuses and what the cream sliver outside the top-left card is. The shift amount is a settings knob derived from the geometry (enough to show the mark''s legal brightening), not a magic value.'
 - id: P62b
   description: The focus rim on an occupied grid cell lands on the hidden MARK under the placed card - PlayArea.focused_visual goes stale when a placement reuses the focused slot's control - so the top card, which holds the focus, shows no rim (the 1 px cream sliver in grid3_overview is the mark's rim peeking past the placed card's float tilt).
-  files_touched: [solatro/UI/play_area.gd, solatro/Tests/Interaction/test_drag_place.gd]
+  files_touched: [solatro/UI/play_area.gd, solatro/Tests/Interaction/test_drag_place.gd, solatro/Tests/Visual/grid_zoom_shot.gd]
   verification_command: 'run_tests.py --filter DragPlace Sidebar GridView VisualLayers SettingsRange UiProps; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'PlayArea.focused_visual is derived on read from focused_control and the card it now shows (was a field stored at focus_entered). Red (HEAD play_area.gd): DRAG PLACE 486 passed, 5 FAILED - the drag and key placements onto the focused cell left the rim on the mark, a removed top card did not hand it back (click and HUD undo were already right). Green: DRAG PLACE 491; the six-suite filter green; --logic 3035. grid_zoom_shot now hovers grid 0 origin cell before the placements, so the overview focus is fixed (it varied run to run). By eye (overseer, crop of grid_zoom_3_overview): the 6 of Knives outline cream all round, no sliver, its neighbour dark. Fable review: 2 latent (a redundant validity check; single-call test helpers matching their files). Gate: ALL 51 SUITES: 7267 CHECKS PASSED. For review round 3: after a placement the focus rests on the grid origin cell, so a card placed THERE now wears the rim - against the second-round "dropped/placed card should cancel its locked description and focus glow"? Shoot it and ask.'
   notes: 'Owner (round 2): "otherwise it should select card on top since no reason to view the zone/cell." Measured by the P62 implementer: focus owner = the placed card control, focused_visual = the mark CardVisual (focus_entered never fires again on the reused control). Isolation render: mark alone 43 cream edge px, placed card alone 0.'
 - id: P63a
   description: The sidebar description's button row (Travel / Deck / Possible cards) moves to the top of the sidebar, under Back/Forward/Wall, above the described card; while its own viewer is open, an opener reads "Close <viewer>" and closes it (twenty-second round "Both").
@@ -763,10 +763,11 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - UI VIEWERS test_pack_click_selects "the click also focuses the card it picked, so the sidebar can stay on it" (focus owner null) and "the moving focus takes the rim while it is on the picked card" failed together in 1 of 2 overseer gates on the P57 tree, WALL TRANSITION running just before; 0 of 10 filtered runs (UiViewers alone x3, with WallTransition x2, each on the P57 tree and on HEAD's hud_container.gd). A standalone ChoiceViewer fixture P57 cannot reach - same shape as the later-arrow row above (focus gone a frame later). Measure before naming a cause.
 - FOR /simplify AT THE CLOSE (P57 re-review): HudContainer.set_active_screen's keep-what-a-viewer-holds branch may be dead - on the game screen no opener hosts a viewer while a description is up, and on the map release_screen frees the pick's covered entry; what is left is a chooser card that is already a suspended lock.
 - Latent, traced by the P59 review: a window resize while another card is described over a board lock leaves the lock's detached preview at its old size - HudContainer.resize_preview re-sizes only the mounted visual, and return_to_lock re-mounts the lock's without re-sizing (P59 removed the re-hover republish that used to redraw it).
+- SIDEBAR test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map, route "an arrow": whether the map's arrow closes the game viewer left open behind it varies run to run - the test's branch on it took "closed" in 3 of 6 overseer gates (P57 round 2, VR2 shots, P62b) and "still open" in 3 (P59, P60, P61), no SIDEBAR change between; both branches pass, so the gate stays green while the product behaves two ways. Measure before naming a cause.
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
-1. The round-2 review steps, one at a time, each gated: P62b (the focus rim onto the top card), P63a (the button row at the top, Close <viewer>), P63b (the viewer X tab), P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
+1. The round-2 review steps, one at a time, each gated: P63a (the button row at the top, Close <viewer>), P63b (the viewer X tab), P64 (the chooser as a square window, leaving allowed). Then visual review round 3 on their shots.
 2. The square-card task, in order: P58a (merge main), P58b (one card size; the hardcoded-literal audit, by subsystem), P58c (the four tool bugs), P58d (its visual review round).
 3. The close per /plan-run (the plan-auditor writes AUDIT.md), then `/docs` folds this file away (the Open bugs "FOR /docs AT THE CLOSE" lines are its list; the intermittents are the close's input), and the owner merges the branch.
 

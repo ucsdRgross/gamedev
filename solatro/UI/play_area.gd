@@ -3670,7 +3670,13 @@ func _publish_stock_info(slot: int) -> void:
 	entry.transient = true
 	info_requested.emit(entry)
 
-var focused_visual : CardVisual
+#DERIVED, NEVER CACHED: a placement or a removal rebinds the focused cell's control to another card
+#without moving the focus, so only the control can say which card the focus is on now.
+var focused_visual : CardVisual:
+	get():
+		if not is_instance_valid(focused_control): return null
+		var data : CardData = ui_data.get(focused_control)
+		return data_card.get(data)
 
 ## The card the sidebar is locked to, pushed in by `GameView` -- `null` while nothing is locked.
 var locked_data : CardData = null:
@@ -3682,9 +3688,10 @@ var locked_data : CardData = null:
 #it, so what is being read stays marked once the focus moves on. A rebuild re-applies it, and the
 #drop map from the last sweep with it, because it hands the same cell a different visual.
 func _refresh_card_marking() -> void:
+	var focused := focused_visual
 	for data : CardData in data_card:
 		var visual : CardVisual = data_card[data]
-		visual.focused = visual == focused_visual or data == locked_data
+		visual.focused = visual == focused or data == locked_data
 		visual.on_drop_map = data in _legal_cells
 
 ## The zone card of every cell the held card may land in — the drop map the highlight draws.
@@ -3723,9 +3730,6 @@ func on_control_focus_entered(control:Control) -> void:
 #a click — is also what the overview's Enter will focus.
 	var focus_grid_index := _grid_index_of(control)
 	if focus_grid_index != NO_GRID: selected_grid = focus_grid_index
-	focused_visual = null
-	if ui_data.has(control) and data_card.has(ui_data[control]):
-		focused_visual = data_card[ui_data[control]]
 	_describe_control(control)
 
 #⚠ HOVER DOES NOT RESIZE THE STACK, AND ESPECIALLY NOT ITS ZONE CARD. Hand-sizing controls by fixed
