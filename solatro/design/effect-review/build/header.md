@@ -59,12 +59,10 @@ rewarding.
   filling a gap it found: new scoring shapes and bucket play, the five stocks and the slot above
   each column as places that pay, cues and bets on marks, and a card that stays on stage.
 - **Your rulings on the whole-game questions:** a bonus with no line goes to the special bucket; a
-  fake card is a ghost card, one that does not stay in the deck when the game ends (Kayfabe and The
-  Committee are rewritten around it, and six effects that assumed a hidden fake to find are
-  flagged); a token is any card, named by the effect or chosen by you.
-- ⚠ **One is still open: what is "a step"?** Thirty-one effects pay one. The recommendation is a
-  fixed number of flat points, one tunable value about the size of a Pair, paid into the line's
-  bucket, or into special when there is no line.
+  fake card is a ghost card, one that leaves the deck when its show ends (Kayfabe and The Committee
+  are rewritten around it, and six effects that assumed a hidden fake to find are flagged); a token
+  is any card, named by the effect or chosen by you, and the effect decides whether a card it
+  creates stays; a step is flat points, tuned per effect.
 
 **Reading the older effects.** They were mined against a board that is gone and re-expressed on this
 one; the rows use this vocabulary:

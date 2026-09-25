@@ -233,9 +233,14 @@ equipment), Producer (token and money cards).
 - **A bonus with no line goes to the special bucket** (owner: "bonus with no line goes to the
   special score bucket").
 - **A fake card is a ghost card** (owner: "a fake card or ghost card is a card that does not stay in
-  deck when game ends"). There is no hidden-fake system to find or expose.
+  deck when game ends"; "game ends means end of specific show with its own single goal to reach, not
+  entire run"). A ghost leaves the deck when its show ends. There is no hidden-fake system to find.
 - **A token is any card** (owner: "presumably you can choose or treat any card as a token"): an
-  effect that makes a token names the card, or you choose it.
+  effect that makes a token names the card, or you choose it. It is not assumed to be a ghost (owner:
+  "effect decides if cards it creates stays or not"), so an effect that creates a card says whether
+  it stays.
+- **A step is flat points** (owner: "step is flat points, may need to be tuned separately per
+  effect"): each effect that pays a step has its own amount, set when it is balanced.
 - **Fame is not spendable** (owner). Fame is earned and can be lost as a penalty, but nothing
   buys anything with it; a cost that was paid in fame is a skipped reward.
 
