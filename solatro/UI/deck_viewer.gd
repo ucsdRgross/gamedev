@@ -16,26 +16,33 @@ var deck : Array[CardData]
 ## Owns this viewer's listed cards (the shared listing logic; see CardsViewer).
 var _cards : CardsViewer
 
-# Only one viewer at a time: opening a new one (Deck button, deck picker Inspect, Enter
-# re-triggering a still-focused button, ...) replaces the previous instead of stacking.
+# The viewer on top. Opening another replaces it, unless the opener asks to open over it, and a
+# viewer opened over another hands the top back to it on close.
 static var _open : DeckViewer = null
+## The viewer this one opened over, on top again once this one closes.
+var _under : DeckViewer = null
 # Focus to restore on close, so keyboard/controller users land back on the button that
 # opened the viewer instead of nowhere.
 var _return_focus : Control = null
 ## Where the focus goes on close when the opener is hidden; set by the `HudContainer` hosting this viewer.
 var fallback_focus : Control = null
 
-# ⚠ THE OPENER HANDS ITS OWN CONTROL IN: focus is cleared across every viewport of one window, so
-# reading a focus owner here would find nothing to come back to. A SECOND PRESS OF THAT SAME
-# opener is a close and returns null; any other replaces the viewer, as swapping piles does.
-static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control) -> DeckViewer:
-	if is_instance_valid(_open) and not _open.is_queued_for_deletion():
-		var same_opener : bool = _open._return_focus == opener
-		_open._close()
+# ⚠ THE OPENER HANDS ITS OWN CONTROL IN: focus is cleared across every viewport of one window. A
+# SECOND PRESS OF THAT SAME opener is a close and returns null; any other replaces the viewer, as
+# swapping piles does, or opens `over` it, which stays open underneath.
+static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control,
+		over := false) -> DeckViewer:
+	var top : DeckViewer = _open if is_instance_valid(_open) and not _open.is_queued_for_deletion() \
+			else null
+	if top and (top._return_focus == opener or not over):
+		var same_opener : bool = top._return_focus == opener
+		top._close()
 		if same_opener: return null
+		top = null
 	var viewer :DeckViewer= DECK_VIEWER.instantiate()
 	viewer.deck = new_deck
 	viewer._return_focus = opener
+	viewer._under = top
 	parent.add_child(viewer)
 	viewer.update_viewer()
 	_open = viewer
@@ -51,6 +58,7 @@ static func read_close_while_open(opener: Button, close_key: StringName, viewer:
 # ⚠ ANNOUNCED BEFORE THE FOCUS IS HANDED BACK: the sidebar falls back to what was under this
 # viewer first, so the opener is on screen again by the time the focus goes looking for it.
 func _close() -> void:
+	_open = _under
 	queue_free()
 	highlight_cleared.emit()
 	_hand_the_focus_back()

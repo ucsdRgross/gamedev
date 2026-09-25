@@ -302,8 +302,8 @@ func _follow_the_viewers_sticky(stuck: bool) -> void:
 	else: clear_lock()
 
 # A VIEWER CLOSING TAKES ITS CARD OUT OF ITS OWN SCREEN'S SIDEBAR and gives back the lock it set
-# aside -- on a screen not shown, as what coming back to it shows. Not through `show_hud()`, a
-# dismissal, which the map reads as dropping its pick.
+# aside -- on a screen not shown, as what coming back to it shows. A card freed under the pointer
+# still fires mouse_exited, so its cards answer nothing after. Never `show_hud()`: it drops the pick.
 func _close_hosted_viewer(viewer: Node) -> void:
 	var hosted := _hosted_viewers[_hosted_viewers.find_custom(_hosts.bind(viewer))]
 	_release_locked_entry(hosted.screen)
@@ -315,6 +315,7 @@ func _close_hosted_viewer(viewer: Node) -> void:
 		_release_remembered_entry(hosted.screen, back)
 		if back: _entry_by_screen[hosted.screen] = back
 	_hosted_viewers.erase(hosted)
+	(viewer.call(&"cards") as CardsViewer).highlight_left.disconnect(highlight_gone)
 	if hosted.covered and hosted.covered != _entry_by_screen.get(hosted.screen):
 		_free_detached_visual(hosted.covered)
 

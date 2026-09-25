@@ -202,6 +202,9 @@ func _ready() -> void:
 	await test_the_description_row_sits_under_the_band_above_the_described_card()
 	await test_the_choosers_deck_button_reads_close_deck_while_its_deck_is_open()
 	await test_a_card_stuck_in_the_possible_cards_carries_only_the_deck_row()
+	await test_deck_from_a_stuck_possible_card_opens_over_the_list()
+	await test_closing_the_possible_cards_with_a_card_stuck_returns_to_the_pick()
+	await test_the_deck_over_the_possible_cards_by_keys_alone()
 	await test_every_pile_opener_reads_close_while_its_viewer_is_open()
 	await test_a_keyboard_reaches_every_row_button_from_the_x()
 	await test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map()
@@ -5561,6 +5564,154 @@ func test_a_card_stuck_in_the_possible_cards_carries_only_the_deck_row() -> void
 			_map.selection_deck_button.visible, _map.possible_cards_button.visible])
 	await _end_main_fixture()
 
+# The owner's "Open over the list": the run deck opens OVER the possible cards, the row stays up
+# reading Close deck, and closing the deck -- by Close deck, a cancel or a click outside it -- finds
+# the list still open with its card still stuck.
+func test_deck_from_a_stuck_possible_card_opens_over_the_list() -> void:
+	for close : String in ["Close deck", "a cancel", "a click outside the deck"] as Array[String]:
+		var list := await _stick_a_possible_card()
+		var stuck := list.cards().sticky
+		check(await _click_button(_map.selection_deck_button, _booted_viewport),
+				"a real click pressed the stuck card's Deck (%s)" % close)
+		await get_tree().process_frame
+		var deck := DeckViewer._open
+		check(is_instance_valid(deck) and deck != list and deck.deck == Main.save_info.card_datas,
+				"Deck from a stuck possible card opens the run deck (%s)" % close, str(deck))
+		check(is_instance_valid(list) and not list.is_queued_for_deletion()
+				and list.cards().sticky == stuck,
+				"...OVER the list, which stays open with its card still stuck (%s)" % close)
+		check(_map.selection_deck_button.is_visible_in_tree()
+				and _map.selection_deck_button.text == TRANSLATION.find(&"MAP_CLOSE_DECK"),
+				"...and the row stays up reading Close deck (%s)" % close,
+				"visible=%s text=%s" % [_map.selection_deck_button.is_visible_in_tree(),
+				_map.selection_deck_button.text])
+		match close:
+			"Close deck":
+				check(await _click_button(_map.selection_deck_button, _booted_viewport),
+						"a real click pressed Close deck")
+			"a cancel": await _tap_key(KEY_ESCAPE)
+			_: await _click_outside_the_map_viewer()
+		await get_tree().process_frame
+		check(not is_instance_valid(deck) or deck.is_queued_for_deletion(),
+				"%s closes the run deck" % close)
+		check(is_instance_valid(list) and not list.is_queued_for_deletion()
+				and list.cards().sticky == stuck and DeckViewer._open == list,
+				"...and only the deck: the list is back on top, its card still stuck (%s)" % close,
+				"list=%s open=%s" % [is_instance_valid(list) and not list.is_queued_for_deletion(),
+				DeckViewer._open])
+		check(_container.is_locked() and _previewed_card() == stuck and _exit_button().visible,
+				"...its stuck card described, with its X (%s)" % close,
+				"locked=%s shown=%s x=%s" % [_container.is_locked(), _described_title(),
+				_exit_button().visible])
+		check(_map.selection_deck_button.is_visible_in_tree()
+				and not _map.travel_button.is_visible_in_tree()
+				and _map.selection_deck_button.text == TRANSLATION.find(&"MAP_DECK"),
+				"...and the row back to Deck only, reading Deck (%s)" % close,
+				"deck=%s travel=%s text=%s" % [_map.selection_deck_button.is_visible_in_tree(),
+				_map.travel_button.is_visible_in_tree(), _map.selection_deck_button.text])
+		await _end_main_fixture()
+
+# The owner's "Back to the pick": closing the list with one of its cards stuck -- a click outside,
+# a cancel or its X -- comes back to the pack node's description with Travel live.
+func test_closing_the_possible_cards_with_a_card_stuck_returns_to_the_pick() -> void:
+	for close : String in ["a click outside", "a cancel", "its X"] as Array[String]:
+		var list := await _stick_a_possible_card()
+		var pack := _map.controller.selected()
+		match close:
+			"a click outside": await _click_outside_the_map_viewer()
+			"a cancel": await _tap_key(KEY_ESCAPE)
+			_: check(await _click_button(_exit_button(), _booted_viewport), "a real click pressed the X")
+		await get_tree().process_frame
+		check(not is_instance_valid(list) or list.is_queued_for_deletion(),
+				"sanity: %s closed the possible cards" % close)
+		var pick_title := _map._info_for(pack).title
+		check(_map.controller.selected() == pack and _described_title() == pick_title,
+				"closing the list by %s with a card stuck comes back to the pack node" % close,
+				"selected=%s shown=%s want=%s" % [_map.controller.selected() == pack,
+				_described_title(), pick_title])
+		check(not _container.is_locked(), "...its stuck card let go (%s)" % close)
+		check(await _click_button(_map.travel_button, _booted_viewport),
+				"...with Travel visible and a real click pressing it (%s)" % close)
+		await _see_the_travel_through()
+		await _end_main_fixture()
+
+# The same by keys alone: Right enters the list, accept sticks, Tab reaches the row's Deck, accept
+# opens the deck over the list and again closes it, a cancel closes the deck only, and the next
+# cancel closes the list back to the pick with Travel in reach.
+func test_the_deck_over_the_possible_cards_by_keys_alone() -> void:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	var pack := _map.controller.selected()
+	var list := DeckViewer._open
+	check(is_instance_valid(list), "sanity: the first pick listed the pack")
+	await _tap_key(KEY_RIGHT)
+	check(list.cards().controls[0].has_focus(), "sanity: Right enters the list's first card",
+			str(_map_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_ENTER)
+	var stuck := list.cards().sticky
+	check(stuck != null and _container.is_locked(), "sanity: accept stuck the focused card")
+	await _tap_key(KEY_LEFT)
+	check(_exit_button().has_focus(), "Left off the list's edge reaches the stuck card's X",
+			str(_booted_viewport.gui_get_focus_owner()))
+	var deck_row := _map.selection_deck_button
+	for close : Key in [KEY_ENTER, KEY_ESCAPE] as Array[Key]:
+		var route := "accept on Close deck" if close == KEY_ENTER else "a cancel"
+		await _tap_until(KEY_TAB, deck_row.has_focus, 8)
+		check(deck_row.has_focus(), "Tab reaches the stuck card's Deck (%s)" % route,
+				str(_booted_viewport.gui_get_focus_owner()))
+		await _tap_key(KEY_ENTER)
+		var deck := DeckViewer._open
+		check(is_instance_valid(deck) and deck != list and is_instance_valid(list)
+				and not list.is_queued_for_deletion() and list.cards().sticky == stuck,
+				"accept on Deck opens the run deck over the list, its card still stuck (%s)" % route)
+		check(deck_row.text == TRANSLATION.find(&"MAP_CLOSE_DECK"),
+				"...the row reading Close deck (%s)" % route, deck_row.text)
+		await _tap_key(close)
+		check(not is_instance_valid(deck) or deck.is_queued_for_deletion(),
+				"%s closes the run deck" % route)
+		check(DeckViewer._open == list and list.cards().sticky == stuck and _container.is_locked()
+				and _previewed_card() == stuck and _exit_button().visible,
+				"...and only the deck: the list's stuck card is back, described, with its X (%s)" % route,
+				"open=%s shown=%s x=%s" % [DeckViewer._open, _described_title(), _exit_button().visible])
+	await _tap_key(KEY_ESCAPE)
+	check(not is_instance_valid(list) or list.is_queued_for_deletion(),
+			"the next cancel closes the list")
+	check(_described_title() == _map._info_for(pack).title,
+			"...back to the pack node's description", _described_title())
+	var travel := _map.travel_button
+	var landed := _booted_viewport.gui_get_focus_owner()
+	await _tap_until(KEY_TAB, travel.has_focus, 12)
+	check(travel.has_focus(), "...with Travel in the keys' reach",
+			"landed on %s, now %s" % [(landed as Button).text if landed is Button else str(landed),
+			_booted_viewport.gui_get_focus_owner()])
+	var presses : Array[int] = [0]
+	travel.pressed.connect(func() -> void: presses[0] += 1, CONNECT_ONE_SHOT)
+	await _tap_key(KEY_ENTER)
+	check(presses[0] == 1, "...and accept on it travels")
+	await _see_the_travel_through()
+	await _end_main_fixture()
+
+## A pack node picked and its first possible card clicked stuck, through the product's own routes.
+func _stick_a_possible_card() -> DeckViewer:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	var list := DeckViewer._open
+	check(is_instance_valid(list), "sanity: the first pick listed the pack")
+	await _click(list.cards().controls[0].get_global_rect().get_center(), _map_viewport)
+	await get_tree().process_frame
+	check(list.cards().sticky != null and _map.selection_deck_button.is_visible_in_tree(),
+			"sanity: a click stuck a possible card, its Deck on the row")
+	return list
+
+## A click on the map picture's far corner, outside every card a map viewer lists.
+func _click_outside_the_map_viewer() -> void:
+	await _click(Vector2(_map_viewport.size) - Vector2.ONE, _map_viewport)
+
+## The title the sidebar shows, or "HUD" while the description is down.
+func _described_title() -> String:
+	if not _container.showing_description() or _panel.current_entry == null: return "HUD"
+	return _panel.current_entry.title
+
 # EVERY OPENER IS ALSO ITS VIEWER'S CLOSER and says so while it is open, on either screen.
 func test_every_pile_opener_reads_close_while_its_viewer_is_open() -> void:
 	await _start_map_fixture()
@@ -5711,6 +5862,10 @@ func _open_the_chooser_with_pictures_behind_and_ahead() -> ChoiceViewer:
 	if pack not in _map.controller.next_nodes_of(_map.controller._current):
 		_map.controller._current = _a_neighbour_leading_to(pack)
 	_map.controller.move_to(pack)
+	return await _await_the_chooser()
+
+## The walk onto a pack node ends and its chooser comes up, or null once the wait runs out.
+func _await_the_chooser() -> ChoiceViewer:
 	await _await_map_arrival()
 	var waited := 0.0
 	while waited < CARD_CONTROL_TIMEOUT_SEC and _map.find_child("ChoiceViewer", true, false) == null:
@@ -5718,6 +5873,14 @@ func _open_the_chooser_with_pictures_behind_and_ahead() -> ChoiceViewer:
 		waited += get_process_delta_time()
 	await get_tree().process_frame
 	return _map.find_child("ChoiceViewer", true, false) as ChoiceViewer
+
+# A TRAVEL PRESSED FOR REAL IS SEEN THROUGH before the fixture ends: freeing Main mid-walk lets the
+# pack's chooser build after it, on nothing, and its cards leak at exit.
+func _see_the_travel_through() -> void:
+	var chooser := await _await_the_chooser()
+	check(chooser != null, "sanity: the travel onto the pack node opened its chooser")
+	if chooser: chooser.queue_free()
+	await get_tree().process_frame
 
 func _chooser_is_up(chooser: ChoiceViewer) -> bool:
 	return is_instance_valid(chooser) and not chooser.is_queued_for_deletion()

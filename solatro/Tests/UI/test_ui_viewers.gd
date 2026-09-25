@@ -19,6 +19,7 @@ func suite_name() -> String:
 
 func _ready() -> void:
 	TestLog.line("============ UI VIEWERS TEST PASS ============")
+	check_all_tests_registered()
 	behavior_section("VIEWER & CARD RENDERING REGRESSIONS")
 	await test_deck_viewer_singleton()
 	await test_control_card_focus()
@@ -38,6 +39,7 @@ func _ready() -> void:
 	await test_an_arrow_off_the_lists_edge_never_reaches_the_screen_beneath()
 	await test_an_edge_arrow_asks_for_the_sidebar_only_while_a_card_is_stuck()
 	await test_the_same_opener_pressed_again_closes_the_viewer()
+	await test_a_viewer_opened_over_another_leaves_it_open_beneath()
 	await test_the_pack_chooser_swallows_a_cancel_it_cannot_answer()
 	await test_a_viewer_opens_with_nothing_focused_and_nothing_published()
 	await test_the_first_navigation_press_enters_the_list()
@@ -247,6 +249,24 @@ func test_the_same_opener_pressed_again_closes_the_viewer() -> void:
 	if swapped: swapped.queue_free()
 	other.queue_free()
 	await _drop_viewer(first)
+
+## A viewer opened OVER another leaves it open beneath; its own opener pressed again closes it alone, and the one beneath is on top again.
+func test_a_viewer_opened_over_another_leaves_it_open_beneath() -> void:
+	var published : Array[String] = []
+	var under := _two_card_viewer(published)
+	var other := Button.new()
+	add_child(other)
+	var over := DeckViewer.show_deck(self, [_card()] as Array[CardData], other, true)
+	await get_tree().process_frame
+	check(over != null and over != under and not under.is_queued_for_deletion(),
+			"a viewer opened over another leaves it open beneath")
+	check(DeckViewer._open == over, "...and is the one on top", str(DeckViewer._open))
+	var again := DeckViewer.show_deck(self, [_card()] as Array[CardData], other, true)
+	check(again == null and over.is_queued_for_deletion() and not under.is_queued_for_deletion(),
+			"its own opener pressed again closes it alone")
+	check(DeckViewer._open == under, "...and the one beneath is on top again", str(DeckViewer._open))
+	other.queue_free()
+	await _drop_viewer(under)
 
 ## The pack cannot be reopened, so its cancel unsticks and is then SWALLOWED: the wall never hears it either.
 func test_the_pack_chooser_swallows_a_cancel_it_cannot_answer() -> void:

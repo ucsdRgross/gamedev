@@ -272,28 +272,33 @@ func _open_possible_cards_once(node: WorldGraphNode) -> void:
 # stuck in it carries the Deck row, a hovered one none.
 func _show_possible_cards(node: WorldGraphNode) -> void:
 	var cards := await _booster_of(node).get_possible_preview_cards()
-	var viewer := DeckViewer.show_deck(self, cards, possible_cards_button)
-	_host_map_viewer(viewer)
-	if viewer: viewer.cards().sticky_changed.connect(_follow_a_stuck_possible_card.bind(viewer))
+	_possible_cards = DeckViewer.show_deck(self, cards, possible_cards_button)
+	_host_map_viewer(_possible_cards)
+	if _possible_cards: _possible_cards.cards().sticky_changed.connect(_show_only_the_deck_button)
 
-# ⚠ A LIST CLOSED WITH A CARD STUCK lets it go AFTER the pick has its whole row back, so that late
-# unstick is not the player's and leaves the row alone.
-func _follow_a_stuck_possible_card(stuck: bool, viewer: DeckViewer) -> void:
-	if viewer.is_queued_for_deletion(): return
-	_show_only_the_deck_button(stuck)
+## The pack's possible-cards list this screen last opened; it is up only until it is queued for deletion.
+var _possible_cards : DeckViewer = null
+
+# A CARD STUCK IN THE POSSIBLE CARDS IS STILL BEING READ, so the run deck opens over the list rather
+# than replacing it, and closing the deck comes back to that card with its Deck row.
+func _a_possible_card_is_stuck() -> bool:
+	return is_instance_valid(_possible_cards) and not _possible_cards.is_queued_for_deletion() \
+			and _possible_cards.cards().sticky != null
 
 # ⚠ HOSTED FIRST, REPUBLISHED SECOND: the container's close handler takes the viewer's card out of
 # the sidebar, so a pick put back before it would be wiped by it. The pick is what every viewer
 # this screen opens comes back to. The chooser's Deck row stays up, the toggle that closes its deck.
 func _host_map_viewer(viewer: DeckViewer) -> void:
 	if viewer == null: return
-	selection_buttons.visible = chooser_is_up()
+	selection_buttons.visible = chooser_is_up() or _a_possible_card_is_stuck()
 	hud_container.host_viewer(viewer, wall_picture, info_hovered, HudContainer.MAP_SCREEN)
 	viewer.highlight_cleared.connect(_republish_the_pick)
 
 # Nothing picked is the HUD's own Deck button opening the viewer from the basic view, with no
 # description to return to -- unless the chooser is up, whose borrowed Deck row comes back with it.
+# A deck closed over a stuck possible card comes back to that card, not to the pick.
 func _republish_the_pick() -> void:
+	if _a_possible_card_is_stuck(): return
 	var picked := controller.selected()
 	selection_buttons.visible = picked != null or chooser_is_up()
 	if picked:
@@ -323,6 +328,7 @@ func _update_hud() -> void:
 func _on_deck_clicked() -> void:
 	var opener : Button = selection_deck_button if selection_buttons.visible \
 			else hud_container.map_deck_button
-	var viewer := DeckViewer.show_deck(self, Main.save_info.card_datas, opener)
+	var viewer := DeckViewer.show_deck(self, Main.save_info.card_datas, opener,
+			_a_possible_card_is_stuck())
 	_host_map_viewer(viewer)
 	DeckViewer.read_close_while_open(opener, &"MAP_CLOSE_DECK", viewer)

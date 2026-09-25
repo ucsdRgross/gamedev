@@ -29,6 +29,7 @@ const VIEWER_OPEN_HUD_OUT_PATH := "user://sidebar_snapshot/viewer_open_hud_showi
 const CHOOSER_OPAQUE_OUT_PATH := "user://sidebar_snapshot/chooser_opaque.png"
 const DECK_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_over_chooser.png"
 const DECK_CARD_HOVER_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_card_hover_over_chooser.png"
+const DECK_OVER_POSSIBLE_CARDS_OUT_PATH := "user://sidebar_snapshot/deck_over_possible_cards.png"
 const MAP_ZOOMED_EDGE_OUT_PATH := "user://sidebar_snapshot/map_zoomed_edge.png"
 const MAP_AFTER_TRAVEL_OUT_PATH := "user://sidebar_snapshot/map_after_travel.png"
 ## Wheel notches pushed at the map: far enough past the fit that the view has room to reach an edge.
@@ -132,6 +133,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 
 	await _shoot_a_viewer_over_the_hud(main)
+	await _shoot_the_deck_over_the_possible_cards(main)
 	await _shoot_the_chooser(main)
 
 
@@ -754,6 +756,58 @@ func _shoot_a_viewer_over_the_hud(main: Main) -> void:
 	print("SIDEBAR_SNAPSHOT viewer_open_hud description=%s deck_button=%s"
 			% [container.showing_description(), container.map_deck_button.is_visible_in_tree()])
 	if is_instance_valid(DeckViewer._open): DeckViewer._open.free()
+	await get_tree().process_frame
+
+# A CARD STUCK IN A PACK'S POSSIBLE CARDS, THE RUN DECK OPENED OVER THE LIST from its Deck row, all by
+# real clicks: the still shows the deck on top, the list under it and the row reading Close deck.
+func _shoot_the_deck_over_the_possible_cards(main: Main) -> void:
+	var map := main.map_scene
+	var pack := _the_pack_node(map)
+	if pack == null: return
+	var token_node := map.controller._current
+	_make_the_node_reachable(map.controller, pack)
+	await _click_on_the_map(main, WorldMapController.node_screen_rect(pack).get_center())
+	if not is_instance_valid(DeckViewer._open): await _click_the_button(map.possible_cards_button)
+	await _await_a_viewer()
+	var list := DeckViewer._open
+	var first := _listed_cards(list.flow_container)[0]
+	await _click_on_the_map(main, first.get_global_transform_with_canvas() * (first.size * 0.5))
+	await _click_the_button(map.selection_deck_button)
+	await _await_a_viewer()
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(DECK_OVER_POSSIBLE_CARDS_OUT_PATH)
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	print("SIDEBAR_SNAPSHOT deck_over_possible_cards deck_on_top=%s list_open=%s stuck=%s row=%s x=%s"
+			% [DeckViewer._open != list, is_instance_valid(list) and not list.is_queued_for_deletion(),
+					list.cards().sticky, map.selection_deck_button.text,
+					(container.get_node(^"%ExitX") as Control).visible])
+	await _click_the_button(map.selection_deck_button)
+	await get_tree().process_frame
+	if is_instance_valid(list): list._close()
+	await get_tree().process_frame
+	map.controller.clear_selection()
+	_stand_the_token_on(map.controller, token_node)
+	await get_tree().process_frame
+
+## A real left click at `at` in map-viewport points, the pointer moved there first.
+func _click_on_the_map(main: Main, at: Vector2) -> void:
+	_push_map_pointer(main, at)
+	await get_tree().process_frame
+	_push_map_click(main, at, true)
+	await get_tree().process_frame
+	_push_map_click(main, at, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## A real left click on a sidebar button, in the window pixels it is drawn at.
+func _click_the_button(button: Button) -> void:
+	var at := _window_px(button, button.size * 0.5)
+	_push_pointer(get_viewport(), at)
+	await get_tree().process_frame
+	_push_click(get_viewport(), at, true)
+	_push_click(get_viewport(), at, false)
+	await get_tree().process_frame
 	await get_tree().process_frame
 
 # THE CHOOSER IS THE NEW FOCUS UNTIL TAKE: an opaque cover of the whole map picture, its contents
