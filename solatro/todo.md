@@ -108,6 +108,67 @@ Recorded so they are not forgotten; none is designed yet. Each goes through `/fl
   By the same reading, today's rank-match points bonus (`plan_rank_match_step`, §3a) is rank's
   level-2 addition. Confirm that at the start of the pass.
 
+- ⬜ **Effects become data: one `.tres` row per effect, catalogued by YARD.** `addons/yard` (v1.2.0)
+  is installed and enabled; nothing uses it yet. Goal: every value an effect carries is a table
+  cell, tuned without opening the effect's class, and a class holds behaviour only.
+  **Owner rulings:**
+  - *"shared stats should become export if its necessary to fit into yard"* — this reverses the
+    TODO at `Cards/card_modifier.gd` that asks for abstract getters instead.
+  - *"combo identity for stable id sounds reasonable"* — `combo_key` stops using the script path.
+  - *"one script per effect sounds better"* — no shared scripts with numeric variants.
+  - *"dont randomly upgrade before a full release"* — YARD stays on a released version.
+  - Edit Resources as Table 2 (don-tnowe) is the suggested bulk editor, **not installed until
+    needed**. Check it on 4.7 first; it shows typed arrays of custom resources empty (its issue 117).
+  **The shape:**
+  - Each effect is a `.gd` (hooks only) plus one `.tres` (its values). A registry lists saved
+    instances, not scripts, so the `.tres` is required even with one script per effect.
+  - Shared stats are `@export` on `CardModifier`: `effect_id`, `name_key`, `description_key`,
+    `rarity`, `tags`, `frame`, pack weight. Per-effect numbers are `@export` on the effect's own
+    class, with shared names (`amount`, `mult`, `count` and their level-2 twins) so one column
+    sorts across every effect.
+  - **Store the fact, derive the words.** `get_str()`/`get_description()` are written once on the
+    base and read the fields; the description key carries a slot the number fills, or a retune
+    leaves the text lying. A method stays a method where the answer is computed or differs by class
+    (`PipRankNumeral.get_str`, every hook).
+  - Expose a value when someone will tune it; a literal whose change makes a different effect stays
+    in code (hard rule 8). Game-wide knobs stay in `player_settings.gd`.
+  **Why values live in the `.tres`, not the script:** GDScript cannot redeclare a parent's `var` or
+  `const` in a subclass, and the engine will not add it (godot-proposals issue 10060, closed). A
+  subclass declares none of the base stats; its `.tres` sets them. ⚠ **No subclass assigns a base
+  stat in `_init()`**: a stored value overwrites it after `_init` (godot issue 98342), and since
+  4.5 a value equal to the declared default is not written to the file (godot PR 107049), so the
+  `_init` value would replace a row set back to the default.
+  **What replaces `@abstract`:** a `.tres` cannot be forced to hold a value — a missing property
+  loads as the declared default, silently. So the defaults are neutral and detectable
+  (`Rarity.UNSET` first, `frame = -1`, empty keys), and:
+  - a catalogue test walks every registry row and fails on an unset stat, on an effect script with
+    no row or two, and on `effect_id` disagreeing with the row's registry id;
+  - the registry load path `assert`s the same preconditions (debug only, hard rule 7).
+  **Seams the migration must close:**
+  - **`.new()` skips the table** — it returns script defaults. Every construction site loads the
+    row and `duplicate(true)`s it: `Decks/deck.gd`, `Cards/Types/type_booster_basic.gd`,
+    `Cards/Skills/Rules/skill_grid_allotment.gd`, and tests. A duplicate per card is also required
+    because a modifier holds per-game state.
+  - **`effect_id` is stored on the effect**: a duplicate has no path, so YARD's
+    `get_string_id_of()` cannot find it. The combo identity reads `effect_id`.
+  - **Tests read the row, not a literal**, or every retune breaks them.
+  - **Open, for the owner — a saved run keeps the values it was dealt.** `run.tres` embeds each
+    card's modifiers, so a retune does not reach a saved run. Either accept that, or save only
+    `effect_id` plus per-game state and reload values from the registry. Rarity and weights do not
+    matter once a card is in the deck; per-effect numbers do.
+  **Tooling:**
+  - A one-off importer from `design/effect-review/EFFECTS.csv` (id, name, slot, class, family)
+    to `.tres` rows, in the `design/effect-review/build/` Python pipeline.
+  - One registry per slot (skills, stamps, hazards…), class-restricted. Index the fields booster
+    packs query (`rarity`, `tags`, class, family, weight) so `where({...})` needs no loads.
+  - Bulk edits by an agent go through a windowless Godot script (load, set, `ResourceSaver.save`)
+    with the editor closed, then YARD's `sync_from_scan_directories` and `rebuild_property_index`
+    (`addons/yard/editor_only/registry_io.gd`); whether those run without the editor is unmeasured.
+    A new `.tres` gets its UID only on import, and YARD keys on the UID: create, import, then sync.
+  **YARD cautions:** keep registries committed (an upgrade once wiped them, its issue 95); never move
+  a registry's class-restriction script (it resets every string id, its issue 122, open on 4.7);
+  no multi-cell bulk edit (its issue 56).
+
 - ⬜ **By default a grid and its score labels form a perfect square: treat it as 6×6.** The 5×5
   cells, row scores in the LEFT column, column scores in the BOTTOM row, and the special score in
   the bottom-left corner square. The gap between squares is the same everywhere, in x and in y.
