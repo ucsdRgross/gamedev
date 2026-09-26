@@ -460,7 +460,7 @@ enum SeparationMode {
 	set(value):
 		wall_reduced_motion = value
 		settings_changed.emit()
-## Floor on a wall-view texture's short axis, in whole px. Feeds `SubViewport.size` directly.
+## Floor, in texels, on the short axis of the part of a wall-view picture that is shown.
 @export var wall_view_min_texture_px : int = 64:
 	set(value):
 		wall_view_min_texture_px = value

@@ -154,7 +154,7 @@ func detach_screen() -> void:
 	screen_root = null
 	_show_background()
 
-## Shows `_background_texture` inside `viewport`, stretched to fill `_design_size` exactly, as `%Screen` reads the WHOLE viewport.
+## Shows `_background_texture` inside `viewport`, stretched to fill `_design_size` exactly, of which `%Screen` shows the centred part `_crop_to_rect()` cuts.
 func _show_background() -> void:
 	if _background or not _background_texture: return
 	_background = Sprite2D.new()
@@ -250,15 +250,17 @@ func set_screen_alpha(alpha: float) -> void:
 func set_frame_visible(shown: bool) -> void:
 	_frame.visible = shown
 
-# Sets `SubViewport.size` from this picture's on-screen pixel footprint at wall-view zoom, each
-# axis clamped below by `wall_view_min_texture_px` so a tiny footprint never asks the GPU for a
-# degenerate render target.
+# ONLY THE SHOWN PART IS ON SCREEN, so it alone is sized to a texel per footprint pixel and floored
+# at `wall_view_min_texture_px`: sizing the whole canvas to the footprint drew a cropped picture ~3x
+# magnified. One scale on both axes, like the canvas it renders.
 
 # ⚠ `size_2d_override` is what makes the screen SHRINK rather than crop, and
 # `size_2d_override_stretch` maps the two onto each other -- PICTURE_WALL.md "Landmines".
 func update_wall_view_size(footprint_px: Vector2) -> void:
-	var min_px := settings().wall_view_min_texture_px
-	viewport.size = Vector2i(maxi(int(footprint_px.x), min_px), maxi(int(footprint_px.y), min_px))
+	var shown := _shown_canvas()
+	var texels_per_canvas_px := maxf(cover_scale(shown, footprint_px),
+			settings().wall_view_min_texture_px / minf(shown.x, shown.y))
+	viewport.size = Vector2i((Vector2(_design_size) * texels_per_canvas_px).ceil())
 	viewport.size_2d_override = _design_size
 	viewport.size_2d_override_stretch = true
 	_rescale_screen()
@@ -302,12 +304,15 @@ func _rescale_screen() -> void:
 # as `Sprite2D.get_rect()` reads a region, and the returned scale draws that part at `rect.size`.
 func _crop_to_rect() -> Vector2:
 	var texture := Vector2(viewport.size)
-	var canvas := Vector2(_design_size)
-	var shown := (texture * rect.size / cover_scale(canvas, rect.size) / canvas).round()
+	var shown := (texture * _shown_canvas() / Vector2(_design_size)).round()
 	var region := Rect2((texture - shown) / 2.0, shown)
 	_screen.region_rect = region
 	_shadow.region_rect = region
 	return rect.size / region.size
+
+## The part of the canvas this picture shows, in canvas px: its centre at the rect's aspect.
+func _shown_canvas() -> Vector2:
+	return rect.size / cover_scale(Vector2(_design_size), rect.size)
 
 # Re-renders a FROZEN texture at unchanged size, for a window restored from minimise -- the GPU
 # may have discarded it. ⚠ A LIVE picture is NOT frozen and must never be forced to

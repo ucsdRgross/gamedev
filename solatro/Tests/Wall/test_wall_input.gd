@@ -1007,8 +1007,8 @@ func _test_wall_forward_asks_for_forward() -> void:
 func _test_touch_events_route_to_the_same_place_a_click_does() -> void:
 	var rig := _camera_rig()
 	var design_size := Vector2i(200, 150)
-	var rect := PictureRect.new(&"t", Vector2(300, -150), Vector2(design_size) * Vector2(0.8, 1.0),
-			Vector4(10, 10, 10, 10))
+	var rect := PictureRect.new(&"t", Vector2(300, -150),
+			Vector2(design_size) * Vector2(0.8, 1.0) * CROPPED_RECT_GROWTH, Vector4(10, 10, 10, 10))
 	var entry := PictureEntry.new()
 	entry.id = &"t"
 	entry.design_size = design_size

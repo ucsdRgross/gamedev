@@ -324,12 +324,11 @@ func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 		var wp : WallPicture = main._pictures[id]
 		if wp.is_focused: continue
 		checked_any = true
-		var want := main._footprint(main._rects[id])
-		var floor_px : int = SettingsManager.settings.wall_view_min_texture_px
-		var want_px := Vector2i(maxi(int(want.x), floor_px), maxi(int(want.y), floor_px))
-		check(wp.viewport.size == want_px,
-				"%s's render target followed the unlock re-pack's new footprint" % id,
-				"viewport=%s want=%s" % [wp.viewport.size, want_px])
+		var shown := (wp.get_node(^"%Screen") as Sprite2D).region_rect.size
+		var footprint := main._footprint(main._rects[id])
+		check(absf(shown.x - footprint.x) <= 1.0 and absf(shown.y - footprint.y) <= 1.0,
+				"%s's shown texels followed the unlock re-pack's new footprint, within a texel" % id,
+				"shown=%s footprint=%s target=%s" % [shown, footprint, wp.viewport.size])
 	check(checked_any,
 			"sanity: at least one unfocused picture was actually checked -- an all-focused wall "
 			+ "would make the loop above assert nothing")

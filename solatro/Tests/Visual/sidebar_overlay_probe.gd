@@ -207,7 +207,7 @@ func _shoot_the_pack_chooser(pack: WorldGraphNode) -> void:
 	await _shoot("chooser_nothing_picked", &"map")
 	print("PROBE   take disabled=", viewer.confirm_button.disabled)
 	var card : ControlCard = viewer._cards.controls[1]
-	viewer.select(card.child.data)
+	viewer.cards().stick_to(card.child.data)
 	viewer.confirm_button.grab_focus()
 	await _await_still()
 	await _shoot("chooser_card_picked", &"map")

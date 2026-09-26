@@ -164,16 +164,24 @@ func test_non_focused_picture_keeps_texture() -> void:
 	check(tex != null and tex.get_size() != Vector2.ZERO, "its texture is non-zero-size",
 			str(tex.get_size()) if tex else "null")
 
-# SubViewport.size is written straight from the on-screen footprint, each axis independently clamped
-# below by settings.wall_view_min_texture_px, so shrinking one axis to 10px clamps that short axis
-# to the floor without disturbing the other.
+# SubViewport.size is written from the on-screen footprint so the part the picture SHOWS gets a texel
+# per footprint pixel, and a tiny footprint floors that part's short axis at the settings' minimum.
+# Within a texel: the target is whole texels and the shown part is cut on them.
 func test_wall_view_size_written_and_clamped() -> void:
 	var wp := _pictures[0]
-	wp.unfocus(Vector2(10, 500))
+	var screen : Sprite2D = wp.get_node(^"%Screen")
+	var footprint := wp.rect.size * 0.5
+	wp.unfocus(footprint)
+	var shown := screen.region_rect.size
+	check(absf(shown.x - footprint.x) <= 1.0 and absf(shown.y - footprint.y) <= 1.0,
+			"the part a wall-view picture shows gets a texel per footprint pixel, and no more",
+			"shown %s footprint %s target %s" % [shown, footprint, wp.viewport.size])
+	wp.unfocus(wp.rect.size * 0.01)
+	shown = screen.region_rect.size
 	var min_px := SettingsManager.settings.wall_view_min_texture_px
-	check(mini(wp.viewport.size.x, wp.viewport.size.y) == min_px,
-			"a 10px footprint clamps the short axis to wall_view_min_texture_px",
-			str(wp.viewport.size))
+	check(absf(minf(shown.x, shown.y) - min_px) <= 1.0,
+			"a tiny footprint floors the shown part's short axis at wall_view_min_texture_px",
+			"shown %s target %s" % [shown, wp.viewport.size])
 
 # Restoring from minimise re-renders every picture once. Wall._notification hooks
 # NOTIFICATION_APPLICATION_FOCUS_IN, the closest built-in un-minimise event on desktop, and calls

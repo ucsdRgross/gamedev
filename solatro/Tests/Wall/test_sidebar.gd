@@ -60,6 +60,7 @@ func _ready() -> void:
 	await test_the_sidebar_is_hidden_on_the_menu_until_the_picker_describes_something()
 	await test_every_focused_picture_covers_the_window_edge_to_edge()
 	await test_a_focused_picture_is_drawn_unstretched_at_every_window_shape()
+	await test_a_wall_view_picture_draws_at_least_a_texel_per_pixel()
 	await test_the_sidebar_slides_in_after_the_landing_and_the_board_shifts_with_it()
 	await test_the_sidebar_is_fully_out_before_the_camera_leaves()
 	await test_a_leave_mid_slide_ends_with_the_sidebar_fully_out()
@@ -1394,6 +1395,32 @@ func test_a_focused_picture_is_drawn_unstretched_at_every_window_shape() -> void
 		await _enter_game_fixture()
 		_check_drawn_unstretched(&"game", str(size))
 		await _end_main_fixture()
+
+## In wall view every picture, the one just left among them, draws what it shows from at least one texel per window pixel on each axis: a cropped picture is no blurrier than the uncropped game.
+func test_a_wall_view_picture_draws_at_least_a_texel_per_pixel() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		await _start_map_fixture(size)
+		await _main._go_to_wall_view()
+		await _await_the_wall_drawn_at_its_camera_zoom()
+		for id : StringName in [&"map", &"game", &"start_menu"] as Array[StringName]:
+			var sprite : Sprite2D = _main._pictures[id].get_node(^"%Screen")
+			var texels_per_px := Vector2.ONE / sprite.get_global_transform_with_canvas().get_scale()
+			var whole_texels := Vector2.ONE - Vector2(0.5, 0.5) / sprite.region_rect.size
+			check(texels_per_px.x >= whole_texels.x and texels_per_px.y >= whole_texels.y,
+					"in wall view at %s the %s picture draws at least a texel per pixel" % [size, id],
+					"%s texels per px, shown %s of %s" % [texels_per_px, sprite.region_rect.size,
+							_main._pictures[id].viewport.size])
+		await _end_main_fixture()
+
+# THE CAMERA IS PHYSICS-INTERPOLATED, so the drawn canvas lags its zoom by a few frames after a
+# move lands -- measured 0.785 drawn against 0.449 two frames on. Bounded, so a lag that never
+# closes fails the check rather than hanging.
+func _await_the_wall_drawn_at_its_camera_zoom() -> void:
+	var camera : Camera2D = _main.wall.get_node(^"%Camera2D")
+	for _frame : int in range(120):
+		if is_equal_approx(_main.wall.get_viewport().get_canvas_transform().get_scale().x, camera.zoom.x):
+			return
+		await get_tree().process_frame
 
 ## The screen shows whole texels, so the aspect is met to half of one across the narrowest shown width, 389 px at 600x1000.
 const UNSTRETCHED_TOLERANCE := 0.0015

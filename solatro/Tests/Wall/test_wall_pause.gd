@@ -224,17 +224,17 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 # AT COLD LAUNCH: every picture is built at full `_design_size`, and nothing sized the unfocused
 # ones down until the first resize -- five oversized SubViewports rendering ~7x the pixels they
 # are shown at, for the whole opening of the game.
-	var floor_px : int = SettingsManager.settings.wall_view_min_texture_px
 	var sized := 0
 	for id : StringName in main._pictures:
 		var wp : WallPicture = main._pictures[id]
 		if wp.is_focused: continue
 		sized += 1
-		var want := main._footprint(main._rects[id])
-		var want_px := Vector2i(maxi(int(want.x), floor_px), maxi(int(want.y), floor_px))
-		check(wp.viewport.size == want_px,
-				"%s renders at its wall-view footprint from cold launch, not at design size" % id,
-				"viewport=%s want=%s design=%s" % [wp.viewport.size, want_px, wp._design_size])
+		var shown := (wp.get_node(^"%Screen") as Sprite2D).region_rect.size
+		var footprint := main._footprint(main._rects[id])
+		check(absf(shown.x - footprint.x) <= 1.0 and absf(shown.y - footprint.y) <= 1.0,
+				"%s shows its wall-view footprint in texels from cold launch, not its design size" % id,
+				"shown=%s footprint=%s target=%s design=%s" % [shown, footprint, wp.viewport.size,
+						wp._design_size])
 	check(sized > 0, "sanity: unfocused pictures existed to check", str(sized))
 
 
