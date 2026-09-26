@@ -56,6 +56,9 @@ answered "go". Design checkpoints: `/flowchart-design` § Pair review.
   subagent's `/tasks` row after any edit to a definition.
 - A NEW agent file is offered in the same session; whether an EDIT to an already-loaded definition
   applies before the next session is unmeasured - treat it as next-session.
+- A 150-turn cap stop (a broad medium step: a layout rebuild plus a lock-out retired plus six
+  re-pointed rows) leaves the edits in the tree and is resumable: `SendMessage` to the same agent
+  continues with its context intact. A step that big is the sign to split the next brief.
 - An app restart or a usage limit kills a running subagent mid-step and leaves its last edits in
   the tree and `.claude/.subagent.lock` held. Read the diff and its scratch evidence before
   redispatching, and clear the lock by hand when nothing runs.
