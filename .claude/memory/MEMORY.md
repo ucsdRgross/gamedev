@@ -25,7 +25,7 @@
 - [Godot editor disk sync](godot-editor-disk-sync.md) — an open editor rewrites files and locks dlls; never kill it
 - [Key events don't bubble](godot-key-events-no-bubble.md) — accept/cancel go in `_unhandled_input`; focus never crosses a viewport
 - [Type all arrays](gdscript-type-all-arrays.md) — warnings-as-errors: type elements and loop variables
-- [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never `Get-Content | Set-Content` a source file
+- [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never round-trip a source file through PowerShell, nor write one through an unquoted bash heredoc
 
 **Running a plan** (everything else lives in the `/plan-run` skill)
 - [Tests that prove nothing](tests-that-prove-nothing.md) — the ways a green test asserts nothing; prove every one red first
@@ -33,6 +33,7 @@
 - [Implementer routing](implementer-routing.md) — Opus 5.5 main agent; implementers Opus medium/low or Sonnet low by what the brief knows; Fable reviews with targeted questions
 - [Brief premise is a hypothesis](brief-premise-is-a-hypothesis.md) — measure first; a contradicted premise stops the step for an owner question
 - [One fix at a time](one-fix-at-a-time.md) — full suite between fixes; a crashing batch cannot be diagnosed
+- [Reflect at every gate](reflect-at-every-gate.md) — session end, plan finish, close: record each repeatable cost where it is read, unprompted
 
 **Design workflow** (everything else lives in the `/flowchart-design` skill)
 - [Design answers need a claimant](design-answers-need-a-claimant.md) — check nodes→steps, not just steps→nodes

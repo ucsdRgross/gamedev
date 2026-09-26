@@ -1,6 +1,6 @@
 ---
 name: powershell-mangles-utf8
-description: Never round-trip source files through PowerShell Get-Content | Set-Content — PS 5.1 reads as ANSI and corrupts every non-ASCII character
+description: Never round-trip source files through PowerShell Get-Content | Set-Content (PS 5.1 reads ANSI), nor through an unquoted bash heredoc (it eats backslash-newline continuations)
 metadata:
   node_type: memory
   type: feedback
@@ -11,8 +11,11 @@ PowerShell 5.1 reads with the system ANSI codepage, so every non-ASCII character
 (`⚠` → `âš `, `§` → `Â§`, `—` → `â€"`), and silently — the file still parses and the tests still
 pass, so nothing catches it but a diff.
 
-**How to apply:** use the Edit/Write tools for file content, or a python heredoc that writes
-`encoding='utf-8'`. Reserve PowerShell for running things. If it has already happened:
+**How to apply:** use the Edit/Write tools for file content, or a python script that writes
+`encoding='utf-8'` - from a file, or a heredoc with a QUOTED delimiter (`<<'EOF'`).
+⚠ **Bash eats `\`+newline in an UNQUOTED heredoc (`<<EOF`) and in a double-quoted string**: a
+GDScript continuation collapses into one line with the next line's indent tabs (`a if x \t\t\telse
+b`). Measured: 19 such lines on one branch, 24 on main, every one silent until a reader hit it. Reserve PowerShell for running things. If it has already happened:
 `git checkout -- <file>` and re-apply the edits with Edit — do not try to un-mangle in place.
 
 ⚠ **A hook enforces this** (`.claude/hooks/block-source-rewrite.ps1`): `Set-Content`, `Out-File` or

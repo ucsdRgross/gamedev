@@ -95,6 +95,29 @@ Update the file after **every** task and **at the 60% mark of the session at the
 as an end-of-session artifact. Sessions here have died mid-handoff; the file existing early is
 the entire point.
 
+## Reflect and record — at every session end, unprompted
+
+Owner: "make sure to do these type of cleanup and reflections steps every time for self-learning at
+planned gates such as at end of sessions or when finishing a plan, not just when i ask you to
+reflect. Having issues repeat is a waste of time." It runs before the session's last message, at
+every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
+
+1. **List what cost time this session**, from the transcript, not memory: a brief whose premise
+   measurement overturned; an owner question a ruling already answered (or one asked so the owner
+   rejected the options); a rerun, a leak, a hang, a turn-cap stop; a review shot that misled the
+   owner; tool or hook friction; a schedule change the owner learned about by asking.
+2. **For each, ask "will this happen again?"** If yes, write the rule WHERE IT IS READ AT THAT
+   MOMENT (`/plan-run` § "A finding is only fed back if it lands where the reader already looks"):
+   an implementer trap → `.claude/agents/plan-implementer*.md`; a test trap →
+   `tests-that-prove-nothing`; a brief trap → `brief-premise-is-a-hypothesis` or `/plan-run`'s
+   brief section; a project fact → that project's doc; a cross-project agreement → a memory
+   (`.claude/memory/`, run `/docs` first). A one-off goes nowhere.
+3. **Prune this file** (the ~300-line rule below): a finished row shrinks to id, description,
+   status and its commits - the commit message holds the evidence; an open item it carried moves
+   to Open bugs; a resolved Open bug goes.
+4. **Say in the session's last message what was recorded and where**, one line each, and what was
+   judged a one-off.
+
 ## Rules
 
 - **Repo-relative paths only** — no machine-local absolute paths, no references to memory files.

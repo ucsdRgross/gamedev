@@ -50,6 +50,14 @@ checked with `git ls-files --eol`, never `grep`: Git Bash's `grep -c $'\r'` coun
 **Verify the recon premise before dispatch** — the site and cause a brief names are a hypothesis
 until a bounded command confirms them ([[brief-premise-is-a-hypothesis]]).
 
+**A step inserted ahead of an item the owner ordered is a schedule change: say so the moment you
+insert it**, with what it delays ("this puts the square cards a session later"). Measured: seven
+review-comment steps went ahead of an owner-ordered merge, and the owner learned it by asking why
+they had not seen the feature yet.
+
+**Split a brief that moves more than one mechanism.** A layout rebuild plus a retired lock-out plus
+six re-pointed rows hit the implementer's 150-turn cap mid-edit.
+
 ## Writing a step brief
 
 The implementer's definition already carries the report schema and repo rules, so a brief is short —
@@ -393,7 +401,9 @@ Run in this order. Earlier items change the diff the later ones read.
    Test-only repairs in different suites may share one gate: a red there names its suite.
 8. **`/docs`** — fold the run's residue into the living docs.
 9. **`consolidate-memory`** — merge duplicates, fix facts the run made stale, prune the index.
-10. **Feed the run's findings back into the skills and agents.** Every trap this run hit that a
+10. **Feed the run's findings back into the skills and agents** — the `/handoff` skill's "Reflect
+   and record" step, run over the WHOLE run (it also runs at every session end, unprompted).
+   Every trap this run hit that a
    skill, an agent definition or a memory did not warn about is a gap in the tooling, not bad luck.
    Add it where it will be READ next time — the step-brief template, the agent's rules, the trap
    list — and delete anything the run proved wrong.

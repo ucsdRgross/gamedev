@@ -87,6 +87,12 @@ skipped check as a pass.
 - **Warnings are errors** — type every array element and every for-loop variable.
 - **User-facing strings** go through `TRANSLATION.find` + the localisation CSV, never a literal.
 - **Tuning knobs** live in `Scripts/player_settings.gd` via `SettingsManager.settings`.
+- ⚠ **Never write source through a shell string.** An unquoted bash heredoc (`<<EOF`) or a
+  double-quoted string eats every `\`+newline and joins a GDScript continuation into one line.
+  Use the Edit tool, or python from a file / a `<<'EOF'` heredoc.
+- ⚠ **Read the EXIT PROFILE of every run you make, filtered ones included** - a RID / GL texture
+  / PagedAllocator line or a higher ObjectDB count is a leak even when every check passed; report
+  it. A row that starts an awaited product flow (a Travel, a deal) sees it through before teardown.
 - ⚠ **THE COMMENT RULES ARE HARD, AND `doc_check --changed` ERRORS ON THEM.** Comments are a code
   smell; a comment earns its place only by saying WHY a method exists.
   - **No comment may have whitespace before it** — a plain `#` sits at column 0, above the method.

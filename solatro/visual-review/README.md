@@ -43,6 +43,12 @@ the scenes take their knobs. Shots with the same `scene` and `env` share one God
    Every run gets a fresh private APPDATA and a hard timeout that kills by PID. A scene that is
    absent or fails on the base leaves no BEFORE, and the page says "no before"; a shot that fails
    on the working tree fails the command.
+   ⚠ **A shot shows only a state a player can reach.** Stage it by real input through the
+   viewport; where a shot must write state directly, restore it before the next capture and print
+   a consistency check at each capture (e.g. the map's current node == the node the token is on).
+   Set any focus the shot depends on by input - it otherwise varies run to run. Measured: a stale
+   direct write drew a map with no edges and cost the owner a question about a harness bug. A shot
+   scene the base commit lacks gives no BEFORE; say so in `seen`, or shoot BEFORE with `--base`.
 3. **Read every AFTER PNG yourself and write its `seen`** — what the image shows, not what the
    change was meant to do. Look at every BEFORE too. Every crop you looked at goes in `crops`.
 4. **Park:** `npm --prefix designloop run watch -- visual-review/solatro`. It wakes when the owner

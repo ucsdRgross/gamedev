@@ -27,6 +27,10 @@ feature.
 - The overseer looks at the evidence (frames, numbers) itself, then asks the owner the one
   question the measurement raised, with a shot per option when it is a look.
 - Keep "the docs say X" apart from "I measured X here" (CLAUDE.md rule 6).
+- ⚠ **A read-only recon's claim about RUNTIME behaviour is a reading of code, not a measurement** -
+  write it into the brief as "traced, not measured". Measured: a recon said an opaque backdrop "is
+  the ONLY thing keeping the map inert"; under it the wheel still zoomed the map and the first
+  motion hovered a node. A premise stated as fact steers the implementer toward building on it.
 
 Related: [[read-the-engine-docs]], [[implementer-routing]], [[tests-that-prove-nothing]],
 [[verify-visuals-by-eye]].

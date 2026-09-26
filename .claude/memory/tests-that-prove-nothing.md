@@ -97,6 +97,16 @@ A green suite is the weakest evidence there is. Every test below passed review w
     diagnosed as a settle race until a print showed everything at rest. Decide the touching case
     explicitly (`is_equal_approx`), and **measure a flake before changing the wait**: the
     diagnosis is a claim, the print is the evidence.
+20. **A test that BRANCHES on what the product did, and passes on both branches.** `if viewer
+    still open: assert A else: assert B` - measured: the product took each branch in 3 of 6 full
+    gates on unchanged code, so the gate stayed green while the game behaved two ways. The only
+    trace was a per-suite count that moved by 3. Two possible outcomes is a finding: pin the
+    product to one and assert only that one.
+21. **A teardown that frees the scene while an awaited product flow is still running.** A row
+    pressed Travel, asserted, and freed Main while the token was still walking onto a node whose
+    arrival builds a viewer: an intermittent RID / GL texture / PagedAllocator leak at exit (1 run
+    in 5), invisible to every check. See the flow through before teardown, and read the EXIT
+    PROFILE of every run, filtered ones included.
 
 **The rule that catches every one: prove every new test red-then-green**, and **compare PER-SUITE
 check counts across the red and green runs** — a suite whose count dropped had assertions silently

@@ -145,6 +145,9 @@ most of them test-to-test setup. About ten touch production code.
 - **Execution.** Never stop early citing context — compaction exists. One blocked scenario: finish
   the rest and report the blocker. Commit only the current step's files, staged by path. Subagent
   presets: model aliases and explicit effort in frontmatter ([[implementer-routing]]).
+- **Reflect at every gate, unprompted.** Every session end, plan finish and `/plan-run` close runs
+  `/handoff`'s "Reflect and record": what cost time, whether it will recur, the rule written where
+  it is read next time, and the last message says what was recorded ([[reflect-at-every-gate]]).
 
 ## Where to start
 
