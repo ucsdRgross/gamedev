@@ -62,6 +62,7 @@ func _ready() -> void:
 	await test_a_focused_picture_is_drawn_unstretched_at_every_window_shape()
 	await test_a_wall_view_picture_draws_at_least_a_texel_per_pixel()
 	await test_a_visited_picture_shows_its_content_in_wall_view_and_stays_frozen()
+	await test_the_wall_view_shows_one_surface_colour_behind_the_pictures()
 	await test_the_sidebar_slides_in_after_the_landing_and_the_board_shifts_with_it()
 	await test_the_sidebar_is_fully_out_before_the_camera_leaves()
 	await test_a_leave_mid_slide_ends_with_the_sidebar_fully_out()
@@ -1444,6 +1445,92 @@ func test_a_visited_picture_shows_its_content_in_wall_view_and_stays_frozen() ->
 				_main._pictures[&"map"].viewport.get_texture().get_image(), thumbnail) == 0.0,
 				"...and it stays frozen: a map repainted after the leave is not re-rendered at %s" % size)
 		await _end_main_fixture()
+
+## Everything behind the pictures in wall view is the wall surface's one colour, at rest and while the camera travels out to the wall, at a landscape and a portrait window.
+func test_the_wall_view_shows_one_surface_colour_behind_the_pictures() -> void:
+	var settings := SettingsManager.settings
+	for size : Vector2i in INSET_WINDOWS:
+		await _start_map_fixture(size)
+		_booted_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		var old_delay := settings.base_delay
+		settings.base_delay = TRANSIT_BASE_DELAY
+		var surface : ColorRect = _main.wall.get_node(^"%WallSurface")
+		var worst_in_transit : Array[String] = []
+		var samples := 0
+		var informative := 0
+		var started_ms := Time.get_ticks_msec()
+		_main._go_to_wall_view()
+		while _main._move_in_flight and samples < 900:
+			await RenderingServer.frame_post_draw
+			var uncovered := _uncovered_pixels()
+			if not uncovered.is_empty(): informative += 1
+			var off := _off_surface_pixels(uncovered, surface.color)
+			if off.size() > worst_in_transit.size(): worst_in_transit = off
+			samples += 1
+		settings.base_delay = old_delay
+		TestLog.line("transit at %s: %d frames, %d with wall showing, %.1f ms per sample" % [size,
+				samples, informative, float(Time.get_ticks_msec() - started_ms) / maxf(samples, 1.0)])
+		check(informative > TRANSIT_MIN_FRAMES,
+				"sanity: the move out to the wall showed the wall on enough frames at %s" % size,
+				"%d of %d frames" % [informative, samples])
+		check(worst_in_transit.is_empty(),
+				"in transit to the wall at %s only the surface colour shows behind the pictures" % size,
+				"worst frame: %d off, first %s" % [worst_in_transit.size(), worst_in_transit.slice(0, 1)])
+		await _await_the_wall_drawn_at_its_camera_zoom()
+		await RenderingServer.frame_post_draw
+		var at_rest := _off_surface_pixels(_uncovered_pixels(), surface.color)
+		check(at_rest.is_empty(),
+				"in wall view at %s only the surface colour shows behind the pictures" % size,
+				"%d off, first %s, surface %s" % [at_rest.size(), at_rest.slice(0, 1), surface.color])
+		await _end_main_fixture()
+
+## The suite's own delay lands the camera move in a frame or two, too few to see it in transit.
+const TRANSIT_BASE_DELAY := 1.0
+## Frames of the move out to the wall that show the wall, needed for the transit check to mean anything.
+const TRANSIT_MIN_FRAMES := 4
+## Per-channel difference a sampled window pixel may carry and still be the surface colour.
+const SURFACE_COLOUR_TOLERANCE := 0.02
+## Window pixels grown around each drawn picture part: its antialiased edge, not the wall.
+const PICTURE_EDGE_MARGIN := 2.0
+
+# The window pixels, on a stride, that lie outside every picture part and overlay control: the
+# wall itself, wherever it shows.
+func _uncovered_pixels() -> Dictionary[Vector2i, Color]:
+	var image := _booted_viewport.get_texture().get_image()
+	var covered := _drawn_wall_view_parts()
+	var uncovered : Dictionary[Vector2i, Color] = {}
+	for y : int in range(0, image.get_height(), THUMBNAIL_SAMPLE_STEP):
+		for x : int in range(0, image.get_width(), THUMBNAIL_SAMPLE_STEP):
+			if not covered.any(func(r: Rect2) -> bool: return r.has_point(Vector2(x, y))):
+				uncovered[Vector2i(x, y)] = image.get_pixel(x, y)
+	return uncovered
+
+# Each uncovered pixel that is not `surface_colour`, as its place and colour.
+func _off_surface_pixels(uncovered: Dictionary[Vector2i, Color], surface_colour: Color) -> Array[String]:
+	var off : Array[String] = []
+	for at : Vector2i in uncovered:
+		var d := uncovered[at] - surface_colour
+		if maxf(maxf(absf(d.r), absf(d.g)), maxf(absf(d.b), absf(d.a))) > SURFACE_COLOUR_TOLERANCE:
+			off.append("%s %s" % [at, uncovered[at]])
+	return off
+
+# The window rect of every drawn picture part (screen, frame, shadow) and every shown overlay
+# button, through the transform each was just drawn with.
+func _drawn_wall_view_parts() -> Array[Rect2]:
+	var rects : Array[Rect2] = []
+	for wp : WallPicture in _main._pictures.values():
+		for sprite : Sprite2D in wp.find_children("*", "Sprite2D", true, false):
+			if sprite.is_visible_in_tree():
+				rects.append((sprite.get_global_transform_with_canvas() * sprite.get_rect())
+						.grow(PICTURE_EDGE_MARGIN))
+		for part : Control in wp.find_children("*", "Control", true, false):
+			if part.is_visible_in_tree():
+				rects.append((part.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, part.size))
+						.grow(PICTURE_EDGE_MARGIN))
+	for button : Button in _main.wall.get_node(^"%Overlay").find_children("*", "Button", true, false):
+		if button.is_visible_in_tree():
+			rects.append(button.get_global_rect().grow(PICTURE_EDGE_MARGIN))
+	return rects
 
 ## A thumbnail is the picture's own canvas, which covers its whole render target.
 const THUMBNAIL_OPAQUE_FRACTION := 0.99

@@ -544,10 +544,6 @@ func _apply_focus() -> void:
 # smaller viewport -- it CROPS.
 		var footprint := _footprint(_rect_for(id)) if preview_wall_view_resolution 				else Vector2(wp.viewport.size)
 		wp.unfocus(footprint)
-# `unfocus()` leaves the viewport at UPDATE_DISABLED, which is right in the game because the
-# picture rendered while it was focused. Here it may never have rendered at all -- so
-# repaint once through the real frozen-texture path.
-		wp.mark_for_rerender()
 	_apply_selection()
 	_pose_camera()
 	if _focus_stack != null and preview_focus_id != &"" and _focus_stack.current() != preview_focus_id:

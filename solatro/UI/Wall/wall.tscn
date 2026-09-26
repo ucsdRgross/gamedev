@@ -8,7 +8,10 @@
 process_mode = 3
 script = ExtResource("1_wall")
 
-[node name="WallSurface" type="ColorRect" parent="."]
+[node name="WallSurfaceLayer" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="WallSurface" type="ColorRect" parent="WallSurfaceLayer"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15

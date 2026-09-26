@@ -163,6 +163,8 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `WallPicture` | `func _shown_canvas() -> Vector2` | (added during execution) The canvas part a picture shows; `update_wall_view_size()` sizes the render target so that part gets a texel per footprint pixel, its short axis floored at `wall_view_min_texture_px` |
 | `Map` | `var sea : ColorRect`, nodes `SeaLayer`/`Sea` | The map picture's background, painted the colour the map paints its own ocean |
 | `Game` | `func legal_cells_for(held: Array[CardData], grids: Array[GridData]) -> Array[CardData]` | THE ONE legality walk: the zone card of every cell in `grids` where `held` may land, asked through `on_can_place_stack` exactly as `try_place` asks. `_no_held_card_has_a_legal_placement`, `_no_legal_placement_remains_in_grid` and `PlayArea._sweep_legal_cells` all read it (G12, `GAP-005`=a) |
+| `Wall` | node `WallSurfaceLayer` (a `CanvasLayer`, layer -1) holding `%WallSurface` | (added during execution) Screen space, behind the camera-moved pictures: the surface fills the whole window at every zoom, in wall view and in transit |
+| `TestSidebar` | `func test_the_wall_view_shows_one_surface_colour_behind_the_pictures()`, `func _uncovered_pixels()`, `func _off_surface_pixels(...)`, `func _drawn_wall_view_parts()`, `const TRANSIT_BASE_DELAY`, `const TRANSIT_MIN_FRAMES`, `const SURFACE_COLOUR_TOLERANCE`, `const PICTURE_EDGE_MARGIN` | Test support (added during execution): reads the booted root's pixels outside every drawn picture part and overlay button, at rest and through the move out to the wall |
 
 ## 4. Deleted methods and properties
 
