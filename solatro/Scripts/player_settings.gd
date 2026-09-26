@@ -411,6 +411,12 @@ enum SeparationMode {
 		booster_reroll_pool = maxi(value, 0)
 		settings_changed.emit()
 
+## Cards a pack chooser's window is wide enough to show in one row; any more wrap.
+@export var chooser_row_cards : int = 5:
+	set(value):
+		chooser_row_cards = value
+		settings_changed.emit()
+
 ## Fame at which luck() reaches half of luck_cap.
 @export var fame_half : float = 5000.0:
 	set(value):

@@ -20,6 +20,8 @@ const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 
 ## The window this viewer draws -- the pack and the chrome around it, so fitting moves them together.
 @onready var _layout: Panel = $Layout
+## Rerolls left and Take, side by side along the window's foot.
+@onready var _bottom_row: HBoxContainer = $Layout/BottomRow
 
 ## Reroll button geometry, in pixels below the card it belongs to (no magic numbers in logic).
 const REROLL_BUTTON_HEIGHT := 34.0
@@ -110,17 +112,15 @@ func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_layout.offset_right = window.end.x - picture.x
 	_layout.offset_bottom = window.end.y - picture.y
 
-# The cards sit centred between the Rerolls count above and Take below, their Reroll buttons hanging
-# under them, so the square holds the row unwrapped with the deeper of the two bands on both sides.
+# The cards sit centred with their Reroll buttons hanging under them and the Rerolls-and-Take row at
+# the foot, so the square holds one full row unwrapped with that foot band mirrored above it.
 func _square_side() -> float:
 	var row := Vector2.ZERO
-	for control : ControlCard in _cards.controls:
+	for control : ControlCard in _cards.controls.slice(0, SettingsManager.settings.chooser_row_cards):
 		var card := control.get_combined_minimum_size()
 		row = Vector2(row.x + card.x, maxf(row.y, card.y))
-	var top_band := rerolls_label.offset_bottom
-	var bottom_band := -confirm_button.offset_top + REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT
-	var edge := -rerolls_label.offset_right
-	return maxf(row.x + 2.0 * edge, row.y + 2.0 * maxf(top_band, bottom_band))
+	var foot_band := -_bottom_row.offset_top + REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT
+	return maxf(row.x + 2.0 * _bottom_row.offset_left, row.y + 2.0 * foot_band)
 
 # ⚠ THE MAP AROUND THE WINDOW STAYS IN VIEW AND ANSWERS NO POINTER: a full-picture STOP control let
 # the wheel and the first motion through (measured) and swallowed the wall's pinch, so this viewer

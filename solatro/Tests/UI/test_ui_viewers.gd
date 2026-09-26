@@ -44,6 +44,7 @@ func _ready() -> void:
 	await test_a_viewer_opens_with_nothing_focused_and_nothing_published()
 	await test_the_first_navigation_press_enters_the_list()
 	await test_the_pack_chooser_draws_only_a_square_window()
+	await test_a_sixth_card_wraps_to_a_centred_row_of_its_own()
 	await test_a_deck_viewer_carries_a_close_tab_and_the_pack_chooser_none()
 	finish()
 
@@ -113,6 +114,40 @@ func test_the_pack_chooser_draws_only_a_square_window() -> void:
 			and window.size.x < picture.size.y,
 			"fitted to a picture with room, the window is a square smaller than it",
 			"%s in %s" % [window, picture])
+	var rerolls := viewer.rerolls_label.get_global_rect()
+	var take := viewer.confirm_button.get_global_rect()
+	check(absf(rerolls.get_center().y - take.get_center().y) < 0.5
+			and rerolls.end.x <= take.position.x and window.encloses(rerolls),
+			"Rerolls sits beside Take in the window's one foot row", "%s vs %s" % [rerolls, take])
+	viewer.queue_free()
+	await get_tree().process_frame
+
+## Half a pixel either side: a container places its children on whole pixels.
+const CENTRED_TOLERANCE_PX := 1.0
+
+## The chooser's window holds one full row of cards; a sixth wraps to a row of its own, centred like the rest, and Rerolls and Take centre as a pair.
+func test_a_sixth_card_wraps_to_a_centred_row_of_its_own() -> void:
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 6, 0)
+	await get_tree().process_frame
+	viewer.fit_beside(viewer.get_viewport_rect(), 1.0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var window := (viewer.get_node(^"Layout") as Control).get_global_rect()
+	var rects : Array[Rect2] = []
+	for control : ControlCard in viewer._cards.controls:
+		rects.append(control.get_global_rect())
+	var first_row := rects[0]
+	for i in range(1, 5):
+		first_row = first_row.merge(rects[i])
+	check(rects.size() == 6 and is_equal_approx(first_row.size.y, rects[0].size.y)
+			and rects[5].position.y > first_row.end.y - 0.5,
+			"five cards fill the first row and the sixth wraps below it", str(rects))
+	for row : Rect2 in [first_row, rects[5]] as Array[Rect2]:
+		check(absf(row.get_center().x - window.get_center().x) <= CENTRED_TOLERANCE_PX,
+				"...each row centred in the window", "%s in %s" % [row, window])
+	var pair := viewer.rerolls_label.get_global_rect().merge(viewer.confirm_button.get_global_rect())
+	check(absf(pair.get_center().x - window.get_center().x) <= CENTRED_TOLERANCE_PX,
+			"Rerolls and Take centre in the window as a pair", "%s in %s" % [pair, window])
 	viewer.queue_free()
 	await get_tree().process_frame
 

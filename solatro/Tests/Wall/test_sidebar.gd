@@ -5237,8 +5237,11 @@ func test_the_chooser_is_a_square_window_with_the_map_around_it() -> void:
 	if chooser != null:
 		await _resize_viewport(_booted_viewport, INSET_WINDOWS[-1])
 		_check_the_chooser_holds_its_parts_beside_the_sidebar(chooser, str(INSET_WINDOWS[-1]))
+		_check_rerolls_sits_beside_take(chooser, str(INSET_WINDOWS[-1]))
 		await _resize_viewport(_booted_viewport, INSET_WINDOWS[0])
 		_check_the_chooser_holds_its_parts_beside_the_sidebar(chooser, str(INSET_WINDOWS[0]))
+		_check_rerolls_sits_beside_take(chooser, str(INSET_WINDOWS[0]))
+		_check_the_offered_cards_lie_in_one_row(chooser, str(INSET_WINDOWS[0]))
 		var window := _chooser_window(chooser)
 		var space := _map_space(_main)
 		check(is_equal_approx(window.size.x, window.size.y),
@@ -5350,6 +5353,36 @@ func _check_the_chooser_holds_its_parts_beside_the_sidebar(chooser: ChoiceViewer
 	check(_map_space(_main).grow(0.5).encloses(window),
 			"...and lies inside the space beside the sidebar at %s" % where,
 			"%s vs %s" % [window, _map_space(_main)])
+
+## Half a pixel either side: a container places its children on whole pixels.
+const CENTRED_TOLERANCE_PX := 1.0
+
+# Rerolls and Take share the window's foot row: the same vertical band, Rerolls to Take's left.
+func _check_rerolls_sits_beside_take(chooser: ChoiceViewer, where: String) -> void:
+	var rerolls := chooser.rerolls_label.get_global_rect()
+	var take := chooser.confirm_button.get_global_rect()
+	check(absf(rerolls.get_center().y - take.get_center().y) < 0.5
+			and rerolls.end.x <= take.position.x,
+			"Rerolls sits beside Take in one row at %s" % where, "%s vs %s" % [rerolls, take])
+	var pair := rerolls.merge(take)
+	var window := _chooser_window(chooser)
+	check(absf(pair.get_center().x - window.get_center().x) <= CENTRED_TOLERANCE_PX,
+			"...the pair centred in the window at %s" % where, "%s in %s" % [pair, window])
+
+# The offered cards unwrapped: one shared top edge, each starting past the one before.
+func _check_the_offered_cards_lie_in_one_row(chooser: ChoiceViewer, where: String) -> void:
+	var rects : Array[Rect2] = []
+	for control : ControlCard in chooser._cards.controls:
+		rects.append(control.get_global_rect())
+	var one_row := rects.size() == 5
+	for i in range(1, rects.size()):
+		one_row = one_row and is_equal_approx(rects[i].position.y, rects[0].position.y) 				and rects[i].position.x >= rects[i - 1].end.x
+	check(one_row, "the five offered cards lie in one row at %s" % where, str(rects))
+	var row := rects[0]
+	for rect : Rect2 in rects: row = row.merge(rect)
+	var window := _chooser_window(chooser)
+	check(absf(row.get_center().x - window.get_center().x) <= CENTRED_TOLERANCE_PX,
+			"...centred in the window at %s" % where, "%s in %s" % [row, window])
 
 # THE MAP IS DRAWN AROUND THE WINDOW, read off the map picture's own pixels: the window is the HUD
 # background, and a point halfway between each of its edges and the space's edge is not.
@@ -6399,9 +6432,10 @@ func _check_chrome_inside(viewer: ChoiceViewer, remaining: Rect2, label: String)
 	check(remaining.encloses(confirm) and remaining.encloses(counter),
 			"%s: the confirm button and the reroll counter lie inside it too" % label,
 			"confirm %s counter %s in %s" % [confirm, counter, remaining])
-	check(absf(confirm.get_center().x - remaining.get_center().x) <= 2.0,
-			"%s: the confirm button centres under the pack, not on the picture" % label,
-			"%.1f vs %.1f" % [confirm.get_center().x, remaining.get_center().x])
+	var pair := confirm.merge(counter)
+	check(absf(pair.get_center().x - remaining.get_center().x) <= 2.0,
+			"%s: Rerolls and Take centre under the pack as a pair, not on the picture" % label,
+			"%.1f vs %.1f" % [pair.get_center().x, remaining.get_center().x])
 
 func _choice_viewer_cards(viewer: ChoiceViewer) -> Array[ControlCard]:
 	var cards : Array[ControlCard] = []
