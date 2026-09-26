@@ -31,8 +31,10 @@ frame_texture = SubResource("ImageTexture_wg2ii")
 script = ExtResource("1_go2pg")
 id = &"map"
 slot = 90
+design_size = Vector2i(648, 648)
 frame_texture = SubResource("ImageTexture_wg2ii")
 unlocked_by_default = true
+keep_aspect = true
 
 [sub_resource type="Resource" id="Resource_7yqsy"]
 script = ExtResource("1_go2pg")

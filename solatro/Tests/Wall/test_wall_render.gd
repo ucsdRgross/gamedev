@@ -54,6 +54,7 @@ func _ready() -> void:
 	behavior_section("THE WALL RE-PACKS AROUND THE WIDER GAME PICTURE (H20)")
 	test_game_picture_keeps_its_real_width_not_squashed_to_window_aspect()
 	test_default_layout_repacks_without_dropping_or_overlapping_any_picture()
+	test_the_map_picture_packs_square_at_every_window_shape()
 	behavior_section("THE WALL EDITOR DRIVES EVERY KNOB IT SHOWS (TP-120, Q186=a)")
 	await test_the_wall_editor_drives_every_knob_it_shows()
 	_teardown_wall()
@@ -609,6 +610,24 @@ func test_default_layout_repacks_without_dropping_or_overlapping_any_picture() -
 			"settings was pushed off its narrow-game-picture position -- the wall genuinely "
 			+ "re-arranged around the wider picture, not merely avoided an error",
 			str(settings_rect.centre) if settings_rect else "missing")
+
+# The map picture is square on the wall whatever the window shape, through the real load and pack.
+func test_the_map_picture_packs_square_at_every_window_shape() -> void:
+	var layout := Wall.load_layout()
+	var ids : Array[StringName] = []
+	for e : PictureEntry in layout.pictures:
+		if e.unlocked_by_default: ids.append(e.id)
+	for window_aspect : float in [1280.0 / 720.0, 600.0 / 1000.0]:
+		var map_rect : PictureRect = null
+		for r : PictureRect in WallPacker.pack(layout, ids, window_aspect):
+			if r.id == &"map": map_rect = r
+		check(map_rect != null and is_equal_approx(map_rect.size.x, map_rect.size.y),
+				"the map picture is square on the wall at window aspect %.4f" % window_aspect,
+				str(map_rect.size) if map_rect else "missing")
+		if map_rect == null: continue
+		var frame := WallPacker.frame_outer_rect(map_rect)
+		check(is_equal_approx(frame.size.x, frame.size.y),
+				"...and so is its frame at window aspect %.4f" % window_aspect, str(frame.size))
 
 # Whether any two of `rects`' FRAME OUTER rects intersect, the same idiom test_wall_packer.gd's own
 # overlap helper uses.

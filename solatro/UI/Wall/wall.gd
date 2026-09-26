@@ -78,6 +78,8 @@ static func initial_layout() -> WallLayout:
 	var map := PictureEntry.new()
 	map.id = &"map"
 	map.slot = 90
+	map.design_size = Vector2i(map.design_size.y, map.design_size.y)
+	map.keep_aspect = true
 	map.unlocked_by_default = true
 	map.frame_texture = WallPicture.shared_frame_texture()
 	var deck := PictureEntry.new()

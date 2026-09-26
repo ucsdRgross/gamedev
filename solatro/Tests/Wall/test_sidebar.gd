@@ -5010,7 +5010,7 @@ func test_a_click_outside_a_viewer_on_the_map_closes_it_and_travels_nowhere() ->
 			"a real click on the map's Deck button opened its viewer")
 	await get_tree().process_frame
 	var before : WorldGraphNode = _map.controller.selected()
-	await _click(Vector2(_map_viewport.size) - Vector2.ONE, _map_viewport)
+	await _click_outside_the_map_viewer()
 	check(not is_instance_valid(DeckViewer._open)
 			or DeckViewer._open.is_queued_for_deletion(),
 			"a click outside the viewer closes it")
@@ -5292,7 +5292,7 @@ func test_closing_a_packs_viewer_returns_to_the_node_while_a_show_is_frozen() ->
 	var pack := await _click_a_reachable_node(true)
 	check(_map.controller.selected() == pack and is_instance_valid(DeckViewer._open),
 			"sanity: a real click picked the pack node and opened its possible-cards viewer")
-	await _click(Vector2(_map_viewport.size) - Vector2.ONE, _map_viewport)
+	await _click_outside_the_map_viewer()
 	await get_tree().process_frame
 	check(not is_instance_valid(DeckViewer._open) or DeckViewer._open.is_queued_for_deletion(),
 			"sanity: a click outside the viewer closed it")
@@ -5708,7 +5708,7 @@ func test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser() -> void
 		await _select_map_node_and_settle(pack)
 		check(is_instance_valid(DeckViewer._open),
 				"sanity: picking the pack node opened its possible-cards viewer")
-		await _click(Vector2(_map_viewport.size) - Vector2.ONE, _map_viewport)
+		await _click_outside_the_map_viewer()
 		check(not is_instance_valid(DeckViewer._open)
 				or DeckViewer._open.is_queued_for_deletion(),
 				"a click outside the possible-cards viewer closes it")
@@ -6356,9 +6356,10 @@ func _stick_a_possible_card() -> DeckViewer:
 			"sanity: a click stuck a possible card, its Deck on the row")
 	return list
 
-## A click on the map picture's far corner, outside every card a map viewer lists.
+## A click on the far corner of the map as shown beside the sidebar, outside every card a map viewer lists.
 func _click_outside_the_map_viewer() -> void:
-	await _click(Vector2(_map_viewport.size) - Vector2.ONE, _map_viewport)
+	var shown := DeckViewer._open.margin_container.get_global_rect()
+	await _click(shown.end - Vector2.ONE, _map_viewport)
 
 ## The title the sidebar shows, or "HUD" while the description is down.
 func _described_title() -> String:
