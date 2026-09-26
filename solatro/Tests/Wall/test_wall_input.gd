@@ -354,6 +354,9 @@ func _teardown_camera_rig(rig: CameraRig) -> void:
 
 # ------------------------------------------------------------------ I1, I2 (S19 routing)
 
+## How much bigger than its design-shaped crop the routing fixture's rect is: any factor off 1 shows a scale error.
+const CROPPED_RECT_GROWTH := 1.25
+
 # A click aimed at a known viewport pixel of a focused picture lands on THAT pixel, at three camera
 # zoom levels (0.5, 1.0, 2.0) -- and presses a small, off-centre Button placed there.
 
@@ -362,16 +365,16 @@ func _teardown_camera_rig(rig: CameraRig) -> void:
 # centre is local (0, 0), where `f * (0, 0) == (0, 0)` for every factor `f`.
 
 # Both halves had to be wrong for it to pass; either one alone would have caught `route()` dividing
-# by the sprite's scale twice. The rect below is a NON-square multiple of the design size, so the
-# scale is (0.8, 1.0) -- the shape a non-16:9 window produces -- and every probe point is off-centre.
+# by the sprite's scale twice. The rect below is a non-16:9 shape grown 1.25x, so the screen is
+# cropped AND scaled 1.25 -- what a non-16:9 window produces -- and every probe is off-centre.
 func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() -> void:
 	var rig := _camera_rig()
 	var design_size := Vector2i(200, 150)
 # NOT Vector2(design_size): a rect equal to the design size makes %Screen.scale exactly 1 and
-# hides every scale-dependent routing error. WallPacker produces this shape at any window
-# aspect other than 16:9.
-	var rect := PictureRect.new(&"a", Vector2(300, -150), Vector2(design_size) * Vector2(0.8, 1.0),
-			Vector4(10, 10, 10, 10))
+# hides every scale-dependent routing error; the 0.8 width is WallPacker's shape at a non-16:9
+# window, which crops the screen, and the 1.25 is what takes the scale off 1.
+	var rect := PictureRect.new(&"a", Vector2(300, -150),
+			Vector2(design_size) * Vector2(0.8, 1.0) * CROPPED_RECT_GROWTH, Vector4(10, 10, 10, 10))
 	var entry := PictureEntry.new()
 	entry.id = &"a"
 	entry.design_size = design_size

@@ -59,6 +59,7 @@ func _ready() -> void:
 	behavior_section("THE OVERLAY SLIDES, IT NEVER INSETS THE PICTURE")
 	await test_the_sidebar_is_hidden_on_the_menu_until_the_picker_describes_something()
 	await test_every_focused_picture_covers_the_window_edge_to_edge()
+	await test_a_focused_picture_is_drawn_unstretched_at_every_window_shape()
 	await test_the_sidebar_slides_in_after_the_landing_and_the_board_shifts_with_it()
 	await test_the_sidebar_is_fully_out_before_the_camera_leaves()
 	await test_a_leave_mid_slide_ends_with_the_sidebar_fully_out()
@@ -711,7 +712,6 @@ func test_every_hud_member_is_visible_and_reachable() -> void:
 	var wall : Wall = booted[1]
 	var overlay : CanvasLayer = wall.get_node(^"%Overlay")
 	var container : HudContainer = overlay.get_node(^"HudContainer")
-	## Forced visible purely to measure geometry -- End authored hidden, its reveal tested elsewhere.
 	container.submit_button.visible = true
 
 	var clickable : Dictionary = {
@@ -1385,6 +1385,36 @@ func test_every_focused_picture_covers_the_window_edge_to_edge() -> void:
 	_check_covers_the_window(_drawn_picture_rect(_main, &"game"), window,
 			"the game covers the window edge to edge once landed")
 	await _end_main_fixture()
+
+## A focused picture draws its screen at one scale on both axes, whatever the window's shape: the map at a tall window is not squashed, and neither is the game.
+func test_a_focused_picture_is_drawn_unstretched_at_every_window_shape() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		await _start_map_fixture(size)
+		_check_drawn_unstretched(&"map", str(size))
+		await _enter_game_fixture()
+		_check_drawn_unstretched(&"game", str(size))
+		await _end_main_fixture()
+
+## The screen shows whole texels, so the aspect is met to half of one across the narrowest shown width, 389 px at 600x1000.
+const UNSTRETCHED_TOLERANCE := 0.0015
+
+# The drawn scale of ONE canvas pixel, per axis: the screen sprite's transform onto the window, times
+# the texture pixels a canvas pixel spans, which differ once the render target is clamped.
+func _check_drawn_unstretched(id: StringName, where: String) -> void:
+	var picture : WallPicture = _main._pictures[id]
+	var sprite : Sprite2D = picture.get_node(^"%Screen")
+	var texture := Vector2(picture.viewport.size)
+	var canvas := Vector2(picture.viewport.size_2d_override) \
+			if picture.viewport.size_2d_override != Vector2i.ZERO else texture
+	var drawn := sprite.get_global_transform_with_canvas().get_scale() * texture / canvas
+	check(absf(drawn.x / drawn.y - 1.0) <= UNSTRETCHED_TOLERANCE,
+			"the focused %s is drawn at one scale on both axes at %s" % [id, where],
+			"drawn %s sprite %s camera %s" % [drawn, sprite.scale,
+					(_main.wall.get_node(^"%Camera2D") as Camera2D).zoom])
+	var window := _container.get_viewport().get_visible_rect().size
+	check(absf(drawn.x / picture.window_scale(window) - 1.0) <= UNSTRETCHED_TOLERANCE,
+			"...the scale its window_scale reports, which a screen sizes its UI through, at %s" % where,
+			"drawn %s vs window_scale %.4f" % [drawn, picture.window_scale(window)])
 
 # The slide itself, which no still frame can show: after the picture lands the sidebar travels in
 # from off the window while the camera holds still, and the board's own window opens up with it.
@@ -7056,10 +7086,11 @@ func test_a_placement_leaves_nothing_held() -> void:
 				"...with a card still waiting in the Entrance for the player to take (G14)")
 	await _end_main_fixture()
 
+# A real deck clears the default goal inside these few placements, ending the show before its next
+# refill, so the goal goes out of reach and this stays a test about refills.
 ## Q118/G14: the Entrance refills left to right, and the refill still leaves the hand empty.
 func test_a_refill_fills_the_leftmost_slot_and_holds_nothing() -> void:
 	await _start_game_fixture()
-	## A real deck clears the default goal inside these few placements and the show would end before its next refill, so the goal goes out of reach and this stays a test about refills.
 	CardEnvironment.get_current_game().state.goal = GOAL_OUT_OF_REACH
 	var dealt : Array[CardData] = []
 	for column : ArrayCardData in CardEnvironment.get_current_game().state.upper_zone:

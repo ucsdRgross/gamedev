@@ -185,6 +185,12 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   resize. Any scale computed against `_design_size` collapses the picture the moment it is
   unfocused. `WallPicture._rescale_screen()` is the one place that arithmetic lives; call it
   wherever `rect` or `viewport.size` moves.
+- ⚠ **A screen is CROPPED to its rect's shape, never stretched.** The packer gives a picture the
+  window's aspect while its canvas keeps `design_size`, so `%Screen` shows the canvas's centred
+  part at the rect's aspect (`WallPicture._crop_to_rect()`) -- exactly what `visible_rect_beside()`
+  reports as visible, which is what every screen lays itself out into. Stretching the whole canvas
+  instead drew the map at 0.52 x 1.54 at a 600x1000 window. The crop is centred, so
+  `WallInput.route()`'s half-viewport shift is unchanged.
 - **The wall pauses the whole tree at construction and never clears it** (§1.6), so the shipped
   game runs entirely under `get_tree().paused == true`. A `Tween` bound to a PAUSABLE node never
   advances there, and `await tween.finished` never returns: that is how a total soft-lock on the

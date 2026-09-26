@@ -119,11 +119,13 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 		_frame.patch_margin_bottom = corner
 
 	_screen.centered = true
+	_screen.region_enabled = true
 	_screen.position = Vector2.ZERO
 	_screen.texture = viewport.get_texture()
 	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
 	_shadow.centered = true
+	_shadow.region_enabled = true
 	_shadow.position = settings().wall_light_offset
 	_shadow.texture = viewport.get_texture()
 	_rescale_screen()
@@ -263,7 +265,8 @@ func update_wall_view_size(footprint_px: Vector2) -> void:
 
 ## How big a window pixel is against one of this picture's own while focused -- what a hosted screen converts through to match window space.
 func window_scale(window: Vector2) -> float:
-	return focused_scale(Vector2(_design_size), window, settings().wall_overfill_margin)
+	return focused_scale(rect.size, window, settings().wall_overfill_margin) \
+			* cover_scale(Vector2(_design_size), rect.size)
 
 # The space LEFT beside `rect` (the shared `HudContainer`'s rect, against this viewport's own
 # `window` size) once both convert into THIS picture's own space -- the unmargined cover scale and
@@ -287,15 +290,24 @@ static func inset_beside(rect: Rect2, top: bool, scale: float) -> Vector2:
 static func cover_scale(native_size: Vector2, window_size: Vector2) -> float:
 	return maxf(window_size.x / native_size.x, window_size.y / native_size.y)
 
-# Rescales %Screen and %Shadow so this picture draws at exactly `rect.size`.
-# ⚠ The scale is `rect.size / viewport.size`, NEVER against `_design_size` -- PICTURE_WALL.md "Landmines".
-# Call it wherever `rect` or `viewport.size` moves.
+# Rescales %Screen and %Shadow so this picture draws at exactly `rect.size`. Call it wherever
+# `rect` or `viewport.size` moves.
 func _rescale_screen() -> void:
-	var render_size := Vector2(viewport.size)
-	if render_size.x <= 0.0 or render_size.y <= 0.0: return
-	var view_scale := rect.size / render_size
+	var view_scale := _crop_to_rect()
 	_screen.scale = view_scale
 	_shadow.scale = view_scale
+
+# ⚠ A SCREEN IS NEVER STRETCHED to its rect's shape: %Screen and %Shadow show the canvas's centred
+# part at the rect's aspect -- what `visible_rect_beside()` reports as visible -- cut on whole texels,
+# as `Sprite2D.get_rect()` reads a region, and the returned scale draws that part at `rect.size`.
+func _crop_to_rect() -> Vector2:
+	var texture := Vector2(viewport.size)
+	var canvas := Vector2(_design_size)
+	var shown := (texture * rect.size / cover_scale(canvas, rect.size) / canvas).round()
+	var region := Rect2((texture - shown) / 2.0, shown)
+	_screen.region_rect = region
+	_shadow.region_rect = region
+	return rect.size / region.size
 
 # Re-renders a FROZEN texture at unchanged size, for a window restored from minimise -- the GPU
 # may have discarded it. ⚠ A LIVE picture is NOT frozen and must never be forced to
@@ -342,8 +354,8 @@ func _apply_rect_geometry(r: PictureRect) -> void:
 # destination mid-tween. ⚠ The caller must `tween.set_parallel(true)`, or these run in sequence.
 func animate_reposition(tween: Tween, new_rect: PictureRect, duration: float) -> void:
 	var frame_rect := WallPacker.frame_outer_rect(new_rect)
-	var view_scale := new_rect.size / Vector2(viewport.size)
 	rect = new_rect
+	var view_scale := _crop_to_rect()
 	tween.tween_property(self, "position", new_rect.centre, duration)
 	tween.tween_property(_frame, "position", frame_rect.position - new_rect.centre, duration)
 	tween.tween_property(_frame, "size", frame_rect.size, duration)
