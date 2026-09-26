@@ -119,6 +119,12 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   `design_size` while `size` stays the render target, and `size_2d_override_stretch` maps the two
   onto each other. ⚠ **At 1:1 it must be CLEARED, not left at an identity** — `WallInput.route()`
   maps into a plain viewport and a stale override displaces every click inside a focused screen.
+- ⚠ **A resized render target is reallocated EMPTY.** A frozen (disabled) picture resized to its
+  wall-view footprint reads back fully transparent and draws as a blank panel, so
+  `update_wall_view_size()` renders a picture that is not live once at its new size
+  (`mark_for_rerender()`). `render_target_update_mode` still reads `UPDATE_ONCE` after that render
+  — the server freezes the target, the node's property is not written back — so "is it frozen" is
+  a pixel question, never a read of that property.
 - ⚠ **Forcing `UPDATE_ONCE` on the FOCUSED picture kills it.** It renders one more frame and then
   stops forever, nothing calling `focus()` again until the player leaves and re-enters — a live game
   turned into a still image for the rest of the session. `WallPicture.mark_for_rerender()` guards

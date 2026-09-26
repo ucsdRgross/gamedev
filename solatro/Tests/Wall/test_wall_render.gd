@@ -151,14 +151,14 @@ func test_unvisited_picture_has_rendered_once() -> void:
 		check(wp.viewport.get_texture() != null,
 				"%s's texture is non-null before any focus() call" % wp.name)
 
-# A non-focused picture reports UPDATE_DISABLED, but its already-rendered texture persists: never
+# A non-focused picture renders once at its wall-view size and its texture persists: never
 # null, never zero-size.
 func test_non_focused_picture_keeps_texture() -> void:
 	var wp := _pictures[0]
 	wp.focus()
 	wp.unfocus(Vector2(200, 120))
-	check(wp.viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED,
-			"a non-focused picture's SubViewport reports UPDATE_DISABLED")
+	check(wp.viewport.render_target_update_mode == SubViewport.UPDATE_ONCE,
+			"a non-focused picture's SubViewport renders ONCE at its new size, never ALWAYS")
 	var tex := wp.viewport.get_texture()
 	check(tex != null, "its texture is non-null")
 	check(tex != null and tex.get_size() != Vector2.ZERO, "its texture is non-zero-size",

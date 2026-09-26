@@ -61,6 +61,7 @@ func _ready() -> void:
 	await test_every_focused_picture_covers_the_window_edge_to_edge()
 	await test_a_focused_picture_is_drawn_unstretched_at_every_window_shape()
 	await test_a_wall_view_picture_draws_at_least_a_texel_per_pixel()
+	await test_a_visited_picture_shows_its_content_in_wall_view_and_stays_frozen()
 	await test_the_sidebar_slides_in_after_the_landing_and_the_board_shifts_with_it()
 	await test_the_sidebar_is_fully_out_before_the_camera_leaves()
 	await test_a_leave_mid_slide_ends_with_the_sidebar_fully_out()
@@ -1411,6 +1412,76 @@ func test_a_wall_view_picture_draws_at_least_a_texel_per_pixel() -> void:
 					"%s texels per px, shown %s of %s" % [texels_per_px, sprite.region_rect.size,
 							_main._pictures[id].viewport.size])
 		await _end_main_fixture()
+
+## Every picture the player visited -- the menu at cold launch, the map, a game -- shows its own content in wall view, frozen: a change to the screen after the leave does not reach its thumbnail.
+func test_a_visited_picture_shows_its_content_in_wall_view_and_stays_frozen() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		await _start_map_fixture(size)
+		var map_wp : WallPicture = _main._pictures[&"map"]
+		var last_live : Array[Image] = [map_wp.viewport.get_texture().get_image()]
+		var keep_the_live_frame := func() -> void:
+			if map_wp.is_live: last_live[0] = map_wp.viewport.get_texture().get_image()
+		RenderingServer.frame_post_draw.connect(keep_the_live_frame)
+		await _enter_game_fixture()
+		RenderingServer.frame_post_draw.disconnect(keep_the_live_frame)
+		await _main._go_to_wall_view()
+		await _await_the_wall_drawn_at_its_camera_zoom()
+		for id : StringName in [&"start_menu", &"map", &"game"] as Array[StringName]:
+			var thumbnail := _main._pictures[id].viewport.get_texture().get_image()
+			check(_opaque_fraction(thumbnail) > THUMBNAIL_OPAQUE_FRACTION
+					and _distinct_colours(thumbnail) >= THUMBNAIL_DISTINCT_COLOURS,
+					"in wall view at %s the visited %s picture shows its content" % [size, id],
+					"opaque %.3f, %d colours, %s" % [_opaque_fraction(thumbnail),
+							_distinct_colours(thumbnail), thumbnail.get_size()])
+		var thumbnail := _main._pictures[&"map"].viewport.get_texture().get_image()
+		last_live[0].resize(thumbnail.get_width(), thumbnail.get_height())
+		check(_mean_colour_difference(thumbnail, last_live[0]) < THUMBNAIL_MATCH_DIFFERENCE,
+				"...the map's thumbnail is its last live frame at %s" % size,
+				"mean difference %.3f" % _mean_colour_difference(thumbnail, last_live[0]))
+		_map.sea.color = Color.RED
+		for _frame : int in FROZEN_FRAMES: await RenderingServer.frame_post_draw
+		check(_mean_colour_difference(
+				_main._pictures[&"map"].viewport.get_texture().get_image(), thumbnail) == 0.0,
+				"...and it stays frozen: a map repainted after the leave is not re-rendered at %s" % size)
+		await _end_main_fixture()
+
+## A thumbnail is the picture's own canvas, which covers its whole render target.
+const THUMBNAIL_OPAQUE_FRACTION := 0.99
+## More colours than a flat panel or a placeholder: any real screen has dozens.
+const THUMBNAIL_DISTINCT_COLOURS := 8
+## Mean per-channel difference allowed between a thumbnail and its last live frame shrunk to its size: filtering, not content.
+const THUMBNAIL_MATCH_DIFFERENCE := 0.08
+## Frames a frozen thumbnail is watched for a re-render.
+const FROZEN_FRAMES := 10
+## Sampling stride over a thumbnail's pixels.
+const THUMBNAIL_SAMPLE_STEP := 4
+
+func _opaque_fraction(image: Image) -> float:
+	var opaque := 0
+	var samples := 0
+	for y : int in range(0, image.get_height(), THUMBNAIL_SAMPLE_STEP):
+		for x : int in range(0, image.get_width(), THUMBNAIL_SAMPLE_STEP):
+			samples += 1
+			if image.get_pixel(x, y).a > 0.5: opaque += 1
+	return float(opaque) / float(samples)
+
+func _distinct_colours(image: Image) -> int:
+	var colours : Dictionary[Color, bool] = {}
+	for y : int in range(0, image.get_height(), THUMBNAIL_SAMPLE_STEP):
+		for x : int in range(0, image.get_width(), THUMBNAIL_SAMPLE_STEP):
+			colours[image.get_pixel(x, y)] = true
+	return colours.size()
+
+func _mean_colour_difference(a: Image, b: Image) -> float:
+	var total := 0.0
+	var samples := 0
+	for y : int in range(0, a.get_height(), THUMBNAIL_SAMPLE_STEP):
+		for x : int in range(0, a.get_width(), THUMBNAIL_SAMPLE_STEP):
+			var pa := a.get_pixel(x, y)
+			var pb := b.get_pixel(x, y)
+			total += (absf(pa.r - pb.r) + absf(pa.g - pb.g) + absf(pa.b - pb.b)) / 3.0
+			samples += 1
+	return total / float(samples)
 
 # THE CAMERA IS PHYSICS-INTERPOLATED, so the drawn canvas lags its zoom by a few frames after a
 # move lands -- measured 0.785 drawn against 0.449 two frames on. Bounded, so a lag that never

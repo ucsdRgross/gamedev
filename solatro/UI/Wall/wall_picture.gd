@@ -223,9 +223,9 @@ func _apply_design_render_size() -> void:
 	viewport.size_2d_override = _design_size if clamped else Vector2i.ZERO
 	viewport.size_2d_override_stretch = clamped
 
-# Drops this out of focus: UPDATE_DISABLED, so rendering stops while the rendered texture persists
-# on the GPU, sized down to the wall-view footprint and never left at full `design_size`. Leaving
-# focus is exactly when a still-selected picture's lift becomes visible again.
+# Drops this out of focus: rendered ONCE more at the wall-view footprint, then frozen, and never
+# left at full `design_size`. Leaving focus is exactly when a still-selected picture's lift becomes
+# visible again.
 
 # The screen root goes back to PAUSABLE: wall view is every picture in that state at once, nothing
 # extra enforcing it. Non-focused samples LINEAR (PICTURE_WALL.md "Landmines") and the alpha is reset,
@@ -234,7 +234,6 @@ func unfocus(footprint_px: Vector2) -> void:
 	is_focused = false
 	is_live = false
 	_apply_position()
-	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	update_wall_view_size(footprint_px)
 	if screen_root:
 		screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -256,6 +255,10 @@ func set_frame_visible(shown: bool) -> void:
 
 # ⚠ `size_2d_override` is what makes the screen SHRINK rather than crop, and
 # `size_2d_override_stretch` maps the two onto each other -- PICTURE_WALL.md "Landmines".
+
+# ⚠ A RESIZED RENDER TARGET IS REALLOCATED EMPTY, and a frozen one is never drawn again, so a
+# picture that is not live renders once at its new size: a disabled target resized from 1152x648
+# to 386x217 read back fully transparent, and every visited picture showed a blank wall thumbnail.
 func update_wall_view_size(footprint_px: Vector2) -> void:
 	var shown := _shown_canvas()
 	var texels_per_canvas_px := maxf(cover_scale(shown, footprint_px),
@@ -264,6 +267,7 @@ func update_wall_view_size(footprint_px: Vector2) -> void:
 	viewport.size_2d_override = _design_size
 	viewport.size_2d_override_stretch = true
 	_rescale_screen()
+	mark_for_rerender()
 
 ## How big a window pixel is against one of this picture's own while focused -- what a hosted screen converts through to match window space.
 func window_scale(window: Vector2) -> float:
@@ -314,8 +318,8 @@ func _crop_to_rect() -> Vector2:
 func _shown_canvas() -> Vector2:
 	return rect.size / cover_scale(Vector2(_design_size), rect.size)
 
-# Re-renders a FROZEN texture at unchanged size, for a window restored from minimise -- the GPU
-# may have discarded it. ⚠ A LIVE picture is NOT frozen and must never be forced to
+# Re-renders a FROZEN texture once: after a resize, and for a window restored from minimise -- the
+# GPU may have discarded it. ⚠ A LIVE picture is NOT frozen and must never be forced to
 # UPDATE_ONCE; guarded here, not at the call site -- PICTURE_WALL.md "Landmines".
 func mark_for_rerender() -> void:
 	if is_live: return
