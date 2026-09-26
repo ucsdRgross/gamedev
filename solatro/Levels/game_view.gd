@@ -262,9 +262,9 @@ func _on_board_changed() -> void:
 # divides by the unmargined ratio; `picture_to_window_scale` is DRAWN PIXELS, the camera's resting
 # zoom, which the preview must match -- re-drawn last, once the inset has settled the board's zoom.
 
-# ⚠ THE RESERVE IS THE SIDEBAR'S RESTING RECT, NEVER THE SLIDING ONE: the board's size and zoom are
-# fitted against where the sidebar comes to REST, and only its position follows the slide, through
-# `board_slide_offset`. A shift, not a re-scale.
+# ⚠ THE RESERVE IS THE SIDEBAR'S RESTING RECT, NEVER THE SLIDING ONE: the board is fitted there and
+# `board_slide_offset` only shifts it, CENTRE TO CENTRE, so with no sidebar (wall view, the landing)
+# the board sits centred in the whole picture. A shift, not a re-scale.
 func _publish_board_inset() -> void:
 	var window := hud_container.get_viewport().get_visible_rect().size
 	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
@@ -278,7 +278,7 @@ func _publish_board_inset() -> void:
 	play_area.board_inset_left = region.position.x
 	play_area.board_inset_top = region.position.y
 	play_area.board_visible_crop = design - region.end
-	play_area.board_slide_offset = slid.position - region.position
+	play_area.board_slide_offset = slid.get_center() - region.get_center()
 	hud_container.resize_preview(CardVisual.preview_window_px(play_area.picture_to_window_scale))
 
 # Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this

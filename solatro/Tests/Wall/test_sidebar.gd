@@ -69,6 +69,7 @@ func _ready() -> void:
 	await test_the_slide_shifts_the_board_without_re_scaling_it()
 	await test_freeing_main_mid_slide_strands_no_waiter()
 	await test_before_the_slide_each_screen_has_the_whole_picture()
+	await test_wall_view_keeps_the_board_centred_in_its_picture()
 	behavior_section("S4: THE MAP GETS THE SAME CONTAINER")
 	await test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_them()
 	await test_focus_change_drives_which_hud_stack_child_shows()
@@ -1692,7 +1693,7 @@ func test_a_leave_mid_slide_ends_with_the_sidebar_fully_out() -> void:
 
 # R1 asks for a SHIFT, not a re-scale. Fitting the board against the live reserve re-zoomed it by
 # up to 1.333x as the window lost the sidebar's quarter: sampled per frame, in both views, the zoom
-# must not move at all while its x travels the sidebar's whole width.
+# must not move at all while its x travels to the centre of the whole picture.
 func test_the_slide_shifts_the_board_without_re_scaling_it() -> void:
 	await _start_game_fixture()
 	await _check_the_slide_only_shifts("focused")
@@ -1714,33 +1715,43 @@ func _check_the_slide_only_shifts(label: String) -> void:
 	var pa := _play_area
 	var rest_zoom := pa.board_zoom
 	var rest_x := _board_content_x(pa)
+	var rest_window := pa._board_window_local()
 	var zooms : Array[float] = []
+	var windows : Array[Vector2] = []
 	var xs : Array[float] = []
 	var fractions : Array[float] = []
 	_main._go_to_wall_view()
 	while _main._move_in_flight and fractions.size() < 900:
 		fractions.append(_container.slid_fraction())
 		zooms.append(pa.board_zoom)
+		windows.append(pa._board_window_local())
 		xs.append(_board_content_x(pa))
 		await get_tree().process_frame
 	var mid := 0
 	var worst_zoom := rest_zoom
+	var worst_window := rest_window
 	for i : int in fractions.size():
 		if fractions[i] <= 0.001 or fractions[i] >= 0.999: continue
 		mid += 1
 		if absf(zooms[i] - rest_zoom) > absf(worst_zoom - rest_zoom): worst_zoom = zooms[i]
+		if windows[i].distance_to(rest_window) > worst_window.distance_to(rest_window):
+			worst_window = windows[i]
 	check(mid >= 3, "%s: the sidebar is sampled part way in" % label,
 			"%d of %d samples" % [mid, fractions.size()])
 	check(is_equal_approx(worst_zoom, rest_zoom),
 			"%s: the board's zoom never moves while the sidebar slides" % label,
 			"rest %.6f worst %.6f" % [rest_zoom, worst_zoom])
+# The zoom alone passes a re-fit wherever the HEIGHT binds it; the board's window is the fit itself.
+	check(worst_window.is_equal_approx(rest_window),
+			"%s: ...nor does the board's window, so the slide is a shift and never a re-fit" % label,
+			"rest %s worst %s" % [rest_window, worst_window])
 	var travel := absf(xs[-1] - rest_x)
-# ⚠ THE CONTENT'S OWN CENTRE, NEVER THE SCROLLER'S EDGE. A board whose WINDOW grows as the reserve
-# drops re-centres by HALF the sidebar's width; one whose window merely translates moves by the
-# whole of it. The scroller's left edge moves the same amount either way and cannot tell them apart.
-	check(absf(travel - band.size.x) <= 2.0,
-			"%s: ...and its content travels the sidebar's whole width, not half of it" % label,
-			"%.2f vs band %.2f" % [travel, band.size.x])
+# ⚠ THE CONTENT'S OWN CENTRE, NEVER THE SCROLLER'S EDGE: the board follows the centre of the space
+# the sidebar leaves, so it travels HALF the sidebar's width and ends centred in the whole picture.
+# The zoom and window checks above, not the distance, are what tell a shift from a re-fit.
+	check(absf(travel - band.size.x * 0.5) <= 2.0,
+			"%s: ...and its content travels half the sidebar's width, centre to centre" % label,
+			"%.2f vs half band %.2f" % [travel, band.size.x * 0.5])
 	var monotonic := true
 	for i : int in range(1, xs.size()):
 		if xs[i] > xs[i - 1] + 0.001: monotonic = false
@@ -1791,6 +1802,40 @@ func test_before_the_slide_each_screen_has_the_whole_picture() -> void:
 			"...and the shift comes back when the sidebar slides in for the map",
 			str(_map.controller.camera.offset))
 	await _end_main_fixture()
+
+# The game's half of the row above: with no sidebar the board set -- the grid AND its Entrance row
+# -- sits in the whole picture exactly as it sits beside the resting sidebar, centre to centre.
+# Left by the real Wall click, so the wall-view thumbnail is the frame the player sees.
+func test_wall_view_keeps_the_board_centred_in_its_picture() -> void:
+	for size : Vector2i in ([Vector2i(1280, 720), Vector2i(600, 1000)] as Array[Vector2i]):
+		await _start_game_fixture(size)
+		var picture : WallPicture = _main._pictures[&"game"]
+		var window : Vector2 = _container.get_viewport().get_visible_rect().size
+		var top := HudContainer.container_is_top(window, SettingsManager.settings)
+		var resting := picture.local_rect_beside(window, _container.container_rect(), top)
+		var whole := picture.local_rect_beside(window, Rect2(), top)
+		var parts_at_rest := _board_set_parts(_play_area)
+		await _click_overlay(&"WallButton")
+		for _i : int in range(900):
+			if not _main._move_in_flight: break
+			await get_tree().process_frame
+		check(_main._current_focus == &"" and is_zero_approx(_container.slid_fraction()),
+				"sanity: the Wall click reached wall view at %s" % size,
+				"focus %s slide %.3f" % [_main._current_focus, _container.slid_fraction()])
+		var parts_in_wall := _board_set_parts(_play_area)
+		for i : int in parts_at_rest.size():
+			var at_rest := parts_at_rest[i].get_center() - resting.get_center()
+			var in_wall := parts_in_wall[i].get_center() - whole.get_center()
+			check(at_rest.distance_to(in_wall) <= 1.0,
+					"in wall view the board's %s sits centred in the whole picture as it sits beside the resting sidebar at %s"
+					% [["grid", "Entrance row"][i], size],
+					"from centre %s in wall view vs %s at rest" % [in_wall, at_rest])
+		await _end_main_fixture()
+
+## The board set's two parts as drawn in the game picture's own space: the resting grid's cells, then the Entrance row.
+func _board_set_parts(pa: PlayArea) -> Array[Rect2]:
+	var cells := pa._cells_root(pa.grid_container.get_child(maxi(pa.pan_grid, 0)) as Control)
+	return [cells.get_global_rect(), pa.entrance_h_track.get_global_rect()]
 
 # ------------------------------------------------------------------ S4: the map's own container
 

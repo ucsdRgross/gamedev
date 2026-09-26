@@ -148,7 +148,9 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   Out means an inset of zero and the whole picture for the screen; in means the resting inset
   below. ⚠ **The slide SHIFTS the board, it never re-scales it:** `board_inset_*` stay the RESTING
   reserve, which is what the board's size and zoom are fitted against, and `board_slide_offset`
-  carries the displacement. Fitting against the live reserve re-zoomed the board by up to 1.333x
+  carries the displacement CENTRE TO CENTRE — the space the slid sidebar leaves against the space
+  the resting one leaves — so with the sidebar out (wall view, the landing) the board set, its
+  Entrance row included, sits centred in the whole picture. Fitting against the live reserve re-zoomed the board by up to 1.333x
   wherever the WIDTH binds `focused_board_zoom`'s `min(tall, wide)`. The container is absent in wall view, and on the start menu unless its picker is
   describing something, since the menu carries no HUD of its own.
 - ⚠ **The HUD follows the camera, and that is a decision, not an accident.** `HudContainer` is in

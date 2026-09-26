@@ -773,16 +773,13 @@ func _grid_cells(gi: int) -> Control:
 #is what clears the real depth instead.
 func _apply_entrance_strip_height() -> void:
 	if not is_instance_valid(entrance_strip) or not is_instance_valid(scroll_container): return
-	var h := entrance_strip_height_px(PlayArea.settings(), drawn_zoom)
-	var pad := board_edge_pad_px(PlayArea.settings()) * drawn_zoom
-	entrance_strip.offset_top = -h - pad
-	entrance_strip.offset_bottom = -pad
 	entrance_strip.offset_left = hud_reserve_px()
 	_apply_board_zoom_rect()
 	_apply_entrance_zoom_rect()
 	_give_the_board_a_floor(_entrance_strip_full_height())
 
-#Put the board's window back where it was after the zoom made it bigger.
+#Put the board's window back where it was after the zoom made it bigger, with the Entrance strip
+#under it: the sidebar's slide shifts both as one set, on either axis.
 
 #⚠ THE ZOOM SCALES THE SCROLL CONTAINER, AND ITS RECT IS DIVIDED BY THE ZOOM TO COMPENSATE. The
 #scale cannot go on the CONTENT: a `Container` rewrites its children's scale on every sort
@@ -802,6 +799,9 @@ func _apply_board_zoom_rect() -> void:
 	scroll_container.offset_left = inset
 	scroll_container.offset_right = inset + local.x - size.x
 	scroll_container.offset_bottom = top + local.y - size.y
+	var strip_bottom := board_slide_offset.y - pad
+	entrance_strip.offset_top = strip_bottom - entrance_strip_height_px(PlayArea.settings(), drawn_zoom)
+	entrance_strip.offset_bottom = strip_bottom
 
 #The board's window in the SCROLLER'S OWN units AT SCALE `z`: what it occupies on screen, divided
 #by `z`. The Entrance strip it gives up scales with `z` too, so the strip is derived here rather
