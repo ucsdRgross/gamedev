@@ -43,7 +43,7 @@ func _ready() -> void:
 	await test_the_pack_chooser_swallows_a_cancel_it_cannot_answer()
 	await test_a_viewer_opens_with_nothing_focused_and_nothing_published()
 	await test_the_first_navigation_press_enters_the_list()
-	await test_the_pack_chooser_covers_its_whole_picture_opaquely()
+	await test_the_pack_chooser_draws_only_a_square_window()
 	await test_a_deck_viewer_carries_a_close_tab_and_the_pack_chooser_none()
 	finish()
 
@@ -96,19 +96,23 @@ func test_the_first_navigation_press_enters_the_list() -> void:
 			"a later arrow never drags the focus back to the first card")
 	await _drop_viewer(viewer)
 
-## The pack chooser is the new focus until Take: an OPAQUE cover of its whole picture, so the map behind it is not visible at all.
-func test_the_pack_chooser_covers_its_whole_picture_opaquely() -> void:
+## The pack chooser draws only its square window, so the picture around it shows through.
+func test_the_pack_chooser_draws_only_a_square_window() -> void:
 	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var backdrop := viewer.get_node(^"Backdrop") as ColorRect
-	check(backdrop != null and is_equal_approx(backdrop.color.a, 1.0),
-			"the chooser's backdrop is opaque, not a dim", str(backdrop.color if backdrop else ""))
-	check(backdrop != null
-			and backdrop.get_global_rect().encloses(viewer.get_viewport_rect()),
-			"...and covers the whole picture it is drawn in",
-			"%s vs %s" % [backdrop.get_global_rect() if backdrop else Rect2(),
-					viewer.get_viewport_rect()])
+	var drawn : Array[String] = []
+	for child : Node in viewer.get_children():
+		if child is CanvasItem: drawn.append(String(child.name))
+	check(drawn == ["Layout"], "the chooser draws nothing but its window", str(drawn))
+	var picture := viewer.get_viewport_rect()
+	viewer.fit_beside(picture, 1.0)
+	await get_tree().process_frame
+	var window := (viewer.get_node(^"Layout") as Control).get_global_rect()
+	check(is_equal_approx(window.size.x, window.size.y) and picture.encloses(window)
+			and window.size.x < picture.size.y,
+			"fitted to a picture with room, the window is a square smaller than it",
+			"%s in %s" % [window, picture])
 	viewer.queue_free()
 	await get_tree().process_frame
 
@@ -326,17 +330,9 @@ func _count_viewers() -> int:
 			n += 1
 	return n
 
-# What was RULED OUT on 2026-08-07, so it is not re-tried from scratch: "a concurrent suite hijacks
-# the static `DeckViewer._open`". UI VIEWERS is the one UI suite with NO `await_siblings_except`, so
-# it does run beside everything — but the three `show_deck` calls have **no `await` between them**,
-
-# and GDScript suites can only interleave at an await. Within that frame the sequence is atomic, and
-# a viewer opened by another suite is parented to that suite, not counted here.
-
-# What that leaves is the state of OUR OWN children, which is what this prints: every DeckViewer
-# under this node with its queued-for-deletion flag, plus who `_open` currently points at.
-
-## ⚠ **THE DETAIL LINE FOR AN INTERMITTENT NOBODY HAS CAUGHT.** `repeated show_deck replaces instead of stacking` failed once in four runs and did not recur in ~20 consecutive runs on 2026-08-07, so the next occurrence has to carry its own evidence or it costs another twenty runs.
+# THE DETAIL LINE FOR AN INTERMITTENT seen once in ~24 runs. RULED OUT: another suite hijacking the
+# static `DeckViewer._open` -- the three `show_deck` calls have no `await` between them. So this
+# prints OUR OWN children: every DeckViewer here with its queued flag, and who `_open` points at.
 func _viewer_detail() -> String:
 	var parts : Array[String] = []
 	for child : Node in get_children():

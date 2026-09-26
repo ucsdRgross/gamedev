@@ -63,10 +63,9 @@ const CROPPED_SIDE_WINDOW_SIZE := Vector2i(1280, 800)
 const SCROLL_CASE_WINDOW_SIZE := Vector2i(500, 500)
 const SCROLL_CASE_SIZE_FRACTION := 0.1
 const SAVE_TAG := "sidebar_snapshot"
-# Bound on `_await_deal_settled()`'s poll -- a real hang (not a settle) is a bug the tool should
-# surface, not spin on forever.
-## The picture's own top-left corner, where the board lays out no cell and no card.
+## The bare corner test_drag_place.gd's `BARE_BOARD_CORNER_PX` names, as a point.
 const BARE_BOARD_POINT := Vector2(24.0, 24.0)
+## Bound on `_await_deal_settled()`'s poll: a real hang is a bug to surface, not to spin on.
 const DEAL_SETTLE_TIMEOUT_SEC := 5.0
 ## How many consecutive frames the board's cells must not move before a shot is taken of it.
 const BOARD_STILL_FRAMES := 3
@@ -810,9 +809,8 @@ func _click_the_button(button: Button) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-# THE CHOOSER IS THE NEW FOCUS UNTIL TAKE: an opaque cover of the whole map picture, its contents
-# beside the sidebar, and a chosen card described there with a Deck button of its own -- whose
-# viewer opens OVER it.
+# THE CHOOSER IS A SQUARE WINDOW beside the sidebar with the map around it, and a chosen card
+# described there with a Deck button of its own -- whose viewer opens OVER it.
 func _shoot_the_chooser(main: Main) -> void:
 	var map := main.map_scene
 	var pack := _the_pack_node(map)
@@ -829,8 +827,8 @@ func _shoot_the_chooser(main: Main) -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(CHOOSER_OPAQUE_OUT_PATH)
-	print("SIDEBAR_SNAPSHOT chooser backdrop=%s deck_button=%s sticky=%s"
-			% [(chooser.get_node(^"Backdrop") as ColorRect).color,
+	print("SIDEBAR_SNAPSHOT chooser window=%s deck_button=%s sticky=%s"
+			% [(chooser.get_node(^"Layout") as Control).get_global_rect(),
 					map.selection_deck_button.is_visible_in_tree(), chooser.cards().sticky])
 	map.selection_deck_button.pressed.emit()
 	await _await_a_viewer()

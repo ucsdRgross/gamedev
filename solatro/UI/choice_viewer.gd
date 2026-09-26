@@ -1,7 +1,7 @@
 class_name ChoiceViewer
 extends Control
 
-## Modal viewer for pack-opening: shows the generated cards over a dimmed backdrop. choose == 0 is the wired take-all mode ("Take all" force-adds every card via the `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers. Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
+## Modal viewer for pack-opening: shows the generated cards in a square window over its picture, which it keeps inert. choose == 0 is the wired take-all mode ("Take all" force-adds every card via the `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers. Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
 
 ## Fired when the player accepts the shown cards; the viewer frees itself afterwards.
 signal confirmed(cards: Array[CardData])
@@ -18,12 +18,8 @@ const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 @onready var confirm_button: Button = %ConfirmButton
 @onready var rerolls_label: Label = %RerollsLeft
 
-## Everything this viewer draws over its backdrop -- the pack and the chrome around it, so fitting moves them together.
-@onready var _layout: Control = $Layout
-
-# ⚠ OPAQUE AND WHOLE-PICTURE: this is the new focus until the cards are taken, so the map behind it
-# is not visible at all; its CONTENTS still lay out beside the sidebar (`fit_beside`).
-@onready var _backdrop: ColorRect = $Backdrop
+## The window this viewer draws -- the pack and the chrome around it, so fitting moves them together.
+@onready var _layout: Panel = $Layout
 
 ## Reroll button geometry, in pixels below the card it belongs to (no magic numbers in logic).
 const REROLL_BUTTON_HEIGHT := 34.0
@@ -50,7 +46,7 @@ static func add_to_scene(parent:Node, create_one:Callable, choices:int, choose:i
 	data.rerolls = rerolls
 	for i in choices:
 # awaited: generators may be coroutines (BoosterTemplate awaits its pool
-# broadcasts, E8); a plain sync callable resumes immediately
+# broadcasts); a plain sync callable resumes immediately
 		var card_data : CardData = await create_one.call()
 		if card_data: data.current_choices.append(card_data)
 	return add_choices_to_scene(parent, data)
@@ -64,7 +60,7 @@ static func add_choices_to_scene(parent:Node, data:Data) -> ChoiceViewer:
 func _ready() -> void:
 # ui_accept confirms immediately; arrow keys walk the (focusable) cards.
 	confirm_button.text = TRANSLATION.find('CHOICE_TAKE')
-	_backdrop.color = PaletteDB.color(PaletteDB.ROLES.hud_background)
+	(_layout.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = 			PaletteDB.color(PaletteDB.ROLES.hud_background)
 	confirm_button.grab_focus()
 	_populate()
 
@@ -87,28 +83,52 @@ func cards() -> CardsViewer:
 	return _cards
 
 # ⚠ THIS PACK CANNOT BE REOPENED ONCE IT IS GONE, so the sidebar's X lets the stuck card go and
-# leaves the pack up: Take is the only way out of it.
+# leaves the pack up: Take is the only way to finish it.
 func close_from_sidebar() -> void:
 	_cards.unstick()
 
-# A cancel reads as a close here as everywhere, and is then SWALLOWED: this pack cannot be
-# reopened, so the wall never hears it either.
+# A cancel reads as a close here as everywhere, and is then SWALLOWED: Take alone finishes this
+# pack, so the wall never hears it either.
 func _unhandled_input(event: InputEvent) -> void:
+	if _stops_at_the_window(event): return
 	var verdict := _cards.modal_verdict(event)
 	if verdict == CardsViewer.Modal.PASS: return
 	if verdict == CardsViewer.Modal.CLOSE: _cards.unstick()
 	get_viewport().set_input_as_handled()
 
-# ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
-# so its WHOLE layout -- pack and chrome -- lives in the space left beside it, on ALL FOUR EDGES.
-# The scale rides along, so a re-publish after it is drawn at the size THIS viewer now draws a card.
+# THE WINDOW IS CENTRED IN THE SPACE LEFT BESIDE THE SIDEBAR, never under it. The scale rides
+# along, so a re-publish after it is drawn at the size THIS viewer now draws a card.
 func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_cards.picture_to_window_scale = window_scale
+	var window := remaining
+	var side := _square_side()
+	if side <= minf(remaining.size.x, remaining.size.y):
+		window = Rect2(remaining.get_center() - Vector2.ONE * side / 2.0, Vector2.ONE * side)
 	var picture := get_viewport_rect().size
-	_layout.offset_left = remaining.position.x
-	_layout.offset_top = remaining.position.y
-	_layout.offset_right = remaining.end.x - picture.x
-	_layout.offset_bottom = remaining.end.y - picture.y
+	_layout.offset_left = window.position.x
+	_layout.offset_top = window.position.y
+	_layout.offset_right = window.end.x - picture.x
+	_layout.offset_bottom = window.end.y - picture.y
+
+# The cards sit centred between the Rerolls count above and Take below, their Reroll buttons hanging
+# under them, so the square holds the row unwrapped with the deeper of the two bands on both sides.
+func _square_side() -> float:
+	var row := Vector2.ZERO
+	for control : ControlCard in _cards.controls:
+		var card := control.get_combined_minimum_size()
+		row = Vector2(row.x + card.x, maxf(row.y, card.y))
+	var top_band := rerolls_label.offset_bottom
+	var bottom_band := -confirm_button.offset_top + REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT
+	var edge := -rerolls_label.offset_right
+	return maxf(row.x + 2.0 * edge, row.y + 2.0 * maxf(top_band, bottom_band))
+
+# ⚠ THE MAP AROUND THE WINDOW STAYS IN VIEW AND ANSWERS NO POINTER: a full-picture STOP control let
+# the wheel and the first motion through (measured) and swallowed the wall's pinch, so this viewer
+# ignores the pointer and every mouse event stops here -- before the map, in reverse tree order.
+func _stops_at_the_window(event: InputEvent) -> bool:
+	if not event is InputEventMouse: return false
+	get_viewport().set_input_as_handled()
+	return true
 
 ## Publishes the card its highlight is on again -- asked by the opener only while a description is UP, so one the player dismissed stays dismissed across a re-fit.
 func republish_highlight() -> void:
@@ -129,7 +149,7 @@ func _add_reroll_button(control: ControlCard, index: int) -> Button:
 func reroll(index: int) -> bool:
 	if data.rerolls <= 0 or index < 0 or index >= data.current_choices.size():
 		return false
-# awaited: create_one_choice is a coroutine (BoosterTemplate awaits its pool broadcasts, E8)
+# awaited: create_one_choice is a coroutine (BoosterTemplate awaits its pool broadcasts)
 	var fresh : CardData = await data.create_one_choice.call()
 	if fresh == null:
 		return false

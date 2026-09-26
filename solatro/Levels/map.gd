@@ -5,9 +5,6 @@ class_name Map
 
 signal enter_game
 
-## A pack chooser opened, or Take closed it -- what may leave this screen changed.
-signal chooser_changed
-
 @onready var controller: WorldMapController = %WorldMapController
 @onready var ui_layer: CanvasLayer = $UI
 @onready var name_popup: MapNamePopup = %NamePopup
@@ -169,7 +166,6 @@ func _open_booster(node: WorldGraphNode) -> void:
 	var booster: BoosterTemplate = node.meta.get(MapNodeRoles.BOOSTER_KEY)
 	var viewer : ChoiceViewer = await booster.on_map_picked(ui_layer)
 	_chooser = viewer
-	chooser_changed.emit()
 	viewer.confirmed.connect(_on_booster_confirmed)
 	hud_container.host_viewer(viewer, wall_picture, info_hovered, HudContainer.MAP_SCREEN)
 	_show_only_the_deck_button(true)
@@ -178,7 +174,7 @@ func _open_booster(node: WorldGraphNode) -> void:
 ## The pack chooser this screen opened, dropped the moment Take accepts it, a frame before it is freed.
 var _chooser : ChoiceViewer = null
 
-## Whether a pack chooser is up: it is the player's focus until Take, so nothing may leave this screen.
+## Whether a pack chooser is up, whose borrowed Deck row stays while a viewer opens or closes over it.
 func chooser_is_up() -> bool:
 	return is_instance_valid(_chooser)
 
@@ -193,7 +189,6 @@ func _show_only_the_deck_button(deck_only: bool) -> void:
 
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
 	_chooser = null
-	chooser_changed.emit()
 	for card in cards:
 		Main.save_info.card_datas.append(card)
 	RunManager.mark_deck_dirty()

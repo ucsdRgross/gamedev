@@ -193,9 +193,10 @@ func _ready() -> void:
 	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_mouse()
 	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys()
 	await test_right_off_the_sidebar_never_reaches_the_board_behind_an_empty_viewer()
-	await test_the_chooser_covers_the_map_and_its_sidebar_offers_the_deck()
+	await test_the_chooser_is_a_square_window_with_the_map_around_it()
+	await test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel()
 	await test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser()
-	await test_no_route_leaves_the_chooser_until_take()
+	await test_every_route_leaves_the_chooser_and_comes_back_to_it_in_progress()
 	await test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it()
 	await test_closing_the_deck_viewer_over_the_chooser_gives_back_its_stuck_card()
 	await test_the_choosers_deck_button_stays_up_and_closes_its_open_deck()
@@ -5229,47 +5230,152 @@ func _await_the_rest() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-## The chooser is the new focus until Take: opaque over the whole map picture, beside the sidebar band, and its sidebar offers a look at the deck the cards are joining.
-func test_the_chooser_covers_the_map_and_its_sidebar_offers_the_deck() -> void:
+## The chooser is a square window sized to what it holds, centred beside the sidebar with the map showing on every side, and its sidebar offers a look at the deck the cards are joining.
+func test_the_chooser_is_a_square_window_with_the_map_around_it() -> void:
 	await _start_map_fixture()
+	var chooser := await _open_a_pack_chooser()
+	if chooser != null:
+		await _resize_viewport(_booted_viewport, INSET_WINDOWS[-1])
+		_check_the_chooser_holds_its_parts_beside_the_sidebar(chooser, str(INSET_WINDOWS[-1]))
+		await _resize_viewport(_booted_viewport, INSET_WINDOWS[0])
+		_check_the_chooser_holds_its_parts_beside_the_sidebar(chooser, str(INSET_WINDOWS[0]))
+		var window := _chooser_window(chooser)
+		var space := _map_space(_main)
+		check(is_equal_approx(window.size.x, window.size.y),
+				"the chooser draws as a square window", str(window.size))
+		check(is_equal_approx(window.get_center().x, space.get_center().x)
+				and is_equal_approx(window.get_center().y, space.get_center().y),
+				"...centred in the space beside the sidebar", "%s in %s" % [window, space])
+		await _check_the_map_shows_around_the_chooser(window, space)
+		_click_a_listed_card(chooser._cards.controls[0])
+		await get_tree().process_frame
+		check(_container.showing_description() and _container.is_locked(),
+				"a click on a chosen card sticks its description to the sidebar")
+		check(_map.selection_deck_button.is_visible_in_tree(),
+				"...which carries a Deck button, the chooser having no node of its own")
+		check(not _map.travel_button.is_visible_in_tree()
+				and not _map.possible_cards_button.is_visible_in_tree(),
+				"...and nothing else: there is no node here to travel to or list")
+		_map.selection_deck_button.pressed.emit()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(is_instance_valid(DeckViewer._open),
+				"that Deck button opens the run deck over the chooser")
+		check(is_instance_valid(chooser) and not chooser.is_queued_for_deletion(),
+				"...and the chooser is still there underneath it")
+		if is_instance_valid(DeckViewer._open): DeckViewer._open._close()
+		await get_tree().process_frame
+		if is_instance_valid(chooser): chooser.queue_free()
+		await get_tree().process_frame
+	await _end_main_fixture()
+
+## The map around the chooser's window stays in view and answers nothing: a hover names no node, a click picks none, a drag pans nothing and the wheel zooms nothing, and the chooser stays up.
+func test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel() -> void:
+	await _start_map_fixture()
+	await _zoom_the_map_in(_main, 3)
+	var chooser := await _open_a_pack_chooser()
+	if chooser != null:
+		await get_tree().process_frame
+		var window := _chooser_window(chooser)
+		var target := _a_reachable_node_beside(window)
+		check(target != null, "sanity: a reachable node lies on the map outside the window")
+		if target != null:
+			var controller := _map.controller
+			var at := WorldMapController.node_screen_rect(target).get_center()
+			var camera_before := controller.camera.global_transform
+			var zoom_before := controller.camera.zoom
+			_hover_in(_map_viewport, at)
+			await get_tree().process_frame
+			check(controller._hovered != target, "a hover over a node outside the window reaches no node",
+					str(controller._hovered))
+			await _click(at, _map_viewport)
+			check(controller.selected() == null, "a click on it picks nothing",
+					str(controller.selected()))
+			_pan_map_by(at, _drag_toward_the_map_centre(MAP_PAN_DRAG))
+			await _await_map_framing_settled(_main)
+			check(controller.camera.global_transform.is_equal_approx(camera_before),
+					"a drag starting outside the window pans nothing",
+					"%s -> %s" % [camera_before.origin, controller.camera.global_transform.origin])
+			var wheel := _wheel_event(MOUSE_BUTTON_WHEEL_DOWN)
+			wheel.position = at
+			wheel.global_position = at
+			_map_viewport.push_input(wheel)
+			await _await_map_framing_settled(_main)
+			check(controller.camera.zoom.is_equal_approx(zoom_before),
+					"...and the wheel there zooms nothing", "%s -> %s" % [zoom_before, controller.camera.zoom])
+			check(_chooser_is_up(chooser), "...and the chooser is still up")
+		chooser.queue_free()
+		await get_tree().process_frame
+	await _end_main_fixture()
+
+# A node a click could pick, drawn on the map beside the chooser's window rather than under it. The
+# graph is random per boot, so the token is stood where its next step lands outside the window.
+func _a_reachable_node_beside(window: Rect2) -> WorldGraphNode:
+	var controller := _map.controller
+	var space := _map_space(_main)
+	for from : WorldGraphNode in controller.map.overlay().nodes():
+		for node : WorldGraphNode in controller.next_nodes_of(from):
+			var at := WorldMapController.node_screen_rect(node)
+			if space.encloses(at) and not window.grow(8.0).intersects(at):
+				controller._current = from
+				return node
+	return null
+
+## A pack node's chooser opened on the map, or null (each a failed check) when there is none.
+func _open_a_pack_chooser() -> ChoiceViewer:
 	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
 	check(pack != null, "the generated map offers a talent-pack node")
-	if pack != null:
-		await _map._open_booster(pack)
-		await get_tree().process_frame
-		var chooser := _map.find_child("ChoiceViewer", true, false) as ChoiceViewer
-		check(chooser != null, "the pack node opened its chooser")
-		if chooser != null:
-			var backdrop := chooser.get_node(^"Backdrop") as ColorRect
-			check(is_equal_approx(backdrop.color.a, 1.0)
-					and backdrop.get_global_rect().encloses(chooser.get_viewport_rect()),
-					"the chooser hides the map behind it entirely", str(backdrop.color))
-			var band := _container.container_rect()
-			var layout := (chooser.get_node(^"Layout") as Control).get_global_rect()
-			check(layout.position.x > 0.0,
-					"...and its contents are inset off the sidebar's own edge, not under it",
-					"%s beside %s" % [layout, band])
-			_click_a_listed_card(chooser._cards.controls[0])
-			await get_tree().process_frame
-			check(_container.showing_description() and _container.is_locked(),
-					"a click on a chosen card sticks its description to the sidebar")
-			check(_map.selection_deck_button.is_visible_in_tree(),
-					"...which carries a Deck button, the chooser having no node of its own")
-			check(not _map.travel_button.is_visible_in_tree()
-					and not _map.possible_cards_button.is_visible_in_tree(),
-					"...and nothing else: there is no node here to travel to or list")
-			_map.selection_deck_button.pressed.emit()
-			await get_tree().process_frame
-			await get_tree().process_frame
-			check(is_instance_valid(DeckViewer._open),
-					"that Deck button opens the run deck over the chooser")
-			check(is_instance_valid(chooser) and not chooser.is_queued_for_deletion(),
-					"...and the chooser is still there underneath it")
-			if is_instance_valid(DeckViewer._open): DeckViewer._open._close()
-			await get_tree().process_frame
-			if is_instance_valid(chooser): chooser.queue_free()
-			await get_tree().process_frame
-	await _end_main_fixture()
+	if pack == null: return null
+	await _map._open_booster(pack)
+	await get_tree().process_frame
+	var chooser := _map.find_child("ChoiceViewer", true, false) as ChoiceViewer
+	check(chooser != null, "the pack node opened its chooser")
+	return chooser
+
+## The chooser's window, in the map picture's own space.
+func _chooser_window(chooser: ChoiceViewer) -> Rect2:
+	return (chooser.get_node(^"Layout") as Control).get_global_rect()
+
+func _check_the_chooser_holds_its_parts_beside_the_sidebar(chooser: ChoiceViewer,
+		where: String) -> void:
+	var window := _chooser_window(chooser)
+	var parts : Array[Control] = [chooser.confirm_button, chooser.rerolls_label]
+	parts.append_array(chooser._reroll_buttons)
+	for control : ControlCard in chooser._cards.controls:
+		parts.append(control)
+	for part : Control in parts:
+		check(window.grow(0.5).encloses(part.get_global_rect()),
+				"the chooser's window holds its %s at %s" % [part.name, where],
+				"%s outside %s" % [part.get_global_rect(), window])
+	check(_map_space(_main).grow(0.5).encloses(window),
+			"...and lies inside the space beside the sidebar at %s" % where,
+			"%s vs %s" % [window, _map_space(_main)])
+
+# THE MAP IS DRAWN AROUND THE WINDOW, read off the map picture's own pixels: the window is the HUD
+# background, and a point halfway between each of its edges and the space's edge is not.
+func _check_the_map_shows_around_the_chooser(window: Rect2, space: Rect2) -> void:
+	await RenderingServer.frame_post_draw
+	var image := _map_viewport.get_texture().get_image()
+	var hud := PaletteDB.color(PaletteDB.ROLES.hud_background)
+	var centre := window.get_center()
+	var inside := window.position + Vector2.ONE * 4.0
+	check(_colour_distance(image.get_pixelv(Vector2i(inside)), hud) < 0.05,
+			"the chooser's window is drawn in the HUD background", str(image.get_pixelv(Vector2i(inside))))
+	var beside : Dictionary[String, Vector2] = {
+		"left": Vector2((space.position.x + window.position.x) / 2.0, centre.y),
+		"right": Vector2((window.end.x + space.end.x) / 2.0, centre.y),
+		"top": Vector2(centre.x, (space.position.y + window.position.y) / 2.0),
+		"bottom": Vector2(centre.x, (window.end.y + space.end.y) / 2.0),
+	}
+	for side : String in beside:
+		var at := beside[side]
+		var pixel := image.get_pixelv(Vector2i(at))
+		check(not window.has_point(at) and space.has_point(at)
+				and _colour_distance(pixel, hud) > 0.05,
+				"the map shows on the window's %s" % side, "%s at %s" % [pixel, at])
+
+static func _colour_distance(a: Color, b: Color) -> float:
+	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()
 
 ## A click outside closes the pack's possible-cards viewer; the chooser cannot be left that way -- Take is the only way out of it.
 func test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser() -> void:
@@ -5303,38 +5409,62 @@ func test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser() -> void
 			await get_tree().process_frame
 	await _end_main_fixture()
 
-## The chooser is the new focus until Take: no route off the map leaves it, and once Take has accepted the pack every one of them leaves again.
-func test_no_route_leaves_the_chooser_until_take() -> void:
+## No route off the map is locked while the chooser is up: each one leaves, and coming back finds the chooser exactly as it was left -- its rolled cards, its rerolls, its stuck card described with its X. Take still finishes it.
+func test_every_route_leaves_the_chooser_and_comes_back_to_it_in_progress() -> void:
 	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
 	check(chooser != null, "sanity: arriving on a pack opened its chooser, a picture behind the map and one ahead")
 	if chooser != null:
 		for button_name : StringName in [&"BackButton", &"ForwardButton", &"WallButton"]:
-			check(_overlay_button(button_name).focus_mode == Control.FOCUS_NONE,
-					"no key or pad focus reaches the overlay's %s, so a click is its one route" % button_name)
-			check(_overlay_button(button_name).disabled,
-					"with the chooser up, the overlay's %s shows disabled" % button_name)
-		for route : Array in _routes_off_the_map():
+			check(not _overlay_button(button_name).disabled,
+					"with the chooser up, the overlay's %s is live, not greyed" % button_name)
+		check(await _click_button(chooser._reroll_buttons[0], _map_viewport),
+				"sanity: a real click on a Reroll pressed it")
+		var waited := 0.0
+		while waited < CARD_CONTROL_TIMEOUT_SEC and chooser.data.rerolls == SettingsManager.settings.booster_reroll_pool:
+			await get_tree().process_frame
+			waited += get_process_delta_time()
+		await _click(chooser.cards().controls[1].get_global_rect().get_center(), _map_viewport)
+		var left_as := _the_chooser_in_progress(chooser)
+		check(chooser.data.rerolls < SettingsManager.settings.booster_reroll_pool
+				and chooser.cards().sticky != null and _container.is_locked() and _exit_button().visible,
+				"sanity: a card was rerolled and another stuck, described with its X", str(left_as))
+# TAB IS FOCUS-NEXT while a chooser control holds the key focus, which one does from the moment it
+# opens, so wall_overview's key never reaches the wall. A pinch over the window lands on its cards.
+		var routes := _routes_off_the_map()
+		for index : int in routes.size():
+			if routes[index][0] == "a pinch in":
+				routes[index] = ["a pinch in beside the window",
+						_pinch_in_at.bind(_map_point_in_window(_beside_the_chooser(chooser))), routes[index][2]]
+		for route : Array in routes:
+			if route[0] == "wall_overview's key": continue
 			await (route[1] as Callable).call()
 			await _wait_out_the_move()
-			check(_main._current_focus == &"map" and _chooser_is_up(chooser),
-					"with the chooser up, %s leaves neither the map nor the chooser" % route[0],
+			check(_main._current_focus != &"map" and _chooser_is_up(chooser),
+					"with the chooser up, %s leaves the map, the chooser waiting there" % route[0],
 					"focus=%s chooser_up=%s" % [_main._current_focus, _chooser_is_up(chooser)])
-			if _main._current_focus != &"map":
-				await (route[2] as Callable).call()
-				await _wait_out_the_move()
+			if _main._current_focus == &"map": continue
+			await (route[2] as Callable).call()
+			await _wait_out_the_move()
+			check(_main._current_focus == &"map" and _the_chooser_in_progress(chooser) == left_as,
+					"...and coming back after %s finds the chooser as it was left" % route[0],
+					"focus=%s %s vs %s" % [_main._current_focus, _the_chooser_in_progress(chooser), left_as])
+		await _tap_key(KEY_ESCAPE)
+		check(chooser.cards().sticky == null and not chooser.confirm_button.disabled
+				and _main._current_focus == &"map",
+				"sanity: a cancel let the stuck card go, Take back within reach, the map still the screen",
+				str(_main._current_focus))
 		check(await _click_button(chooser.confirm_button, _map_viewport),
 				"a real click on Take pressed it")
 		await get_tree().process_frame
-		check(not _overlay_button(&"BackButton").disabled and not _overlay_button(&"WallButton").disabled
-				and _overlay_button(&"ForwardButton").disabled == not _main._focus_stack.can_forward(),
-				"after Take, Back and Wall are live again and Forward follows its own stack rule",
-				"forward disabled=%s can_forward=%s" % [_overlay_button(&"ForwardButton").disabled,
-						_main._focus_stack.can_forward()])
+		check(not is_instance_valid(chooser) or chooser.is_queued_for_deletion(),
+				"...and Take finished the chooser")
+		await _stand_the_map_between_two_pictures()
 		for route : Array in _routes_off_the_map():
 			await (route[1] as Callable).call()
 			await _wait_out_the_move()
 			check(_main._current_focus != &"map",
-					"after Take, %s leaves the map again" % route[0], str(_main._current_focus))
+					"after Take, %s leaves the map" % route[0],
+					str(_main._current_focus))
 			await (route[2] as Callable).call()
 			await _wait_out_the_move()
 			check(_main._current_focus == &"map", "sanity: back on the map after %s" % route[0],
@@ -5342,6 +5472,35 @@ func test_no_route_leaves_the_chooser_until_take() -> void:
 			check(_hud_is_up(),
 					"...and its sidebar is back on the HUD, not on a card the chooser took with it")
 	await _end_main_fixture()
+
+# THE ROUTES ABOVE WALKED THE HISTORY, and a wall_jump visit trims it, so the map is stood again
+# with a picture behind it and one ahead: game, map, the start menu, then Back.
+func _stand_the_map_between_two_pictures() -> void:
+	for id : StringName in [&"game", &"map", &"start_menu"] as Array[StringName]:
+		await _main._focus_picture(id)
+	await _click_overlay(&"BackButton")
+	await _wait_out_the_move()
+	check(_main._current_focus == &"map" and _main._focus_stack.can_back()
+			and _main._focus_stack.can_forward(),
+			"sanity: the map stands between a picture behind it and one ahead", str(_main._current_focus))
+
+## A map point halfway between the chooser's window and the space's left edge.
+func _beside_the_chooser(chooser: ChoiceViewer) -> Vector2:
+	var window := _chooser_window(chooser)
+	return Vector2((_map_space(_main).position.x + window.position.x) / 2.0, window.get_center().y)
+
+## A map-viewport point in the booted window's pixels: the wall's own routing, run backwards.
+func _map_point_in_window(at: Vector2) -> Vector2:
+	var picture : WallPicture = _main._pictures[&"map"]
+	var sprite : Sprite2D = picture.get_node(^"%Screen")
+	return sprite.get_global_transform_with_canvas() * (at - Vector2(picture.viewport.size) * 0.5)
+
+## Everything a return to the chooser must find unchanged, as one comparable value.
+func _the_chooser_in_progress(chooser: ChoiceViewer) -> Array:
+	if not _chooser_is_up(chooser): return []
+	var shown := _panel.current_entry.title if _container.showing_description() and _panel.current_entry 			else "HUD"
+	return [chooser.data.current_choices.duplicate(), chooser.data.rerolls, chooser.cards().sticky,
+			shown, _container.is_locked(), _exit_button().visible, chooser.is_visible_in_tree()]
 
 ## A pack reached while the player is already leaving the map still lets them back to it: the chooser waits there, and Take closes it.
 func test_leaving_mid_walk_onto_a_pack_never_strands_the_chooser() -> void:
@@ -5353,7 +5512,7 @@ func test_leaving_mid_walk_onto_a_pack_never_strands_the_chooser() -> void:
 		await _close_the_open_viewer()
 		check(await _click_button(_map.travel_button, _booted_viewport), "a real click on Travel pressed it")
 # ⚠ THE KEY, NOT A CLICK: a push is handled at once, so the leave starts while the token walks; a
-# click's hover and release frames let a short edge arrive first, and the chooser then refuses it.
+# click's hover and release frames let a short edge arrive first.
 		check(_map.controller._moving, "sanity: the token is still walking as wall_back is pressed")
 		await _tap_key(KEY_BRACKETLEFT)
 		var waited := 0.0
@@ -5375,7 +5534,7 @@ func test_leaving_mid_walk_onto_a_pack_never_strands_the_chooser() -> void:
 					"...where a real click on Take presses it")
 	await _end_main_fixture()
 
-## The chooser's own Deck button opens the run deck over it, and closing that viewer comes back to the chooser, still holding the map.
+## The chooser's own Deck button opens the run deck over it; a Back and Forward come back to both as left, and closing that viewer comes back to the chooser.
 func test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it() -> void:
 	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
 	check(chooser != null, "sanity: arriving on a pack opened its chooser")
@@ -5388,10 +5547,17 @@ func test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it() -> 
 		await get_tree().process_frame
 		check(is_instance_valid(DeckViewer._open) and _chooser_is_up(chooser),
 				"the run deck opens over the chooser, which stays up underneath")
+		var deck := DeckViewer._open
 		await _click_overlay(&"BackButton")
 		await _wait_out_the_move()
-		check(_main._current_focus == &"map" and _chooser_is_up(chooser),
-				"...and Back is refused while the deck viewer sits over the chooser",
+		check(_main._current_focus != &"map" and _chooser_is_up(chooser),
+				"...and Back leaves the map with the deck viewer over the chooser",
+				str(_main._current_focus))
+		await _click_overlay(&"ForwardButton")
+		await _wait_out_the_move()
+		check(_main._current_focus == &"map" and is_instance_valid(deck)
+				and not deck.is_queued_for_deletion() and _chooser_is_up(chooser),
+				"...and Forward comes back to the deck still open over the chooser",
 				str(_main._current_focus))
 		await _tap_key(KEY_ESCAPE)
 		check(not is_instance_valid(DeckViewer._open) or DeckViewer._open.is_queued_for_deletion(),
@@ -6022,7 +6188,7 @@ func _routes_off_the_map() -> Array[Array]:
 		["wall_back's pad button", _tap_pad.bind(JOY_BUTTON_LEFT_SHOULDER), forward],
 		["wall_forward's pad button", _tap_pad.bind(JOY_BUTTON_RIGHT_SHOULDER), back],
 		["wall_overview's pad button", _tap_pad.bind(JOY_BUTTON_BACK), back],
-		["a pinch in", _pinch_in, back],
+		["a pinch in", _pinch_in_at.bind(Vector2(_booted_viewport.size) / 2.0), back],
 		["a wall_jump key to another picture", _tap_key.bind(_jump_key_off_the_map()), back],
 	]
 
@@ -6043,9 +6209,10 @@ func _tap_pad(button: JoyButton) -> void:
 		_booted_viewport.push_input(event)
 		await get_tree().process_frame
 
-## Two fingers closing past the wall's pinch threshold, over the middle of the window.
-func _pinch_in() -> void:
-	var centre := Vector2(_booted_viewport.size) / 2.0
+# ⚠ THE FINGERS LIFT ONCE THE LEAVE HAS LANDED: the wall drops input while a move is in flight, so
+# a lift during it never reaches the pinch tracker, and it then refuses every later pinch.
+## Two fingers closing past the wall's pinch threshold, about `centre` in the window.
+func _pinch_in_at(centre: Vector2) -> void:
 	var spread := WallPicture.settings().wall_pinch_threshold_px * 3.0
 	for index : int in [0, 1]:
 		var touch := InputEventScreenTouch.new()
@@ -6058,6 +6225,7 @@ func _pinch_in() -> void:
 	drag.position = centre + Vector2(spread / 3.0, 0.0)
 	_booted_viewport.push_input(drag)
 	await get_tree().process_frame
+	await _wait_out_the_move()
 	for index : int in [0, 1]:
 		var lift := InputEventScreenTouch.new()
 		lift.index = index
