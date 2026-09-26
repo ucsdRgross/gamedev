@@ -26,7 +26,7 @@ const VIEWER_STICKY_OUT_PATH := "user://sidebar_snapshot/viewer_sticky_with_x.pn
 const VIEWER_CLOSED_OUT_PATH := "user://sidebar_snapshot/viewer_closed_hud.png"
 const MAP_CARD_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/map_card_description.png"
 const VIEWER_OPEN_HUD_OUT_PATH := "user://sidebar_snapshot/viewer_open_hud_showing.png"
-const CHOOSER_OPAQUE_OUT_PATH := "user://sidebar_snapshot/chooser_opaque.png"
+const CHOOSER_WINDOW_OUT_PATH := "user://sidebar_snapshot/chooser_window.png"
 const DECK_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_over_chooser.png"
 const DECK_CARD_HOVER_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_card_hover_over_chooser.png"
 const DECK_OVER_POSSIBLE_CARDS_OUT_PATH := "user://sidebar_snapshot/deck_over_possible_cards.png"
@@ -817,7 +817,7 @@ func _shoot_the_chooser(main: Main) -> void:
 	if pack == null: return
 	await map._open_booster(pack)
 	await get_tree().process_frame
-	var chooser := map.find_child("ChoiceViewer", true, false) as ChoiceViewer
+	var chooser := map._chooser
 	if chooser == null: return
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
@@ -826,32 +826,42 @@ func _shoot_the_chooser(main: Main) -> void:
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
-	_capture(CHOOSER_OPAQUE_OUT_PATH)
+	_capture(CHOOSER_WINDOW_OUT_PATH)
 	print("SIDEBAR_SNAPSHOT chooser window=%s deck_button=%s sticky=%s"
 			% [(chooser.get_node(^"Layout") as Control).get_global_rect(),
 					map.selection_deck_button.is_visible_in_tree(), chooser.cards().sticky])
 	map.selection_deck_button.pressed.emit()
 	await _await_a_viewer()
+	await _leave_the_map_and_come_back(main)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(DECK_OVER_CHOOSER_OUT_PATH)
-	print("SIDEBAR_SNAPSHOT deck_over_chooser viewer=%s chooser_alive=%s"
-			% [is_instance_valid(DeckViewer._open), is_instance_valid(chooser)])
+	print("SIDEBAR_SNAPSHOT deck_over_chooser viewer=%s chooser_alive=%s deck_cards=%d focus=%s"
+			% [is_instance_valid(DeckViewer._open), is_instance_valid(chooser),
+					DeckViewer._open.cards().controls.size(), main._current_focus])
 	await _hover_a_run_deck_card(main)
 	if is_instance_valid(DeckViewer._open): DeckViewer._open.free()
 	await get_tree().process_frame
 	if is_instance_valid(chooser): chooser.free()
 	await get_tree().process_frame
 
+# THE DECK OVER THE CHOOSER IS SHOT AFTER A LEAVE AND RETURN: both fade out with the sidebar and
+# must come back as they were left, the deck still listing its cards.
+func _leave_the_map_and_come_back(main: Main) -> void:
+	await main._focus_picture(&"start_menu")
+	await main._focus_picture(&"map")
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	if container.slid_fraction() < 1.0: await container.slide_settled
+
 # A RUN-DECK CARD HOVERED OVER THE CHOOSER: its description takes the sidebar, and whether the
 # chooser's Deck row still rides beside it is what the still is for.
 func _hover_a_run_deck_card(main: Main) -> void:
 	var cards : Array[ControlCard] = []
-	var shown := main.map_scene.get_viewport().get_visible_rect()
+	var shown := DeckViewer._open.get_viewport().get_visible_rect()
 	for card : ControlCard in _listed_cards(DeckViewer._open.flow_container):
 		if shown.encloses(card.get_global_rect()): cards.append(card)
 	var card := _the_most_described_card(cards)
-	_push_map_pointer(main, card.get_global_transform_with_canvas() * (card.size * 0.5))
+	_push_pointer(get_viewport(), _window_px(card, card.size * 0.5))
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
@@ -1000,7 +1010,7 @@ func _open_a_booster_pack(main: Main) -> void:
 	await get_tree().process_frame
 	var viewer := _open_choice_viewer(main)
 	if viewer == null: return
-	var cards := _listed_cards(viewer.flex_container)
+	var cards := _listed_cards(viewer.flow_container)
 	if not cards.is_empty(): cards[0].grab_focus()
 	await get_tree().process_frame
 
@@ -1017,10 +1027,7 @@ func _open_the_pickers_viewer(main: Main) -> DeckPicker:
 	return picker
 
 func _open_choice_viewer(main: Main) -> ChoiceViewer:
-	for child : Node in main.map_scene.ui_layer.get_children():
-		var viewer := child as ChoiceViewer
-		if viewer: return viewer
-	return null
+	return main.map_scene._chooser
 
 func _listed_cards(container: Node) -> Array[ControlCard]:
 	var cards : Array[ControlCard] = []

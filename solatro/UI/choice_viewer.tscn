@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://dchj5yt177k0c"]
 
 [ext_resource type="Script" uid="uid://b3cwvkdedrlvl" path="res://UI/choice_viewer.gd" id="1_wlx1c"]
-[ext_resource type="Script" uid="uid://qjk2k16hh77c" path="res://addons/flex_container/flex_container.gd" id="2_minph"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_window"]
 
@@ -25,19 +24,13 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_window")
 
-[node name="FlexContainer" type="Container" parent="Layout" unique_id=413004020]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("2_minph")
-align_horizontal = 1
-align_vertical = 1
-wrapping = true
-align_wrap = 1
-metadata/_custom_type_script = "uid://qjk2k16hh77c"
+[node name="Scroll" type="ScrollContainer" parent="Layout" unique_id=1216211912]
+layout_mode = 0
+horizontal_scroll_mode = 0
+
+[node name="FlowContainer" type="HFlowContainer" parent="Layout/Scroll" unique_id=413004020]
+layout_mode = 2
+alignment = 1
 
 [node name="BottomRow" type="HBoxContainer" parent="Layout" unique_id=1216211911]
 layout_mode = 1

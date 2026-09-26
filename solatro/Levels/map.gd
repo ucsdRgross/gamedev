@@ -160,14 +160,15 @@ func _start_show(node: WorldGraphNode) -> void:
 	RunManager.save_run()
 	enter_game.emit()
 
-# Booster node: all generated cards are force-added on confirm (rerolls/extra picks come
-# later from modifiers).
+# THE CHOOSER IS UI, not part of the map: it opens on the sidebar's own layer at the sidebar's
+# scale, never zoomed with the map, so it is hosted with no picture. Every generated card is
+# force-added on confirm (rerolls and extra picks come later from modifiers).
 func _open_booster(node: WorldGraphNode) -> void:
 	var booster: BoosterTemplate = node.meta.get(MapNodeRoles.BOOSTER_KEY)
-	var viewer : ChoiceViewer = await booster.on_map_picked(ui_layer)
+	var viewer : ChoiceViewer = await booster.on_map_picked(hud_container.get_parent())
 	_chooser = viewer
 	viewer.confirmed.connect(_on_booster_confirmed)
-	hud_container.host_viewer(viewer, wall_picture, info_hovered, HudContainer.MAP_SCREEN)
+	hud_container.host_viewer(viewer, null, info_hovered, HudContainer.MAP_SCREEN)
 	_show_only_the_deck_button(true)
 	viewer.confirmed.connect(_show_only_the_deck_button.bind(false).unbind(1))
 
@@ -268,7 +269,7 @@ func _open_possible_cards_once(node: WorldGraphNode) -> void:
 func _show_possible_cards(node: WorldGraphNode) -> void:
 	var cards := await _booster_of(node).get_possible_preview_cards()
 	_possible_cards = DeckViewer.show_deck(self, cards, possible_cards_button)
-	_host_map_viewer(_possible_cards)
+	_host_map_viewer(_possible_cards, wall_picture)
 	if _possible_cards: _possible_cards.cards().sticky_changed.connect(_show_only_the_deck_button)
 
 ## The pack's possible-cards list this screen last opened; it is up only until it is queued for deletion.
@@ -283,10 +284,10 @@ func _a_possible_card_is_stuck() -> bool:
 # ⚠ HOSTED FIRST, REPUBLISHED SECOND: the container's close handler takes the viewer's card out of
 # the sidebar, so a pick put back before it would be wiped by it. The pick is what every viewer
 # this screen opens comes back to. The chooser's Deck row stays up, the toggle that closes its deck.
-func _host_map_viewer(viewer: DeckViewer) -> void:
+func _host_map_viewer(viewer: DeckViewer, picture: WallPicture) -> void:
 	if viewer == null: return
 	selection_buttons.visible = chooser_is_up() or _a_possible_card_is_stuck()
-	hud_container.host_viewer(viewer, wall_picture, info_hovered, HudContainer.MAP_SCREEN)
+	hud_container.host_viewer(viewer, picture, info_hovered, HudContainer.MAP_SCREEN)
 	viewer.highlight_cleared.connect(_republish_the_pick)
 
 # Nothing picked is the HUD's own Deck button opening the viewer from the basic view, with no
@@ -319,11 +320,13 @@ func _update_hud() -> void:
 	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
 
 # The run deck is reachable from the basic view AND from beside a pick, so the viewer is handed
-# whichever of the two buttons actually opened it to put a pad player's focus back on.
+# whichever of the two buttons actually opened it to put a pad player's focus back on. Over the
+# chooser it opens where the chooser is, on the sidebar's layer, or the chooser would cover it.
 func _on_deck_clicked() -> void:
 	var opener : Button = selection_deck_button if selection_buttons.visible \
 			else hud_container.map_deck_button
-	var viewer := DeckViewer.show_deck(self, Main.save_info.card_datas, opener,
-			_a_possible_card_is_stuck())
-	_host_map_viewer(viewer)
+	var over_the_chooser := chooser_is_up()
+	var viewer := DeckViewer.show_deck(hud_container.get_parent() if over_the_chooser else self,
+			Main.save_info.card_datas, opener, _a_possible_card_is_stuck())
+	_host_map_viewer(viewer, null if over_the_chooser else wall_picture)
 	DeckViewer.read_close_while_open(opener, &"MAP_CLOSE_DECK", viewer)

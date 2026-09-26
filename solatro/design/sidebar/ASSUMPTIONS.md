@@ -377,12 +377,11 @@
   `Menu` connects `viewer_opened` to `HudContainer.host_viewer()` (re-fitted on `container_rect_changed`
   like the others). The viewer stays parented to the PICKER, so picking a deck frees it with the
   picker.
-- P3 review: `ChoiceViewer`'s pack, confirm button and reroll counter share one `Layout` Control
-  (`mouse_filter` IGNORE, the dimmed backdrop stays outside it) and `fit_beside()` insets THAT, so
-  the chrome anchors to the space beside the container rather than to the picture: the confirm
-  button centres under the pack (measured 576 vs the pack's 720 at 1280x720) and the counter keeps
-  to the visible right edge (measured outside it at 600x1000). `Q141`=b's "the viewer owns its own
-  layout" is about the whole layout, not only the cards.
+- `ChoiceViewer`'s pack, Rerolls counter and Take share one `Layout` window (`mouse_filter`
+  IGNORE; nothing is drawn outside it) on the sidebar's own layer at the UI scale, and
+  `fit_beside()` places THAT, a square centred in the space beside the resting sidebar: the card
+  rows centred in a scrolling area, Rerolls beside Take in one centred row along the window's foot.
+  `Q141`=b's "the viewer owns its own layout" is about the whole layout, not only the cards.
 - S12: `UI/deck_builder.tscn` lost its broken `Cards/card.tscn` `ext_resource`, the `Card` node it
   instanced and the dead "Skill Text" `Label` beside it. The tool's preview is now a real
   `ControlCard` built in `_ready()` over a `preview_data : CardData` the option buttons mutate --

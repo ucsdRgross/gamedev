@@ -1,7 +1,7 @@
 class_name ChoiceViewer
 extends Control
 
-## Modal viewer for pack-opening: shows the generated cards in a square window over its picture, which it keeps inert. choose == 0 is the wired take-all mode ("Take all" force-adds every card via the `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers. Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
+## Modal viewer for pack-opening: shows the generated cards in a square window on the sidebar's layer, keeping the map around it inert. choose == 0 is the wired take-all mode ("Take all" force-adds every card via the `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers. Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
 
 ## Fired when the player accepts the shown cards; the viewer frees itself afterwards.
 signal confirmed(cards: Array[CardData])
@@ -14,7 +14,7 @@ signal highlight_cleared
 
 const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 
-@onready var flex_container: FlexContainer = $Layout/FlexContainer
+@onready var flow_container: HFlowContainer = $Layout/Scroll/FlowContainer
 @onready var confirm_button: Button = %ConfirmButton
 @onready var rerolls_label: Label = %RerollsLeft
 
@@ -22,10 +22,16 @@ const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 @onready var _layout: Panel = $Layout
 ## Rerolls left and Take, side by side along the window's foot.
 @onready var _bottom_row: HBoxContainer = $Layout/BottomRow
+## The card rows, scrolling once there are more than the window shows.
+@onready var _scroll: ScrollContainer = $Layout/Scroll
 
 ## Reroll button geometry, in pixels below the card it belongs to (no magic numbers in logic).
 const REROLL_BUTTON_HEIGHT := 34.0
 const REROLL_BUTTON_GAP := 4.0
+## Cards in one row; a sixth starts the next row.
+const ROW_CARDS := 5
+## Rows the window grows to show before the rest scroll inside it.
+const ROWS_SHOWN := 5
 
 var data : Data = null
 ## Owns the listed choice cards (the shared listing logic; see CardsViewer).
@@ -63,11 +69,13 @@ func _ready() -> void:
 # ui_accept confirms immediately; arrow keys walk the (focusable) cards.
 	confirm_button.text = TRANSLATION.find('CHOICE_TAKE')
 	(_layout.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = 			PaletteDB.color(PaletteDB.ROLES.hud_background)
+	flow_container.add_theme_constant_override(&"v_separation",
+			roundi(REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT))
 	confirm_button.grab_focus()
 	_populate()
 
 func _populate() -> void:
-	_cards = CardsViewer.new(flex_container)
+	_cards = CardsViewer.new(flow_container)
 	_cards.populate(data.current_choices, _publish_info)
 	_cards.sticky_changed.connect(_follow_the_pick.unbind(1))
 	for i in _cards.controls.size():
@@ -89,52 +97,49 @@ func cards() -> CardsViewer:
 func close_from_sidebar() -> void:
 	_cards.unstick()
 
-# A cancel reads as a close here as everywhere, and is then SWALLOWED: Take alone finishes this
-# pack, so the wall never hears it either.
+# ⚠ THE MAP AROUND THE WINDOW STAYS IN VIEW AND ANSWERS NO POINTER: a mouse event no control took
+# stops here, ahead of the wall's routing into the map; a touch passes on to the wall's pinch. A
+# cancel reads as a close and is SWALLOWED: Take alone finishes this pack.
 func _unhandled_input(event: InputEvent) -> void:
-	if _stops_at_the_window(event): return
+	if event is InputEventMouse:
+		get_viewport().set_input_as_handled()
+		return
 	var verdict := _cards.modal_verdict(event)
 	if verdict == CardsViewer.Modal.PASS: return
 	if verdict == CardsViewer.Modal.CLOSE: _cards.unstick()
 	get_viewport().set_input_as_handled()
 
-# THE WINDOW IS CENTRED IN THE SPACE LEFT BESIDE THE SIDEBAR, never under it. The scale rides
-# along, so a re-publish after it is drawn at the size THIS viewer now draws a card.
-func fit_beside(remaining: Rect2, window_scale: float) -> void:
-	_cards.picture_to_window_scale = window_scale
-	var window := remaining
-	var side := _square_side()
-	if side <= minf(remaining.size.x, remaining.size.y):
-		window = Rect2(remaining.get_center() - Vector2.ONE * side / 2.0, Vector2.ONE * side)
+# THE WINDOW IS A SQUARE CENTRED IN THE SPACE BESIDE THE SIDEBAR, wide enough for a full row and
+# tall enough for ROWS_SHOWN rows over the Rerolls-and-Take foot, cut to the space with the rest
+# scrolling. It is UI, so its cards draw at the one UI size and no picture scale applies.
+func fit_beside(remaining: Rect2, _window_scale: float) -> void:
+	var slot := _cards.controls[0].get_combined_minimum_size() \
+			+ Vector2(0.0, REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT)
+	var rows := ceili(float(_cards.controls.size()) / ROW_CARDS)
+	var gap := flow_container.get_theme_constant(&"h_separation")
+	var row_px := ROW_CARDS * slot.x + (ROW_CARDS - 1) * gap
+	flow_container.custom_minimum_size = Vector2(row_px, rows * slot.y)
+	var pad := _bottom_row.offset_left
+	var foot := -_bottom_row.offset_top
+	var wanted := maxf(row_px + 2.0 * pad, pad + mini(rows, ROWS_SHOWN) * slot.y + foot)
+	var side := minf(wanted, minf(remaining.size.x, remaining.size.y))
+	var shown := Vector2(row_px, minf(rows * slot.y, side - pad - foot))
+	if shown.y < rows * slot.y:
+		shown.x += _scroll.get_v_scroll_bar().get_combined_minimum_size().x
+	_scroll.position = Vector2((side - shown.x) / 2.0, pad + (side - pad - foot - shown.y) / 2.0)
+	_scroll.size = shown
+	var window := Rect2(remaining.get_center() - Vector2.ONE * side / 2.0, Vector2.ONE * side)
 	var picture := get_viewport_rect().size
 	_layout.offset_left = window.position.x
 	_layout.offset_top = window.position.y
 	_layout.offset_right = window.end.x - picture.x
 	_layout.offset_bottom = window.end.y - picture.y
 
-# The cards sit centred with their Reroll buttons hanging under them and the Rerolls-and-Take row at
-# the foot, so the square holds one full row unwrapped with that foot band mirrored above it.
-func _square_side() -> float:
-	var row := Vector2.ZERO
-	for control : ControlCard in _cards.controls.slice(0, SettingsManager.settings.chooser_row_cards):
-		var card := control.get_combined_minimum_size()
-		row = Vector2(row.x + card.x, maxf(row.y, card.y))
-	var foot_band := -_bottom_row.offset_top + REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT
-	return maxf(row.x + 2.0 * _bottom_row.offset_left, row.y + 2.0 * foot_band)
-
-# ⚠ THE MAP AROUND THE WINDOW STAYS IN VIEW AND ANSWERS NO POINTER: a full-picture STOP control let
-# the wheel and the first motion through (measured) and swallowed the wall's pinch, so this viewer
-# ignores the pointer and every mouse event stops here -- before the map, in reverse tree order.
-func _stops_at_the_window(event: InputEvent) -> bool:
-	if not event is InputEventMouse: return false
-	get_viewport().set_input_as_handled()
-	return true
-
 ## Publishes the card its highlight is on again -- asked by the opener only while a description is UP, so one the player dismissed stays dismissed across a re-fit.
 func republish_highlight() -> void:
 	_cards.republish_highlight()
 
-## One slot's Reroll button, parented to its card and hanging just below it (the flex container lays out the cards only). A focus stop like the card itself — keyboard/controller reach it.
+## One slot's Reroll button, parented to its card and hanging just below it (the flow container lays out the cards only). A focus stop like the card itself — keyboard/controller reach it.
 func _add_reroll_button(control: ControlCard, index: int) -> Button:
 	var button := Button.new()
 	button.text = TRANSLATION.find('CHOICE_REROLL')
@@ -165,11 +170,11 @@ func _swap_card_control(index: int, card: CardData) -> void:
 	var old := _cards.controls[index]
 	var replaced : CardData = old.child.data
 	var had_focus : bool = _reroll_buttons[index].has_focus()
-	flex_container.remove_child(old)
+	flow_container.remove_child(old)
 	old.queue_free()
 	var control := ControlCard.add_child_control_card(
-			flex_container, card, CardVisual.DisplayContext.DECK_VIEWER)
-	flex_container.move_child(control, index)
+			flow_container, card, CardVisual.DisplayContext.DECK_VIEWER)
+	flow_container.move_child(control, index)
 	_cards.inspect_on_highlight(control, card)
 	_cards.controls[index] = control
 	_cards.rehighlight(replaced, card)

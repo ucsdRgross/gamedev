@@ -86,16 +86,25 @@ func _publish_info(data: CardData) -> void:
 	PlayArea.highlight_info(data,
 			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)
 
-# ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
-# so its cards list inside the space left beside it -- ALL FOUR EDGES, or a row runs off the far one.
+# ⚠ THE CLICK-TO-CLOSE CATCHER IS EVERYTHING BESIDE THE SIDEBAR AS IT IS SHOWN, following its
+# slide: on the sidebar's own layer this viewer draws above it, whose X, rows and Back must still
+# take a click, and where it has slid out the strip it would rest on is outside like any other.
+func fit_catcher(shown: Rect2) -> void:
+	var picture := get_viewport().get_visible_rect().size
+	margin_container.offset_left = shown.position.x
+	margin_container.offset_top = shown.position.y
+	margin_container.offset_right = shown.end.x - picture.x
+	margin_container.offset_bottom = shown.end.y - picture.y
+
+# THE LIST RESTS BESIDE WHERE THE SIDEBAR RESTS, inset inside the catcher by the scene's own padding.
 # The scale rides along, so a re-publish after it is drawn at the size THIS viewer now draws a card.
 func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_cards.picture_to_window_scale = window_scale
-	var picture := get_viewport().get_visible_rect().size
-	_inset_margin(&"margin_left", remaining.position.x)
-	_inset_margin(&"margin_top", remaining.position.y)
-	_inset_margin(&"margin_right", picture.x - remaining.end.x)
-	_inset_margin(&"margin_bottom", picture.y - remaining.end.y)
+	var catcher := margin_container.get_rect()
+	_inset_margin(&"margin_left", remaining.position.x - catcher.position.x)
+	_inset_margin(&"margin_top", remaining.position.y - catcher.position.y)
+	_inset_margin(&"margin_right", catcher.end.x - remaining.end.x)
+	_inset_margin(&"margin_bottom", catcher.end.y - remaining.end.y)
 
 ## Publishes the card its highlight is on again -- asked by the opener only while a description is UP, so one the player dismissed stays dismissed across a re-fit.
 func republish_highlight() -> void:
@@ -112,14 +121,12 @@ func close_from_sidebar() -> void:
 ## The margins the scene authored, read once before the first fit overrides them.
 var _authored_margins : Dictionary[StringName, int] = {}
 
-# The click-to-close catcher keeps the picture's whole rect while its CONTENT moves in, so the inset
-# rides on the MarginContainer's authored padding. ⚠ SET FROM THAT, NEVER ADDED TO WHAT IS THERE:
-# this runs again on every window change while the viewer is open.
+# ⚠ SET FROM THE AUTHORED PADDING, NEVER ADDED TO WHAT IS THERE: this runs again on every slide step
+# and window change while the viewer is open.
 func _inset_margin(margin: StringName, inset: float) -> void:
 	if not _authored_margins.has(margin):
 		_authored_margins[margin] = margin_container.get_theme_constant(margin)
-	margin_container.add_theme_constant_override(margin,
-			_authored_margins[margin] + ceili(inset))
+	margin_container.add_theme_constant_override(margin, _authored_margins[margin] + ceili(inset))
 
 ## Keyboard/controller: the shared modal verdict decides. Mouse click on the margin closes below.
 func _unhandled_input(event: InputEvent) -> void:
@@ -127,9 +134,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	if verdict == CardsViewer.Modal.PASS: return
 	get_viewport().set_input_as_handled()
 	if verdict == CardsViewer.Modal.CLOSE: _close()
-
-func _on_flow_container_hidden() -> void:
-	if _cards: _cards.clear()
 
 # EITHER BUTTON: a press outside the list closes, and the second button cancels from anywhere on
 # screen, which over this viewer is the same act.

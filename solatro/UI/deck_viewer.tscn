@@ -55,4 +55,3 @@ metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [connection signal="gui_input" from="MarginContainer" to="." method="_on_margin_container_gui_input"]
 [connection signal="pressed" from="MarginContainer/ColorRect/CloseTab" to="." method="_close"]
-[connection signal="hidden" from="MarginContainer/SmoothScrollContainer/FlowContainer" to="." method="_on_flow_container_hidden"]

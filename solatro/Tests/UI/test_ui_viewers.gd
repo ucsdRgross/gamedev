@@ -45,6 +45,8 @@ func _ready() -> void:
 	await test_the_first_navigation_press_enters_the_list()
 	await test_the_pack_chooser_draws_only_a_square_window()
 	await test_a_sixth_card_wraps_to_a_centred_row_of_its_own()
+	await test_a_wrapped_row_lies_below_the_reroll_buttons_above()
+	await test_the_window_shows_five_rows_then_scrolls()
 	await test_a_deck_viewer_carries_a_close_tab_and_the_pack_chooser_none()
 	finish()
 
@@ -150,6 +152,64 @@ func test_a_sixth_card_wraps_to_a_centred_row_of_its_own() -> void:
 			"Rerolls and Take centre in the window as a pair", "%s in %s" % [pair, window])
 	viewer.queue_free()
 	await get_tree().process_frame
+
+## A wrapped row starts below the Reroll buttons hanging under the row above, never over them.
+func test_a_wrapped_row_lies_below_the_reroll_buttons_above() -> void:
+	var viewer := await _fitted_chooser(ChoiceViewer.ROW_CARDS + 1, Rect2(Vector2.ZERO, Vector2.ONE * 4000.0))
+	var wrapped := viewer._cards.controls[ChoiceViewer.ROW_CARDS].get_global_rect()
+	for index : int in ChoiceViewer.ROW_CARDS:
+		var reroll := viewer._reroll_buttons[index].get_global_rect()
+		check(wrapped.position.y >= reroll.end.y - 0.5,
+				"the wrapped row starts below slot %d's Reroll button above it" % index,
+				"%s vs %s" % [wrapped, reroll])
+	viewer.queue_free()
+	await get_tree().process_frame
+
+## With room, the window grows to show ROWS_SHOWN full rows; one more row scrolls inside the same window, and a space too short for them cuts the window to it with the rest scrolling -- five cards to a row throughout.
+func test_the_window_shows_five_rows_then_scrolls() -> void:
+	var room := Rect2(Vector2.ZERO, Vector2.ONE * 4000.0)
+	var full := ChoiceViewer.ROW_CARDS * ChoiceViewer.ROWS_SHOWN
+	var five := await _fitted_chooser(full, room)
+	var shown := five._scroll.get_global_rect().grow(0.5)
+	check(five._cards.controls.all(func(card: ControlCard) -> bool: return shown.encloses(card.get_global_rect())),
+			"%d cards show whole in the window, nothing to scroll" % full, str(shown))
+	check(_cards_in_the_first_row(five) == ChoiceViewer.ROW_CARDS,
+			"...five of them to a row", str(_cards_in_the_first_row(five)))
+	var six := await _fitted_chooser(full + 1, room)
+	var scroll := six._scroll
+	var last := six._cards.controls[full]
+	check(is_equal_approx(scroll.size.y, five._scroll.size.y)
+			and not scroll.get_global_rect().grow(0.5).encloses(last.get_global_rect()),
+			"a sixth row leaves the window at five rows' height, the new row out of view",
+			"%s vs %s, last %s" % [scroll.size, five._scroll.size, last.get_global_rect()])
+	scroll.scroll_vertical = int(six.flow_container.size.y)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(scroll.get_global_rect().grow(0.5).encloses(last.get_global_rect()),
+			"...and scrolling the window brings it into view", str(last.get_global_rect()))
+	var cut := await _fitted_chooser(full, Rect2(Vector2.ZERO, Vector2(4000.0, 500.0)))
+	var window := (cut.get_node(^"Layout") as Control).get_global_rect()
+	check(window.size.y <= 500.0 + 0.5 and cut.flow_container.size.y > cut._scroll.size.y
+			and _cards_in_the_first_row(cut) == ChoiceViewer.ROW_CARDS,
+			"a space too short for five rows cuts the window to it, five to a row, the rest scrolling",
+			"%s, content %s in %s" % [window, cut.flow_container.size, cut._scroll.size])
+	for viewer : ChoiceViewer in [five, six, cut] as Array[ChoiceViewer]:
+		viewer.queue_free()
+	await get_tree().process_frame
+
+## A chooser of `count` cards opened through the product's entry and fitted to `remaining`.
+func _fitted_chooser(count: int, remaining: Rect2) -> ChoiceViewer:
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, count, 0)
+	await get_tree().process_frame
+	viewer.fit_beside(remaining, 1.0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	return viewer
+
+func _cards_in_the_first_row(viewer: ChoiceViewer) -> int:
+	var top := viewer._cards.controls[0].get_global_rect().position.y
+	return viewer._cards.controls.filter(func(card: ControlCard) -> bool:
+			return is_equal_approx(card.get_global_rect().position.y, top)).size()
 
 ## The button a test viewer was opened from, kept so the toggle can press the SAME one again.
 var _test_opener : Button = null
@@ -429,7 +489,7 @@ func test_choice_viewer_take_all() -> void:
 # population is deferred one frame (fly-in fix)
 	await get_tree().process_frame
 	var cards := 0
-	for child in viewer.flex_container.get_children():
+	for child in viewer.flow_container.get_children():
 		if child is ControlCard:
 			cards += 1
 	check(cards == 5, "viewer shows every generated card", "cards: %d" % cards)

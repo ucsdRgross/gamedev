@@ -118,7 +118,7 @@
       "row": "P52",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
-      "png": "user://sidebar_snapshot/chooser_opaque.png",
+      "png": "user://sidebar_snapshot/chooser_window.png",
       "seen": "The pack chooser covers the whole map picture (opaque dark), five offered cards with Reroll under each, Rerolls: 5 top right, Take greyed at the bottom. The first card (5 of Knives) is stuck: cream rim, described in the sidebar with an X and the chooser's Deck button under the title. Back, Forward and Wall are all greyed.",
       "crops": [
         {
