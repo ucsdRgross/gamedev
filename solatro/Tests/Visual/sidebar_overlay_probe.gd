@@ -208,8 +208,7 @@ func _shoot_the_pack_node() -> void:
 func _shoot_the_pack_chooser(pack: WorldGraphNode) -> void:
 	var booster : BoosterTemplate = pack.meta.get(MapNodeRoles.BOOSTER_KEY)
 	var viewer : ChoiceViewer = await booster.on_map_picked(_main.hud_container.get_parent())
-	_main.hud_container.host_viewer(viewer, null,
-			_main.map_scene.info_hovered, HudContainer.MAP_SCREEN)
+	_main.hud_container.host_viewer(viewer, _main.map_scene.info_hovered, HudContainer.MAP_SCREEN)
 	await _await_still()
 	await _shoot("chooser_nothing_picked", &"map")
 	print("PROBE   take disabled=", viewer.confirm_button.disabled)

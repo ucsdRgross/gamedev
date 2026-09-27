@@ -84,9 +84,16 @@ func _on_new_run_pressed() -> void:
 	var picker := DeckPicker.add_to_scene(self)
 	picker.deck_picked.connect(func(cards: Array[CardData], rules: Array[CardData]) -> void:
 		new_run_requested.emit(cards, rules))
-	picker.viewer_opened.connect(hud_container.host_viewer.bind(wall_picture, info_requested,
-			HudContainer.MENU_SCREEN))
+	picker.inspect_pressed.connect(_open_deck_viewer.bind(picker))
 	picker.tree_exiting.connect(hud_container.release_screen.bind(HudContainer.MENU_SCREEN))
+
+# ⚠ THE VIEWER IS UI ON THE SIDEBAR'S LAYER, so it outlives the picker unless the picker takes it
+# with it: a Pick that starts a new run, or the picker's own close.
+func _open_deck_viewer(cards: Array[CardData], inspect: Button, picker: DeckPicker) -> void:
+	var viewer := DeckViewer.show_deck(hud_container.get_parent(), cards, inspect)
+	if viewer == null: return
+	hud_container.host_viewer(viewer, info_requested, HudContainer.MENU_SCREEN)
+	picker.tree_exiting.connect(viewer.queue_free)
 
 ## Continue is only clickable while a resumable run exists on disk.
 func refresh_continue() -> void:

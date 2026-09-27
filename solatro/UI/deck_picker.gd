@@ -1,13 +1,12 @@
 class_name DeckPicker
 extends CanvasLayer
 
-## Menu overlay listing every starter deck (Deck.get_deck_list): inspect a deck's cards
-## via DeckViewer or pick one to start a new run with.
+## Menu overlay listing every starter deck (Deck.get_deck_list): inspect a deck's cards, or pick one to start a new run with.
 
 signal deck_picked(cards: Array[CardData], rules: Array[CardData])
 
-## An Inspect opened a viewer over this picker, handed to the screen hosting it so that screen insets it beside the sidebar and relays what it publishes, exactly as it does for its own viewers.
-signal viewer_opened(viewer: DeckViewer)
+## Inspect was pressed on a deck's row: the screen hosting this picker opens that deck's viewer, with `inspect` as its opener, exactly as it opens its own viewers.
+signal inspect_pressed(cards: Array[CardData], inspect: Button)
 
 const DECK_PICKER := preload("res://UI/deck_picker.tscn")
 
@@ -36,25 +35,16 @@ func _ready() -> void:
 		row.add_child(label)
 		var inspect := Button.new()
 		inspect.text = "Inspect"
-		inspect.pressed.connect(func() -> void: _inspect(cards, inspect))
+		inspect.pressed.connect(func() -> void: inspect_pressed.emit(cards, inspect))
 		row.add_child(inspect)
 		var pick := Button.new()
 		pick.text = "Pick"
 		pick.pressed.connect(_on_pick.bind(cards))
 		row.add_child(pick)
 		rows.add_child(row)
-	# Keyboard/controller: start focused on the first deck's Pick button.
 	var first_row := rows.get_child(0) as HBoxContainer
 	if first_row:
 		(first_row.get_child(2) as Button).grab_focus()
-
-# ⚠ ABOVE THIS PICKER'S OWN DIM, WHICH TAKES EVERY HOVER AND CLICK OVER WHAT IT COVERS: a viewer
-# left below it lists cards only the keyboard can reach, and its click-to-close never fires.
-func _inspect(cards: Array[CardData], inspect: Button) -> void:
-	var viewer := DeckViewer.show_deck(self, cards, inspect)
-	if viewer == null: return
-	viewer.layer = layer + 1
-	viewer_opened.emit(viewer)
 
 ## Keyboard/controller close.
 func _unhandled_input(event: InputEvent) -> void:

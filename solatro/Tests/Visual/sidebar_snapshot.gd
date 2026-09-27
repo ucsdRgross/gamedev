@@ -13,6 +13,7 @@ const MAP_POPUP_OUT_PATH := "user://sidebar_snapshot/map_popup.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
 const MENU_INSPECT_OUT_PATH := "user://sidebar_snapshot/menu_inspect.png"
+const MENU_INSPECT_HOVER_OUT_PATH := "user://sidebar_snapshot/menu_inspect_hover.png"
 const DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/description.png"
 const DESCRIPTION_LOCKED_OUT_PATH := "user://sidebar_snapshot/description_locked.png"
 const DESCRIPTION_FOLLOW_OUT_PATH := "user://sidebar_snapshot/description_follow.png"
@@ -95,9 +96,16 @@ func _ready() -> void:
 	await get_tree().process_frame
 
 	var picker := await _open_the_pickers_viewer(main)
+	if main.hud_container.slid_fraction() < 1.0: await main.hud_container.slide_settled
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(MENU_INSPECT_OUT_PATH)
+	if is_instance_valid(DeckViewer._open):
+		_listed_cards(DeckViewer._open.flow_container)[1].grab_focus()
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		await RenderingServer.frame_post_draw
+		_capture(MENU_INSPECT_HOVER_OUT_PATH)
 	if picker: picker.free()
 	await get_tree().process_frame
 

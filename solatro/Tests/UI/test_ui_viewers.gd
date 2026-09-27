@@ -109,7 +109,7 @@ func test_the_pack_chooser_draws_only_a_square_window() -> void:
 		if child is CanvasItem: drawn.append(String(child.name))
 	check(drawn == ["Layout"], "the chooser draws nothing but its window", str(drawn))
 	var picture := viewer.get_viewport_rect()
-	viewer.fit_beside(picture, 1.0)
+	viewer.fit_beside(picture)
 	await get_tree().process_frame
 	var window := (viewer.get_node(^"Layout") as Control).get_global_rect()
 	check(is_equal_approx(window.size.x, window.size.y) and picture.encloses(window)
@@ -131,7 +131,7 @@ const CENTRED_TOLERANCE_PX := 1.0
 func test_a_sixth_card_wraps_to_a_centred_row_of_its_own() -> void:
 	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 6, 0)
 	await get_tree().process_frame
-	viewer.fit_beside(viewer.get_viewport_rect(), 1.0)
+	viewer.fit_beside(viewer.get_viewport_rect())
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var window := (viewer.get_node(^"Layout") as Control).get_global_rect()
@@ -201,7 +201,7 @@ func test_the_window_shows_five_rows_then_scrolls() -> void:
 func _fitted_chooser(count: int, remaining: Rect2) -> ChoiceViewer:
 	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, count, 0)
 	await get_tree().process_frame
-	viewer.fit_beside(remaining, 1.0)
+	viewer.fit_beside(remaining)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	return viewer

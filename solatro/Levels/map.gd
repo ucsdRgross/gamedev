@@ -171,7 +171,7 @@ func _open_booster(node: WorldGraphNode) -> void:
 	var viewer : ChoiceViewer = await booster.on_map_picked(hud_container.get_parent())
 	_chooser = viewer
 	viewer.confirmed.connect(_on_booster_confirmed)
-	hud_container.host_viewer(viewer, null, info_hovered, HudContainer.MAP_SCREEN)
+	hud_container.host_viewer(viewer, info_hovered, HudContainer.MAP_SCREEN)
 	_show_only_the_deck_button(true)
 	viewer.confirmed.connect(_show_only_the_deck_button.bind(false).unbind(1))
 
@@ -290,7 +290,7 @@ func _a_possible_card_is_stuck() -> bool:
 func _host_map_viewer(viewer: DeckViewer) -> void:
 	if viewer == null: return
 	selection_buttons.visible = chooser_is_up() or _a_possible_card_is_stuck()
-	hud_container.host_viewer(viewer, null, info_hovered, HudContainer.MAP_SCREEN)
+	hud_container.host_viewer(viewer, info_hovered, HudContainer.MAP_SCREEN)
 	viewer.highlight_cleared.connect(_republish_the_pick)
 
 # Nothing picked is the HUD's own Deck button opening the viewer from the basic view, with no

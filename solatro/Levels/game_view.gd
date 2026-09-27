@@ -34,7 +34,7 @@ var game : Game = null
 @onready var light_layer: LightLayer = %LightLayer
 var spotlight_director : SpotlightDirector = null
 
-## Set by `Main.enter_game()` before this view enters the tree; left null, a standalone fixture builds a private instance instead.
+## Set by `Main.enter_game()` before this view enters the tree; left null, a standalone fixture builds a private instance, which can host no viewer -- a viewer lives on the wall overlay.
 var hud_container : HudContainer = null
 
 ## Set by `Main` alongside `hud_container`, the same hand-over `Map` and `Menu` get: the picture this show goes live in, and the space its discards fly across.
@@ -316,7 +316,7 @@ func _open_deck_viewer(cards: Array[CardData], opener: Button, close_key: String
 	_viewer = DeckViewer.show_deck(hud_container.get_parent(), cards, opener)
 	if not _viewer: return
 	DeckViewer.read_close_while_open(opener, close_key, _viewer)
-	hud_container.host_viewer(_viewer, null, info_requested, HudContainer.GAME_SCREEN)
+	hud_container.host_viewer(_viewer, info_requested, HudContainer.GAME_SCREEN)
 	_viewer.highlight_cleared.connect(_rest_the_board_behind_another_screen)
 	tree_exiting.connect(_viewer.queue_free)
 

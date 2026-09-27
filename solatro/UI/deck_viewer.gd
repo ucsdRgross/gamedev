@@ -83,8 +83,7 @@ func update_viewer() -> void:
 
 # The card the highlight reached, drawn at this viewer's own card size.
 func _publish_info(data: CardData) -> void:
-	PlayArea.highlight_info(data,
-			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)
+	PlayArea.highlight_info(data, CardVisual.preview_window_px()).relay_to(info_requested)
 
 # ⚠ THE CLICK-TO-CLOSE CATCHER IS EVERYTHING BESIDE THE SIDEBAR AS IT IS SHOWN, following its
 # slide: on the sidebar's own layer this viewer draws above it, whose X, rows and Back must still
@@ -97,9 +96,7 @@ func fit_catcher(shown: Rect2) -> void:
 	margin_container.offset_bottom = shown.end.y - picture.y
 
 # THE LIST RESTS BESIDE WHERE THE SIDEBAR RESTS, inset inside the catcher by the scene's own padding.
-# The scale rides along, so a re-publish after it is drawn at the size THIS viewer now draws a card.
-func fit_beside(remaining: Rect2, window_scale: float) -> void:
-	_cards.picture_to_window_scale = window_scale
+func fit_beside(remaining: Rect2) -> void:
 	var catcher := margin_container.get_rect()
 	_inset_margin(&"margin_left", remaining.position.x - catcher.position.x)
 	_inset_margin(&"margin_top", remaining.position.y - catcher.position.y)

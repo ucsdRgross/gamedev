@@ -305,8 +305,8 @@
   convention: `WallEditor.preview_locked_description`, `WallEditor.container_side`.
 
 - S12, no longer an assumption -- RULED by GAP-004=b, and what S12 built is what the ruling keeps:
-  a viewer's description preview is drawn at the size THAT VIEWER draws a card at, in window px --
-  `CardsViewer.card_window_px()` is `controls[0].child.card_size * picture_to_window_scale`. Q34=b's
+  a viewer's description preview is drawn at the size THAT VIEWER draws a card at -- every viewer
+  is on the sidebar's layer, so that is `CardVisual.preview_window_px()`, the UI size. Q34=b's
   "the board's own card size, so it reads as the same object" is about the object the player is
   POINTING at, and inside a viewer that is the viewer's own card (L11, Q34, GAP-004=b).
 - S12: viewers publish HIGHLIGHTS only. Hover and key/pad focus call into the sidebar; a click in a
@@ -327,9 +327,8 @@
   instead, so it publishes nothing until the player moves onto a card.
 - S12 new names NAMES.md does not list: `InfoEntry.relay_to(out)` (the "emit it, or free the live
   preview nothing will take delivery of" shape `GameView._relay_info_requested` spelled out, now
-  shared with `HudContainer.host_viewer()` and both viewers); `HudContainer.rect_beside(picture)` and
-  `HudContainer.window_scale(picture)`; `WallPicture.window_scale(window)`;
-  `CardsViewer.picture_to_window_scale` / `card_window_px()`; `DeckViewer.info_requested` /
+  shared with `HudContainer.host_viewer()` and both viewers); `HudContainer.rect_beside(picture)`;
+  `WallPicture.window_scale(window)`; `DeckViewer.info_requested` /
   `highlight_cleared` / `fit_beside()` and the same three on `ChoiceViewer`;
   `GameView.wall_picture` (set by `Main.enter_game()` beside `hud_container`) and
   `GameView._open_deck_viewer()`.
@@ -364,16 +363,13 @@
   4.7 (`BaseButton` only). `CardsViewer.inspect_on_highlight(control, data)` is the one place a
   listed control's hover and focus are wired, so `ChoiceViewer._swap_card_control()`'s rerolled slot
   is remembered too.
-- P3 review: THE SAME CLASS FOLLOWS THE SAME RULE. The deck picker's own Inspect viewer
-  (`UI/deck_picker.gd`, inside the start menu) is inset and relayed exactly as the game screen's is:
-  `Q22`=b keeps the container on the menu, so it is visible (empty) there and would otherwise cover
-  the viewer's first columns -- measured at 1280x720, 3 of 8 listed cards were drawn at picture
-  x 104 against the container's inner edge at 288. New names: `DeckPicker.viewer_opened(viewer)`
-  (the picker announces what an Inspect opened; the screen hosting it owns the wiring),
-  `Menu.info_requested` (the relay `Main` connects, the same one `GameView` exposes),
-  `Menu` connects `viewer_opened` to `HudContainer.host_viewer()` (re-fitted on `container_rect_changed`
-  like the others). The viewer stays parented to the PICKER, so picking a deck frees it with the
-  picker.
+- THE SAME CLASS FOLLOWS THE SAME RULE. The deck picker's Inspect opens its viewer through the menu
+  exactly as the game screen opens its own: `DeckPicker.inspect_pressed(cards, inspect)` reaches
+  `Menu._open_deck_viewer()`, which opens it on the sidebar's layer, hosts it, and frees it when
+  the picker leaves the tree (a Pick, or the picker's own close). While it is open the menu's
+  sidebar is in, empty until a card is described (owner, thirty-third round: "b: opening slides
+  sidebar in"), so it fades with the sidebar as every viewer does. `Menu.info_requested` is the
+  relay `Main` connects.
 - `ChoiceViewer`'s pack, Rerolls counter and Take share one `Layout` window (`mouse_filter`
   IGNORE; nothing is drawn outside it) on the sidebar's own layer at the UI scale, and
   `fit_beside()` places THAT, a square centred in the space beside the resting sidebar: the card
@@ -418,12 +414,9 @@
   `is_visible_in_tree()` (a viewer's opening highlight hides the pile buttons that opened it,
   stranding a pad player). The viewer never assumes its opener's owner type. `Q68`=b's `ui_up`-off-the-top rule
   is unchanged.
-- P3 re-review: `DeckPicker._inspect()` opens its viewer at `layer + 1`, above the picker's own Dim.
-  The Dim is `MOUSE_FILTER_STOP` and covers the screen, so a viewer left at the default layer got no
-  hover and no click at all on the menu -- only the keyboard reached it. Raising the viewer (rather
-  than making the Dim ignore the mouse) keeps the picker's modal guard over the menu behind it and
-  makes the viewer's own click-to-close work everywhere; the picker's buttons are behind the open
-  viewer until it is closed, which is how the same viewer behaves on every other screen.
+- The picker's Dim is `MOUSE_FILTER_STOP` and covers the menu picture, keeping the picker's modal
+  guard over the menu behind it; the viewer is above every picture on the sidebar's layer, so its
+  hover and click-to-close are its own, and the picker's buttons are behind it until it closes.
 - S14: new names `CardVisual.held_lift_px()` and `CardVisual.cursor_ride_offset()`,
   `PlayArea.follow_cards()`, `PlayArea._on_pointer_moved()` / `_origin_cell_rect()` and
   `PlayArea._next_grab_follows`.

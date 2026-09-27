@@ -204,11 +204,12 @@ func _slide_offset(rect: Rect2) -> Vector2:
 		return Vector2(0.0, -out * rect.size.y)
 	return Vector2(-out * rect.size.x, 0.0)
 
-# Whether any screen wants this container at all: never in wall view, and on the menu only while a
-# description is actually up, since the menu carries no HUD of its own.
+# Whether any screen wants this container at all: never in wall view, and on the menu, which carries
+# no HUD of its own, only while a viewer is open there or a description is up -- slid in empty for
+# a viewer, so the viewer fades with it as on every other screen.
 func _wants_container() -> bool:
 	if _active_screen == &"": return false
-	if _active_screen == MENU_SCREEN: return showing_description()
+	if _active_screen == MENU_SCREEN: return showing_description() or _shown_hosted_viewer() != null
 	return true
 
 ## The space left beside this container inside `picture`'s own space -- the one conversion every hosted screen insets by; a fixture with no picture falls back to the plain window rect.
@@ -229,12 +230,8 @@ func _space_beside(picture: WallPicture, rect: Rect2) -> Rect2:
 	var inset := WallPicture.inset_beside(rect, top, 1.0)
 	return Rect2(inset, window - inset)
 
-## How big a window pixel is against one of `picture`'s own -- what a screen inside it converts its own card sizes through to match this container's.
-func window_scale(picture: WallPicture) -> float:
-	return picture.window_scale(get_viewport().get_visible_rect().size) if picture else 1.0
-
-## Hosts a `DeckViewer` or `ChoiceViewer` that `screen` opened in `picture`, or on this container's own layer with none: relays its highlights to `relay`, returns to the lock on close, fits it beside this container.
-func host_viewer(viewer: Node, picture: WallPicture, relay: Signal, screen: StringName) -> void:
+## Hosts a `DeckViewer` or `ChoiceViewer` that `screen` opened on this container's own layer: relays its highlights to `relay`, returns to the lock on close, fits it beside this container.
+func host_viewer(viewer: Node, relay: Signal, screen: StringName) -> void:
 	viewer.connect(&"info_requested", func(entry: InfoEntry) -> void: entry.relay_to(relay))
 	viewer.connect(&"highlight_cleared", _close_hosted_viewer.bind(viewer))
 	viewer.tree_exiting.connect(_forget_hosted_viewer.bind(viewer))
@@ -250,17 +247,15 @@ func host_viewer(viewer: Node, picture: WallPicture, relay: Signal, screen: Stri
 	_locked_entry_by_screen.erase(screen)
 	if screen == _active_screen and showing_description():
 		hosted.covered = _entry_by_screen.get(screen)
-	hosted.picture = picture
-	assert(picture != null or get_parent() is WallOverlay,
-			"a viewer hosted with no picture is on the wall overlay's own layer")
-	if picture == null and viewer is DeckViewer:
-		(viewer as DeckViewer).layer = (get_parent() as WallOverlay).layer + 1
+	assert(get_parent() is WallOverlay, "a viewer is hosted on the wall overlay's own layer")
+	if viewer is DeckViewer: (viewer as DeckViewer).layer = (get_parent() as WallOverlay).layer + 1
 	_hosted_viewers.append(hosted)
 	_fade_overlay_viewers()
-	var fit := func() -> void: _fit_viewer(viewer, picture)
+	var fit := func() -> void: _fit_viewer(viewer)
 	connect_for_screen(viewer, container_rect_changed, fit)
 	fit.call()
 	_refresh_exit_button()
+	_follow_the_menus_own_content()
 
 # ⚠ ONE PER VIEWER, FILED UNDER THE SCREEN THAT OPENED IT: the run deck opens over the pack chooser
 # and must hand the chooser's stuck card back, and a viewer left up behind an overlay Back must
@@ -272,8 +267,6 @@ class _HostedViewer extends RefCounted:
 	var suspended_lock : InfoEntry = null
 	## What the sidebar was reading when this viewer opened, where a highlight that goes puts it back.
 	var covered : InfoEntry = null
-	## The picture it was opened in, or null on this container's own layer, where it fades with the slide.
-	var picture : WallPicture = null
 
 ## Every viewer this container hosts, oldest first; the X, the keys and a lost highlight answer to the newest one on the screen shown.
 var _hosted_viewers : Array[_HostedViewer] = []
@@ -329,6 +322,7 @@ func _close_hosted_viewer(viewer: Node) -> void:
 	(viewer.call(&"cards") as CardsViewer).highlight_left.disconnect(highlight_gone)
 	if hosted.covered and hosted.covered != _entry_by_screen.get(hosted.screen):
 		_free_detached_visual(hosted.covered)
+	_follow_the_menus_own_content()
 
 # A VIEWER FREED WITH ITS SCREEN NEVER CLOSES -- a show torn down takes its open deck viewer with
 # it -- so leaving the tree is the last moment its record, and what it covered, can go.
@@ -337,13 +331,13 @@ func _forget_hosted_viewer(viewer: Node) -> void:
 	if index < 0: return
 	_release_what_the_viewer_covered(_hosted_viewers[index])
 	_hosted_viewers.remove_at(index)
+	_follow_the_menus_own_content()
 
 # ⚠ A VIEWER ON THIS LAYER IS UI LIKE THE SIDEBAR, never part of the picture: it fades with the
 # slide, gone in wall view and on every other screen, and a hidden one answers no input at all --
 # a hidden node still hears `_unhandled_input`, which is where a viewer keeps its keys.
 func _fade_overlay_viewers() -> void:
 	for hosted : _HostedViewer in _hosted_viewers:
-		if hosted.picture: continue
 		var shown := _slide if hosted.screen == _active_screen else 0.0
 		var drawn : CanvasItem = hosted.viewer as CanvasItem if hosted.viewer is CanvasItem \
 				else (hosted.viewer as DeckViewer).margin_container
@@ -366,13 +360,11 @@ func _refresh_exit_button() -> void:
 # A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD, re-fitted after its screen's own inset. Only the
 # newest viewer shown republishes, and only while a description is UP: one under it would re-stick
 # the card that viewer set aside, and a dismissal is the player's act where a re-fit is not one.
-func _fit_viewer(viewer: Node, picture: WallPicture) -> void:
-	var picture_scale := window_scale(picture)
-	if viewer is DeckViewer: (viewer as DeckViewer).fit_catcher(rect_beside(picture))
-	viewer.call(&"fit_beside", resting_rect_beside(picture), picture_scale)
+func _fit_viewer(viewer: Node) -> void:
+	if viewer is DeckViewer: (viewer as DeckViewer).fit_catcher(rect_beside(null))
+	viewer.call(&"fit_beside", resting_rect_beside(null))
 	if viewer is DeckViewer:
-		(viewer as DeckViewer).close_tab.custom_minimum_size = \
-				Vector2.ONE * _touch_target_px() / picture_scale
+		(viewer as DeckViewer).close_tab.custom_minimum_size = Vector2.ONE * _touch_target_px()
 	var shown := _shown_hosted_viewer()
 	if showing_description() and shown and shown.viewer == viewer:
 		viewer.call(&"republish_highlight")
@@ -462,11 +454,11 @@ func set_active_screen(screen: StringName) -> void:
 	_fade_overlay_viewers()
 
 # THE MENU CARRIES NO HUD, so on that one screen the container's own content decides whether it is
-# there at all: the deck picker publishing a description slides it in, dismissing slides it out.
-# Every other screen is driven by `Main` landing on it and leaving it.
+# there at all: the picker's viewer opening or a description slides it in, and the last of them
+# going slides it out. Every other screen is driven by `Main` landing on it and leaving it.
 func _follow_the_menus_own_content() -> void:
 	if _active_screen != MENU_SCREEN: return
-	slide_to(1.0 if showing_description() else 0.0)
+	slide_to(1.0 if _wants_container() else 0.0)
 
 func show_hud() -> void:
 	_swap_to_hud()

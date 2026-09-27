@@ -112,7 +112,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # THE WINDOW IS A SQUARE CENTRED IN THE SPACE BESIDE THE SIDEBAR, wide enough for a full row and
 # tall enough for ROWS_SHOWN rows over the Rerolls-and-Take foot, cut to the space with the rest
 # scrolling. It is UI, so its cards draw at the one UI size and no picture scale applies.
-func fit_beside(remaining: Rect2, _window_scale: float) -> void:
+func fit_beside(remaining: Rect2) -> void:
 	var slot := _cards.controls[0].get_combined_minimum_size() \
 			+ Vector2(0.0, REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT)
 	var rows := ceili(float(_cards.controls.size()) / ROW_CARDS)
