@@ -5085,8 +5085,9 @@ func test_a_click_beneath_an_open_viewer_never_reaches_the_board() -> void:
 		await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
 		check(is_instance_valid(DeckViewer._open), "sanity: the deck viewer is open over the board")
 		var clicked := _watch_clicks()
-		await _click(_point_in_window(&"game", entrance[0].get_global_rect().get_center()),
-				_booted_viewport)
+		var at := _a_board_point_on_the_viewer_backdrop(entrance)
+		check(at != Vector2.INF, "sanity: an Entrance card lies behind the viewer's backdrop, clear of its cards")
+		if at != Vector2.INF: await _click(at, _booted_viewport)
 		check(clicked.is_empty(),
 				"a click aimed at a board card under the viewer never reaches the board",
 				"%d board selections" % clicked.size())
@@ -6843,13 +6844,11 @@ func test_the_board_behind_an_open_viewer_answers_no_pointer() -> void:
 		await get_tree().process_frame
 		check(published.is_empty(), "a pointer over a board card behind the viewer describes no board card",
 				"at %s in catcher %s: %s" % [at, catcher, published])
-		var entrance : Array[Vector2] = []
-		for control : Control in await _entrance_card_controls():
-			var point := _point_in_window(&"game", control.get_global_rect().get_center())
-			if catcher.has_point(point): entrance.append(point)
-		check(not entrance.is_empty(), "sanity: an Entrance card, which a drag lifts, lies behind the viewer",
+		var entrance := _a_board_point_on_the_viewer_backdrop(await _entrance_card_controls())
+		check(entrance != Vector2.INF,
+				"sanity: an Entrance card, which a drag lifts, lies behind the viewer's backdrop, clear of its cards",
 				"catcher %s" % catcher)
-		if not entrance.is_empty(): at = entrance[0]
+		if entrance != Vector2.INF: at = entrance
 		var dragged : Array[CardData] = []
 		_play_area.card_dragged.connect(func(data: CardData) -> void: dragged.append(data))
 		var scroll := _play_area.scroll_container as SmoothScrollContainer
@@ -6877,6 +6876,25 @@ func test_the_board_behind_an_open_viewer_answers_no_pointer() -> void:
 		check(not is_instance_valid(DeckViewer._open) or DeckViewer._open.is_queued_for_deletion(),
 				"...its press closing the viewer, as a click outside it does")
 	await _end_main_fixture()
+
+# A POINT ON ONE OF `controls` WHERE THE OPEN VIEWER SHOWS ONLY ITS BACKDROP, or INF: a press on one of
+# its cards sticks that card instead of closing it. A card counts only where its list clips it in.
+func _a_board_point_on_the_viewer_backdrop(controls: Array[Control]) -> Vector2:
+	var viewer := DeckViewer._open
+	var catcher := viewer.margin_container.get_global_rect()
+	var list := viewer.flow_container.get_parent_control().get_global_rect()
+	var covered : Array[Rect2] = [viewer.close_tab.get_global_rect()]
+	for slot : Control in viewer.flow_container.get_children():
+		covered.append(slot.get_global_rect().intersection(list))
+	for control : Control in controls:
+		var rect := control.get_global_rect()
+		var corner := _point_in_window(&"game", rect.position)
+		var seen := Rect2(corner, _point_in_window(&"game", rect.end) - corner).intersection(catcher)
+		for y : int in range(ceili(seen.position.y), floori(seen.end.y)):
+			for x : int in range(ceili(seen.position.x), floori(seen.end.x)):
+				var point := Vector2(x, y)
+				if not covered.any(func(r: Rect2) -> bool: return r.has_point(point)): return point
+	return Vector2.INF
 
 # Each route is checked against what the same press does on a map with no viewer anywhere.
 func _check_the_map_ignores_the_game_viewer(route: String) -> void:
