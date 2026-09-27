@@ -757,63 +757,111 @@ rest = Transform2D(1, 0, 0, 1, 0, 0)
 [node name="Arm_TopLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=435263680]
 position = Vector2(-27, -27)
 rest = Transform2D(1, 0, 0, 1, -27, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Top_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=424298761]
 position = Vector2(-13.5, -27)
 rest = Transform2D(1, 0, 0, 1, -13.5, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Top_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=35626824]
 position = Vector2(0, -27)
 rest = Transform2D(1, 0, 0, 1, 0, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Top_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=549256609]
 position = Vector2(13.5, -27)
 rest = Transform2D(1, 0, 0, 1, 13.5, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_TopRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=159728876]
 position = Vector2(27, -27)
 rest = Transform2D(1, 0, 0, 1, 27, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Right_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=48752327]
 position = Vector2(27, -13.5)
 rest = Transform2D(1, 0, 0, 1, 27, -13.5)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Right_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=399566882]
 position = Vector2(27, 0)
 rest = Transform2D(1, 0, 0, 1, 27, 0)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Right_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=652174497]
 position = Vector2(27, 13.5)
 rest = Transform2D(1, 0, 0, 1, 27, 13.5)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_BottomRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1872686072]
 position = Vector2(27, 27)
 rest = Transform2D(1, 0, 0, 1, 27, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Bottom_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=918907295]
 position = Vector2(13.5, 27)
 rest = Transform2D(1, 0, 0, 1, 13.5, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Bottom_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1516307198]
 position = Vector2(0, 27)
 rest = Transform2D(1, 0, 0, 1, 0, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Bottom_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=125014902]
 position = Vector2(-13.5, 27)
 rest = Transform2D(1, 0, 0, 1, -13.5, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_BottomLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1535685706]
 position = Vector2(-27, 27)
 rest = Transform2D(1, 0, 0, 1, -27, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Left_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=2095145168]
 position = Vector2(-27, 13.5)
 rest = Transform2D(1, 0, 0, 1, -27, 13.5)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Left_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=725273507]
 position = Vector2(-27, 0)
 rest = Transform2D(1, 0, 0, 1, -27, 0)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Left_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1157812388]
 position = Vector2(-27, -13.5)
 rest = Transform2D(1, 0, 0, 1, -27, -13.5)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0

@@ -51,6 +51,8 @@ func _ready() -> void:
 	test_shader_taps_in_texture_space()
 	test_the_card_scene_ships_no_baked_material()
 	test_card_separation_derives_from_the_pip_row()
+	test_leaf_bones_do_not_auto_calculate()
+	check_all_tests_registered()
 	finish()
 
 # The guard, copied in shape from test_pixels: a dummy renderer compiles no shader and rasterizes no
@@ -635,3 +637,16 @@ func _scene_node_block(text: String, node_name: String) -> String:
 	if start == -1: return ""
 	var end := text.find("[node ", start + 1)
 	return text.substr(start, (end - start) if end > start else -1)
+
+# An editor re-save drops `auto_calculate_length_and_angle = false` from the childless Arm_* bones.
+# With the default a leaf bone warns on every transform change: 86k log lines, ms/frame 25 -> 50.
+func test_leaf_bones_do_not_auto_calculate() -> void:
+	var vis : CardVisual = CardVisual.CARD_VISUAL.instantiate()
+	var offenders : Array[String] = []
+	for node : Node in vis.find_children("*", "Bone2D"):
+		var bone := node as Bone2D
+		if bone.find_children("*", "Bone2D", false).is_empty() and bone.get_autocalculate_length_and_angle():
+			offenders.append(String(bone.name))
+	check(offenders.is_empty(), "every childless Bone2D in card_visual.tscn has auto length/angle off",
+			"auto-calculating: %s" % [offenders])
+	vis.free()
