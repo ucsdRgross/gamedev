@@ -10,9 +10,6 @@ const MAIN_SCENE := preload("res://Levels/main.tscn")
 const MAP_SCENE := preload("res://Levels/map.tscn")
 const MENU_SCENE := preload("res://Levels/menu.tscn")
 
-# Removing the retired controls did not re-centre the board; moves with the picture design size.
-const MEASURED_BOARD_CENTRE_PX := 723.417
-
 
 ## Higher than a real deck can score in a handful of placements, so a test about something else never trips the goal's own automatic end.
 const GOAL_OUT_OF_REACH : int = 100000000
@@ -52,7 +49,7 @@ func _ready() -> void:
 	await test_a_resize_re_applies_every_overlay_touch_target()
 	await test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide()
 	await test_the_boards_region_clears_the_container_on_a_cropped_window()
-	await test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement()
+	await test_board_centre_after_hud_migration_is_the_space_beside_the_resting_sidebar()
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
 	await test_a_top_case_resize_fits_the_board_under_the_band()
 	await test_the_top_bands_hud_starts_below_the_overlay_buttons()
@@ -1110,10 +1107,10 @@ func _settle_scroll_x(pa: PlayArea) -> void:
 		if is_equal_approx(pa.scroll_container.position.x, last): return
 		last = pa.scroll_container.position.x
 
-# `board_inset_left` was always `container_size_fraction * design`, independent of which furniture was
-# widest, so deleting the retired controls does NOT re-centre the board. A real `Main`/
-# `enter_game()` matches Part A's own measurement context: fixed design resolution, not the window.
-func test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement() -> void:
+#The retired controls no longer shape the board: its window is centred on the picture space the
+#RESTING sidebar leaves, derived from the sidebar's own rect and the covering scale, never from the
+#reserve the product computed. The set's centring inside that window is GRID VIEW's row.
+func test_board_centre_after_hud_migration_is_the_space_beside_the_resting_sidebar() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
@@ -1132,10 +1129,20 @@ func test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement(
 	check(not _has_named_descendant(view, &"MultScore")
 			and not _has_named_descendant(view, &"Preview"),
 			"sanity: MultScore/Preview are really gone from this show")
-	var centre := pa.scroll_container.position.x + pa.scroll_container.size.x * 0.5
-	check(absf(centre - MEASURED_BOARD_CENTRE_PX) <= 0.5,
-			"the board's centre is unchanged (within 0.5px) after the retired controls' removal",
-			"%.3f vs %.3f" % [centre, MEASURED_BOARD_CENTRE_PX])
+	var sidebar : HudContainer = main.wall.get_node(^"%HudContainer")
+	var window := sidebar.get_viewport().get_visible_rect().size
+	check(is_equal_approx(sidebar.slid_fraction(), 1.0)
+			and not HudContainer.container_is_top(window, PlayArea.settings()),
+			"precondition: the sidebar rests at the window's side",
+			"slid %.3f, window %s" % [sidebar.slid_fraction(), window])
+	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
+	var picture_scale := maxf(window.x / design.x, window.y / design.y)
+	var beside := (sidebar.get_global_rect().end.x / picture_scale + design.x) * 0.5
+	var centre := _sidebar_screen_rect(pa.scroll_container).get_center().x
+	check(absf(centre - beside) <= 0.5,
+			"the board is centred (within 0.5px) in the space beside the resting sidebar, "
+			+ "the retired controls gone",
+			"board centre %.3f vs the space's %.3f picture px" % [centre, beside])
 
 	await TestMainHost.unmount(self, main)
 	CardEnvironment.CURRENT = null
