@@ -2,14 +2,13 @@ shader_type canvas_item;
 render_mode blend_premul_alpha, unshaded;
 // THE SPOTLIGHT GLOW — a distance field around a host, coloured by a ramp, drawn at two different
 // blends depending on whether it is over the host's own art.
-// Design: solatro/design/spotlight/DESIGN.md §14b, chart O (O1-O21). Plan: PLAN.md §1.9.
 //
 // THE MODEL, IN FOUR LINES:
 //
-//     d         = signed distance from p to the mask, negative inside      (O5, O6)
-//     e         = d + sink                        // the field starts INSIDE the silhouette (Q209=a)
-//     intensity = sum over layers of falloff(e / (reach * radius_i)) * gain_i        (O7-O10)
-//     COLOR     = texture(u_ramp, intensity) ... premultiplied, see THE BLEND below  (O11-O21)
+//     d         = signed distance from p to the mask, negative inside
+//     e         = d + sink                        // the field starts INSIDE the silhouette
+//     intensity = sum over layers of falloff(e / (reach * radius_i)) * gain_i
+//     COLOR     = texture(u_ramp, intensity) ... premultiplied, see THE BLEND below
 //
 // ⚠ **NOT A SECOND COPY OF `fire.gdshader`.** Fire asks "how far above the nearest surface BELOW me
 // am I" — directional, and its `u_taps` mask lookups are that shader's entire cost. A glow asks
@@ -18,9 +17,8 @@ render_mode blend_premul_alpha, unshaded;
 //
 // ===== THE BLEND, THE ONE NON-OBVIOUS DECISION IN THIS FILE =====================================
 //
-// `Q218` wants additive OUTSIDE the silhouette and tinted OVER the art, with no visible seam and no
-// blowout to white. A canvas quad has ONE blend mode and there is no screen read (DESIGN.md §1.6
-// fact 1), so "two blends in one pass" looks impossible — with `blend_mix` or `blend_add` it is.
+// The glow is additive OUTSIDE the silhouette and tinted OVER the art, with no visible seam and no
+// blowout to white. A canvas quad has ONE blend mode and there is no screen read, so "two blends in one pass" looks impossible — with `blend_mix` or `blend_add` it is.
 //
 // **`blend_premul_alpha` IS EXACTLY BOTH, ON A KNOB.** Its equation is
 //
@@ -36,9 +34,9 @@ render_mode blend_premul_alpha, unshaded;
 // it is an eye call**: render the circle over a busy card face and look. If it reads as a seam, set
 // `u_inner_alpha` toward 0 or tint both sides. Do not resolve it from a description.
 //
-// ⚠ DELIBERATELY ABSENT: no fade (`Q264`=a, it snaps), no animation (`Q126`=a, steady), no `TIME`
+// ⚠ DELIBERATELY ABSENT: no fade (it snaps), no animation (steady), no `TIME`
 // read at all — so unlike every other effect in this layer it has no pacing hazard — and no prop
-// client (`Q221` / `Q257`: card, circle and beam only).
+// client (card, circle and beam only).
 
 #include "res://Shaders/fx_common.gdshaderinc"
 
@@ -49,14 +47,12 @@ render_mode blend_premul_alpha, unshaded;
 // BALLS 3) because fire's branches ARE the host kinds. A glow's branches are not: a card at rest
 // and a deformed card are both "the exact silhouette" here, so `Shape.BOX` and `Shape.RADII`
 // collapse into one kind, and the disc — which is not a host kind at all — needs one of its own.
-// PLAN.md §1.9 specifies these three values literally, and its neighbouring sentence about
-// mirroring `Shape` is prose that the value list contradicts; the values win, and the uniform is
-// named differently from fire's `u_shape` so no caller can push one into the other by habit.
-const int MASK_OUTLINE = 0;   // the host's exact 24-vertex silhouette — Q124=b
-const int MASK_SPRITE  = 1;   // reserved: no client, because props do not glow (Q221, Q257)
+// The uniform is named differently from fire's `u_shape` so no caller can push one into the other by habit.
+const int MASK_OUTLINE = 0;   // the host's exact polygon silhouette
+const int MASK_SPRITE  = 1;   // reserved: no client, because props do not glow
 const int MASK_DISC    = 2;   // the spotlight circle — QR9=c, and the CHEAP client
 
-// Host art space (0) or the light layer's screen space (1) — Q229=a. It selects ONE thing: whether
+// Host art space (0) or the light layer's screen space (1). It selects ONE thing: whether
 // there is host art under this quad at all. On the light layer there is not, so the over-art test
 // has nothing to ask and the disc's own radius stands in for the silhouette (see `fragment`).
 uniform int u_space = 0;
@@ -64,9 +60,9 @@ uniform int u_mask_kind = 0;
 
 // Must match FxAttachment.POLY / WEDGES / WEDGE_CANDIDATES — the same three constants fire
 // declares, and `test_fx_attachment` asserts the mirror on both shaders.
-const int POLY = 24;
+const int POLY = 40;
 const int WEDGES = 32;
-const int WEDGE_CANDIDATES = 4;
+const int WEDGE_CANDIDATES = 8;
 
 uniform vec2 u_extent = vec2(64.0);   // the quad's size in art units; UV maps across exactly this
 uniform vec2 u_body = vec2(40.0, 54.0);
@@ -102,7 +98,7 @@ uniform float u_opacity : hint_range(0.0, 1.0) = 1.0;
 // The off-palette colour ramp — u = intensity, 0 at the halo's faint outer limit, 1 at the core.
 // ⚠ **`filter_linear`, UNLIKE EVERY OTHER RAMP IN THIS PROJECT.** The palette ramps are
 // `filter_nearest` because hard columns read as pixel art; light is the granted off-palette
-// exception (GAP-003, Q134=b, Q135=b), so it is allowed to be smooth. The chunkiness still arrives,
+// exception, so it is allowed to be smooth. The chunkiness still arrives,
 // from `u_pixel` quantizing the POSITION this is sampled at.
 uniform sampler2D u_ramp : source_color, filter_linear, repeat_disable, hint_default_transparent;
 uniform float u_ramp_width = 64.0;
@@ -187,7 +183,7 @@ bool mask_inside(vec2 p) {
 	return poly_solid(q);
 }
 
-// THE EMPTY MAJORITY, REJECTED FIRST (O2) — the same lever fire's `body_near` is, and worth 2.1x
+// THE EMPTY MAJORITY, REJECTED FIRST — the same lever fire's `body_near` is, and worth 2.1x
 // there. It matters MORE here: what it rejects is an unconditional 24-segment loop.
 //
 // ⚠ It cannot change a pixel. The field is exactly zero beyond `reach` past the mask, and this
@@ -205,7 +201,7 @@ bool field_near(vec2 p) {
 	return abs(p.x) <= b.x && abs(p.y) <= b.y;
 }
 
-// ONE LAYER'S FALLOFF, as a blend of a smooth curve and a true inverse-square (O7, `Q208`=a).
+// ONE LAYER'S FALLOFF, as a blend of a smooth curve and a true inverse-square.
 // `x` is 0 where the layer is at full strength and 1 at its outer limit.
 //
 // ⚠ **THE INVERSE-SQUARE TERM IS NORMALIZED TO REACH ZERO AT x = 1, and it has to be.** Physical
@@ -213,8 +209,7 @@ bool field_near(vec2 p) {
 // is a visible RECTANGLE around every glowing card. Subtracting its own value at the limit and
 // rescaling costs two constants and removes the box.
 //
-// ⚠ This knob is what decides whether the glow reads as A LAMP or as A SMUDGE (`Q208`'s own
-// wording): the inverse-square end drops hard and leaves a hot core, the smooth end fades evenly.
+// ⚠ This knob is what decides whether the glow reads as A LAMP or as A SMUDGE: the inverse-square end drops hard and leaves a hot core, the smooth end fades evenly.
 float falloff(float x) {
 	float t = clamp(x, 0.0, 1.0);
 	float smooth_term = (1.0 - t) * (1.0 - t);
@@ -234,19 +229,19 @@ void fragment() {
 
 	// ⚠ **THE FIELD PEAKS ON THE SILHOUETTE AND FALLS AWAY IN BOTH DIRECTIONS**, and getting this
 	// wrong is what the first build did. `sink` is *"how far INSIDE the silhouette the field
-	// starts"* (`Q209`=a) — its job is that the light is **already at full strength where it crosses
+	// starts"* — its job is that the light is **already at full strength where it crosses
 	// the host's edge, so there is no seam there.** An erosion of the distance (`d + sink`, which is
 	// what fire's sink is) does the opposite: it spends part of the reach before the edge is even
 	// reached, so at the outline the light is a third decayed and the halo outside is invisible.
 	// **Measured, 2026-08-04, `09_glow_falloff`: no halo at all outside any of the five panels.**
 	//
-	// So the two sides use two spans. Outside, the layer's own radius (`Q207`'s multi-exposure).
-	// Inside, `sink` — which is also `Q122`=(c)'s INNER LIFT, a rim of light hugging the art's own
+	// So the two sides use two spans. Outside, the layer's own radius (the multi-exposure).
+	// Inside, `sink` — which is also the INNER LIFT, a rim of light hugging the art's own
 	// edge rather than a wash filling the whole card. A card is 40x54 art units and sink ships at 4,
 	// so the lift is a border, not a fill.
 	float inner_span = max(u_sink, 1e-4);
 
-	// THE MULTI-EXPOSURE SUM (O10): each layer is the same field at its own radius and gain, which
+	// THE MULTI-EXPOSURE SUM: each layer is the same field at its own radius and gain, which
 	// is what backlit animation got by exposing one frame through several diffusions.
 	float intensity = 0.0;
 	for (int i = 0; i < MAX_LAYERS; i++) {
@@ -257,7 +252,7 @@ void fragment() {
 	intensity = clamp(intensity, 0.0, 1.0);
 	if (intensity <= 0.0) discard;
 
-	// DITHER ON THE FX PIXEL GRID, never on FRAGCOORD (O16) — a screen-space dither crawls under a
+	// DITHER ON THE FX PIXEL GRID, never on FRAGCOORD — a screen-space dither crawls under a
 	// moving card instead of sitting on its pixels. Scaled by ONE ramp texel, so it breaks the step
 	// between adjacent samples and cannot smear a whole band.
 	if (u_dither > 0.0) {
@@ -268,7 +263,7 @@ void fragment() {
 
 	vec4 ramp = texture(u_ramp, vec2(intensity, 0.5));
 
-	// ⚠ **THE OVER-ART TEST USES THE UNQUANTIZED POSITION** (O15, `Q215`=a). A card's face is drawn
+	// ⚠ **THE OVER-ART TEST USES THE UNQUANTIZED POSITION**. A card's face is drawn
 	// at screen resolution, so testing this at the chunky point makes the boundary a staircase with
 	// a one-FX-pixel tread. Fire paid for this lesson twice — once for cards and again for props.
 	// Testing it here lets the art's own edge slice the chunky glow pixels diagonally, which is what
@@ -278,7 +273,7 @@ void fragment() {
 	// stands in: inside it, the circle is over the card's picture by construction — it is 17 art
 	// units centred on the 34x34 art square (32 of drawing plus the outline's 1-unit rim each side),
 	// so it covers the whole picture and nothing else — and
-	// `circle_inner_alpha` is the knob for exactly that (`Q217`=a, its own knob, not the glow's).
+	// `circle_inner_alpha` is the knob for exactly that (its own knob, not the glow's).
 	vec2 raw = fx_local_raw(UV, u_extent);
 	bool over_art = mask_inside(raw);
 	float over_alpha = (u_mask_kind == MASK_DISC || u_space == 1)
@@ -309,8 +304,6 @@ void fragment() {
 	float a = over_art ? over_alpha * cover * clamp(u_brightness, 0.0, 1.0) * COLOR.a : 0.0;
 	vec3 lit = over_art ? tint * a : tint * cover;
 
-	// ⚠ THE HOST'S MODULATE IS MULTIPLIED BACK IN (O18), or the focus highlight never reaches the
-	// glow — which is precisely Q121's complaint. ⚠ Q121=(b) also changes the highlight itself so
-	// the two read distinctly on one card; that half is not a glow-side fix and is not done here.
+	// ⚠ THE HOST'S MODULATE IS MULTIPLIED BACK IN, or the focus highlight never reaches the glow.
 	COLOR = vec4(lit * COLOR.rgb, a);
 }

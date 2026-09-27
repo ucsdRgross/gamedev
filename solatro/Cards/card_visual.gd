@@ -507,144 +507,125 @@ var fx : FxAttachment
 var _rig_root : Bone2D = null
 var _rig_arms : Array[Bone2D] = []
 # Rebuilt in place each frame and never reallocated, since this runs on every card on the board.
-# Longer than the arm count when the art clips its corners: the bite needs three points where the rig
-# has one.
+# Longer than the arm count: a corner is one point per step of the staircase the art draws there.
 
 ## The arm tips in the card's own art units.
 var _rig_outline_buf : PackedVector2Array = PackedVector2Array()
-# Resolved once in _bind_rig; zero for a frame with square corners, which is the boosters.
+# The rig is authored on the frame box, but a type whose art pulls in from its frame (TypeInput, one
+# texel all round) draws a smaller card, and the effects must root on what is drawn.
 
-## How far into each corner this card's TYPE art bites, as a fraction of the corner cell's two edges.
-var _notch_frac : Vector2 = Vector2.ZERO
+## Maps the rig's frame box onto the box this card's TYPE draws; resolved once in _bind_rig.
+var _to_drawn : Transform2D = Transform2D.IDENTITY
+## Each corner's staircase as fractions of its two neighbouring edges; resolved once in _bind_rig.
+var _corner_fracs : Array[PackedVector2Array] = []
 
-# A card silhouette with its four CORNERS pulled outward by `warp` of their rest reach, as the 16
-# points the star rig hands over and IN THE ORDER it hands them over. The interior points stay on the
-# rest edge, so the box becomes a STAR rather than simply growing.
-
-# The edges alternate horizontal / vertical around the walk, so which of the notch's two dimensions
-# belongs to which of a corner's edges alternates with it.
+# A card silhouette with its four CORNERS pulled outward by `warp` of their rest reach, in the order
+# the star rig hands its points over. The interior points stay on the rest edge, so the box becomes
+# a STAR rather than simply growing; the corners carry STAND_IN_TYPE's staircase.
 
 # It lives on the class that owns the rig because four harnesses need to stand a card up without one
 # - the FX editor's warp slider, fx_snapshot's warp panel, fx_behind's seam shots and fx_cost's
 # deformed-card row - and a private copy in any of them can drift from the rig.
 
-# ⚠ IT IS A HAND MODEL AND THE RIG NEVER EXACTLY MAKES IT: measured against the real animation, the
-# closest `warp` is off by 2.3 to 3.3 art units at four points of the loop, because the shipped
-# animation bulges and pinches the long edges and the corners do not move together (2.9 against 0.5).
-
-# So a warp claim made on a harness panel is a claim about THIS shape; the only place a real
-# CardVisual is stood up is the card-mask check in test_pixels.gd.
-static func star_outline(body: Vector2, warp: float,
-		notch: Vector2 = SHIPPED_CORNER_NOTCH) -> PackedVector2Array:
+# ⚠ IT IS A HAND MODEL AND THE RIG NEVER EXACTLY MAKES IT: the closest `warp` is off by 2.3 to 3.3
+# art units at four points of the real animation, so a warp claim made on a harness panel is a claim
+# about THIS shape; the only place a real CardVisual is stood up is the card-mask check in test_pixels.
+static func star_outline(body: Vector2, warp: float) -> PackedVector2Array:
 	var h := body * 0.5
 	var corners : Array[Vector2] = [Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y),
 			Vector2(-h.x, h.y)]
-	var frac := notch_fraction(body, notch)
+	var drawn := (STAND_IN_TYPE.new() as CardModifierType).drawn_corners()
 	var out := PackedVector2Array()
 	for i : int in 4:
 		var from : Vector2 = corners[i]
 		var to : Vector2 = corners[(i + 1) % 4]
 		var back : Vector2 = corners[(i + 3) % 4]
-		var h_first := i % 2 == 0
+		var edges := Vector2(body.y, body.x) * 0.25 if i % 2 == 0 else body * 0.25
 		out.append_array(corner_points(from * (1.0 + warp), back.lerp(from, 0.75),
-				from.lerp(to, 0.25), frac.y if h_first else frac.x,
-				frac.x if h_first else frac.y))
+				from.lerp(to, 0.25), fractions_of(drawn[i], edges)))
 		for step : int in [1, 2, 3]:
 			out.append(from.lerp(to, float(step) * 0.25))
 	return out
 
-# The DEFAULT for star_outline, so the harnesses model a real card without naming a type; the game
-# measures its own card's type instead, through CardModifierType.corner_notch, which is exact for all
-# of them.
+## The type every harness's stand-in card wears: the card scene's own default.
+const STAND_IN_TYPE := preload("res://Cards/Types/type_paper.gd")
 
-## The corner bite every shipped type but the boosters has, in ART UNITS - one texel, one art unit.
-const SHIPPED_CORNER_NOTCH := Vector2.ONE
+# A deformed edge is not its rest length, so the corner is carried as a FRACTION of the two edges
+# it joins, and the rig's live neighbours scale it every frame.
 
-# The outline builders need a FRACTION because a deformed edge is not its rest length. The perimeter
-# points sit at quarter points, so a corner's own cell is a quarter of the card in each direction.
+## A corner staircase in art units, as fractions of its (previous, next) edge lengths.
+static func fractions_of(along: PackedVector2Array, edges: Vector2) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for p : Vector2 in along:
+		out.append(p / edges)
+	return out
 
-## How far along each of a corner's two edges the notch reaches, as a fraction of that edge.
-static func notch_fraction(body: Vector2, notch: Vector2) -> Vector2:
-	return Vector2(notch.x / maxf(body.x * 0.25, 1e-4), notch.y / maxf(body.y * 0.25, 1e-4))
+# ⚠ EACH POINT IS A BILINEAR POSITION IN THE CORNER'S CELL, which is what makes this exact under
+# deformation and not only at rest: the art's staircase is a fixed fraction of the corner cell, so a
+# stretched or SHEARED cell carries it along. A corner the art fills is the single fraction (0, 0).
 
-# ONE CORNER OF THE SILHOUETTE, as the three points its clipped art actually has: in along the edge
-# we arrive on, across the bite, then out along the edge we leave on. `prev` and `next` are the
-# neighbouring perimeter points, `frac` what notch_fraction returned.
-
-# ⚠ THE MIDDLE POINT IS THE CELL'S BILINEAR CORNER, which is what makes this exact under deformation
-# and not only at rest: the art's corner texel is a fixed fraction of the corner grid cell in each
-# direction, so a stretched or SHEARED cell carries the bite with it as a parallelogram.
-
-# ⚠ A ZERO notch returns the corner alone, so a booster - whose frame has square corners - keeps a
-# 16-point outline and pays nothing.
-static func corner_points(corner: Vector2, prev: Vector2, next: Vector2, frac_prev: float,
-		frac_next: float) -> PackedVector2Array:
-	if frac_prev <= 0.0 or frac_next <= 0.0: return PackedVector2Array([corner])
-	var along_prev := (prev - corner) * frac_prev
-	var along_next := (next - corner) * frac_next
-	return PackedVector2Array([corner + along_prev, corner + along_prev + along_next,
-			corner + along_next])
+## One corner of the silhouette: its staircase, walked from the `prev` edge to the `next` edge.
+static func corner_points(corner: Vector2, prev: Vector2, next: Vector2,
+		fracs: PackedVector2Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for f : Vector2 in fracs:
+		out.append(corner + (prev - corner) * f.x + (next - corner) * f.y)
+	return out
 
 # Find the rig once. Absent - a stripped card in a test, or art without a skeleton - simply means the
-# caller falls back to the baked polygon.
-
-# The corner bite is resolved ONCE here because it comes from this card's own type frame and never
-# changes at runtime, while _rig_outline runs every frame on every card on the board. It needs three
-# points per corner instead of one, wherever there is a bite to describe.
-
-# ⚠ DIVIDE BY THE INNER RECT, NOT BY `CARD_SIZE`, when turning texels into art units. The frame is
-# 38x52 inside a 40x54 polygon, so CARD_SIZE gives (1.0526, 1.0385) and inflates every corner notch
-# by 4-5 %; the value must be exactly 1.0, and test_pixels asserts that directly.
+# caller falls back to the baked polygon. The drawn box and the corners come from this card's own
+# type frame and never change at runtime, while _rig_outline runs every frame on every card.
 func _bind_rig() -> void:
 	_rig_root = get_node_or_null("Offset/Visual/Skeleton2D/Bone_Center") as Bone2D
 	if not _rig_root: return
 	for child : Node in _rig_root.get_children():
 		var bone := child as Bone2D
 		if bone: _rig_arms.append(bone)
-	_notch_frac = Vector2.ZERO
+	_to_drawn = Transform2D.IDENTITY
+	_corner_fracs.clear()
+	for c : int in 4:
+		_corner_fracs.append(PackedVector2Array([Vector2.ZERO]))
+	var extra := 0
 	if data and data.type:
-		var frame_px := CardModifier.frame_size(CardModifierType.TYPE_TEXTURE,
-				CardModifierType.H_FRAMES, CardModifierType.V_FRAMES)
-		var inner := CARD_SIZE - Vector2.ONE * ART_OUTLINE * 2.0
-		var per_texel := inner / Vector2(maxf(frame_px.x, 1.0), maxf(frame_px.y, 1.0))
-		_notch_frac = notch_fraction(CARD_SIZE, data.type.corner_notch() * per_texel)
-	var extra := 8 if _notch_frac.x > 0.0 and _notch_frac.y > 0.0 else 0
+		var drawn : Rect2 = data.type.drawn_rect()
+		var scale_to := drawn.size / CARD_SIZE
+		_to_drawn = Transform2D(0.0, scale_to, 0.0,
+				drawn.position + CARD_SIZE * 0.5 * scale_to - CARD_SIZE * 0.5)
+		var to_card := _to_drawn * _rig_root.transform
+		var n := _rig_arms.size()
+		var per_edge := n / 4
+		var along : Array[PackedVector2Array] = data.type.drawn_corners()
+		for c : int in 4:
+			var i := c * per_edge
+			var tip := to_card * _rig_arms[i].position
+			var edges := Vector2(tip.distance_to(to_card * _rig_arms[(i + n - 1) % n].position),
+					tip.distance_to(to_card * _rig_arms[(i + 1) % n].position))
+			_corner_fracs[c] = fractions_of(along[c], edges)
+			extra += along[c].size() - 1
 	_rig_outline_buf.resize(_rig_arms.size() + extra)
 
 # ⚠ COMPOSED FROM THE BONES' OWN LOCAL TRANSFORMS, never from global_position: the rig hangs under
 # `visual`, which carries the bob and the basis3d flip, a basis that goes SINGULAR edge-on. Neither
 # may reach the effects, or a flipping card's silhouette collapses to a line and takes its flames.
 
-# ⚠ AND IT CARRIES THE ART'S CORNER BITE. Every shipped type frame clips its corners by one texel
-# while the RIG is the full rectangle, so an outline of bare arm tips puts one FX pixel of flame on
-# nothing at each corner. The bite is emitted from the live neighbours, so it shears with the cell.
+# The corners are every fourth arm in bake order on a 16-arm rig, each emitted from its live
+# neighbours so the staircase shears with the cell.
 
-# There are four arms per edge on a 16-arm rig and the corners are every fourth arm in bake order; a
-# corner's neighbours are the arms either side of it, live, and which of the notch's two dimensions
-# belongs to which edge alternates around the walk exactly as in star_outline.
-
-## The rig's arm tips, in the card's UNSCALED art space.
+## The rig's arm tips mapped onto the drawn card, in the card's UNSCALED art space.
 func _rig_outline() -> PackedVector2Array:
-	var root := _rig_root.transform
+	var to_card := _to_drawn * _rig_root.transform
 	var n := _rig_arms.size()
-	if _rig_outline_buf.size() == n:
-		for i : int in n:
-			_rig_outline_buf[i] = root * _rig_arms[i].position
-		return _rig_outline_buf
 	var per_edge := n / 4
 	var at := 0
 	for i : int in n:
-		var tip := root * _rig_arms[i].position
+		var tip := to_card * _rig_arms[i].position
 		if i % per_edge != 0:
 			_rig_outline_buf[at] = tip
 			at += 1
 			continue
-		var prev := root * _rig_arms[(i + n - 1) % n].position
-		var next := root * _rig_arms[(i + 1) % n].position
-		var h_first := (i / per_edge) % 2 == 0
-		for p : Vector2 in corner_points(tip, prev, next,
-				_notch_frac.y if h_first else _notch_frac.x,
-				_notch_frac.x if h_first else _notch_frac.y):
+		var prev := to_card * _rig_arms[(i + n - 1) % n].position
+		var next := to_card * _rig_arms[(i + 1) % n].position
+		for p : Vector2 in corner_points(tip, prev, next, _corner_fracs[i / per_edge]):
 			_rig_outline_buf[at] = p
 			at += 1
 	return _rig_outline_buf

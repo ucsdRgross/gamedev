@@ -1,8 +1,8 @@
 @tool
 @abstract class_name CardModifierType
 extends CardModifier
-## `@tool` so a real card's FACE — this is the polygon the FX editor draws under every flame — survives
-## in the editor. See `CardData` for what a placeholder chain does.
+# `@tool` so a real card's FACE, the polygon the FX editor draws under every flame, survives in the
+# editor. See `CardData` for what a placeholder chain does.
 
 const TYPE_TEXTURE : Texture2D = preload("res://Assets/card_types.png")
 const H_FRAMES: int = 8
@@ -11,68 +11,101 @@ const V_FRAMES: int = 8
 func set_texture(polygon2d: Polygon2D) -> void:
 	CardOutline.frame_polygon(polygon2d, TYPE_TEXTURE, H_FRAMES, V_FRAMES, get_frame())
 
-## THIS CARD'S WHOLE OUTLINE STYLE — its ink, its rim width, and both alert kinds' colours and tempos.
-## ONE ink rims the face AND every element on it, so the card reads as a single object drawn in a single
-## colour (design D7).
-##
-## ⚠ **THE TYPE IS THE RIGHT OWNER OF THE OVERRIDE, and that is not arbitrary.** The type is the card's
-## whole FACE, and the ink's job is to read against it — so the thing that decides the face is the thing
-## that must be able to decide the ink. A per-card override would be a colour chosen without knowing
-## what it sits on.
-##
-## ⚠ **AUTHORED, NOT DERIVED** (owner: *"allow authoring with default to same one colour if
-## no authoring, I don't trust derived"*). An earlier design derived the ink from the frame's own colour
-## histogram, the way `corner_notch` below derives the corner bite from the frame's own alpha. It was
-## rejected: an automatic pick is a colour nobody chose, and across 126 frames of art that is 126 chances
-## to be surprised. Do not re-propose it on the grounds that it would "follow the art automatically".
-##
-## To override, a type returns its own `OutlineStyle` — a `.tres` beside the type, or one shared by a
-## family of types. **Override the whole style, not one field**: `OutlineStyle` is a Resource, so a
-## variant is `DEFAULT.duplicate()` with the one field changed, and that keeps every other number
-## following the shipped tuning when the atlas moves it.
+# ONE ink rims the face and every element on it, so the card reads as one object. The type
+# owns the override because it decides the face the ink must read against. AUTHORED, NOT DERIVED
+# (owner: *"allow authoring with default to same one colour if no authoring, I don't trust derived"*).
+
+## This card's whole outline style: override the whole style (a duplicated .tres), never one field.
 func outline_style() -> OutlineStyle:
 	return CardOutline.STYLE
 
-## Per-frame cache for `corner_notch`, keyed by frame index. One `Texture2D.get_image()` plus a small
-## pixel scan is a real hitch (the same reason `FxAttachment._sprite_cache` exists), and a card's type
-## frame never changes at runtime.
-static var _notch_cache : Dictionary[int, Vector2] = {}
+# One Texture2D.get_image() plus a scan of the frame is a real hitch (the reason
+# FxAttachment._sprite_cache exists too), and a card's type frame never changes at runtime.
+static var _drawn_rect_cache : Dictionary[int, Rect2] = {}
+static var _drawn_corner_cache : Dictionary[int, Array] = {}
 
-## HOW MUCH OF EACH CORNER THIS TYPE'S ART CLIPS, in TEXELS — measured off the sheet's own alpha, never
-## typed in (owner: *"fx editor shows corner texel not being accounted for"*).
-##
-## ⚠ **A CARD IS NOT A RECTANGLE, AND THE FIRE HAS TO KNOW.** Every shipped type frame bites a corner
-## out: `TypePaper` and most others one texel, `TypeInput` three by one, the boosters none. The fire's
-## mask is built from the card's RIG, which is the full rectangle — so without this the flames stand on
-## four texels of nothing, one FX pixel at each corner, which is exactly what the FX editor showed the
-## owner once it started drawing the real face (FX_HANDOFF §0c.5).
-##
-## What is returned is the largest FULLY TRANSPARENT axis-aligned rectangle anchored at the corner, by
-## area. For a one-texel bite that is exact; for a STAIRCASE corner (frame 0) it is the honest
-## conservative read — it under-cuts by a texel rather than eating art the frame actually draws.
-##
-## ⚠ Measured at the TOP-LEFT and assumed 4-fold symmetric, which every shipped frame is (verified
-## 2026-07-29 across all eight non-empty frames). A frame with asymmetric corners would need this to
-## return four values and the outline builders to take them per corner.
-func corner_notch() -> Vector2:
-	var frame := get_frame()
-	if _notch_cache.has(frame): return _notch_cache[frame]
-	var notch := Vector2.ZERO
-	var img := TYPE_TEXTURE.get_image()
-	if img:
-		var rect := frame_rect(TYPE_TEXTURE, H_FRAMES, V_FRAMES, frame)
-		# Only ever a few texels: a corner bite big enough to matter would not be a corner bite.
-		var reach := mini(int(minf(rect.size.x, rect.size.y) * 0.5), 6)
-		for h : int in range(1, reach + 1):
-			var w := 0
-			while w < reach:
-				var clear := true
-				for y : int in h:
-					if img.get_pixel(int(rect.position.x) + w, int(rect.position.y) + y).a > 0.5:
-						clear = false
-						break
-				if not clear: break
-				w += 1
-			if float(w * h) > notch.x * notch.y: notch = Vector2(float(w), float(h))
-	_notch_cache[frame] = notch
-	return notch
+## The card box this type DRAWS, in art units from the box's top-left: alpha > 0, rimmed.
+func drawn_rect() -> Rect2:
+	_measure_drawn(get_frame())
+	return _drawn_rect_cache[get_frame()]
+
+# The corners walk the card the way the rig's arms do (top-left, top-right, bottom-right,
+# bottom-left), each from the edge it arrives on to the edge it leaves on, so a point's x is its
+# distance along the edge toward the previous arm and its y along the edge toward the next one.
+
+## Each corner of the drawn card as its staircase, in art units along its (previous, next) edge.
+func drawn_corners() -> Array[PackedVector2Array]:
+	_measure_drawn(get_frame())
+	return _drawn_corner_cache[get_frame()]
+
+# Measured off the sheet's own alpha, never typed in (owner: *"fx editor shows corner texel not
+# being accounted for"*). Alpha > 0 is drawn: a translucent face is still face, and the rim is the
+# art dilated by CardOutline.WIDTH in all eight directions, exactly as outline.gdshader draws it.
+func _measure_drawn(frame: int) -> void:
+	if _drawn_rect_cache.has(frame): return
+	var src := frame_rect(TYPE_TEXTURE, H_FRAMES, V_FRAMES, frame)
+	var art := TYPE_TEXTURE.get_image().get_region(Rect2i(src))
+	var w := int(CardOutline.WIDTH)
+	var box := art.get_size() + Vector2i.ONE * w * 2
+	var drawn := PackedByteArray()
+	drawn.resize(box.x * box.y)
+	var lo := box
+	var hi := Vector2i(-1, -1)
+	for y : int in box.y:
+		for x : int in box.x:
+			if not _rimmed_at(art, x - w, y - w, w): continue
+			drawn[y * box.x + x] = 1
+			lo = lo.min(Vector2i(x, y))
+			hi = hi.max(Vector2i(x, y))
+	assert(hi.x >= 0, "type frame %d draws nothing" % frame)
+	_drawn_rect_cache[frame] = Rect2(Vector2(lo), Vector2(hi - lo + Vector2i.ONE))
+	var corners : Array[PackedVector2Array] = []
+	for k : int in 4:
+		var right := k == 1 or k == 2
+		var bottom := k >= 2
+		var origin := Vector2i(hi.x if right else lo.x, hi.y if bottom else lo.y)
+		var inward := Vector2i(-1 if right else 1, -1 if bottom else 1)
+		var steps := _staircase(drawn, box.x, origin, inward, (hi - lo + Vector2i.ONE) / 2)
+		corners.append(_walk_order(steps, k))
+	_drawn_corner_cache[frame] = corners
+
+# Chebyshev, not Euclidean: a diagonal-only contact still draws its rim pixel.
+static func _rimmed_at(art: Image, ax: int, ay: int, w: int) -> bool:
+	for dy : int in range(-w, w + 1):
+		for dx : int in range(-w, w + 1):
+			var x := ax + dx
+			var y := ay + dy
+			if x < 0 or y < 0 or x >= art.get_width() or y >= art.get_height(): continue
+			if art.get_pixel(x, y).a > 0.0: return true
+	return false
+
+# The clear run of each row in from one corner, turned into the outline of that clear region:
+# from the vertical edge to the horizontal one, as (along horizontal, along vertical). A corner the
+# art fills is the single point (0, 0).
+static func _staircase(drawn: PackedByteArray, stride: int, origin: Vector2i, inward: Vector2i,
+		reach: Vector2i) -> PackedVector2Array:
+	var clear : Array[int] = []
+	for j : int in reach.y:
+		var run := 0
+		while run < reach.x and drawn[(origin.y + inward.y * j) * stride + origin.x + inward.x * run] == 0:
+			run += 1
+		if run == 0: break
+		clear.append(run)
+	var pts := PackedVector2Array([Vector2(0.0, float(clear.size()))])
+	for j : int in range(clear.size() - 1, -1, -1):
+		var x := float(clear[j])
+		if is_equal_approx(pts[pts.size() - 1].x, x):
+			pts[pts.size() - 1] = Vector2(x, float(j))
+			continue
+		pts.append(Vector2(x, float(j + 1)))
+		pts.append(Vector2(x, float(j)))
+	return pts
+
+# The top-left and bottom-right corners arrive on a vertical edge; the other two on a horizontal
+# one, so their staircase is walked backwards and its axes swap.
+static func _walk_order(steps: PackedVector2Array, corner: int) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for i : int in steps.size():
+		var p := steps[i] if corner % 2 == 0 else steps[steps.size() - 1 - i]
+		out.append(Vector2(p.y, p.x) if corner % 2 == 0 else p)
+	return out

@@ -61,17 +61,16 @@ const int SHAPE_BALLS = 3;
 // units of a column outside its own mask** (a whole spike carrying no flame) and let the mask hang
 // ~2 units past the art elsewhere. Storing the vertices is EXACT, costs the same atan the table
 // already cost, and deletes the radial-scale contract that three files had to keep in step.
-// ⚠ 24, NOT 16, AND THE EXTRA EIGHT ARE THE ART'S CLIPPED CORNERS. Every shipped card type bites a
-// corner out of its frame (`TypePaper` one texel) while the RIG is the full rectangle, so a 16-point
-// outline stood one FX pixel of flame on nothing at each corner — which is what the FX editor showed the
-// owner the moment it started drawing the real face. A bite is three points, not one (see wedge_has).
-const int POLY = 24;
+// ⚠ 40, NOT 16, AND THE EXTRA 24 ARE THE ART'S CORNERS. Every shipped type draws a staircase corner
+// (one point per step, seven a corner) while the RIG is the full rectangle; a mask without them
+// stood flame on nothing at each corner. Measured +0.76 ms on a burning full screen over 24.
+const int POLY = 40;
 const int WEDGES = 32;
 // HOW MANY CONSECUTIVE WEDGES A SLOT CAN NEED. A slot is 11.25 degrees and the rig's own vertices are
-// ~20 apart, but a corner's three bite points sit within ~1.5 degrees of each other — so one slot can
-// hold three vertices, and covering it takes their four wedges. ⚠ Raising POLY without re-deriving this
-// is how the mask grows a hole: see poly_solid.
-const int WEDGE_CANDIDATES = 4;
+// ~20 apart, but a corner's seven staircase points sit within a few degrees of each other - so one
+// slot can hold seven vertices, and covering it takes eight wedges. ⚠ Raising POLY without
+// re-deriving this is how the mask grows a hole: see poly_solid.
+const int WEDGE_CANDIDATES = 8;
 
 // What mask_level answers. A value >= 0 is a SOLID surface and the value itself is the fire level it
 // emits; MASK_EMPTY is no art at all.

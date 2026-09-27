@@ -41,7 +41,7 @@ func _ready() -> void:
 	behavior_section("THE RIM IS THIS FRAME'S ART, DILATED BY EXACTLY ONE UNIT")
 	await test_rim_matches_its_oracle()
 	behavior_section("THE DRAWN CARD IS THE CARD THE MASK DESCRIBES")
-	test_corner_bite_survives_the_dilation()
+	test_the_rig_outline_is_the_drawn_card()
 	behavior_section("THE ALERT IS DECLARED, NOT TOGGLED")
 	test_alert_is_off_until_a_status_declares_it()
 	test_an_activated_rim_still_parks_the_status_phase()
@@ -99,13 +99,9 @@ func _shoot() -> Image:
 
 # per_texel is 1.0 art unit per source texel for the card's TYPE frame under the INNER-rect mapping.
 
-# ⚠ ONE LINE, AND IT GUARDS THE THING MOST LIKELY TO BE MISSED IN THIS WHOLE CHANGE.
-# CardVisual._bind_rig divides CARD_SIZE by the type frame's pixel size to turn the measured corner
-# bite into art units, which is exactly 1.0 only while the type frame IS the card.
-
-# It is not: the frame is 38x52 inside a 40x54 polygon, so dividing by CARD_SIZE gives
-# (1.0526, 1.0385) and inflates every corner notch by 4-5 %. Nothing about that line looks
-# size-dependent, which is what makes it dangerous.
+# ⚠ CardModifierType.drawn_rect and drawn_corners measure in SOURCE TEXELS and CardVisual._bind_rig
+# reads them as art units against CARD_SIZE, which holds only while the type frame IS the card's
+# inner rect. Nothing about that read looks size-dependent, which is what makes it dangerous.
 func test_per_texel_is_one() -> void:
 	var frame_px := CardModifier.frame_size(CardModifierType.TYPE_TEXTURE,
 			CardModifierType.H_FRAMES, CardModifierType.V_FRAMES)
@@ -224,21 +220,10 @@ func _same(a : Color, b : Color) -> bool:
 
 # ------------------------------------------------------------------ the mask seam
 
-# A 1-UNIT DILATION PRESERVES A CORNER BITE EXACTLY, so the FX mask, built from the type frame's
-# alpha via CardModifierType.corner_notch() and applied to the RIG's 40x54 rectangle, still describes
-# the drawn silhouette after the shader has rimmed it.
-
-# The identity: put the art at offset (1,1) in the 40x54 card and let it bite an N x M rectangle out
-# of a corner. A card texel is covered iff some opaque art texel lies within Chebyshev distance 1, so
-# the corner stays clear exactly when cx <= N-1 AND cy <= M-1. Exact, therefore asserted exactly.
-
-# ⚠ AND IT CATCHES THE OTHER HALF, THE ONE THAT WILL BITE SOMEONE LATER. The mask agrees with the
-# drawn edge only because the art reaches its frame boundary everywhere else. A type frame drawn
-# pulling IN from its frame edge leaves the mask oversized there and roots every flame off the art.
-
-# Frames 12 and 13 of the shipped sheet already pull in, 96 and 92 perimeter texels against 172, and
-# nothing uses them yet. This check is what will fail the day something does.
-func test_corner_bite_survives_the_dilation() -> void:
+# THE RIG'S OUTLINE IS THE DRAWN CARD: the silhouette the FX mask is built from, read off a REAL
+# CardVisual of each shipped type, is that type's art dilated by the rim - its extent (TypeInput draws
+# one texel inside its frame box) and every step of each corner's staircase.
+func test_the_rig_outline_is_the_drawn_card() -> void:
 	var src := CardModifierType.TYPE_TEXTURE.get_image()
 	var w := int(CardVisual.ART_OUTLINE)
 	var checked := 0
@@ -246,73 +231,68 @@ func test_corner_bite_survives_the_dilation() -> void:
 		var type_mod : CardModifierType = type_script.new()
 		var frame := CardModifier.frame_rect(CardModifierType.TYPE_TEXTURE,
 				CardModifierType.H_FRAMES, CardModifierType.V_FRAMES, type_mod.get_frame())
-		var notch := type_mod.corner_notch()
-		var card := CardVisual.CARD_SIZE
-# The DRAWN silhouette: this frame's alpha dilated by the rim, in card coordinates.
-		var drawn_clear_w := 0
-		while drawn_clear_w < int(card.x) and not _dilated(src, frame, drawn_clear_w, 0, w):
-			drawn_clear_w += 1
-		var drawn_clear_h := 0
-		while drawn_clear_h < int(card.y) and not _dilated(src, frame, 0, drawn_clear_h, w):
-			drawn_clear_h += 1
-		_check_the_mask_bite_fits_the_drawn_bite(type_mod, notch, drawn_clear_w, drawn_clear_h)
-		_check_the_drawing_reaches_the_card_box(type_mod, src, frame, w, card)
+		var vis : CardVisual = CardVisual.CARD_VISUAL.instantiate()
+		vis.current_context = CardVisual.DisplayContext.PREVIEW
+		vis.data = CardData.new().with_type(type_mod)
+		add_child(vis)
+		var outline := (vis._rig_outline() as PackedVector2Array).duplicate()
+		vis.queue_free()
+		_check_the_rig_spans_the_drawn_box(type_mod.get_frame(), src, frame, w, outline)
+		_check_every_texel_agrees(type_mod.get_frame(), src, frame, w, outline)
 		checked += 1
 	check_impl(checked == 4, "every shipped card type was checked", str(checked))
 
-# ⚠ CONTAINMENT, NOT EQUALITY: `corner_notch()` returns the largest clear rectangle BY AREA, exact for
-# a one-texel bite and deliberately under-cut for a staircase corner. Under-cutting leaves a texel of
-# flame on art; over-cutting leaves it on nothing, so the mask's bite must fit inside the drawing's.
-func _check_the_mask_bite_fits_the_drawn_bite(type_mod: CardModifierType, notch: Vector2,
-		drawn_clear_w: int, drawn_clear_h: int) -> void:
-	check(notch.x <= drawn_clear_w and notch.y <= drawn_clear_h,
-			"frame %d: the corner the mask bites fits inside the corner the drawing bites"
-			% type_mod.get_frame(),
-			"drawn bites %d x %d, corner_notch() says %s — the mask is cutting MORE than the "
-			% [drawn_clear_w, drawn_clear_h, notch]
-			+ "drawing does, which puts flames on nothing at that corner")
+# Art that pulls IN from its frame edge draws a smaller card; a rig left on the frame box claims the
+# difference and roots every effect that far proud of the drawing on those sides.
+func _check_the_rig_spans_the_drawn_box(frame_index: int, src: Image, frame: Rect2, w: int,
+		outline: PackedVector2Array) -> void:
+	var card := Vector2i(CardVisual.CARD_SIZE)
+	var drawn := Rect2i()
+	for cy : int in card.y:
+		for cx : int in card.x:
+			if not _dilated(src, frame, cx, cy, w): continue
+			var texel := Rect2i(cx, cy, 1, 1)
+			drawn = drawn.merge(texel) if drawn.has_area() else texel
+	var rig := Rect2(outline[0], Vector2.ZERO)
+	for p : Vector2 in outline:
+		rig = rig.expand(p)
+	rig.position += CardVisual.CARD_SIZE * 0.5
+	check(rig.is_equal_approx(Rect2(drawn)),
+			"frame %d: the rig spans the %dx%d card this type draws"
+			% [frame_index, drawn.size.x, drawn.size.y],
+			"the rig spans %s of the card box and the drawing %s - effects root off the art by the "
+			% [rig, drawn] + "difference on those sides")
 
-# THE EXTENT SEAM: the mask (the rig at ±20/±27) says the drawing reaches the card box on all four
-# sides. Art that pulls IN from its frame edge leaves the mask oversized there and roots every
-# effect that far off the drawing; frames 12 and 13 of the shipped sheet already do, unused so far.
-func _check_the_drawing_reaches_the_card_box(type_mod: CardModifierType, src: Image, frame: Rect2,
-		w: int, card: Vector2) -> void:
-	var short := Vector4i(_inset(src, frame, w, card, 0), _inset(src, frame, w, card, 1),
-			_inset(src, frame, w, card, 2), _inset(src, frame, w, card, 3))
-	check(short == Vector4i.ZERO,
-			"frame %d: the drawn card reaches its 40x54 box on all four sides"
-			% type_mod.get_frame(),
-			("art pulls in by (left %d, top %d, right %d, bottom %d) art units past the corner "
-			+ "bites — the RIG claims that much more card than the DRAWING has, so effects on "
-			+ "this type root that far proud of the art on those sides")
-			% [short.x, short.y, short.z, short.w])
-
-# How far one SIDE of the drawn silhouette falls short of the card box, in art units, measured at
-# that side's MIDPOINT so the corner bites do not count. `side`: 0 left, 1 top, 2 right, 3 bottom.
-func _inset(src : Image, frame : Rect2, w : int, card : Vector2, side : int) -> int:
-	var span := 0
-	var mid := 0
-	match side:
-		0, 2: span = int(card.x); mid = int(card.y) * 0.5
-		_:    span = int(card.y); mid = int(card.x) * 0.5
-	for d : int in span:
-		var step : int = d if side == 0 or side == 1 else span - 1 - d
-		var hit := false
-		match side:
-			0, 2: hit = _dilated(src, frame, step, mid, w)
-			_:    hit = _dilated(src, frame, mid, step, w)
-		if hit: return d
-	return span
+# Compared at every texel centre of the card box, which never lies on a staircase edge, so a corner
+# cut one texel short or an extent one texel proud each fail by their own count.
+func _check_every_texel_agrees(frame_index: int, src: Image, frame: Rect2, w: int,
+		outline: PackedVector2Array) -> void:
+	var card := Vector2i(CardVisual.CARD_SIZE)
+	var wrong := 0
+	var first_bad := ""
+	for cy : int in card.y:
+		for cx : int in card.x:
+			var p := Vector2(cx, cy) + Vector2(0.5, 0.5) - CardVisual.CARD_SIZE * 0.5
+			var drawn := _dilated(src, frame, cx, cy, w)
+			if Geometry2D.is_point_in_polygon(p, outline) == drawn: continue
+			wrong += 1
+			if first_bad.is_empty():
+				first_bad = "first at card texel (%d, %d), drawn %s" % [cx, cy, drawn]
+	check(wrong == 0,
+			"frame %d: every texel of the card box is inside the rig's outline exactly where it is drawn"
+			% frame_index,
+			"%d texels disagree, %s - flames stand on nothing or skip drawn art there"
+			% [wrong, first_bad])
 
 # Is card texel (cx, cy) covered by the art dilated by w? The art sits at offset (w, w) inside the
-# card, so a card texel maps to art texel (cx - w, cy - w) and the dilation reaches w around it.
+# card. Alpha > 0 is drawn: a translucent face is still face, so it bounds the silhouette.
 func _dilated(src : Image, frame : Rect2, cx : int, cy : int, w : int) -> bool:
 	for dy : int in range(-w, w + 1):
 		for dx : int in range(-w, w + 1):
 			var ax := cx - w + dx
 			var ay := cy - w + dy
 			if ax < 0 or ay < 0 or ax >= int(frame.size.x) or ay >= int(frame.size.y): continue
-			if src.get_pixel(int(frame.position.x) + ax, int(frame.position.y) + ay).a > 0.5:
+			if src.get_pixel(int(frame.position.x) + ax, int(frame.position.y) + ay).a > 0.0:
 				return true
 	return false
 
