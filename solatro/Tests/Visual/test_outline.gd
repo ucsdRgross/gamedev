@@ -237,6 +237,9 @@ func test_the_rig_outline_is_the_drawn_card() -> void:
 		add_child(vis)
 		var outline := (vis._rig_outline() as PackedVector2Array).duplicate()
 		vis.queue_free()
+		check(outline.size() <= FxAttachment.POLY,
+				"type frame %d's outline fits the FX mask unresampled" % type_mod.get_frame(),
+				"%d points, POLY %d" % [outline.size(), FxAttachment.POLY])
 		_check_the_rig_spans_the_drawn_box(type_mod.get_frame(), src, frame, w, outline)
 		_check_every_texel_agrees(type_mod.get_frame(), src, frame, w, outline)
 		checked += 1

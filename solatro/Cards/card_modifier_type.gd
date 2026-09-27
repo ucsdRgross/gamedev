@@ -41,7 +41,7 @@ func drawn_corners() -> Array[PackedVector2Array]:
 # Measured off the sheet's own alpha, never typed in (owner: *"fx editor shows corner texel not
 # being accounted for"*). Alpha > 0 is drawn: a translucent face is still face, and the rim is the
 # art dilated by CardOutline.WIDTH in all eight directions, exactly as outline.gdshader draws it.
-func _measure_drawn(frame: int) -> void:
+static func _measure_drawn(frame: int) -> void:
 	if _drawn_rect_cache.has(frame): return
 	var src := frame_rect(TYPE_TEXTURE, H_FRAMES, V_FRAMES, frame)
 	var art := TYPE_TEXTURE.get_image().get_region(Rect2i(src))
@@ -66,7 +66,12 @@ func _measure_drawn(frame: int) -> void:
 		var origin := Vector2i(hi.x if right else lo.x, hi.y if bottom else lo.y)
 		var inward := Vector2i(-1 if right else 1, -1 if bottom else 1)
 		var steps := _staircase(drawn, box.x, origin, inward, (hi - lo + Vector2i.ONE) / 2)
-		corners.append(_walk_order(steps, k))
+		var arrives_on_vertical_edge := k % 2 == 0
+		var walked := PackedVector2Array()
+		for i : int in steps.size():
+			var p := steps[i] if arrives_on_vertical_edge else steps[steps.size() - 1 - i]
+			walked.append(Vector2(p.y, p.x) if arrives_on_vertical_edge else p)
+		corners.append(walked)
 	_drawn_corner_cache[frame] = corners
 
 # Chebyshev, not Euclidean: a diagonal-only contact still draws its rim pixel.
@@ -100,12 +105,3 @@ static func _staircase(drawn: PackedByteArray, stride: int, origin: Vector2i, in
 		pts.append(Vector2(x, float(j + 1)))
 		pts.append(Vector2(x, float(j)))
 	return pts
-
-# The top-left and bottom-right corners arrive on a vertical edge; the other two on a horizontal
-# one, so their staircase is walked backwards and its axes swap.
-static func _walk_order(steps: PackedVector2Array, corner: int) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	for i : int in steps.size():
-		var p := steps[i] if corner % 2 == 0 else steps[steps.size() - 1 - i]
-		out.append(Vector2(p.y, p.x) if corner % 2 == 0 else p)
-	return out

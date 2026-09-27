@@ -158,7 +158,7 @@ On a full board that is:
 
 - position easing and anchor tracking
 - tilt/bob juice (gated to `PLAY_AREA`, correctly)
-- `_track_fx_outline()` — **~24 `atan2` plus a wedge index, every frame, lit or not**
+- `_track_fx_outline()` — **~40 `atan2` plus a wedge index, every frame, lit or not**
 - `_advance_alert` (correctly gated on `_alert` being live — this one is already right)
 
 ⚠ **`_track_fx_outline` is the known one.** VFX.md §6.5 calls it *"the single biggest per-frame win
@@ -249,7 +249,7 @@ already builds one headless). This is the first real evidence for
 | angle | how it applies here | gain | risk / what it fights |
 |---|---|---|---|
 | **`cover_taps` 4 → 2 on `fire_card`** | the tap count is the cover ladder's whole cost curve | **0.98 ms `MEASURED`** (5.062 → 4.085 on the sweep) | **a LOOK the owner owns.** FX_HANDOFF §0e argues against: a card flame is 7 FX pixels tall, so 2 taps is 3.5 px/tap and the fire stops hugging the art, thin features get straddled entirely, and the vertical gradient collapses to two bands. Show `00_cover_field` and `01_fire_ladder` side by side before asking |
-| **20-point diagonal chamfer** instead of the exact 24-vertex corner bite | the exact mask measured at 16 % of a burning screen; the cost is the array's size | ~0.3–0.4 ms `ESTIMATE`, unmeasured since the last lever landed | an ACCURACY trade the owner should see — same pixels on the FX grid, approximate off it |
+| **20-point diagonal chamfer** instead of the exact per-type corner staircase | the exact mask measured at 16 % of a burning screen; the cost is the array's size | ~0.3–0.4 ms `ESTIMATE`, unmeasured since the last lever landed | an ACCURACY trade the owner should see — same pixels on the FX grid, approximate off it |
 | **`fire_card.height` down from 7** | a FILL knob as much as an art one: the lit band is `height + sink` thick around the whole silhouette | ~0.2 ms per unit `ESTIMATE` | a LOOK the owner owns |
 | **A specialised card-fire shader** — one program per shape | a BOX host measured **25 % dearer purely from carrying two uniform arrays it never enters**, so program size costs real time on this GPU | `UNKNOWN`; that 25 % datum is the only reason to believe in it | fights "one shader per effect"; duplicates the cover/noise/ramp tail unless that tail is extracted to a shared `.gdshaderinc` first |
 | **Spotlight light budget** | ≈0.19 ms per light, near-linear, independent of host count | 0.19 ms per light removed `MEASURED` | pure design: how many lamps a section may light. `MAX_LIGHTS = 64` is a cliff, not a budget |
@@ -281,7 +281,7 @@ addressing the skinning buys nothing.
 | angle | how | gain | risk |
 |---|---|---|---|
 | **Visibility culling for cards** | `UI/Fx/fx_attachment.gd` already has `_on_screen()`; cards have nothing. Play-area cards live inside a scroll container, so scrolled-out cards still ease, tilt and walk their rig. The deck viewer is denser still | `ESTIMATE`: most of §4a+§4b for off-screen cards | ⚠ a card must be fully re-synced before it is drawn again; the FX layer's per-host randomness is read **when the quads are built**, so ordering matters (VFX.md §4.3/§4.4) |
-| **`_track_fx_outline`** | §4b — make the resolve cheaper or stop the host calling it | `ESTIMATE`: ~24 `atan2` x up to 128 cards per frame | ⛔ **the naive guard is a known regression.** Read the guard site's comment first |
+| **`_track_fx_outline`** | §4b — make the resolve cheaper or stop the host calling it | `ESTIMATE`: ~40 `atan2` x up to 128 cards per frame | ⛔ **the naive guard is a known regression.** Read the guard site's comment first |
 | **Pause the rig when it cannot be seen** | `AnimationPlayer.pause()` / `speed_scale = 0` off-screen; `PROCESS_MODE_DISABLED` on card subtrees behind a full-screen menu | `ESTIMATE`: removes 17-bone evaluation + 5 re-skins per card | the deformed outline feeds the FX mask; anything paused must be resumed **before** `sync()` |
 | **`VisibleOnScreenNotifier2D` specifically** | awkward here — cards are Control-anchored and scroll with their content. A rect test against the scroll viewport in `UI/play_area.gd` / `UI/deck_viewer.gd` is the cheaper shape | see culling row | a notifier is one more node on a 27-node scene |
 | **`SubViewport` refresh limits** | only `Scripts/Map/world_map_controller.gd` uses one in game code. If the map is static while open, `UPDATE_WHEN_VISIBLE` or `UPDATE_ONCE` | small `ESTIMATE` | cheap, low risk, easy to verify by eye |

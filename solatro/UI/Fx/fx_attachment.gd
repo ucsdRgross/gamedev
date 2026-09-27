@@ -208,15 +208,15 @@ var _art_rect : Vector4 = Vector4(0.0, 0.0, 1.0, 1.0)
 ## The size that frame is drawn at, centred on the host's origin.
 var _art_size : Vector2 = Vector2.ONE
 
-# 40 is what a real card has: the star rig's 16 arms plus six more at each corner, the staircase the
-# type art draws there (`CardVisual._rig_outline`). A longer outline is resampled at POLY uniform
-# angles, which loses vertices, and the FX ATTACHMENT suite asserts a card's outline fits.
+# 40 = the star rig's 16 arms plus six more at each corner, the most staircase any shipped type
+# draws there (`CardVisual._rig_outline`). A longer outline is resampled at POLY uniform angles,
+# which loses vertices; OUTLINE asserts every shipped type's outline fits.
 
 ## How many silhouette vertices reach the shader; must match POLY in fire.gdshader and glow.gdshader.
 const POLY := 40
 
-# A slot is 1/32 of a turn and a corner's seven staircase points sit within a few degrees of each
-# other, so covering one slot can take eight wedges. `test_fx_attachment` asserts the bound, and both
+# A slot is 1/32 of a turn and a corner's staircase points (up to seven) sit within a few degrees
+# of each other, so covering one slot can take eight wedges. `test_fx_attachment` asserts the bound, and both
 # must match fire.gdshader and glow.gdshader.
 
 ## Angular slots in the wedge index.

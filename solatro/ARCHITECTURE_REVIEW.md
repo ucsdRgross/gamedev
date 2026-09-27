@@ -1085,10 +1085,9 @@ the fire riding them), which keeps the dependency inside the one class that owns
     its face is skinned to a 16-arm rig (posed by jumps/spins/warps; the idle no longer autoplays, see
     `CardVisual.RIG_ANIM`) and a static alpha sample would burn the undeformed
     shape (§7's own bug). Everything above the mask is one code path for both. So a card gets none of what
-    the alpha gives a prop, including the fact that every type frame BITES a texel out of each corner —
-    `CardModifierType.corner_notch` measures that off the sheet and `CardVisual._rig_outline` carries it as
-    the three points it really is, the middle one the corner cell's bilinear corner so it shears with the
-    rig. `test_the_card_mask_is_the_card_the_player_sees` asserts ZERO disagreeing FX cells against a real
+    the alpha gives a prop, including each type frame's staircase corners —
+    `CardModifierType.drawn_corners` measures them off the sheet and `CardVisual._rig_outline` carries
+    them, each point bilinear in its corner cell so it shears with the rig. `test_the_card_mask_is_the_card_the_player_sees` asserts ZERO disagreeing FX cells against a real
     card. ⚠ Costs 16 % of a burning screen (the uniform ARRAY, not the wedge loop). FX_HANDOFF §0c.5.
   - ✅ **THE CORNER CHAMFER IS FIXED, AND THE FIX IS THAT THE MASK CARRIES THE OUTLINE'S OWN VERTICES
     (`u_poly` + `u_wedge`), NOT A SAMPLING OF THEM.** "Fire licks down the side of a card from each top

@@ -438,7 +438,7 @@ func test_one_pixel_size_for_all_art() -> void:
 
 # ⚠ EDGE_WEDGE_DRIFT 1.7 cells: the mask is RADIAL, 32 wedge slots of 11.25°, so its quantization is
 # ANGULAR and near a slot boundary the miss is a chord, not a pixel. Measured worst 1.50 at t=0.30,
-# 0.00 at rest; it scales with the card's radius, so 38x50's 1.34 became 1.50 at 40x54.
+# 0.00 at rest; it scales with the card's radius.
 
 # ⚠ SPLIT BY REGION: along the edges the mask is the skinned boundary vertex-for-vertex, so the bar
 # can be tight; the four CORNER cells run `corner_points()`, a parallelogram exact only while the

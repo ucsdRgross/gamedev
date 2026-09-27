@@ -62,13 +62,13 @@ const int SHAPE_BALLS = 3;
 // ~2 units past the art elsewhere. Storing the vertices is EXACT, costs the same atan the table
 // already cost, and deletes the radial-scale contract that three files had to keep in step.
 // ⚠ 40, NOT 16, AND THE EXTRA 24 ARE THE ART'S CORNERS. Every shipped type draws a staircase corner
-// (one point per step, seven a corner) while the RIG is the full rectangle; a mask without them
-// stood flame on nothing at each corner. Measured +0.76 ms on a burning full screen over 24.
+// (one point per step, at most seven a corner in any shipped frame) while the RIG is the full
+// rectangle; a mask without them stood flame on nothing at each corner. Measured +0.76 ms on a burning full screen over 24.
 const int POLY = 40;
 const int WEDGES = 32;
 // HOW MANY CONSECUTIVE WEDGES A SLOT CAN NEED. A slot is 11.25 degrees and the rig's own vertices are
-// ~20 apart, but a corner's seven staircase points sit within a few degrees of each other - so one
-// slot can hold seven vertices, and covering it takes eight wedges. ⚠ Raising POLY without
+// ~20 apart, but a corner's staircase points (up to seven) sit within a few degrees of each
+// other - so one slot can hold seven vertices, and covering it takes eight wedges. ⚠ Raising POLY without
 // re-deriving this is how the mask grows a hole: see poly_solid.
 const int WEDGE_CANDIDATES = 8;
 

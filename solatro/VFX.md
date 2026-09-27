@@ -412,7 +412,7 @@ Reviewed and deliberately NOT applied. Each was judged, not missed — the reaso
   comparison. A guard at the call site has the same problem. To actually collect this, make the resolve
   cheaper or have the HOST stop calling it; the reasoning is repeated at the guard site in the code.
 - **The outline RESAMPLE path in `_fill_poly_from_outline` is reachable, despite looking dead.** Every
-  shipped caller hands over exactly `POLY = 24` points, so it never runs today — but `CardVisual`'s rig
+  shipped caller hands over at most `POLY = 40` points, so it never runs today — but `CardVisual`'s rig
   generator has an `edge_subdivisions` `@export`, and raising it to 4 bakes 28 points and drops straight
   into it. Deleting it would turn a tool knob into the chamfer bug the vertex mask was built to remove.
 - **`FxAttachment.measure_silhouette` is all but dead** (one caller, `card_visual.gd`'s `_rig_arms
