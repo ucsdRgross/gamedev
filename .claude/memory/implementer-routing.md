@@ -37,11 +37,8 @@ next round is cheaper than a fresh one re-reading the tree - until its context i
 
 **Reviewers are Fable and read-only** - the owner's ruling, verbatim, is in `/plan-run` "The
 reviewer's model floor"; every finding becomes an implementer step.
-⚠ **Ask each per-diff review two to four questions about THIS diff's riskiest interactions**, beyond
-rules 7 and 8 (which inputs reach the new path, what state it inherits, whether a re-pointed test got
-looser, which docs now contradict it). About two in three such reviews on the playtest stream
-returned an actionable finding - a hang route, a stale flag across a teardown, a coordinate-space
-mix, a test that could pass vacuously - that the implementer's own green run had not caught.
+When and how to spend a review (per step, per group, a mechanism-shaping owner question, the
+close): `/plan-run` § "Spending the reviewer".
 
 **The main agent is Opus 5.5 at high effort, for design and implementation alike, and the
 `/plan-run` overseer with it; Fable 5.1 is its pair reviewer.** Owner, as recorded in the todo: "the

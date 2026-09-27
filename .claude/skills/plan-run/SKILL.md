@@ -178,6 +178,34 @@ author; raising an implementer's tier raises the floor with it. **A review pass 
 applies:** `/simplify`'s apply phase and `/code-review --fix` are not used; a finding goes to an
 implementer as a step, red-then-green and gated like any other.
 
+## Spending the reviewer - Fable is the expensive senior
+
+Its job is the issue that would cost time LATER, which the junior cannot check cheaply. Never hand
+it proofreading, grep work, log triage (`gate.py`) or recon (Explore). Four uses, and no others:
+
+1. **Per step - targeted, and only for a step with judgement in it.** Skip it for a comment sweep, a
+   doc-only commit, a data edit at a named site. Hand it the diff plus 2-4 questions about THIS
+   diff's riskiest interactions (which inputs reach the new path, what state it inherits, which
+   docs it contradicts), never "review everything". Measured: about two in three such reviews
+   returned an actionable finding the green run had missed. Add, only when they apply:
+   - **the tests** - when the step adds or re-points rows: can each fail, did a re-point get looser,
+     does an expected value come from the code under test ([[tests-that-prove-nothing]]);
+   - **the shots** - when the step changes what is drawn: the `shots/<step>/<W>x<H>/` folder and the
+     ruling; it describes each image and says whether it shows the ruling, before you read yours.
+2. **Per group of related steps - broad, sparingly.** When a group lands (one mechanism moved, one
+   ruling built across its instances - the same moment as the owner's review round), one broad pass
+   over the group's whole diff, for the problem nobody thought to ask about. Give it a PRIORITY
+   ORDER and "report early": an unordered "review 275 commits" spent its budget and returned
+   nothing; ordered, the rerun found a defect in its first third. In the review round, it also
+   drafts each shot's `seen` from the pixels alone - resolve every disagreement with yours by
+   re-reading the image.
+3. **An owner question that shapes a mechanism** - one whose answer spreads across several steps
+   (a principle, a size that sets a scale): before it reaches the owner, it checks no ruling already
+   answers it, the options are complete and neutral, and each look has a shot. Everyday questions
+   go straight to the owner.
+4. **The close** - the numbered list below; its adversarial and test-surface passes are the broad
+   reviews of the whole branch.
+
 ⚠ **THE FLOOR IS A RULE THE OVERSEER FOLLOWS, NOT ONE IT CAN CHECK.** `effort` is declared in agent
 frontmatter or a model override and is not visible at dispatch time, so nothing validates it. If it
 needs enforcing rather than instructing, that is a `PreToolUse` hook on `Agent`.
@@ -264,12 +292,8 @@ moved, one ruling built across its instances), shoot a round for it before the n
 Measured: a round that waited for ~15 steps meant the owner saw none of a four-part viewer move, a
 picture crop and a menu rebuild - all built on the overseer's reading of rulings - until the end.
 
-⚠ **A Fable reviewer reads the shots too.** In the per-diff review, hand it the step's
-`shots/<step>/<W>x<H>/` folder and the ruling, and ask it to describe each image independently and
-say whether it shows the ruling - before you read your own description of them. In a review round,
-a Fable pass drafts each shot's `seen` from the images alone; compare it with yours and resolve
-every disagreement by re-reading the pixels. Two readers of a picture disagree exactly where a
-misreading hides.
+Fable's share of a round (the per-group review and its independent `seen` drafts): § "Spending the
+reviewer" item 2.
 
 At the end of a run with visual work — or at the start of the next session doing visual work — run
 `py solatro/visual-review/review.py refresh` (it reshoots both sides, so it takes the one Godot

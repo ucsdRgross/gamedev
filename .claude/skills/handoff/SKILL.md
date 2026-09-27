@@ -133,6 +133,11 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
    alarm), so the value of chasing "traced, not measured" findings becomes a number; and re-measure
    any routing figure in `implementer-routing` whose sample is still a handful of steps.
    Record the tally in the handoff's Open bugs as a TOOLING line so the next audit can add to it.
+   **If this session edited the workflow** (skills, agent definitions, memory, `CLAUDE.md`, hooks),
+   one Fable pass over that whole diff, batched here rather than per edit: contradictions with the
+   rest of the workflow, duplicates, a rule that inverts another. A wrong rule costs every later
+   session - one `/docs` pass found an inverted reviewer rule and three docs contradicting hard
+   rule 1, all left by earlier edits nobody re-read.
 4. **Prune this file** (the ~300-line rule below): a finished row shrinks to id, description,
    status and its commits - the commit message holds the evidence; an open item it carried moves
    to Open bugs; a resolved Open bug goes.
