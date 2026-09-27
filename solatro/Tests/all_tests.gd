@@ -88,6 +88,8 @@ func _print_filter_warning() -> void:
 # Waits for every suite to report, then prints the grand total and the finish-time ranking — a
 # run's length is its LAST FINISHER, not the sum of the durations, because suites overlap.
 func _ready() -> void:
+	if DisplayServer.get_name() != "headless":
+		_open_keep_drawing_window()
 	var suites: Array[TestSuite] = []
 	for child in get_children():
 		if child is TestSuite:
@@ -107,7 +109,8 @@ func _ready() -> void:
 		failed_impl += suite._fail_impl
 		warned += suite._warn
 	TestLog.line("")
-#⚠ THE ENGINE'S OWN ERROR STREAM COUNTS AS A FAILURE - see _scan_engine_errors().
+	if DisplayServer.get_name() != "headless":
+		failed += await _check_drawing_survives_minimize()
 	failed += _scan_engine_errors()
 #Placeholder warnings are reported but never affect the verdict or the exit code: they mark
 #surfaces still carrying hardcoded values, not breakage.
@@ -135,6 +138,46 @@ func _ready() -> void:
 #play window unless close_when_done is turned off for live inspection.
 	if DisplayServer.get_name() == "headless" or close_when_done:
 		get_tree().quit(mini(failed, 125))
+
+# The engine draws only while SOME native window is not minimized; minimizing the run's one window
+# stopped frame_post_draw and froze every SubViewport. This window is never minimized with it, and
+# its own vsync is off because a second vsynced swapchain cost the run 60 -> 50 fps.
+func _open_keep_drawing_window() -> void:
+	var window := Window.new()
+	window.visible = false
+	window.force_native = true
+	window.borderless = true
+	window.unfocusable = true
+	window.size = Vector2i.ONE
+	add_child(window)
+	window.show()
+	window.position = KEEP_DRAWING_WINDOW_POSITION
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED, window.get_window_id())
+
+## Where the keep-drawing window sits: off every screen, so the run shows one window.
+const KEEP_DRAWING_WINDOW_POSITION := Vector2i(-10000, -10000)
+## Frames the run's window stays minimized while the end-of-run check counts drawn frames.
+const MINIMIZED_CHECK_FRAMES := 10
+
+# Minimizes the run's own window at the end and requires the engine to keep drawing, so a run the
+# owner minimizes cannot silently stall again. Returns 1 on failure, like one unexpected error.
+func _check_drawing_survives_minimize() -> int:
+	var mode := DisplayServer.window_get_mode()
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MINIMIZED)
+	await get_tree().process_frame
+	var drawn_before := Engine.get_frames_drawn()
+	for _frame : int in MINIMIZED_CHECK_FRAMES:
+		await get_tree().process_frame
+	var drawn := Engine.get_frames_drawn() - drawn_before
+	DisplayServer.window_set_mode(mode)
+	if drawn >= MINIMIZED_CHECK_FRAMES:
+		TestLog.line("[minimized-drawing] clean — %d of %d frames drawn while minimized"
+				% [drawn, MINIMIZED_CHECK_FRAMES])
+		return 0
+	TestLog.line(("======== MINIMIZED RUN STOPS DRAWING: %d of %d frames drawn while minimized — "
+			+ "the keep-drawing window is missing or not native ========")
+			% [drawn, MINIMIZED_CHECK_FRAMES], true)
+	return 1
 
 #⚠ THE SUITE FAILS ON UNEXPECTED ENGINE ERRORS (owner: *"suite should fail on unexpected errors
 #in error stream so visible to an agent testing to immediately fix, instead of current behavior
