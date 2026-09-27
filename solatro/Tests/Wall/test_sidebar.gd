@@ -5184,28 +5184,38 @@ func test_every_arrow_walks_the_viewers_grid_and_the_rim_follows() -> void:
 	_container.show_hud()
 	await _open_viewer_by_accept(_container.deck_ui.get_node(^"Button") as Button)
 	var cards := _listed_viewer_cards()
-	check(cards.size() > _MID_CARD, "the deck viewer lists more than one row of cards",
+	var from := _card_with_a_neighbour_every_way(cards)
+	check(from != null, "the deck viewer lays out a card with a neighbour in every direction",
 			str(cards.size()))
-	if cards.size() > _MID_CARD:
+	if from != null:
 		for stuck : bool in [false, true]:
-			cards[_MID_CARD].grab_focus()
+			from.grab_focus()
 			await get_tree().process_frame
 			if stuck:
-				await _click(cards[_MID_CARD].get_global_rect().get_center(), _booted_viewport)
+				await _click(from.get_global_rect().get_center(), _booted_viewport)
 				check(_container.is_locked(), "sanity: the click stuck that card to the sidebar")
 			for keycode : Key in [KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UP]:
-				cards[_MID_CARD].grab_focus()
+				from.grab_focus()
 				await get_tree().process_frame
-				await _walks_one_neighbour(cards, keycode, stuck)
+				await _walks_one_neighbour(cards, from, keycode, stuck)
 	await _end_main_fixture()
 
-## A card with a neighbour in every direction: past the first row, and not at either end of its own.
-const _MID_CARD : int = 12
+## The first listed card the FlowContainer placed with another card left, right, above and below it.
+func _card_with_a_neighbour_every_way(cards: Array[ControlCard]) -> ControlCard:
+	for card : ControlCard in cards:
+		var at := card.global_position
+		var sides := {}
+		for other : ControlCard in cards:
+			var there := other.global_position
+			if there.y == at.y and there.x != at.x: sides[signf(there.x - at.x) * Vector2.RIGHT] = true
+			if there.x == at.x and there.y != at.y: sides[signf(there.y - at.y) * Vector2.DOWN] = true
+		if sides.size() == 4: return card
+	return null
 
-# One arrow from `_MID_CARD`, read back the way a player sees it: which control the window's own
+# One arrow from `from`, read back the way a player sees it: which control the window's own
 # viewport now focuses, and the rim each card is actually drawn with.
-func _walks_one_neighbour(cards: Array[ControlCard], keycode: Key, stuck: bool) -> void:
-	var from := cards[_MID_CARD]
+func _walks_one_neighbour(cards: Array[ControlCard], from: ControlCard, keycode: Key,
+		stuck: bool) -> void:
 	var tag := "%s with a card stuck" % keycode if stuck else "%s with nothing stuck" % keycode
 	check(_rim_of(from) == PaletteDB.ROLES.match_rim,
 			"sanity: the card the walk starts from wears the focus rim (%s)" % tag,
