@@ -209,9 +209,13 @@ func _publish_info(card: CardData) -> void:
 	PlayArea.highlight_info(card,
 			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)
 
-# Confirming closes this viewer, so it announces the lost highlight the same way the board does: a
-# description locked before it opened comes back.
 func _on_confirm_pressed() -> void:
 	confirmed.emit(data.current_choices)
+	discard()
+
+# Closing announces the lost highlight the same way the board does: a description locked before
+# this viewer opened comes back.
+## Closes this pack without adding a card: Take after it confirms, and a new run throwing the last run's pack away.
+func discard() -> void:
 	queue_free()
 	highlight_cleared.emit()

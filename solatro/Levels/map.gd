@@ -124,7 +124,7 @@ func _publish_map_inset() -> void:
 			hud_container.resting_rect_beside(wall_picture).size)
 
 # Begin (or resume) a run on this map screen. Safe to call before the scene is in the tree. The
-# map persists across runs but its content is the run, so the last run's description goes here.
+# map persists across runs but its content is the run, so the last run's viewers and description go.
 func start_run(new_run: RunState) -> void:
 	run = new_run
 	if not is_node_ready():
@@ -132,6 +132,9 @@ func start_run(new_run: RunState) -> void:
 		return
 	name_popup.hide_name()
 	_packs_shown.clear()
+	hud_container.close_the_map_viewers()
+	_chooser = null
+	_show_only_the_deck_button(false)
 	hud_container.release_screen(HudContainer.MAP_SCREEN)
 	controller.start_run(new_run)
 
@@ -172,7 +175,7 @@ func _open_booster(node: WorldGraphNode) -> void:
 	_show_only_the_deck_button(true)
 	viewer.confirmed.connect(_show_only_the_deck_button.bind(false).unbind(1))
 
-## The pack chooser this screen opened, dropped the moment Take accepts it, a frame before it is freed.
+## The pack chooser this screen opened, dropped the moment Take accepts it or a new run throws it away, a frame before it is freed.
 var _chooser : ChoiceViewer = null
 
 ## Whether a pack chooser is up, whose borrowed Deck row stays while a viewer opens or closes over it.
@@ -244,13 +247,13 @@ func _on_node_selected(node: WorldGraphNode) -> void:
 # one, and Possible cards is still there to ask with.
 	if not controller.auto_picking: await _open_possible_cards_once(node)
 
-# Back to the basic view: the HUD, with its own Deck button, and no row of the description's buttons
-# left in anyone's focus chain. ⚠ The map's own memory goes too, whichever screen is up -- a pick
-# dropped by leaving would otherwise come back as a description of nothing picked.
+# The pick's row and memory go, whichever screen is up, or a pick dropped by leaving would come back
+# as a description of nothing picked. ⚠ An open viewer keeps what it holds: a card stuck in the
+# possible cards keeps its Deck row, and the container keeps its lock until the viewer closes.
 func _on_selection_cleared() -> void:
-	selection_buttons.visible = false
+	selection_buttons.visible = _a_possible_card_is_stuck()
 	name_popup.hide_name()
-	hud_container.release_screen(HudContainer.MAP_SCREEN)
+	hud_container.release_the_pick()
 
 ## The pack nodes whose contents have already been shown where the token stands -- cleared by travelling and by a new run, which is what "before travelling" means.
 var _packs_shown : Dictionary[int, bool] = {}
@@ -268,8 +271,8 @@ func _open_possible_cards_once(node: WorldGraphNode) -> void:
 # stuck in it carries the Deck row, a hovered one none.
 func _show_possible_cards(node: WorldGraphNode) -> void:
 	var cards := await _booster_of(node).get_possible_preview_cards()
-	_possible_cards = DeckViewer.show_deck(self, cards, possible_cards_button)
-	_host_map_viewer(_possible_cards, wall_picture)
+	_possible_cards = DeckViewer.show_deck(hud_container.get_parent(), cards, possible_cards_button)
+	_host_map_viewer(_possible_cards)
 	if _possible_cards: _possible_cards.cards().sticky_changed.connect(_show_only_the_deck_button)
 
 ## The pack's possible-cards list this screen last opened; it is up only until it is queued for deletion.
@@ -282,12 +285,12 @@ func _a_possible_card_is_stuck() -> bool:
 			and _possible_cards.cards().sticky != null
 
 # ⚠ HOSTED FIRST, REPUBLISHED SECOND: the container's close handler takes the viewer's card out of
-# the sidebar, so a pick put back before it would be wiped by it. The pick is what every viewer
-# this screen opens comes back to. The chooser's Deck row stays up, the toggle that closes its deck.
-func _host_map_viewer(viewer: DeckViewer, picture: WallPicture) -> void:
+# the sidebar, so a pick put back before it would be wiped by it. Every viewer here is UI on the
+# sidebar's layer, hosted with no picture; the chooser's Deck row stays up, its deck's toggle.
+func _host_map_viewer(viewer: DeckViewer) -> void:
 	if viewer == null: return
 	selection_buttons.visible = chooser_is_up() or _a_possible_card_is_stuck()
-	hud_container.host_viewer(viewer, picture, info_hovered, HudContainer.MAP_SCREEN)
+	hud_container.host_viewer(viewer, null, info_hovered, HudContainer.MAP_SCREEN)
 	viewer.highlight_cleared.connect(_republish_the_pick)
 
 # Nothing picked is the HUD's own Deck button opening the viewer from the basic view, with no
@@ -320,13 +323,11 @@ func _update_hud() -> void:
 	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
 
 # The run deck is reachable from the basic view AND from beside a pick, so the viewer is handed
-# whichever of the two buttons actually opened it to put a pad player's focus back on. Over the
-# chooser it opens where the chooser is, on the sidebar's layer, or the chooser would cover it.
+# whichever of the two buttons actually opened it to put a pad player's focus back on.
 func _on_deck_clicked() -> void:
 	var opener : Button = selection_deck_button if selection_buttons.visible \
 			else hud_container.map_deck_button
-	var over_the_chooser := chooser_is_up()
-	var viewer := DeckViewer.show_deck(hud_container.get_parent() if over_the_chooser else self,
-			Main.save_info.card_datas, opener, _a_possible_card_is_stuck())
-	_host_map_viewer(viewer, null if over_the_chooser else wall_picture)
+	var viewer := DeckViewer.show_deck(hud_container.get_parent(), Main.save_info.card_datas,
+			opener, _a_possible_card_is_stuck())
+	_host_map_viewer(viewer)
 	DeckViewer.read_close_while_open(opener, &"MAP_CLOSE_DECK", viewer)

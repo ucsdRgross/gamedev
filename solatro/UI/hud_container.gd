@@ -329,14 +329,6 @@ func _close_hosted_viewer(viewer: Node) -> void:
 	(viewer.call(&"cards") as CardsViewer).highlight_left.disconnect(highlight_gone)
 	if hosted.covered and hosted.covered != _entry_by_screen.get(hosted.screen):
 		_free_detached_visual(hosted.covered)
-	if hosted.screen == _active_screen: _size_the_preview_for_the_top_viewer()
-
-# ⚠ A LOCK SET ASIDE UNDER A VIEWER KEEPS THE SIZE IT WAS DRAWN AT: only the top viewer re-publishes
-# on a re-fit, so the card handed back when it closes is re-sized to the viewer now on top.
-func _size_the_preview_for_the_top_viewer() -> void:
-	var top := _shown_hosted_viewer()
-	if top == null: return
-	resize_preview(CardVisual.preview_window_px(window_scale(top.picture)))
 
 # A VIEWER FREED WITH ITS SCREEN NEVER CLOSES -- a show torn down takes its open deck viewer with
 # it -- so leaving the tree is the last moment its record, and what it covered, can go.
@@ -607,6 +599,32 @@ func release_screen(screen: StringName) -> void:
 	if screen != GAME_SCREEN: return
 	_game_processing = false
 	_game_card_in_hand = false
+
+# ⚠ A VIEWER ON THIS LAYER OUTLIVES THE RUN IT SHOWS, so a new run closes every map viewer, newest
+# first so each hands the top back to the one it opened over, and throws a pack chooser away.
+func close_the_map_viewers() -> void:
+	for index : int in range(_hosted_viewers.size() - 1, -1, -1):
+		var hosted := _hosted_viewers[index]
+		if hosted.screen != MAP_SCREEN: continue
+		if hosted.viewer is ChoiceViewer: (hosted.viewer as ChoiceViewer).discard()
+		else: (hosted.viewer as DeckViewer).close_from_sidebar()
+
+# ⚠ A DROPPED MAP PICK TAKES ONLY ITS OWN DESCRIPTION: an open viewer keeps the lock it set aside and
+# the lock its stuck card holds, handing them back on close, while the pick it covered goes, so no
+# close re-shows a pick that no longer exists. A teardown still goes through `release_screen()`.
+func release_the_pick() -> void:
+	var open := _hosted_viewers.filter(func(hosted: _HostedViewer) -> bool: return hosted.screen == MAP_SCREEN)
+	if open.is_empty():
+		release_screen(MAP_SCREEN)
+		return
+	var kept : Array[InfoEntry] = [_locked_entry_by_screen.get(MAP_SCREEN)]
+	for hosted : _HostedViewer in open:
+		kept.append(hosted.suspended_lock)
+	for hosted : _HostedViewer in open:
+		if hosted.covered == null or hosted.covered in kept: continue
+		if _entry_by_screen.get(MAP_SCREEN) == hosted.covered: _entry_by_screen.erase(MAP_SCREEN)
+		_free_detached_visual(hosted.covered)
+		hosted.covered = null
 
 # ⚠ WHAT A VIEWER COVERS IS IN NEITHER DICTIONARY: `host_viewer` takes the screen's lock out of
 # `_locked_entry_by_screen` to hold it there, so every other release walks straight past it and its

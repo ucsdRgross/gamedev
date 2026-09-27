@@ -766,12 +766,12 @@ func _shoot_the_deck_over_the_possible_cards(main: Main) -> void:
 	var token_node := map.controller._current
 	_make_the_node_reachable(map.controller, pack)
 	await _click_on_the_map(main, WorldMapController.node_screen_rect(pack).get_center())
-	if not is_instance_valid(DeckViewer._open): await _click_the_button(map.possible_cards_button)
+	if not is_instance_valid(DeckViewer._open): await _click_the_control(map.possible_cards_button)
 	await _await_a_viewer()
 	var list := DeckViewer._open
 	var first := _listed_cards(list.flow_container)[0]
-	await _click_on_the_map(main, first.get_global_transform_with_canvas() * (first.size * 0.5))
-	await _click_the_button(map.selection_deck_button)
+	await _click_the_control(first)
+	await _click_the_control(map.selection_deck_button)
 	await _await_a_viewer()
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
@@ -781,7 +781,7 @@ func _shoot_the_deck_over_the_possible_cards(main: Main) -> void:
 			% [DeckViewer._open != list, is_instance_valid(list) and not list.is_queued_for_deletion(),
 					list.cards().sticky, map.selection_deck_button.text,
 					(container.get_node(^"%ExitX") as Control).visible])
-	await _click_the_button(map.selection_deck_button)
+	await _click_the_control(map.selection_deck_button)
 	await get_tree().process_frame
 	if is_instance_valid(list): list._close()
 	await get_tree().process_frame
@@ -799,9 +799,9 @@ func _click_on_the_map(main: Main, at: Vector2) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-## A real left click on a sidebar button, in the window pixels it is drawn at.
-func _click_the_button(button: Button) -> void:
-	var at := _window_px(button, button.size * 0.5)
+## A real left click on a root-viewport control, in the window pixels it is drawn at.
+func _click_the_control(control: Control) -> void:
+	var at := _window_px(control, control.size * 0.5)
 	_push_pointer(get_viewport(), at)
 	await get_tree().process_frame
 	_push_click(get_viewport(), at, true)

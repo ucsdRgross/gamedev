@@ -233,7 +233,16 @@ func test_layout_is_loaded_from_disk_not_hardcoded() -> void:
 	var missing := Wall.load_layout("user://_test_layout_absent.tres")
 	check(missing != null and missing.home_id == &"start_menu",
 			"a missing file falls back to the built-in layout so a fresh checkout still boots")
+	var shipped := _entry_of(Wall.load_layout(), &"map")
+	var built_in := _entry_of(Wall.initial_layout(), &"map")
+	check(shipped.design_size == built_in.design_size and shipped.keep_aspect == built_in.keep_aspect,
+			"the built-in layout's map picture has the shipped layout's shape, so a reseed keeps it",
+			"%s %s vs %s %s" % [shipped.design_size, shipped.keep_aspect, built_in.design_size,
+			built_in.keep_aspect])
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(temp_path))
+
+static func _entry_of(layout: WallLayout, id: StringName) -> PictureEntry:
+	return layout.pictures[layout.pictures.find_custom(func(e: PictureEntry) -> bool: return e.id == id)]
 
 # The filter swaps on zoom, not on pan: pure translation must never flip it. The full camera-driven
 # wiring is pinned by the test below; this one pins the method's own contract directly.

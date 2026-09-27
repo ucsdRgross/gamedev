@@ -14,6 +14,13 @@ const STILL_TIMEOUT_SEC := 8.0
 const STILL_MARGIN_SEC := 0.5
 
 var _out_dir : String = FALLBACK_OUT_DIR
+
+## WINDOW_W/WINDOW_H from the environment, as sidebar_snapshot reads them, else the project's base window.
+static func _window_size() -> Vector2i:
+	var w := OS.get_environment("WINDOW_W")
+	var h := OS.get_environment("WINDOW_H")
+	if w.is_empty() or h.is_empty(): return Vector2i(1152, 648)
+	return Vector2i(int(w), int(h))
 var _main : Main = null
 var _moved : bool = false
 
@@ -25,7 +32,7 @@ func _ready() -> void:
 	var env := OS.get_environment("OUT_DIR")
 	if not env.is_empty(): _out_dir = env
 	if _out_dir.begins_with("user://"): DirAccess.make_dir_recursive_absolute(_out_dir)
-	DisplayServer.window_set_size(Vector2i(1152, 648))
+	DisplayServer.window_set_size(_window_size())
 	_main = MAIN_SCENE.instantiate() as Main
 	add_child(_main)
 	await _await_still()
