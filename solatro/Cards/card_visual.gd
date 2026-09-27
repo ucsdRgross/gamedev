@@ -5,7 +5,7 @@ class_name CardVisual
 const CARD_VISUAL = preload("uid://bynh2btoahe5i")
 
 ## The card face as the sheet draws it - one frame of card_types.png, in art units (= source texels).
-const CARD_ART_SIZE := Vector2(38, 52)
+const CARD_ART_SIZE := Vector2(52, 52)
 ## The rim `Shaders/outline.gdshader` paints, in art units. Not a second opinion — `CardOutline` owns it.
 const ART_OUTLINE := CardOutline.WIDTH
 # ⚠ THE MASK AND THE DRAWN EDGE AGREE ONLY BECAUSE THE RIM EXACTLY FILLS THE POLYGON, AND NOTHING
