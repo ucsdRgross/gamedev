@@ -8,8 +8,6 @@
 [ext_resource type="Script" uid="uid://c75c216gpeonm" path="res://Cards/card_modifier_status.gd" id="5_0xvu6"]
 [ext_resource type="Script" uid="uid://d0trwxy6cxbji" path="res://Cards/Types/type_paper.gd" id="6_0xvu6"]
 [ext_resource type="Texture2D" uid="uid://dqp3efoked86f" path="res://Assets/rank_pips.png" id="8_rbggy"]
-[ext_resource type="Shader" uid="uid://dqbfkky01rgjd" path="res://Shaders/outline.gdshader" id="8_v4ikb"]
-[ext_resource type="Texture2D" uid="uid://fltq1addh8no" path="res://Assets/CircusCrayon.png" id="9_dmau8"]
 [ext_resource type="Texture2D" uid="uid://cxq3tgr6mt408" path="res://Assets/suit_pips.png" id="10_2gib3"]
 [ext_resource type="Texture2D" uid="uid://cxk6npocicoev" path="res://Assets/stamp_pips.png" id="11_0xvu6"]
 [ext_resource type="Texture2D" uid="uid://cru35ldtmue38" path="res://Assets/suit_art.png" id="12_v4ikb"]
@@ -685,96 +683,6 @@ _data = {
 &"new_animation_2": SubResource("Animation_cksyn")
 }
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_v4ikb"]
-resource_local_to_scene = true
-shader = ExtResource("8_v4ikb")
-shader_parameter/u_palette = ExtResource("9_dmau8")
-shader_parameter/u_num_colors = 32
-shader_parameter/u_frame_uv = Vector4(0.125, 0, 0.25, 0.125)
-shader_parameter/u_outline_width = 1
-shader_parameter/u_outline_index = 28
-shader_parameter/u_fill_mode = 0
-shader_parameter/u_fill_index = 0
-shader_parameter/u_card_offset = Vector2(0, 0)
-shader_parameter/u_card_extent = Vector2(54, 54)
-shader_parameter/u_alert_kind = 0
-shader_parameter/u_alert_clock = 0.0
-shader_parameter/u_alert_color = 31
-shader_parameter/u_alert_thickness = 8.0
-shader_parameter/u_alert_buffer = 0.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_dmau8"]
-resource_local_to_scene = true
-shader = ExtResource("8_v4ikb")
-shader_parameter/u_palette = ExtResource("9_dmau8")
-shader_parameter/u_num_colors = 32
-shader_parameter/u_frame_uv = Vector4(0.07692308, 0, 0.15384616, 0.2)
-shader_parameter/u_outline_width = 1
-shader_parameter/u_outline_index = 28
-shader_parameter/u_fill_mode = 0
-shader_parameter/u_fill_index = 0
-shader_parameter/u_card_offset = Vector2(-12, 18)
-shader_parameter/u_card_extent = Vector2(54, 54)
-shader_parameter/u_alert_kind = 0
-shader_parameter/u_alert_clock = 0.0
-shader_parameter/u_alert_color = 31
-shader_parameter/u_alert_thickness = 8.0
-shader_parameter/u_alert_buffer = 0.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_cksyn"]
-resource_local_to_scene = true
-shader = ExtResource("8_v4ikb")
-shader_parameter/u_palette = ExtResource("9_dmau8")
-shader_parameter/u_num_colors = 32
-shader_parameter/u_frame_uv = Vector4(0, 0, 1, 1)
-shader_parameter/u_outline_width = 1
-shader_parameter/u_outline_index = 28
-shader_parameter/u_fill_mode = 0
-shader_parameter/u_fill_index = 0
-shader_parameter/u_card_offset = Vector2(0, 0)
-shader_parameter/u_card_extent = Vector2(54, 54)
-shader_parameter/u_alert_kind = 0
-shader_parameter/u_alert_clock = 0.0
-shader_parameter/u_alert_color = 31
-shader_parameter/u_alert_thickness = 8.0
-shader_parameter/u_alert_buffer = 0.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_018h0"]
-resource_local_to_scene = true
-shader = ExtResource("8_v4ikb")
-shader_parameter/u_palette = ExtResource("9_dmau8")
-shader_parameter/u_num_colors = 32
-shader_parameter/u_frame_uv = Vector4(0.25, 0, 0.375, 0.125)
-shader_parameter/u_outline_width = 1
-shader_parameter/u_outline_index = 28
-shader_parameter/u_fill_mode = 0
-shader_parameter/u_fill_index = 0
-shader_parameter/u_card_offset = Vector2(0, 18)
-shader_parameter/u_card_extent = Vector2(54, 54)
-shader_parameter/u_alert_kind = 0
-shader_parameter/u_alert_clock = 0.0
-shader_parameter/u_alert_color = 31
-shader_parameter/u_alert_thickness = 8.0
-shader_parameter/u_alert_buffer = 0.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_wmxs8"]
-resource_local_to_scene = true
-shader = ExtResource("8_v4ikb")
-shader_parameter/u_palette = ExtResource("9_dmau8")
-shader_parameter/u_num_colors = 32
-shader_parameter/u_frame_uv = Vector4(0, 0, 1, 1)
-shader_parameter/u_outline_width = 1
-shader_parameter/u_outline_index = 28
-shader_parameter/u_fill_mode = 0
-shader_parameter/u_fill_index = 0
-shader_parameter/u_card_offset = Vector2(0, 0)
-shader_parameter/u_card_extent = Vector2(54, 54)
-shader_parameter/u_alert_kind = 0
-shader_parameter/u_alert_clock = 0.0
-shader_parameter/u_alert_color = 31
-shader_parameter/u_alert_thickness = 8.0
-shader_parameter/u_alert_buffer = 0.0
-
 [node name="CardVisual" type="Node2D" unique_id=758458623 node_paths=PackedStringArray("target_polygon_node") groups=["CardVisual"]]
 script = ExtResource("1_s3n6f")
 data = SubResource("Resource_wmxs8")
@@ -792,7 +700,6 @@ libraries/ = SubResource("AnimationLibrary_018h0")
 [node name="Visual" type="Node2D" parent="Offset" unique_id=1508650724]
 
 [node name="Type" type="Polygon2D" parent="Offset/Visual" unique_id=167754990]
-material = SubResource("ShaderMaterial_v4ikb")
 texture = ExtResource("2_y74k2")
 skeleton = NodePath("../Skeleton2D")
 polygon = PackedVector2Array(-27, -27, 27, -27, 27, 27, -27, 27, -13.5, -27, 0, -27, 13.5, -27, -27, -13.5, -13.5, -13.5, 0, -13.5, 13.5, -13.5, 27, -13.5, -27, 0, -13.5, 0, 0, 0, 13.5, 0, 27, 0, -27, 13.5, -13.5, 13.5, 0, 13.5, 13.5, 13.5, 27, 13.5, -13.5, 27, 0, 27, 13.5, 27, -20.25, -20.25, -6.75, -20.25, 6.75, -20.25, 20.25, -20.25, -20.25, -6.75, -6.75, -6.75, 6.75, -6.75, 20.25, -6.75, -20.25, 6.75, -6.75, 6.75, 6.75, 6.75, 20.25, 6.75, -20.25, 20.25, -6.75, 20.25, 6.75, 20.25, 20.25, 20.25)
@@ -802,7 +709,6 @@ bones = ["Bone_Center", PackedFloat32Array(6.857469e-06, 6.857469e-06, 6.857469e
 internal_vertex_count = 37
 
 [node name="Rank" type="Polygon2D" parent="Offset/Visual" unique_id=1514090271]
-material = SubResource("ShaderMaterial_dmau8")
 position = Vector2(-12, 18)
 texture = ExtResource("8_rbggy")
 skeleton = NodePath("../Skeleton2D")
@@ -813,7 +719,6 @@ bones = ["Bone_Center", PackedFloat32Array(0.067165226, 0.17116049, 0.036756635,
 internal_vertex_count = 1
 
 [node name="Suit" type="Polygon2D" parent="Offset/Visual" unique_id=655054366]
-material = SubResource("ShaderMaterial_cksyn")
 position = Vector2(12, 18)
 texture = ExtResource("10_2gib3")
 skeleton = NodePath("../Skeleton2D")
@@ -824,7 +729,6 @@ bones = ["Bone_Center", PackedFloat32Array(0.17116049, 0.067165226, 0.020207576,
 internal_vertex_count = 1
 
 [node name="Stamp" type="Polygon2D" parent="Offset/Visual" unique_id=1921553756]
-material = SubResource("ShaderMaterial_018h0")
 position = Vector2(0, 18)
 texture = ExtResource("11_0xvu6")
 skeleton = NodePath("../Skeleton2D")
@@ -835,7 +739,6 @@ bones = ["Bone_Center", PackedFloat32Array(0.19106832, 0.19106832, 0.035899978, 
 internal_vertex_count = 1
 
 [node name="Art" type="Polygon2D" parent="Offset/Visual" unique_id=738299753]
-material = SubResource("ShaderMaterial_wmxs8")
 position = Vector2(0, -6)
 texture = ExtResource("12_v4ikb")
 skeleton = NodePath("../Skeleton2D")
