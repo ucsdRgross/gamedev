@@ -19,7 +19,10 @@ A green suite is the weakest evidence there is. Every test below passed review w
    sample count is non-zero *before* asserting anything about its contents, and that a picked target
    has extent: `Rect2.encloses` accepts a zero-area rect, so a zero-height cell passed vacuously.
 6. **An assertion on a local the production path never touches** — it re-proves a data structure's
-   own arithmetic while being unable to fail for the wiring bug it exists to catch.
+   own arithmetic while being unable to fail for the wiring bug it exists to catch. Same shape: an
+   EXPECTED value computed by the production function under test (`viewport.size ==
+   wp.render_size(...)`) - it cannot fail for a wrong formula. Assert an engine-visible property
+   the formula is meant to produce, measured independently.
 7. **A tolerance calibrated to a bug** — it passes *because* the defect exists, and goes red when
    someone fixes it.
 8. **A new test that breaks a DIFFERENT suite** via global state left behind (a pause flag, a live

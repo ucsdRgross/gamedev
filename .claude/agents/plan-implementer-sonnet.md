@@ -85,6 +85,8 @@ skipped check as a pass.
 - **Never remove or relax an assertion to reach green.** A red your change exposes is reported
   (NOTES / OWNER QUESTIONS), with the assertion left in. A deletion you claim is proved in the
   report by a grep of the deleted name coming back empty.
+- **A brief's expected behaviour that contradicts a ruling or an existing row is a finding**, not an
+  instruction: build to the ruling, and report the contradiction with both quoted.
 - **Append evidence to a scratch file as you go** (commands, banners, red/green counts). A turn-cap
   stop fires no final reply, and that file is then the only record of the step.
 - **Every PNG you shoot goes under the session scratchpad's `shots/<step>/<W>x<H>/`**, prefixed

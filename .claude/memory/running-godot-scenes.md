@@ -113,6 +113,11 @@ failed. **Quote the denominator** — `2 failures in 16 runs`, never "about one 
   identical trees; a suite silent for 27 minutes in 1 run of 6 passed 215/215 alone in a minute. If
   the failure follows the change across several runs, it is yours. ⚠ Never re-run until it passes
   and call that a result.
+- **Before blaming the step for a failure in a suite it cannot reach**, in this order: the
+  environment (a minimized or unfocused window, another Godot, the box's load), the listed
+  intermittents, one rerun, then an A/B with the step's files parked by copy. Measured on one run:
+  a stall, a map-fit "regression" and a leak were a minimized window, a test-helper settle race and a
+  test waiting on the wrong signal - none was the step.
 - **Run the failing suite ALONE to discriminate cross-suite interference.** Measured: two checks
   failed at every commit through five different diagnoses; alone the suite passed 74/74 with a
   0.0 px delta. Deterministic interference reads exactly like a deterministic bug. The tell is a

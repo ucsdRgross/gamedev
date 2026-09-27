@@ -124,6 +124,11 @@ suspected writer with `file:line`, the done-when, the traps that apply, the veri
 
 **Never accept `STATUS: done` on a component whose consumer does not exist.**
 
+⚠ **The expected behaviour a brief states is derived from the rulings block, not recalled.** Before
+writing "on return X shows" or "one cancel does Y", find the ruling or the existing row that says so
+and quote it. Measured: two expectations written from memory contradicted a ruled row, and only the
+implementer's run caught them.
+
 ⚠ **STATE THE PROPERTY, NOT THE PROCEDURE.** When a fix is an algorithm, the implementer is the
 one who can measure it; an overseer who dictates the steps dictates them blind. Measured at a
 close: the reroll brief specified "exclude every face the batch gives up, re-ask the unchanged
@@ -227,6 +232,11 @@ restore it, watch it pass, report both observations.
 than the behaviour aborts the test function, and the banner then reads all-passed with those
 assertions silently missing — the same shape as the defect you are hunting.
 
+⚠ **When HEAD cannot run the new test** (new node paths, a restructured scene), "it could not be red
+on HEAD" is not an exemption: prove it red with a MUTANT on the new code that breaks exactly the
+property the row claims (the old formula back, the overlap restored, the container swapped), one
+mutant per claim. Measured: four mutants on one restructured menu each turned their row red.
+
 ⚠ When a fix makes an existing test fail, **investigate before adjusting it** — one run found a
 tolerance that had been calibrated to the bug, so it passed *because* the defect existed.
 
@@ -269,6 +279,13 @@ Follow the plan's own gap protocol. As overseer: **a bug is not a gap.** A gap i
 design does not cover. If exactly one choice is defensible, it is a defect — fix it and record it.
 File a gap only when two defensible options differ in observable behaviour, when reversal is
 expensive, or when it is an owner call.
+
+⚠ **SIZE A GENERAL RULING BEFORE BUILDING IT.** An owner answer phrased as a principle ("UI never
+zooms with the picture") applies to every instance of it, not the one asked about. The moment it
+arrives, list the instances it covers and the steps they make, and say so with the queue impact.
+Measured: one such answer became six steps nobody had estimated. **A step that MOVES structure** (a
+node to another layer or viewport, a scene restructured) surfaces bugs that were already there - five
+on one run; queue them at the end rather than ahead of the owner's order.
 
 **Quote a gap's own option text when asking the owner to decide.** Paraphrasing one caused an answer
 to be given against a mislabelled list.
