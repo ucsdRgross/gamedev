@@ -2,11 +2,11 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P72 and P74 done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
+**State:** P1-P72, P74, P75 and P58a (the merge, a red baseline) done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
 by eye where it draws, Fable-reviewed, one verified step per commit. Last full gates (P74): visible `ALL 51 SUITES:
 8039 CHECKS PASSED`; minimized for the whole run, 8058 passed, 2 FAILED - both listed timing rows (TP-92; the SIDEBAR
 wall-view frame-count sanity) - no stall; 19 placeholder warnings, 24 resources + 1150 ObjectDB. P73 built and parked
-on the local branch p73-wip. Pending, in order: P75, the square cards (P58a-c), P73, P64b part 3, P71, P66, the review
+on the local branch p73-wip. Pending, in order: the square cards (P58b-c), P73, P64b part 3, P71, P66, the review
 round (P58d), the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -458,7 +458,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   status: pending
 - id: P75
   description: The test window boots MINIMIZED and pops up only when the first suite starts (owner, verbatim - "when testing window boots up, it blocks screen and is unable to be interacted with until tests start running due to loading. This is extremely annoying. Instead have it be minimized during loading, and only pop up to become visible once actual tests starts since bootup has ended. this way i can choose between closing immediately when it popups vs watching it."). Test-only code (the test wrapper and Tests/all_tests.gd); project.godot sets window/size/always_on_top=true for the game - do not change the shipped setting.
-  status: pending
+  status: done
+  commits: [bd8c9f81]
 - id: P66
   description: At the 600x1000 top-band window sidebar_snapshot hung at map_after_travel - the Travel press left the token where it was (HEAD too, measured by P64b). P72's implementer saw the 600x1000 snapshot finish in under a minute with no hang - re-check before building anything; the hang may have been a minimized window (see Open bugs, the minimized-window row).
   status: pending
@@ -494,8 +495,9 @@ Finished rows carry only their commits: each commit message holds that step's me
   files_touched: [solatro/Cards/card_visual.gd, solatro/Cards/card_visual.tscn]
   verification_command: 'the full windowed gate; git log shows a merge commit'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  commits: [b4f4692c]
+  evidence: 'Red baseline, 12 failures, listed in the merge message - P58b''s input. One is MERGE-INTRODUCED, not an old-size row: main''s editor save added three saved ShaderMaterials to card_visual.tscn (OUTLINE x2 guard the frozen-uniform regression).'
   notes: 'Owner: "a: merge main in here" (a merge, never a rebase). card_visual.gd changed on both sides (this branch: P5b move tween, P49/P50 rims, comments; main: the size and its comment block) - expect a conflict there. Record every red row with its old-size assumption; they are P58b''s input.'
 - id: P58b
   description: One card size across the whole project (twenty-first round, the overseer''s recommendation) and every hardcoded card-size assumption found and removed - GDScript, shaders, tools, tests; every card holder (grid cells, the Entrance, every viewer, the chooser, the description preview, the sidebar's minimum width) sizes itself from the card size through container minimum sizes, the separations between cards included (twenty-eighth round); fonts and buttons out of scope.
@@ -569,7 +571,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - GRID VIEW TP-138 "the board at rest is already where an explicit pan puts it" (rest -445.7 vs pan -443.3, 1 px bound): 1 of 5 runs on the P43 tree.
 - FOR /docs AT THE CLOSE: the rim-ink records - design/board-plan/gaps/GAP-004.md ("match_rim = 31 ... stand") and design/sidebar/ASSUMPTIONS.md ~993 (the fourth-round ink ruling) with no pointer to the seventeenth round; ARCHITECTURE_REVIEW.md ~1599 and board-plan ASSUMPTIONS.md ~306 now give 15 but still reason "the ruling says WHITE, so" - pink was chosen because cream vanished on the Entrance paper.
 - FOR /docs AT THE CLOSE: the design records still quote the pre-P43 picture (1576x887, inset 394, 262.7, 733.808, the 27+8 band): design/sidebar/{DESIGN,PLAN,TEST_PLAN,ASSUMPTIONS}.md, gaps GAP-001/GAP-002, design/poker-patience/gaps/GAP-039.md, Tests/Visual/grid_zoom_shot.gd ~214; test_grid_layout.gd ~1709 has a tab-joined line.
-- PLAN VISUALS TP-92 failed 1 of 2 overseer gates on the P56-nit tree (worst drift 0.116 s, a test-only diff in SIDEBAR) and 1 of 2 on the P63b tree (0.082 s). TP-92 also failed 1 of 2 overseer gates on the P50 tree (worst drift 0.086 s against a 0.080 s stagger) and 3 of 4 runs on the P48 tree (all three in the implementer's filtered runs, passed the overseer gate) against ~1 of 3 gates before; a wall-clock stagger row. Measure before naming a cause.
+- PLAN VISUALS TP-92 failed 1 of 1 overseer gates on the P58a merge tree (0.118 s), 0 of 1 on P75's; 1 of 2 overseer gates on the P56-nit tree (worst drift 0.116 s, a test-only diff in SIDEBAR) and 1 of 2 on the P63b tree (0.082 s). TP-92 also failed 1 of 2 overseer gates on the P50 tree (worst drift 0.086 s against a 0.080 s stagger) and 3 of 4 runs on the P48 tree (all three in the implementer's filtered runs, passed the overseer gate) against ~1 of 3 gates before; a wall-clock stagger row. Measure before naming a cause.
 - Latent, recorded by the P48 review: a Down pressed within a pan's ease picks the Entrance stop from a mid-flight x.
 - DRAG PLACE timing rows, 1 of 2 runs on the P50 tree (a Sonnet report called them a known flake - they are NOT on any list): "...and bare motion afterwards moves the board not at all" (content x -836.74 -> -837.32), "leaving the picture stops the slide exactly where it stood" and its precondition "the slide was caught part way across" (travelled 1.000). The palette change cannot reach them; measure before naming a cause.
 - Picture-wall design DAG warning (Design Loop check): QR6's default (a) reaches nothing - Q76 is gated [QR6=b|c], Q77 [QR6=b]. A design decision for the owner: widen the gates or change the default.
@@ -622,8 +624,8 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 
 ## Next up
 (Thirty-sixth round: P74/P75, then the square cards; a NEW task goes to the END of this list.)
-1. P75 (the test window boots minimized and pops up when the first suite starts).
-2. The square-card task: P58a (merge main per /merge-branches - main's 2b49618c / ab83344a / 93a1ee4c make cards 52x52), P58b (one card size - verify the Shader Global contract first: `global uniform vec2 card_size;` under Project Settings > Shader Globals; setting it is cheap, reading it back through RenderingServer is slow, so GDScript reads the project setting; the Compatibility renderer's support and the @tool/editor behaviour are undocumented - measure; then the hardcoded-literal audit by subsystem - known sites: glow circle_radius 17 in glow.gdshader / fx_glow_style.gd / glow_circle.tres and the stale 16 in glow_beam.tres / fx_spotlight_style.gd / spotlight_director.gd's fallback; hoop.tres + formation_editor.tscn points +-20; fx_editor.gd card_body Vector2(40, 54); outline_style.gd range bounds 40/20; the shader u_body/u_card_extent defaults; card_visual.tscn geometry via the bake tool), P58c (the four tool bugs).
+1. (P75 and P58a done.)
+2. The square-card task: P58b (one card size - verify the Shader Global contract first: `global uniform vec2 card_size;` under Project Settings > Shader Globals; setting it is cheap, reading it back through RenderingServer is slow, so GDScript reads the project setting; the Compatibility renderer's support and the @tool/editor behaviour are undocumented - measure; then the hardcoded-literal audit by subsystem - known sites: glow circle_radius 17 in glow.gdshader / fx_glow_style.gd / glow_circle.tres and the stale 16 in glow_beam.tres / fx_spotlight_style.gd / spotlight_director.gd's fallback; hoop.tres + formation_editor.tscn points +-20; fx_editor.gd card_body Vector2(40, 54); outline_style.gd range bounds 40/20; the shader u_body/u_card_extent defaults; card_visual.tscn geometry via the bake tool), P58c (the four tool bugs).
 3. P76 (the intermittents past their budget - thirty-seventh round), then a visual review round for the square-card group (a round per group of related steps).
 4. P73 from the local branch `p73-wip` (8a134394 on a8bd4f31; LOCAL ONLY - on another machine it does not exist unless pushed): `git checkout p73-wip -- solatro/Levels/menu.gd solatro/Levels/menu.tscn solatro/Tests/Wall/test_sidebar.gd solatro/design/sidebar/NAMES.md` then `git reset -q -- <the same paths>`; its two red gates are unexplained (the per-slide re-fit measured innocent; the window may have been minimized - fixed by P74) - gate it and commit on green.
 5. P64b part 3 (Tab and ui_cancel reach the wall while the chooser is up; the "FOR P64b part 3" Open-bugs line), P71 (possible cards as icons), P66 (re-check the 600x1000 Travel hang first).
