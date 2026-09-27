@@ -116,10 +116,24 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
    (the `gate.py` shape: it runs the work and prints a short verdict), or a line in the brief
    template or the agent definition - proposed here and built as its own small reviewed step,
    never improvised mid-run. A one-off goes nowhere.
-3. **Prune this file** (the ~300-line rule below): a finished row shrinks to id, description,
+3. **Audit the rules themselves - adding is only half the loop.** Owner, verbatim: "add ways to
+   figure out if something in workflow has become harmful so that it can be updated, fixed, or cut.
+   we dont want workflow to become too strict and unflexible." For each rule, hook or tool that
+   FIRED this session, one line: **caught** (a real defect it stopped), **false alarm** (it blocked
+   or flagged legitimate work), **cost** (time, tokens, a workaround someone had to invent), or
+   **ceremony** (satisfied on paper while the defect it targets got through anyway). Then propose
+   to the owner, never apply silently:
+   - **fix** a guard with a false alarm - narrow its matcher; never pile on exceptions;
+   - **cut or narrow** a rule with no catch across ~five sessions and a real cost - unless it
+     guards a rare disaster (lost unsaved work, a leaked save), where low hits are the point;
+   - **re-measure** a rule whose cited number no longer holds (a timing, a rate, a count);
+   - **merge** two rules that say nearly the same thing, and fix copies that have drifted;
+   - **loosen** a rule people keep routing around - the workaround is the evidence.
+   Record the tally in the handoff's Open bugs as a TOOLING line so the next audit can add to it.
+4. **Prune this file** (the ~300-line rule below): a finished row shrinks to id, description,
    status and its commits - the commit message holds the evidence; an open item it carried moves
    to Open bugs; a resolved Open bug goes.
-4. **Say in the session's last message what was recorded and where**, one line each, and what was
+5. **Say in the session's last message what was recorded and where**, one line each, and what was
    judged a one-off.
 
 ## Rules
