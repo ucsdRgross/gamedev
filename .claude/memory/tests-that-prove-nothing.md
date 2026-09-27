@@ -115,6 +115,12 @@ A green suite is the weakest evidence there is. Every test below passed review w
     arrival builds a viewer: an intermittent RID / GL texture / PagedAllocator leak at exit (1 run
     in 5), invisible to every check. See the flow through before teardown, and read the EXIT
     PROFILE of every run, filtered ones included.
+22. **A row measured in the HARNESS's window, not the player's.** Solatro's booted-Main fixtures run
+    inside a test SubViewport whose content scale is 1, while the shipped window's scale varies
+    (0.52 at 600x1000 under canvas_items/expand). A "draws at the UI size" or layout row that passes
+    there has proven the harness's geometry; the real window differs by its content scale. For a
+    size, scale or layout claim, assert it at a real window size through the root viewport too, or
+    state in the row that it is harness-scale only - and cover the real window with a shot.
 
 **The rule that catches every one: prove every new test red-then-green** — neutralise the
 behaviour, watch the test fail, restore it, watch it pass, report both — and **compare PER-SUITE

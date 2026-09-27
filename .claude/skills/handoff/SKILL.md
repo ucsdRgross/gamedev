@@ -129,6 +129,9 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
    - **re-measure** a rule whose cited number no longer holds (a timing, a rate, a count);
    - **merge** two rules that say nearly the same thing, and fix copies that have drifted;
    - **loosen** a rule people keep routing around - the workaround is the evidence.
+   Count the REVIEWERS the same way: each latent finding later reproduced (caught) or refuted (false
+   alarm), so the value of chasing "traced, not measured" findings becomes a number; and re-measure
+   any routing figure in `implementer-routing` whose sample is still a handful of steps.
    Record the tally in the handoff's Open bugs as a TOOLING line so the next audit can add to it.
 4. **Prune this file** (the ~300-line rule below): a finished row shrinks to id, description,
    status and its commits - the commit message holds the evidence; an open item it carried moves
@@ -140,6 +143,10 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
 
 - **Repo-relative paths only** — no machine-local absolute paths, no references to memory files.
   The next agent may be on a different machine.
+- **A parked branch is local until pushed.** Work parked on a side branch (the temp-index commit
+  shape) does not exist on the owner's other machine: name it in the handoff as LOCAL ONLY and ask
+  the owner to push it (never push unasked) - or park it as an UNFINISHED commit on the work branch
+  when it does not break the gate.
 - **Commits follow CLAUDE.md hard rule 1:** never on `main` (the owner commits through GitHub
   Desktop); on any other branch, one verified task per commit, its id and evidence in the message.
 - **No dated history logs in living docs** (owner policy). When the stream lands, fold the residue

@@ -44,6 +44,12 @@ reports; may run `grep -c`/`-l`, `git status --porcelain`, `ls`, and the suite. 
 --handoff <project>/HANDOFF_<topic>.md` (what it checks: its docstring; `--parse <run dir>`
 re-reads a run). Only its GREEN clears a commit; a failure it marks NEW is never called a flake.
 
+⚠ **A listed intermittent has a budget: three failures, then it is a fix step.** Keep its count on
+its Open-bugs line (each gate that trips it adds one); at the third it becomes the NEXT step, ahead
+of the queue - it now undermines every gate's verdict, which is the one case that earns the front.
+Measured: a dozen listed rows, TP-92 alone ~1 gate in 3, all counted and none ever fixed, until
+"red, but only listed rows" read as green - and a real regression landing on a listed row would pass.
+
 **Verify the recon premise before dispatch** — the site and cause a brief names are a hypothesis
 until a bounded command confirms them ([[brief-premise-is-a-hypothesis]]).
 
@@ -252,6 +258,18 @@ reported the worktree as corrupted — it had no way to know the overseer had ro
 first, and confirm it has stopped.
 
 ## The owner's visual review
+
+⚠ **One round per GROUP of related steps, not one per stream.** When a group lands (one mechanism
+moved, one ruling built across its instances), shoot a round for it before the next group starts.
+Measured: a round that waited for ~15 steps meant the owner saw none of a four-part viewer move, a
+picture crop and a menu rebuild - all built on the overseer's reading of rulings - until the end.
+
+⚠ **A Fable reviewer reads the shots too.** In the per-diff review, hand it the step's
+`shots/<step>/<W>x<H>/` folder and the ruling, and ask it to describe each image independently and
+say whether it shows the ruling - before you read your own description of them. In a review round,
+a Fable pass drafts each shot's `seen` from the images alone; compare it with yours and resolve
+every disagreement by re-reading the pixels. Two readers of a picture disagree exactly where a
+misreading hides.
 
 At the end of a run with visual work — or at the start of the next session doing visual work — run
 `py solatro/visual-review/review.py refresh` (it reshoots both sides, so it takes the one Godot
