@@ -224,6 +224,9 @@ func _ready() -> void:
 	await test_every_pile_opener_reads_close_while_its_viewer_is_open()
 	await test_a_keyboard_reaches_every_row_button_from_the_x()
 	await test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map()
+	await test_the_games_viewers_draw_at_the_ui_size_at_both_window_shapes()
+	await test_a_game_viewer_is_hidden_in_wall_view_and_back_on_return()
+	await test_the_board_behind_an_open_viewer_answers_no_pointer()
 	await test_leaving_mid_walk_onto_a_pack_never_strands_the_chooser()
 	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
 	await test_a_click_where_the_slid_out_sidebar_rests_closes_the_menus_viewer()
@@ -2390,7 +2393,7 @@ func test_the_description_titles_a_card_and_sizes_its_effect_names() -> void:
 	var skilled := CardData.new().with_suit(PipSuitKnife.new()).with_skill(SkillExtraPoint.new())
 	skilled.rank = PipRankNumeral.new().with_value(5)
 	_container.show_description(PlayArea.card_info(skilled,
-			CardVisual.preview_window_px(_play_area.picture_to_window_scale)))
+			CardVisual.preview_window_px()))
 	await get_tree().process_frame
 	check(title.text == ControlCard.card_title(skilled),
 			"the panel's title is that name and nothing else (R10)", title.text)
@@ -2414,7 +2417,7 @@ func test_the_title_names_the_suit_in_the_plural() -> void:
 			PipSuitFirework]
 	var plural_keys : Array[StringName] = [&'SUIT_HOOP_PLURAL', &'SUIT_KNIFE_PLURAL',
 			&'SUIT_BALL_PLURAL', &'SUIT_FIRE_PLURAL', &'SUIT_FIREWORK_PLURAL']
-	var card_px := CardVisual.preview_window_px(_play_area.picture_to_window_scale)
+	var card_px := CardVisual.preview_window_px()
 	for i : int in suits.size():
 		var suit_script : GDScript = suits[i]
 		var suit : PipSuit = suit_script.new()
@@ -2627,9 +2630,9 @@ const PREVIEW_WIDTH_TOLERANCE_PX := 2.0
 func _card_drawn_width(card: CardVisual) -> float:
 	return CardVisual.CARD_SIZE.x * card.get_global_transform_with_canvas().get_scale().x
 
-# A card's width as the player SEES it, whether the board or a viewer over it drew the card: its
-# drawn width inside the game picture's viewport, times the scale the wall draws that viewport at.
-# Read off the picture's own screen sprite, so the live camera zoom is in it, not modelled twice.
+# A board card's width as the player SEES it: its drawn width inside the game picture's viewport,
+# times the scale the wall draws that viewport at, read off the picture's own screen sprite, so the
+# live camera zoom is in it, not modelled twice.
 func _card_window_width(card: CardVisual) -> float:
 	var picture : WallPicture = _main._pictures[&"game"]
 	var sprite : Sprite2D = picture.get_node(^"%Screen")
@@ -2662,7 +2665,7 @@ func test_the_preview_is_drawn_at_the_one_preview_size() -> void:
 		if preview != null and preview.child != null:
 			var preview_px := _card_drawn_width(preview.child)
 			var preview_rect := _sidebar_screen_rect(preview)
-			var one_size := CardVisual.preview_window_px(_play_area.picture_to_window_scale).x
+			var one_size := CardVisual.preview_window_px().x
 			check(absf(one_size - board_px) > PREVIEW_WIDTH_TOLERANCE_PX,
 					"sanity: the one preview size and the board's own card width differ enough to tell apart",
 					"one size %.1f px vs board %.1f px" % [one_size, board_px])
@@ -2700,7 +2703,7 @@ func test_the_preview_follows_a_resize_to_the_new_preview_size() -> void:
 				"the description still holds its preview after the resize")
 		if preview != null and preview.child != null:
 			var preview_px := _card_drawn_width(preview.child)
-			var one_size := CardVisual.preview_window_px(_play_area.picture_to_window_scale).x
+			var one_size := CardVisual.preview_window_px().x
 			check(absf(one_size - board_px) > PREVIEW_WIDTH_TOLERANCE_PX,
 					"sanity: the one preview size and the board's own card width still differ",
 					"one size %.1f px vs board %.1f px" % [one_size, board_px])
@@ -4238,13 +4241,7 @@ func test_a_new_run_does_not_inherit_the_maps_last_description() -> void:
 	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
 	await _close_the_open_viewer()
 	check(_container.showing_description(), "sanity: the map is left describing a pack node")
-	await _main._on_new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
-	await _main._focus_picture(&"map")
-	if not _map.controller._accepting_input:
-		await _map.controller.map_ready
-# The new run populates a fresh graph, which may auto-pick its own single onward node -- the NEW
-# run's description, never the old one's, and a no-op clear on every other boot.
-	await _clear_any_auto_pick()
+	await _start_a_new_run_from_the_wall()
 	check(_hud_is_up(),
 			"Close fix 2: a new run's map opens on the HUD, not the last run's pack description")
 	await _end_main_fixture()
@@ -4289,6 +4286,15 @@ func test_a_new_run_throws_away_the_last_runs_chooser() -> void:
 				_map.controller._moving])
 	await _end_main_fixture()
 
+# THE GATE SCANS godot.log FOR ERRORS ONLY, so the engine's warning that a control off screen was
+# asked to take the focus would pass it; a logger hears the warning as the engine raises it.
+class _FocusWarnings extends Logger:
+	var count : int = 0
+
+	func _log_error(_function: String, _file: String, _line: int, code: String, _rationale: String,
+			_editor_notify: bool, _error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if "can't grab focus" in code: count += 1
+
 ## From the map through the wall and the start menu into a new run, waited until that run's own map is ready and at rest.
 func _start_a_new_run_from_the_wall() -> void:
 	await _click_overlay(&"WallButton")
@@ -4298,11 +4304,19 @@ func _start_a_new_run_from_the_wall() -> void:
 			str(_main._current_focus))
 	var landed : Array[bool] = [false]
 	_map.controller.map_ready.connect(func() -> void: landed[0] = true, CONNECT_ONE_SHOT)
+	var warnings := _FocusWarnings.new()
+	OS.add_logger(warnings)
 	await _main._on_new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	var waited := 0.0
 	while not landed[0] and waited < CARD_CONTROL_TIMEOUT_SEC:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
+	OS.remove_logger(warnings)
+	check(warnings.count == 0,
+			"a new run started from the menu hands no focus to a control off the screen shown",
+			"%d \"can't grab focus\" warnings" % warnings.count)
+# The new run populates a fresh graph, which may auto-pick its own single onward node -- the NEW
+# run's description, never the old one's, and a no-op clear on every other boot.
 	await _clear_any_auto_pick()
 	check(landed[0] and _main._current_focus == &"map", "sanity: the new run lands on its own ready map",
 			"ready=%s focus=%s" % [landed[0], _main._current_focus])
@@ -4725,7 +4739,7 @@ func test_the_first_arrow_enters_a_viewer_and_shows_its_first_card() -> void:
 		await _push_arrow(_booted_viewport, KEY_RIGHT)
 		check(first != null and first.has_focus(),
 				"the first arrow lands on the viewer's first card (S12.8, B1)",
-				str(_game_viewport.gui_get_focus_owner()))
+				str(_booted_viewport.gui_get_focus_owner()))
 		check(_container.showing_description(),
 				"...and THAT highlight is what opens the description (S12.8, B1)")
 		if first != null:
@@ -4740,7 +4754,7 @@ func test_closing_a_viewer_leaves_the_focus_somewhere_visible() -> void:
 	_container.show_hud()
 	await _open_viewer_by_accept(button)
 	check(is_instance_valid(DeckViewer._open), "accept on the Deck button opened the viewer")
-	await _close_open_viewer(_game_viewport)
+	await _close_open_viewer(_booted_viewport)
 	check(not is_instance_valid(DeckViewer._open), "cancel closed the viewer")
 	check(_hud_is_up(), "closing with nothing stuck takes the sidebar back to the HUD (S12.9)")
 	var landed := _booted_viewport.gui_get_focus_owner()
@@ -4875,11 +4889,10 @@ func _check_every_card_inside(cards: Array[ControlCard], bounds: Rect2, label: S
 func test_the_deck_viewers_cards_start_beside_the_container() -> void:
 	await _start_game_fixture()
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
-	var wp : WallPicture = _main._pictures[&"game"]
 	var window : Vector2 = _container.get_viewport().get_visible_rect().size
 	var top := HudContainer.container_is_top(window, SettingsManager.settings)
 	check(not top, "sanity: 1280x720 is the side case this inset is measured in")
-	var remaining := _space_beside_the_container(wp, _container)
+	var remaining := _container.resting_rect_beside(null)
 	var grid : Control = DeckViewer._open.flow_container
 	check(grid.get_global_rect().position.x >= remaining.position.x,
 			"the viewer's card grid starts at or beyond the container's inner edge (S12.4, Q141=b)",
@@ -4902,11 +4915,11 @@ func test_a_resize_re_fits_the_open_viewer() -> void:
 	check(cards.size() >= 2, "the deck viewer lists cards to point at", str(cards.size()))
 	await _resize_viewport(_booted_viewport, Vector2i(600, 1000))
 	_check_every_card_inside(cards,
-			_unbounded_below(_space_beside_the_container(_main._pictures[&"game"], _container)),
+			_unbounded_below(_container.resting_rect_beside(null)),
 			"a resize re-fits the open viewer into the space left below the new band (S12.13)")
 	await _resize_viewport(_booted_viewport, Vector2i(1280, 720))
 	_check_every_card_inside(cards,
-			_unbounded_below(_space_beside_the_container(_main._pictures[&"game"], _container)),
+			_unbounded_below(_container.resting_rect_beside(null)),
 			"...and resizing back fits it from its authored margins, never inset twice (S12.13)")
 	await _end_main_fixture()
 
@@ -4920,7 +4933,7 @@ func test_a_resize_does_not_re_open_a_dismissed_description() -> void:
 		await get_tree().process_frame
 		check(_container.showing_description(),
 				"sanity: the viewer's own highlight opened the description")
-		await _click(listed[1].get_global_rect().get_center(), _game_viewport)
+		await _click(listed[1].get_global_rect().get_center(), _booted_viewport)
 		check(_container.is_locked() and _exit_button().visible,
 				"sanity: a click sticks the card, which is what puts the exit X there")
 		await _click(_exit_button().get_global_rect().get_center(), _booted_viewport)
@@ -4944,7 +4957,7 @@ func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> voi
 		check(preview != null and preview.child != null,
 				"the description still holds its preview after the resize")
 		if preview != null and preview.child != null:
-			var viewer_px := _card_window_width(cards[1].child)
+			var viewer_px := _card_drawn_width(cards[1].child)
 			var board_px := _play_area.board_card_window_px().x
 			check(absf(viewer_px - board_px) > PREVIEW_WIDTH_TOLERANCE_PX,
 					"sanity: the viewer's card width and the board's are far enough apart to tell apart",
@@ -4963,7 +4976,7 @@ func test_the_deck_viewers_cards_lie_below_the_band_at_a_top_window() -> void:
 			"sanity: 600x1000 puts the container on the top band")
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
 	_check_every_card_inside(cards,
-			_unbounded_below(_space_beside_the_container(_main._pictures[&"game"], _container)),
+			_unbounded_below(_container.resting_rect_beside(null)),
 			"every deck viewer card is drawn below the band and inside the visible picture (S12.12)")
 	await _end_main_fixture()
 
@@ -5008,7 +5021,7 @@ func test_a_board_lock_survives_opening_and_closing_a_viewer() -> void:
 			check(title.text == _expected_text(other.child.data)[0]
 					and title.text != locked_title,
 					"the description follows the hover inside the viewer (B7)", title.text)
-			await _close_open_viewer(_game_viewport)
+			await _close_open_viewer(_booted_viewport)
 			check(not is_instance_valid(DeckViewer._open), "escape closed the viewer")
 			check(_container.is_locked() and title.text == locked_title,
 					"...and the sidebar comes back to the card the board locked (B7)", title.text)
@@ -5056,7 +5069,8 @@ func test_a_click_beneath_an_open_viewer_never_reaches_the_board() -> void:
 		await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
 		check(is_instance_valid(DeckViewer._open), "sanity: the deck viewer is open over the board")
 		var clicked := _watch_clicks()
-		await _click_card(entrance[0])
+		await _click(_point_in_window(&"game", entrance[0].get_global_rect().get_center()),
+				_booted_viewport)
 		check(clicked.is_empty(),
 				"a click aimed at a board card under the viewer never reaches the board",
 				"%d board selections" % clicked.size())
@@ -5094,7 +5108,7 @@ func test_closing_a_viewer_takes_its_card_out_of_the_sidebar() -> void:
 		await get_tree().process_frame
 		check(_container.showing_description(),
 				"sanity: a highlight in the viewer describes its card")
-		await _close_open_viewer(_game_viewport)
+		await _close_open_viewer(_booted_viewport)
 		check(_hud_is_up(),
 				"closing the viewer leaves the HUD, not the description of a card that is gone")
 		check(not _container.is_locked(), "...and nothing is left locked to it")
@@ -5112,7 +5126,7 @@ func test_the_exit_x_shows_only_once_a_viewer_card_is_clicked() -> void:
 		check(_container.showing_description() and not _exit_button().visible,
 				"a viewer highlight describes its card with no exit X",
 				str(_exit_button().visible))
-		await _click(cards[1].get_global_rect().get_center(), _game_viewport)
+		await _click(cards[1].get_global_rect().get_center(), _booted_viewport)
 		check(_container.is_locked(), "a click on that card sticks the sidebar to it")
 		check(_exit_button().visible and _exit_button().focus_mode == Control.FOCUS_ALL,
 				"...and only then is the exit X there to be clicked",
@@ -5140,10 +5154,10 @@ func test_a_board_lock_waits_under_a_stuck_viewer_card_and_comes_back() -> void:
 				"the open viewer takes the lock over, so the board's own waits under it")
 		var other := _viewer_card_named_other_than(cards, locked_title)
 		if other != null:
-			await _click(other.get_global_rect().get_center(), _game_viewport)
+			await _click(other.get_global_rect().get_center(), _booted_viewport)
 			check(_container.is_locked() and title.text == _expected_text(other.child.data)[0],
 					"a click in the viewer sticks the sidebar to ITS card", title.text)
-			await _close_open_viewer(_game_viewport)
+			await _close_open_viewer(_booted_viewport)
 			check(_container.is_locked() and title.text == locked_title,
 					"closing hands the board's own lock straight back", title.text)
 	await _end_main_fixture()
@@ -5161,7 +5175,7 @@ func test_every_arrow_walks_the_viewers_grid_and_the_rim_follows() -> void:
 			cards[_MID_CARD].grab_focus()
 			await get_tree().process_frame
 			if stuck:
-				await _click(cards[_MID_CARD].get_global_rect().get_center(), _game_viewport)
+				await _click(cards[_MID_CARD].get_global_rect().get_center(), _booted_viewport)
 				check(_container.is_locked(), "sanity: the click stuck that card to the sidebar")
 			for keycode : Key in [KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UP]:
 				cards[_MID_CARD].grab_focus()
@@ -5172,7 +5186,7 @@ func test_every_arrow_walks_the_viewers_grid_and_the_rim_follows() -> void:
 ## A card with a neighbour in every direction: past the first row, and not at either end of its own.
 const _MID_CARD : int = 12
 
-# One arrow from `_MID_CARD`, read back the way a player sees it: which control the PICTURE's own
+# One arrow from `_MID_CARD`, read back the way a player sees it: which control the window's own
 # viewport now focuses, and the rim each card is actually drawn with.
 func _walks_one_neighbour(cards: Array[ControlCard], keycode: Key, stuck: bool) -> void:
 	var from := cards[_MID_CARD]
@@ -5181,13 +5195,13 @@ func _walks_one_neighbour(cards: Array[ControlCard], keycode: Key, stuck: bool) 
 			"sanity: the card the walk starts from wears the focus rim (%s)" % tag,
 			str(_rim_of(from)))
 	await _push_arrow(_booted_viewport, keycode)
-	var landed := _game_viewport.gui_get_focus_owner() as ControlCard
+	var landed := _booted_viewport.gui_get_focus_owner() as ControlCard
 	check(landed != null and landed != from and cards.has(landed),
 			"%s moves the focus to a neighbouring card in the viewer's own grid" % tag,
-			str(_game_viewport.gui_get_focus_owner()))
-	check(_booted_viewport.gui_get_focus_owner() == null,
-			"...with the focus still in the picture's viewport, never the sidebar's (%s)" % tag,
 			str(_booted_viewport.gui_get_focus_owner()))
+	check(_game_viewport.gui_get_focus_owner() == null,
+			"...with the focus in the window's own viewport, none left on the board behind (%s)" % tag,
+			str(_game_viewport.gui_get_focus_owner()))
 	check(not from.child.focused and _rim_of(from) != PaletteDB.ROLES.match_rim,
 			"...the card it left goes dark (%s)" % tag, str(_rim_of(from)))
 	if landed != null:
@@ -5210,10 +5224,10 @@ func test_an_edge_arrow_leaves_the_stuck_viewer_for_the_exit_x() -> void:
 		cards[0].grab_focus()
 		await get_tree().process_frame
 		await _push_arrow(_booted_viewport, KEY_UP)
-		check(_game_viewport.gui_get_focus_owner() == cards[0],
+		check(_booted_viewport.gui_get_focus_owner() == cards[0],
 				"up off the top row with nothing stuck stays on the card: an unstuck viewer asks for the sidebar at no edge (P40)",
-				str(_game_viewport.gui_get_focus_owner()))
-		await _click(cards[0].get_global_rect().get_center(), _game_viewport)
+				str(_booted_viewport.gui_get_focus_owner()))
+		await _click(cards[0].get_global_rect().get_center(), _booted_viewport)
 		check(_container.is_locked(), "sanity: the click stuck the first card to the sidebar")
 		await _push_arrow(_booted_viewport, KEY_UP)
 		check(_booted_viewport.gui_get_focus_owner() == _exit_button(),
@@ -5230,9 +5244,9 @@ func test_an_edge_key_in_a_viewer_lands_the_focus_on_the_exit_x() -> void:
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
 	check(not cards.is_empty(), "the deck viewer lists cards", str(cards.size()))
 	if not cards.is_empty():
-		await _click(cards[0].get_global_rect().get_center(), _game_viewport)
+		await _click(cards[0].get_global_rect().get_center(), _booted_viewport)
 		check(_container.is_locked(), "sanity: the first card is stuck to the sidebar")
-		await _push_arrow(_game_viewport, KEY_UP)
+		await _push_arrow(_booted_viewport, KEY_UP)
 		check(_booted_viewport.gui_get_focus_owner() == _exit_button(),
 				"up off the top of the list lands on the exit X, in the OVERLAY's viewport",
 				str(_booted_viewport.gui_get_focus_owner()))
@@ -5374,7 +5388,7 @@ func test_the_sidebars_x_over_a_viewer_unsticks_and_closes_together() -> void:
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
 	check(not cards.is_empty(), "the deck viewer lists cards", str(cards.size()))
 	if not cards.is_empty():
-		await _click(cards[0].get_global_rect().get_center(), _game_viewport)
+		await _click(cards[0].get_global_rect().get_center(), _booted_viewport)
 		check(_container.is_locked() and _exit_button().visible,
 				"sanity: the click stuck the card and put the X there")
 		check(await _click_button(_exit_button(), _booted_viewport),
@@ -5393,12 +5407,12 @@ func test_an_unstuck_viewer_description_goes_when_the_pointer_leaves_the_card() 
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
 	check(not cards.is_empty(), "the deck viewer lists cards", str(cards.size()))
 	if not cards.is_empty():
-		_hover_in(_game_viewport, cards[0].get_global_rect().get_center())
+		_hover_in(_booted_viewport, cards[0].get_global_rect().get_center())
 		await get_tree().process_frame
 		await get_tree().process_frame
 		check(_container.showing_description(),
 				"sanity: hovering a listed card describes it")
-		_hover_in(_game_viewport, Vector2(_game_viewport.size) - Vector2.ONE)
+		_hover_in(_booted_viewport, Vector2(_booted_viewport.size) - Vector2.ONE)
 		await get_tree().process_frame
 		await get_tree().process_frame
 		check(_hud_is_up(),
@@ -5454,9 +5468,9 @@ func test_a_cancel_from_a_sticky_description_leaves_the_focus_in_the_sidebar() -
 	var cards := await _open_viewer_cards(deck)
 	check(not cards.is_empty(), "the deck viewer lists cards", str(cards.size()))
 	if not cards.is_empty():
-		await _click(cards[0].get_global_rect().get_center(), _game_viewport)
+		await _click(cards[0].get_global_rect().get_center(), _booted_viewport)
 		check(_container.is_locked(), "sanity: the click stuck the card")
-		await _close_open_viewer(_game_viewport)
+		await _close_open_viewer(_booted_viewport)
 		check(not _container.showing_description(),
 				"the cancel leaves no card description standing")
 		var landed := _booted_viewport.gui_get_focus_owner()
@@ -5488,12 +5502,12 @@ func test_an_undo_under_an_open_viewer_rests_no_board_card_by_mouse() -> void:
 	check(not cards.is_empty(), "sanity: the deck viewer lists cards", str(cards.size()))
 	if not cards.is_empty():
 		var title : Label = _panel.get_node(^"%Title")
-		_hover(cards[0].get_global_rect().get_center())
+		_hover_in(_booted_viewport, cards[0].get_global_rect().get_center())
 		await get_tree().process_frame
 		check(_container.showing_description()
 				and title.text == _expected_text(cards[0].child.data)[0],
 				"...and a hover in the viewer describes the viewer's card", title.text)
-	await _click(Vector2(_game_viewport.size) - Vector2(2, 2), _game_viewport)
+	await _click(Vector2(_booted_viewport.size) - Vector2(2, 2), _booted_viewport)
 	check(not is_instance_valid(DeckViewer._open), "a click outside closed the viewer")
 	check(_hud_is_up() and deck.has_focus(),
 			"...leaving the HUD, with the focus on the button that opened it",
@@ -5525,7 +5539,7 @@ func test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys() -> void:
 		var title : Label = _panel.get_node(^"%Title")
 		await _tap_key(KEY_RIGHT)
 		check(cards[0].has_focus(), "the first arrow enters the viewer's first card",
-				str(_game_viewport.gui_get_focus_owner()))
+				str(_booted_viewport.gui_get_focus_owner()))
 		check(_container.showing_description()
 				and title.text == _expected_text(cards[0].child.data)[0],
 				"...and the sidebar describes THAT card, not the HUD a board focus leaving put back",
@@ -5621,7 +5635,7 @@ func test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel() -> voi
 		check(target != null, "sanity: a reachable node lies on the map outside the window")
 		if target != null:
 			var controller := _map.controller
-			var at := _map_point_in_window(WorldMapController.node_screen_rect(target).get_center())
+			var at := _point_in_window(&"map", WorldMapController.node_screen_rect(target).get_center())
 			var camera_before := controller.camera.global_transform
 			var zoom_before := controller.camera.zoom
 			_hover_in(_booted_viewport, at)
@@ -5656,8 +5670,8 @@ func _a_reachable_node_beside(window: Rect2) -> WorldGraphNode:
 	for from : WorldGraphNode in controller.map.overlay().nodes():
 		for node : WorldGraphNode in controller.next_nodes_of(from):
 			var rect := WorldMapController.node_screen_rect(node)
-			var at := Rect2(_map_point_in_window(rect.position), Vector2.ZERO) \
-					.expand(_map_point_in_window(rect.end))
+			var at := Rect2(_point_in_window(&"map", rect.position), Vector2.ZERO) \
+					.expand(_point_in_window(&"map", rect.end))
 			if space.encloses(at) and not window.grow(8.0).intersects(at):
 				controller._current = from
 				return node
@@ -5880,9 +5894,9 @@ func _beside_the_chooser(chooser: ChoiceViewer) -> Vector2:
 	var window := _chooser_window(chooser)
 	return Vector2((_ui_space(_main).position.x + window.position.x) / 2.0, window.get_center().y)
 
-## A map-viewport point in the booted window's pixels: the wall's own routing, run backwards.
-func _map_point_in_window(at: Vector2) -> Vector2:
-	var picture : WallPicture = _main._pictures[&"map"]
+## A point in picture `id`'s own viewport in the booted window's pixels: the wall's own routing, run backwards.
+func _point_in_window(id: StringName, at: Vector2) -> Vector2:
+	var picture : WallPicture = _main._pictures[id]
 	var sprite : Sprite2D = picture.get_node(^"%Screen")
 	return sprite.get_global_transform_with_canvas() * (at - Vector2(picture.viewport.size) * 0.5)
 
@@ -6288,11 +6302,17 @@ func test_the_maps_viewer_stack_is_hidden_in_wall_view_and_back_on_return() -> v
 				"a cancel closes only the deck: the list's stuck card is back, described, with its X",
 				"open=%s sticky=%s locked=%s shown=%s x=%s" % [DeckViewer._open, list.cards().sticky,
 				_container.is_locked(), _described_title(), _exit_button().visible])
+		var warnings := _FocusWarnings.new()
+		OS.add_logger(warnings)
 		await _tap_key(KEY_ESCAPE)
+		OS.remove_logger(warnings)
 		check(not is_instance_valid(list) or list.is_queued_for_deletion(),
 				"the next cancel unsticks and closes the list together")
 		check(_hud_is_up(), "...leaving the sidebar on the HUD, no pick having survived the leave",
 				_described_title())
+		check(warnings.count == 0,
+				"...its opener gone with the pick and no X up, it hands the focus to no control off screen",
+				"%d \"can't grab focus\" warnings" % warnings.count)
 	await _end_main_fixture()
 
 # A CARD STUCK IN A PACK'S POSSIBLE CARDS OFFERS THE RUN DECK; one merely hovered offers nothing,
@@ -6503,7 +6523,7 @@ func test_a_click_on_the_viewers_close_tab_closes_it() -> void:
 	await _open_viewer_by_accept(deck)
 	var viewer := DeckViewer._open
 	check(is_instance_valid(viewer), "sanity: accept on Deck opened the deck viewer")
-	await _click_the_open_viewers_tab(_game_viewport)
+	await _click_the_open_viewers_tab(_booted_viewport)
 	await get_tree().process_frame
 	check(not is_instance_valid(viewer) or viewer.is_queued_for_deletion(),
 			"a click on the close tab closes the viewer")
@@ -6537,20 +6557,20 @@ func test_the_viewers_close_tab_by_keys_or_pad_alone() -> void:
 		var cards := viewer.cards().controls
 		await right.call()
 		check(cards[0].has_focus(), "sanity: the first Right enters the list (%s)" % by,
-				str(_game_viewport.gui_get_focus_owner()))
+				str(_booted_viewport.gui_get_focus_owner()))
 		for step : int in cards.size():
 			if tab.has_focus(): break
 			await right.call()
 		check(tab.has_focus(), "Right off the list's right edge lands on the close tab (%s)" % by,
-				str(_game_viewport.gui_get_focus_owner()))
+				str(_booted_viewport.gui_get_focus_owner()))
 		await (device[2] as Callable).call()
-		var back := _game_viewport.gui_get_focus_owner() as ControlCard
+		var back := _booted_viewport.gui_get_focus_owner() as ControlCard
 		check(back != null and cards.has(back),
 				"...Left from the tab goes back into the list (%s)" % by,
-				str(_game_viewport.gui_get_focus_owner()))
+				str(_booted_viewport.gui_get_focus_owner()))
 		await right.call()
 		check(tab.has_focus(), "...and Right comes back to the tab (%s)" % by,
-				str(_game_viewport.gui_get_focus_owner()))
+				str(_booted_viewport.gui_get_focus_owner()))
 		await (device[3] as Callable).call()
 		check(not is_instance_valid(viewer) or viewer.is_queued_for_deletion(),
 				"accept on the tab closes the viewer (%s)" % by)
@@ -6575,10 +6595,9 @@ func test_the_viewers_close_tab_sticks_out_clear_of_the_sidebar_and_its_cards() 
 					and at.position.y < frame.end.y,
 					"...sticking out of the window's right side, attached to it (%s)" % size,
 					"tab %s window %s" % [at, frame])
-			var wp : WallPicture = _main._pictures[&"game"]
-			var beside := _space_beside_the_container(wp, _container)
+			var beside := _container.resting_rect_beside(null)
 			check(beside.encloses(at),
-					"...inside the visible picture and clear of the sidebar (%s)" % size,
+					"...inside the window and clear of the sidebar (%s)" % size,
 					"tab %s beside %s" % [at, beside])
 			var scroll := DeckViewer._open.flow_container.get_parent() as Control
 			var covered : Array[Rect2] = []
@@ -6589,7 +6608,7 @@ func test_the_viewers_close_tab_sticks_out_clear_of_the_sidebar_and_its_cards() 
 					"tab %s list %s covered %s" % [at, scroll.get_global_rect(), covered])
 			var window : Vector2 = _container.get_viewport().get_visible_rect().size
 			var target := WallInput.touch_target_px(window, SettingsManager.settings)
-			var across := minf(at.size.x, at.size.y) * _container.window_scale(wp)
+			var across := minf(at.size.x, at.size.y)
 			check(across >= target - 0.5,
 					"...at least one touch target across, in window pixels (%s)" % size,
 					"%.1f vs %.1f" % [across, target])
@@ -6668,12 +6687,19 @@ func test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map() -> vo
 		if listed.is_empty():
 			await _end_main_fixture()
 			continue
-		await _click(listed[0].get_global_rect().get_center(), _game_viewport)
+		await _click(listed[0].get_global_rect().get_center(), _booted_viewport)
 		check(_container.is_locked(), "sanity: a click stuck a game deck card (%s)" % route)
 		await _back_to_the_map_with_the_show_frozen()
 		check(is_instance_valid(game_viewer) and not game_viewer.is_queued_for_deletion(),
 				"sanity: Back left the game's viewer open behind the map (%s)" % route)
 		await _check_the_map_ignores_the_game_viewer(route)
+		if route == "an arrow":
+			var pack_picked : bool = _map.controller.selected() != null \
+					and _map.controller.selected().meta.get(MapNodeRoles.ROLE_KEY, "") == MapNodeRoles.ROLE_BOOSTER
+			var still_open := is_instance_valid(game_viewer) and not game_viewer.is_queued_for_deletion()
+			check(still_open != pack_picked,
+					"the arrow's pick closes the game's viewer exactly when it is a pack, whose possible cards open in its place",
+					"pack picked=%s viewer open=%s" % [pack_picked, still_open])
 		await _click_overlay(&"ForwardButton")
 		await _wait_out_the_move()
 		await get_tree().process_frame
@@ -6703,6 +6729,113 @@ func test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map() -> vo
 					"...but moves the board focus, in the game's own viewport (%s)" % route,
 					"%s -> %s" % [rested, moved])
 		await _end_main_fixture()
+
+## Deck, Discard and Rules are UI: each opens in the window's own viewport and draws its cards at the deck viewer's own size at the window's UI scale, at both window shapes.
+func test_the_games_viewers_draw_at_the_ui_size_at_both_window_shapes() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		await _start_game_fixture(size)
+		var state := _fixture_game().state
+		state.discard_deck.append_array(state.all_stock_cards().slice(0, 2))
+		for pile : Control in [_container.deck_ui, _container.discard_ui, _container.rules_ui] as Array[Control]:
+			var cards := await _open_viewer_cards(pile.get_node(^"Button") as Button)
+			var viewer := DeckViewer._open
+			check(is_instance_valid(viewer) and viewer.get_viewport() == _booted_viewport
+					and not cards.is_empty(),
+					"the %s viewer opens in the window's own viewport at %s" % [pile.name, size],
+					str(viewer.get_viewport() if is_instance_valid(viewer) else null))
+			_check_cards_at_the_ui_size(cards.slice(0, 8), "the %s viewer, %s" % [pile.name, size])
+			await _close_the_open_viewer()
+		await _end_main_fixture()
+
+## A game viewer with a card stuck is UI on the sidebar's layer: in wall view it is neither drawn nor hears input, and coming back fades it in with the sidebar as it was left -- its card stuck, described, with its X -- and a cancel closes it back to its opener.
+func test_a_game_viewer_is_hidden_in_wall_view_and_back_on_return() -> void:
+	await _start_game_fixture()
+	var deck := _container.deck_ui.get_node(^"Button") as Button
+	_container.show_hud()
+	var cards := await _open_viewer_cards(deck)
+	var viewer := DeckViewer._open
+	check(cards.size() >= 2, "sanity: the game's deck viewer lists cards", str(cards.size()))
+	if cards.size() >= 2:
+		await _click(cards[1].get_global_rect().get_center(), _booted_viewport)
+		var stuck := viewer.cards().sticky
+		check(stuck == cards[1].child.data and _container.is_locked(),
+				"sanity: a real click stuck a card in the game's deck viewer")
+		await _click_overlay(&"WallButton")
+		await _wait_out_the_move()
+		check(_main._current_focus == &"", "sanity: the Wall button reached wall view",
+				str(_main._current_focus))
+		check(not viewer.margin_container.is_visible_in_tree() and not viewer.can_process(),
+				"in wall view the game's viewer is neither drawn nor hears input")
+		await _click_overlay(&"BackButton")
+		await _wait_out_the_move()
+		var landing := Vector2(_container.slid_fraction(), viewer.margin_container.modulate.a)
+		if _container.slid_fraction() < 1.0: await _container.slide_settled
+		check(_main._current_focus == &"game" and viewer.margin_container.is_visible_in_tree()
+				and viewer.can_process() and is_equal_approx(viewer.margin_container.modulate.a, 1.0),
+				"coming back, the viewer is drawn and answering again", str(_main._current_focus))
+		check(is_equal_approx(landing.y, landing.x),
+				"...having faded in with the sidebar's slide", "slide %.2f, alpha %.2f at the landing"
+				% [landing.x, landing.y])
+		check(viewer.cards().sticky == stuck and _container.is_locked() and _previewed_card() == stuck
+				and _exit_button().visible,
+				"...its card still stuck, described, with its X",
+				"shown=%s x=%s" % [_described_title(), _exit_button().visible])
+		await _tap_key(KEY_ESCAPE)
+		check(not is_instance_valid(viewer) or viewer.is_queued_for_deletion(),
+				"a cancel there closes the viewer")
+		check(_hud_is_up() and deck.has_focus(),
+				"...back to the HUD with the focus on the button that opened it",
+				str(_booted_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+## Behind an open game viewer the board answers no pointer: moving over a board card describes nothing of the board's, and a drag begun over it closes the viewer and pans nothing.
+func test_the_board_behind_an_open_viewer_answers_no_pointer() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "sanity: the dealt board offers a card to point at",
+			str(controls.size()))
+	if not controls.is_empty():
+		_container.show_hud()
+		await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+		var published : Array[String] = []
+		_play_area.info_requested.connect(func(entry: InfoEntry) -> void: published.append(entry.title))
+		var catcher := DeckViewer._open.margin_container.get_global_rect()
+		var behind : Array[Vector2] = []
+		for control : Control in controls:
+			var point := _point_in_window(&"game", control.get_global_rect().get_center())
+			if catcher.has_point(point): behind.append(point)
+		check(not behind.is_empty(), "sanity: a board card lies behind the open viewer",
+				"catcher %s" % catcher)
+		var at : Vector2 = behind[0] if not behind.is_empty() else catcher.get_center()
+# ⚠ A PUSHED MOTION IS HIT-TESTED ONLY ONCE THE VIEWPORT KNOWS THE POINTER IS IN IT: a window is
+# told by the OS, a booted SubViewport never, and every motion then falls through its controls.
+		_booted_viewport.notification(Node.NOTIFICATION_VP_MOUSE_ENTER)
+		_hover_in(_booted_viewport, at)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(published.is_empty(), "a pointer over a board card behind the viewer describes no board card",
+				"at %s in catcher %s: %s" % [at, catcher, published])
+		var scroll := _play_area.scroll_container as SmoothScrollContainer
+		var before := Vector2(scroll.scroll_horizontal, scroll.scroll_vertical)
+		_push_mouse_button(at, _booted_viewport, true)
+		var motion := InputEventMouseMotion.new()
+		motion.position = at + MAP_PAN_DRAG
+		motion.global_position = motion.position
+		motion.relative = MAP_PAN_DRAG
+		motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+		_booted_viewport.push_input(motion)
+		await get_tree().process_frame
+		check(not scroll.input_handler.content_dragging,
+				"a drag begun over the board behind the viewer starts no pan")
+		_push_mouse_button(at + MAP_PAN_DRAG, _booted_viewport, false)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(Vector2(scroll.scroll_horizontal, scroll.scroll_vertical) == before,
+				"...and moves the board nowhere", "%s -> %s"
+				% [before, Vector2(scroll.scroll_horizontal, scroll.scroll_vertical)])
+		check(not is_instance_valid(DeckViewer._open) or DeckViewer._open.is_queued_for_deletion(),
+				"...its press closing the viewer, as a click outside it does")
+	await _end_main_fixture()
 
 # Each route is checked against what the same press does on a map with no viewer anywhere.
 func _check_the_map_ignores_the_game_viewer(route: String) -> void:
@@ -7504,7 +7637,7 @@ func test_only_the_stuck_viewer_card_carries_the_x() -> void:
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
 	check(cards.size() >= 2, "the deck viewer lists cards to point at", str(cards.size()))
 	if cards.size() >= 2:
-		await _click(cards[0].get_global_rect().get_center(), _game_viewport)
+		await _click(cards[0].get_global_rect().get_center(), _booted_viewport)
 		check(_container.is_locked() and _exit_button().visible,
 				"sanity: the click stuck the first card, X shown")
 		cards[1].grab_focus()
@@ -8640,14 +8773,14 @@ func test_the_deck_viewer_lists_every_stock_as_one_sorted_pile() -> void:
 	check(last_listed == late,
 			"...which is NOT the slot order the stocks hold them in (S21.6)",
 			_suit_rank_log(order))
-	await _close_open_viewer(_game_viewport)
+	await _close_open_viewer(_booted_viewport)
 	state.discard_deck.clear()
 	state.discard_deck.append_array([rest[1], rest[0]] as Array[CardData])
 	await _open_viewer_cards(_container.discard_ui.get_node(^"Button") as Button)
 	check(DeckViewer._open.deck == state.discard_deck,
 			"...while the Discard viewer still lists its pile exactly as the pile holds it (S21.6)",
 			_suit_rank_log(DeckViewer._open.deck))
-	await _close_open_viewer(_game_viewport)
+	await _close_open_viewer(_booted_viewport)
 	await _end_main_fixture()
 
 ## The card the sort must put LAST, so "sorted" and "in slot order" cannot accidentally agree.

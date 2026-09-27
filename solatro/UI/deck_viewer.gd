@@ -65,13 +65,13 @@ func _close() -> void:
 	highlight_cleared.emit()
 	_hand_the_focus_back()
 
-# ⚠ THE OPENER CAN BE HIDDEN BY WHAT THIS VIEWER PUBLISHED: a pile button lives in the sidebar's
-# own scene, which hides its HUD stack while a description shows, so the focus goes to the fallback
-# its host set, the sidebar's exit X -- accept on it dismisses, and the buttons are back.
+# ⚠ THE OPENER CAN BE HIDDEN BY WHAT THIS VIEWER PUBLISHED, so the focus goes to the sidebar's X
+# its host set. A viewer faded out with its screen gives no focus, and a list whose pick a leave
+# dropped finds neither control on screen.
 func _hand_the_focus_back() -> void:
-	if not is_instance_valid(_return_focus): return
+	if not is_instance_valid(_return_focus) or not margin_container.is_visible_in_tree(): return
 	if _return_focus.is_visible_in_tree(): _return_focus.grab_focus()
-	else: fallback_focus.grab_focus()
+	elif fallback_focus.is_visible_in_tree(): fallback_focus.grab_focus()
 
 # ⚠ NOTHING IS FOCUSED ON OPEN: a focus here is a highlight, and a highlight holds the sidebar
 # against the HUD the player still has to reach. The first arrow enters the list instead

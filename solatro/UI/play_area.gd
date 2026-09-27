@@ -3651,8 +3651,7 @@ func _publish_info(data: CardData) -> void:
 	if data == locked_data:
 		highlight_cleared.emit()
 		return
-	highlight_info(data,
-			CardVisual.preview_window_px(picture_to_window_scale)).relay_to(info_requested)
+	highlight_info(data, CardVisual.preview_window_px()).relay_to(info_requested)
 
 ## `card_info()` for a HIGHLIGHT -- the one home for what a hover or a focus publishes, on the board and in every viewer alike.
 static func highlight_info(data: CardData, card_px: Vector2) -> InfoEntry:
@@ -3741,8 +3740,7 @@ func on_control_focus_entered(control:Control) -> void:
 	focused_control = control
 	set_card_zones_visuals()
 
-# ⚠ THE CALLER OWNS `entry.visual`, a LIVE preview card built per call, and re-applies
-# `size_preview_to()` when the window moves the size a board card is drawn at. A BOX, never a
+# ⚠ THE CALLER OWNS `entry.visual`, a LIVE preview card built per call. A BOX, never a
 # `FlowContainer`: a flow reports the minimum its LAST SORT measured, so a re-size reads stale.
 
 # ⚠ THE EMPTY FIRST LINE IS KEPT: a card with neither rank nor suit has no title, and dropping it

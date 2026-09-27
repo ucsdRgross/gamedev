@@ -207,7 +207,7 @@ static func _hold(button: Button, held: bool) -> void:
 # The card the highlight reached, drawn at this viewer's own card size.
 func _publish_info(card: CardData) -> void:
 	PlayArea.highlight_info(card,
-			CardVisual.preview_window_px(_cards.picture_to_window_scale)).relay_to(info_requested)
+			CardVisual.preview_window_px()).relay_to(info_requested)
 
 func _on_confirm_pressed() -> void:
 	confirmed.emit(data.current_choices)

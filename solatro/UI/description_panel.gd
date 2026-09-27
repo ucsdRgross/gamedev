@@ -55,15 +55,6 @@ func scroll_by_pages(pages: float) -> void:
 func at_top() -> bool:
 	return _scroll.scroll_vertical == 0
 
-# A preview that changed size took the top row's height with it, so the content is re-laid after
-# it. Nothing mounted is the ordinary case: the board publishes its card size on every rect change,
-# HUD or description, and an entry showing no card of its own (the map's) re-draws nothing.
-func resize_preview(card_px: Vector2) -> void:
-	if current_entry == null: return
-	for card : ControlCard in _visual_slot.find_children("*", "ControlCard", true, false):
-		card.size_preview_to(card_px)
-	resize_to(size)
-
 ## Hands the visual back OUT without freeing it, so the screen this description belongs to can be returned to.
 func detach_entry() -> void:
 	if current_entry == null: return

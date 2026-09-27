@@ -37,7 +37,7 @@ var spotlight_director : SpotlightDirector = null
 ## Set by `Main.enter_game()` before this view enters the tree; left null, a standalone fixture builds a private instance instead.
 var hud_container : HudContainer = null
 
-## Set by `Main` alongside `hud_container`, the same hand-over `Map` and `Menu` get -- lets a viewer opened over this screen convert the container's window px into this picture's own space.
+## Set by `Main` alongside `hud_container`, the same hand-over `Map` and `Menu` get: the picture this show goes live in, and the space its discards fly across.
 var wall_picture : WallPicture = null
 
 ## The HUD controls, reached off `hud_container` in `_bind_hud_container()`, under the same names the scene used to own directly.
@@ -260,7 +260,7 @@ func _on_board_changed() -> void:
 
 # ⚠ TWO SCALES OUT OF ONE WINDOW, AND BOTH ARE RIGHT. `board_inset_*` reserves BOARD SPACE, so it
 # divides by the unmargined ratio; `picture_to_window_scale` is DRAWN PIXELS, the camera's resting
-# zoom, which the preview must match -- re-drawn last, once the inset has settled the board's zoom.
+# zoom, the size a board card is seen at.
 
 # ⚠ THE RESERVE IS THE SIDEBAR'S RESTING RECT, NEVER THE SLIDING ONE: the board is fitted there and
 # `board_slide_offset` only shifts it, CENTRE TO CENTRE, so with no sidebar (wall view, the landing)
@@ -279,7 +279,6 @@ func _publish_board_inset() -> void:
 	play_area.board_inset_top = region.position.y
 	play_area.board_visible_crop = design - region.end
 	play_area.board_slide_offset = slid.get_center() - region.get_center()
-	hud_container.resize_preview(CardVisual.preview_window_px(play_area.picture_to_window_scale))
 
 # Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this
 # picture. `Tests/Engine/test_leak_canary.gd` discards through a view with no `Main`, hence no picture.
@@ -307,19 +306,23 @@ static func sorted_stock_union(state: GameData) -> Array[CardData]:
 		return a.rank.value < b.rank.value)
 	return cards
 
-# The deck, discard and rules viewers are publishers exactly like the board: they hand their
-# highlights to this view, which relays them the same way, and closing one hands the sidebar back
-# to whatever was locked behind it.
-func _open_deck_viewer(cards: Array[CardData], opener: Button, close_key: StringName) -> void:
-	var viewer := DeckViewer.show_deck(self, cards, opener)
-	if not viewer: return
-	DeckViewer.read_close_while_open(opener, close_key, viewer)
-	hud_container.host_viewer(viewer, wall_picture, info_requested, HudContainer.GAME_SCREEN)
-	viewer.highlight_cleared.connect(_rest_the_board_behind_another_screen)
+## The Deck, Discard or Rules viewer this view opened, until it is freed: closed, or taken with this view.
+var _viewer : DeckViewer = null
 
-# ⚠ A VIEWER ANOTHER SCREEN CLOSED hands its focus back to a Deck button hidden with this screen's
-# HUD, and any focus that screen takes clears this viewport's, so the board rests on the return --
-# as though the viewer had never opened. A bare view with no picture is always the screen shown.
+# The deck, discard and rules viewers are publishers exactly like the board, relayed the same way.
+# ⚠ THEY ARE UI ON THE SIDEBAR'S LAYER, so they outlive this view unless it takes them with it, as
+# a torn-down show took the viewers that lived inside it.
+func _open_deck_viewer(cards: Array[CardData], opener: Button, close_key: StringName) -> void:
+	_viewer = DeckViewer.show_deck(hud_container.get_parent(), cards, opener)
+	if not _viewer: return
+	DeckViewer.read_close_while_open(opener, close_key, _viewer)
+	hud_container.host_viewer(_viewer, null, info_requested, HudContainer.GAME_SCREEN)
+	_viewer.highlight_cleared.connect(_rest_the_board_behind_another_screen)
+	tree_exiting.connect(_viewer.queue_free)
+
+# ⚠ A VIEWER ANOTHER SCREEN CLOSED hands no focus back, and any focus that screen takes clears this
+# viewport's, so the board rests on the return -- as though the viewer had never opened. A bare
+# view with no picture is always the screen shown.
 func _rest_the_board_behind_another_screen() -> void:
 	if wall_picture and not wall_picture.is_focused:
 		wall_picture.went_live.connect(play_area.rest_focus_on_board, CONNECT_ONE_SHOT)
@@ -419,8 +422,7 @@ func _rest_the_board_focus() -> void:
 # viewport, which this one's owner never reports: a rest under it would walk the board unseen and
 # its lost focus would clear the first card the viewer describes.
 func _the_focus_is_elsewhere() -> bool:
-	return get_viewport().gui_get_focus_owner() != null \
-			or get_children().any(func(child: Node) -> bool: return child is DeckViewer)
+	return get_viewport().gui_get_focus_owner() != null or is_instance_valid(_viewer)
 
 ## Deal the opening plan onto the board cell by cell (show start only).
 func reveal_plan() -> void:
@@ -528,8 +530,7 @@ func _on_data_selected(data: CardData) -> void:
 	if game.processing:
 		play_area.stop_following()
 		return
-	hud_container.lock_to(PlayArea.card_info(data,
-			CardVisual.preview_window_px(play_area.picture_to_window_scale)))
+	hud_container.lock_to(PlayArea.card_info(data, CardVisual.preview_window_px()))
 	play_area.locked_data = data
 	if play_area.selected_cards:
 		if data in play_area.selected_cards: return

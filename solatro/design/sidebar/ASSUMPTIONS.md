@@ -255,12 +255,9 @@
   leaving it to the dictionaries. On a whole-tree teardown `HudContainer._exit_tree()` runs before
   `GameView._exit_tree()` and clears both dictionaries, so a visual detached after that point is in
   no dictionary and no tree -- 24 orphaned previews across the suite, 1057 leaked ObjectDB instances.
-- P2 review: the description's preview follows the window. `GameView._publish_board_inset()` ends by
-  pushing `play_area.board_card_window_px()` through `HudContainer.resize_preview()` ->
-  `DescriptionPanel.resize_preview()`, which re-draws the mounted card and re-lays the content its
-  height feeds. The MOUNTED entry only: a screen's stashed entry is re-drawn when the board next
-  publishes into it. New names: `HudContainer.resize_preview()`, `DescriptionPanel.resize_preview()`,
-  `ControlCard.size_preview_to()` (the three lines `PlayArea.card_info()` used to spell out).
+- The description's preview is drawn at `CardVisual.preview_window_px()`, the deck viewer's card at
+  the UI scale, so a window change re-sizes nothing. `ControlCard.size_preview_to()` sizes it (the
+  three lines `PlayArea.card_info()` used to spell out).
 - P2 review, measured: `card_info()` builds its preview in an `HBoxContainer`, never a
   `FlowContainer`. A flow reports the minimum size its last `_resort()` cached, so a re-sized card
   left `resize_to()` computing the content height from the size the card used to be (123 px carried

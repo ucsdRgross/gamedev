@@ -477,8 +477,7 @@ func _apply_locked_description() -> void:
 	var area := _hosted_play_area()
 	if area == null: return
 	var data : CardData = area.ui_data.values()[0]
-	container.lock_to(PlayArea.card_info(data,
-			CardVisual.preview_window_px(area.picture_to_window_scale)))
+	container.lock_to(PlayArea.card_info(data, CardVisual.preview_window_px()))
 
 ## The hosted game screen's board, or null while the game picture is locked out of the pack or drawing a placeholder.
 func _hosted_play_area() -> PlayArea:

@@ -779,10 +779,6 @@ func _aim_scroll_stick(axis_value: float) -> void:
 	_scroll_stick = axis_value if absf(axis_value) >= deadzone else 0.0
 	if not is_zero_approx(_scroll_stick): set_process(true)
 
-## Re-draws the description's preview at `card_px`: the size a board card is drawn at moves with the window, and the preview reads as the same object only while it matches.
-func resize_preview(card_px: Vector2) -> void:
-	_description_panel.resize_preview(card_px)
-
 ## The room both contents share: the container minus its margins, which are the same for the HUD and the description.
 func _content_size() -> Vector2:
 	var left := _description_margin.get_theme_constant(&"margin_left")

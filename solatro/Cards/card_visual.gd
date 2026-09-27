@@ -41,8 +41,8 @@ const CARD_JUMP_RISE := CARD_SIZE.y / 5.0
 ## How much bigger than a board card the DECK VIEWER draws one, and so how big every description preview is.
 const DECK_VIEWER_SCALE := 2.0
 
-## THE ONE PREVIEW SIZE, for every surface that describes a card (owner: one size everywhere, the deck viewer's): its card size, in the window pixels of the picture publishing it.
-static func preview_window_px(picture_to_window: float) -> Vector2:
+## THE ONE PREVIEW SIZE, for every surface that describes a card (owner: one size everywhere, the deck viewer's): its card at the UI scale, or at the scale of a picture a list is still drawn in.
+static func preview_window_px(picture_to_window := 1.0) -> Vector2:
 	return CARD_SIZE * DECK_VIEWER_SCALE * picture_to_window
 
 # NAMED HERE BECAUSE IT IS NOT ON `autoplay`: the idle is off in the shipped card (owner: it was only
