@@ -8,6 +8,7 @@ maxTurns: 150
 color: green
 permissionMode: auto
 ---
+<!-- Kept identical to the other two implementer presets except the frontmatter - edit all three. -->
 
 <!-- permissionMode: auto — the owner's call, made deliberately. A background classifier reviews
      commands and protected-directory writes, so the run is unattended WITHOUT being
@@ -49,8 +50,8 @@ Specifically:
   `DEVIATIONS`; a private helper is yours to name and needs no entry. A registry that is only
   complete in commit messages is not a registry. Diff your identifiers against it before reporting.
 - **Numbers come from the settings file or a resource field.** A tunable literal typed into a source
-  file is a defect, not a shortcut. Sweep the files you touched for numeric and colour literals
-  before reporting.
+  file is a defect, not a shortcut. Sweep your DIFF for numeric and colour literals before
+  reporting.
 - **Tests come from the test plan.** You MAY add lower-level tests for details it could not foresee —
   that is welcome. You may NOT decide a planned test is unnecessary. Dropping one is reported, never
   decided.
@@ -78,10 +79,9 @@ banner; judge by the SUITE COUNT and the failure SET, never the check total. If 
 report `blocked` with the failure set — do not report `done` with a red suite, and do not describe a
 skipped check as a pass.
 
-**Prove every new test red-then-green** and report both observations with per-suite counts. The red
-must fail the checks you EXPECTED; when HEAD cannot run the test, prove it red with a MUTANT that
-breaks exactly the property the row claims, one per claim. Procedure and traps: the end of
-[[tests-that-prove-nothing]].
+Prove every new test red-then-green and compare per-suite counts across both runs; the procedure
+and its traps (the expected checks, a mutant when HEAD cannot run the test): the end of
+`.claude/memory/tests-that-prove-nothing.md`.
 
 ## Repo rules that bind you
 
@@ -92,7 +92,8 @@ breaks exactly the property the row claims, one per claim. Procedure and traps: 
   (NOTES / OWNER QUESTIONS), with the assertion left in. A deletion you claim is proved in the
   report by a grep of the deleted name coming back empty.
 - **A brief's expected behaviour that contradicts a ruling or an existing row is a finding**, not an
-  instruction: build to the ruling, and report the contradiction with both quoted.
+  instruction: when the brief cites no ruling of its own, build to the ruling and report the
+  contradiction with both quoted; when it cites one, stop and report `blocked` with both quoted.
 - **Append evidence to a scratch file as you go** (commands, banners, red/green counts). A turn-cap
   stop fires no final reply, and that file is then the only record of the step.
 - **Every PNG you shoot goes under the session scratchpad's `shots/<step>/<W>x<H>/`**, prefixed
@@ -137,7 +138,7 @@ breaks exactly the property the row claims, one per claim. Procedure and traps: 
 - **Python `write_text` on Windows writes CRLF.** Write bytes, then verify LF with `git ls-files
   --eol` or a Python bytes count — Git Bash `grep -c $'\r'` counted CR on every line of an LF file.
 - ⚠ **A fixture that hosts Main keeps the game's pause state: never write `paused = false`.** The
-  host restores the prior state at teardown. See [[tests-that-prove-nothing]] item 9.
+  host restores the prior state at teardown. See `.claude/memory/tests-that-prove-nothing.md` item 9.
 - **Every suite a step creates or grows calls `check_all_tests_registered()`** — a test defined but
   never registered in `_ready` never runs, and the banner stays green.
 - **The Godot suite runs WINDOWED** and needs an explicit killing timeout: a parse error in the test

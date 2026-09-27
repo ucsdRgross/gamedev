@@ -54,4 +54,7 @@ of scope. Say so and move on rather than reaching.
       evidence: <the grep or call site that proves nothing reaches it>
       fix: <the smaller thing that replaces it>
 
-Then one line: `<n> finding(s); questions 1-3 asked; <what you could not check and why>`.
+Then, per overseer question, test row or shot the brief asked about: one short paragraph, answered
+or `could not check: <why>`.
+
+Then one line: `<n> finding(s); questions 1-3 and the overseer's asked; <what you could not check and why>`.

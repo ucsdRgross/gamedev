@@ -35,10 +35,8 @@ reads of its own growing context, so continuing a finished implementer with `Sen
 next round is cheaper than a fresh one re-reading the tree - until its context is very large
 (a 600k-token round is the sign to start fresh with a sharp brief).
 
-**Reviewers are Fable and read-only** - the owner's ruling, verbatim, is in `/plan-run` "The
-reviewer's model floor"; every finding becomes an implementer step.
-When and how to spend a review (per step, per group, a mechanism-shaping owner question, the
-close): `/plan-run` § "Spending the reviewer".
+Every finding becomes an implementer step. When and how to spend a review (per step, per group, a
+mechanism-shaping owner question, the close): `/plan-run` § "Spending the reviewer".
 
 **The main agent is Opus 5.5 at high effort, for design and implementation alike, and the
 `/plan-run` overseer with it; Fable 5.1 is its pair reviewer.** Owner, as recorded in the todo: "the

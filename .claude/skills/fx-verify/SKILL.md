@@ -88,8 +88,8 @@ measurement has confirmed one. Then every probe:
    Prefer making the harness measure its own capture over eyeballing pixel positions.
 
 3. **Run the PIXELS suite** (it asserts on real pixels and FAILS rather than skips if run under
-   a dummy renderer): the full windowed run, `py .claude/tools/gate.py --out <scratchpad>` (reading a run by hand:
-   `running-godot-scenes.md` in `.claude/memory/`).
+   a dummy renderer): the full windowed run, the gate (`CLAUDE.md` Working rules) (reading a run by
+   hand: `running-godot-scenes.md` in `.claude/memory/`).
    ⚠ **Never verify visual work through the logic tier** (`run_tests.py --logic`): it is headless,
    and PIXELS is deliberately not in it — a green tier run is silent about every pixel.
 

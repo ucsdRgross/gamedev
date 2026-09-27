@@ -14,7 +14,7 @@ create a parallel copy of an existing handoff. Update it in place.
 1. Read it, plus the `entry_docs` it names. Do not rely on conversation history — the file is the
    source of truth.
 2. Confirm the tree is actually green before trusting any `done` status: the full suite,
-   **windowed, no `--headless`** — on solatro `py .claude/tools/gate.py --out <scratchpad>`.
+   **windowed, no `--headless`** — on solatro, the gate (`CLAUDE.md` Working rules).
    `running-godot-scenes.md` in `.claude/memory/` carries the launch rules. Check the owner's Godot
    editor is closed first.
 3. Summarize goal, what is done (with its evidence), what is in progress or blocked, what is
@@ -119,9 +119,11 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
 3. **Audit the rules themselves - adding is only half the loop.** Owner, verbatim: "add ways to
    figure out if something in workflow has become harmful so that it can be updated, fixed, or cut.
    we dont want workflow to become too strict and unflexible." For each rule, hook or tool that
-   FIRED this session, one line: **caught** (a real defect it stopped), **false alarm** (it blocked
-   or flagged legitimate work), **cost** (time, tokens, a workaround someone had to invent), or
-   **ceremony** (satisfied on paper while the defect it targets got through anyway). Then propose
+   fired WITH AN EFFECT this session (blocked, flagged, cost a workaround, or caught) - silent
+   passes are only a count - one line: **caught** (a real defect it stopped), **false alarm** (it
+   blocked or flagged legitimate work), **cost** (time, tokens, a workaround someone had to
+   invent), or **ceremony** (satisfied on paper while the defect it targets got through anyway).
+   Then propose
    to the owner, never apply silently:
    - **fix** a guard with a false alarm - narrow its matcher; never pile on exceptions;
    - **cut or narrow** a rule with no catch across ~five sessions and a real cost - unless it

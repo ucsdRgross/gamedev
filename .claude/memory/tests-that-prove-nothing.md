@@ -133,7 +133,8 @@ which the drifting total cannot show. Applies to any suite in any project here.
 - ⚠ **When HEAD cannot run the new test** (new node paths, a restructured scene), "it could not be
   red on HEAD" is no exemption: prove it red with a MUTANT on the new code that breaks exactly the
   property the row claims (the old formula back, the overlap restored, the container swapped), one
-  mutant per claim. Measured: four mutants on one restructured menu each turned their row red.
+  mutant per PROPERTY the row claims; a second only when the row's assertions could pass
+  independently. Measured: four mutants on one restructured menu each turned their row red.
 - ⚠ **A fix that turns an existing test red is investigated before the test is touched** - item 7's
   calibrated tolerance was found exactly that way.
 

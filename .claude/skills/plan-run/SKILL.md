@@ -40,13 +40,13 @@ reports; may run `grep -c`/`-l`, `git status --porcelain`, `ls`, and the suite. 
 
 **Verify every done-when yourself with a bounded command.** Never accept a self-reported green.
 
-**The gate is one command, run in the background:** `py .claude/tools/gate.py --out <scratchpad>
---handoff <project>/HANDOFF_<topic>.md` (what it checks: its docstring; `--parse <run dir>`
-re-reads a run). Only its GREEN clears a commit; a failure it marks NEW is never called a flake.
+**The gate (`CLAUDE.md` Working rules) is one command, run in the background.** Only its GREEN
+clears a commit; a failure it marks NEW is never called a flake.
 
 ⚠ **A listed intermittent has a budget: three failures, then it is a fix step.** Keep its count on
-its Open-bugs line (each gate that trips it adds one); at the third it becomes the NEXT step, ahead
-of the queue - it now undermines every gate's verdict, which is the one case that earns the front.
+its Open-bugs line (each gate that trips it adds one); at the third it becomes the next step AFTER
+the current group's review round - it now undermines every gate's verdict, so it takes the front
+under the queue rule's exception (say so, with what it delays).
 Measured: a dozen listed rows, TP-92 alone ~1 gate in 3, all counted and none ever fixed, until
 "red, but only listed rows" read as green - and a real regression landing on a listed row would pass.
 
@@ -139,8 +139,8 @@ Each layer caught things the one above it missed.
 --logic` (headless, several times faster; `--filter <NodeName>` narrows to one suite). It is a
 debugging aid with no verdict; a step is done only on a FULL windowed run ([[running-godot-scenes]]).
 
-**Do 3 and 5 at every phase boundary.** Doing them only at the end means finding six critical defects
-after the work is already "complete".
+**Do 3 and 5 when a group lands (§ Spending the reviewer, item 2).** Doing them only at the end means
+finding six critical defects after the work is already "complete".
 
 ⚠ **AN `assert` IS A CHEAPER REACHABILITY ORACLE THAN ANY AMOUNT OF STATIC ANALYSIS, AND IT OUTRANKS
 LAYER 5 ON THAT ONE QUESTION.** Asked whether a guard's case has a caller, two independent reviewers
@@ -181,7 +181,8 @@ implementer as a step, red-then-green and gated like any other.
 ## Spending the reviewer - Fable is the expensive senior
 
 Its job is the issue that would cost time LATER, which the junior cannot check cheaply. Never hand
-it proofreading, grep work, log triage (`gate.py`) or recon (Explore). Four uses, and no others:
+it proofreading, grep work, log triage (`gate.py`) or recon (Explore). Four uses in a run, and no
+others (the once-per-session workflow-diff pass is `/handoff` Reflect step 3):
 
 1. **Per step - targeted, and only for a step with judgement in it.** Skip it for a comment sweep, a
    doc-only commit, a data edit at a named site. Hand it the diff plus 2-4 questions about THIS
@@ -192,8 +193,8 @@ it proofreading, grep work, log triage (`gate.py`) or recon (Explore). Four uses
      does an expected value come from the code under test ([[tests-that-prove-nothing]]);
    - **the shots** - when the step changes what is drawn: the `shots/<step>/<W>x<H>/` folder and the
      ruling; it describes each image and says whether it shows the ruling, before you read yours.
-2. **Per group of related steps - broad, sparingly.** When a group lands (one mechanism moved, one
-   ruling built across its instances - the same moment as the owner's review round), one broad pass
+2. **Per group of related steps - broad, sparingly.** When a group lands (§ The owner's visual
+   review), one broad pass
    over the group's whole diff, for the problem nobody thought to ask about. Give it a PRIORITY
    ORDER and "report early": an unordered "review 275 commits" spent its budget and returned
    nothing; ordered, the rerun found a defect in its first third. In the review round, it also
@@ -298,8 +299,9 @@ reviewer" item 2.
 At the end of a run with visual work — or at the start of the next session doing visual work — run
 `py solatro/visual-review/review.py refresh` (it reshoots both sides, so it takes the one Godot
 slot), then park on `npm --prefix designloop run watch -- visual-review/solatro`. Park only after a
-shoot: a Done older than the last shoot is ignored. Every reject or comment becomes the next
-implementer step, the owner's comment verbatim as its brief; then refresh and park again.
+shoot: a Done older than the last shoot is ignored. Every reject or comment becomes an implementer
+step, queued under the queue rule (§ the overseer's rules), the owner's comment verbatim as its
+brief; then refresh and park again.
 
 ## Declaring the run ready to close
 
@@ -364,8 +366,8 @@ Run in this order. Earlier items change the diff the later ones read.
    invisible to the suite by definition. Hand it [[tests-that-prove-nothing]] as a CHECKLIST, engine
    tests first; items 5, 9, 11, 13, 14 and 20 had the highest yield on one branch.
    ⚠ **DO NOT FOLD THIS INTO `/code-review` OR `bloat-reviewer`.** Both are pointed at production,
-   and `bloat-reviewer` is told tests are out of scope — so "the diff was reviewed" is routinely
-   true while 12,000 lines of tests in that same diff were read by nobody.
+   and `bloat-reviewer` reads a step's rows only when asked, one diff at a time — so "the diff was
+   reviewed" is routinely true while 12,000 lines of tests in that same diff were read by nobody.
 5. **`/simplify`** — the complexity section below is what it enforces. ⚠ It is a built-in skill
    whose Phase 1 launches four agents concurrently, which the cap blocks: run its four angles
    (reuse, simplification, efficiency, altitude) inline yourself, or serially. On a small diff
@@ -384,7 +386,7 @@ Run in this order. Earlier items change the diff the later ones read.
    ones (`game.gd` ~350 legacy findings, `play_area.gd` ~640); folding the sweep into a defect fix
    multiplies the blast radius of both, and a sweep once deleted a load-bearing note. Brief every
    fix with "touch only the comments this fix changes; the sweep is a separate final step", then
-   dispatch the sweep once: no behaviour change, `sweep_check.py`, its own full gate, reviewer floor.
+   dispatch the sweep once: no behaviour change, `sweep_check.py`, its own full gate.
    Test-only repairs in different suites may share one gate: a red there names its suite.
 8. **`/docs`** — fold the run's residue into the living docs.
 9. **`consolidate-memory`** — merge duplicates, fix facts the run made stale, prune the index.
