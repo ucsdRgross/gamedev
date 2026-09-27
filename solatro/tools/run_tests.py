@@ -49,6 +49,9 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.dirname(HERE)
 ALL_TESTS_GD = os.path.join(PROJECT, "Tests", "all_tests.gd")
+ALL_TESTS_SCENE = "res://Tests/all_tests.tscn"
+# Win32 ShowWindow constant; Python's subprocess exports SW_HIDE only.
+SW_SHOWMINNOACTIVE = 7
 # The engine's own log, and the ONLY thing _scan_engine_errors reads — so it is also the definition
 # of what that gate can see. Same root as snapshot_diff.py's.
 LOG_DIR = os.path.join(os.path.expandvars(r"%APPDATA%\Godot\app_userdata\Solatro"), "logs")
@@ -78,8 +81,8 @@ def read_allowlist(path):
             "could not find `const ENGINE_ERROR_ALLOW : Array[String] = [...]` in %s — the gate's "
             "allowlist moved or was renamed. Fix this parse rather than pasting a copy here." % path
         )
-    # GDScript string literals, with the escaped quotes the allowlist actually contains
-    # (e.g. "Condition \"p_index").
+# GDScript string literals, with the escaped quotes the allowlist actually contains
+# (e.g. "Condition \"p_index").
     fragments = [
         raw.encode().decode("unicode_escape")
         for raw in re.findall(r'"((?:[^"\\]|\\.)*)"', block.group(1))
@@ -113,14 +116,14 @@ def scan_unseen(stream_text, log_text, allowlist):
     errors = []
     for line in error_lines(stream_text):
         if logged.get(line, 0) > 0:
-            logged[line] -= 1          # accounted for by the in-engine gate
+            logged[line] -= 1
             continue
         if not any(frag in line for frag in allowlist):
             errors.append(line)
     warnings = [raw.strip() for raw in stream_text.splitlines()
                 if raw.strip().startswith("WARNING:") and "leaked at exit" in raw]
-    # Reported, never counted: LEAK CANARY abandons objects on purpose, so this fires on a healthy
-    # run. It is still the first thing anyone chasing the leak wants to see.
+# Reported, never counted: LEAK CANARY abandons objects on purpose, so this fires on a healthy
+# run. It is still the first thing anyone chasing the leak wants to see.
     return errors, warnings
 
 
@@ -187,8 +190,8 @@ def wait_or_stall(process, total_timeout, stall_timeout, log_path):
 
 
 def main():
-    # ⚠ The engine's error lines are quoted verbatim and are not always cp1252-encodable. Without
-    # this the gate CRASHES while reporting the error it exists to report.
+# ⚠ The engine's error lines are quoted verbatim and are not always cp1252-encodable. Without
+# this the gate CRASHES while reporting the error it exists to report.
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except AttributeError:
@@ -197,7 +200,7 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--godot", default=os.environ.get("GODOT_BIN"),
                         help="path to the Godot _console executable (default: $GODOT_BIN)")
-    parser.add_argument("--scene", default="res://Tests/all_tests.tscn")
+    parser.add_argument("--scene", default=ALL_TESTS_SCENE)
     parser.add_argument("--timeout", type=int, default=600,
                         help="seconds before the run is KILLED (default 600)")
     parser.add_argument("--stall-timeout", type=int, default=600,
@@ -228,25 +231,37 @@ def main():
     if args.logic:
         args.filter = list(args.filter) + ["@logic"]
 
-    # ⚠ WINDOWED, never --headless — except the logic tier, which holds no renderer-dependent suite
-    # (PIXELS cannot compile a shader on a dummy one). See .claude/memory/running-godot-scenes.md.
-    command = [args.godot] + (["--headless"] if args.logic else []) + \
+# ⚠ The real exe, not the _console wrapper: the wrapper does not pass its show state to the
+# engine it spawns. Measured: the same stdout, stderr and exit code as the wrapper.
+    engine = args.godot.replace("_console.exe", ".exe")
+# ⚠ WINDOWED, never --headless — except the logic tier, which holds no renderer-dependent suite
+# (PIXELS cannot compile a shader on a dummy one). See .claude/memory/running-godot-scenes.md.
+    command = [engine] + (["--headless"] if args.logic else []) + \
               ["--path", PROJECT, args.scene]
     user_args = list(args.passthrough) + list(args.filter)
     if user_args:
         command += ["--"] + user_args
 
+# The suite opens minimized so loading never covers the desktop; all_tests.gd raises it once
+# loaded. Only the suite: any other scene would stay minimized, and a lone minimized window
+# stops drawing.
+    startup = None
+    if args.scene == ALL_TESTS_SCENE:
+        startup = subprocess.STARTUPINFO()
+        startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startup.wShowWindow = SW_SHOWMINNOACTIVE
+
     with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as out, \
          tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as err:
-        process = subprocess.Popen(command, stdout=out, stderr=err)
-        # ⚠ ALWAYS kill on timeout — a parse error leaves a blank window open forever and no
-        # in-scene watchdog can save it, because the script never loads.
+        process = subprocess.Popen(command, stdout=out, stderr=err, startupinfo=startup)
+# ⚠ ALWAYS kill on timeout — a parse error leaves a blank window open forever and no
+# in-scene watchdog can save it, because the script never loads.
         outcome = wait_or_stall(process, args.timeout, args.stall_timeout, TEST_LOG)
         timed_out = outcome == "timeout"
         stalled = outcome == "stall"
         stalled_name, stalled_last, preserved = None, None, None
         if stalled:
-            # Read the log BEFORE the kill, and copy it aside before anything can truncate it.
+# Read the log BEFORE the kill, and copy it aside before anything can truncate it.
             stalled_name, stalled_last = stalled_suite(TEST_LOG)
             preserved = preserve_logs("stalled")
         if outcome != "ok":
@@ -257,44 +272,37 @@ def main():
         out.seek(0)
         stdout_text = out.read()
 
-    # ⚠ THE EXIT CODE IS A FAILURE COUNT ONLY INSIDE 0..125. `all_tests.gd` quits with
-    # `mini(failed, 125)`; anything above is an abnormal termination, since on Windows a crash
-    # arrives as the raw status (access violation = 0xC0000005). Read as a count, a teardown
-    # segfault reported "125 suite failures" under a banner saying PASSED — a wrapper disagreeing
-    # with the suite about whether the suite passed.
+# ⚠ THE EXIT CODE IS A FAILURE COUNT ONLY INSIDE 0..125 (`all_tests.gd` quits with
+# `mini(failed, 125)`). Above it is an abnormal termination: a Windows crash arrives as the raw
+# status (access violation = 0xC0000005), and must not read as 125 suite failures.
     SUITE_FAILURE_CAP = 125
     code = process.returncode or 0
     crashed = code < 0 or code > SUITE_FAILURE_CAP
     suite_failures = code if 0 < code <= SUITE_FAILURE_CAP else 0
 
-    # ⚠ BOTH streams, because the engine splits its teardown errors across them.
+# ⚠ BOTH streams, because the engine splits its teardown errors across them.
     streams = stdout_text + "\n" + stderr_text
     try:
         with open(GODOT_LOG, encoding="utf-8", errors="replace") as handle:
             log_text = handle.read()
     except OSError as problem:
-        # A missing log means the in-engine gate saw NOTHING, so everything in the streams is unseen.
-        # Say so — silently treating it as "clean" is the failure mode this whole file exists to end.
+# A missing log means the in-engine gate saw NOTHING, so everything in the streams is unseen.
+# Say so — silently treating it as "clean" is the failure mode this whole file exists to end.
         print("[exit-time] WARNING: could not read %s (%s). The in-engine gate's coverage is unknown, "
               "so every error below is reported." % (GODOT_LOG, problem))
         log_text = ""
 
     errors, warnings = scan_unseen(streams, log_text, allowlist)
 
-    # ⚠ **A FAILING RUN'S LOGS ARE AS PERISHABLE AS A STALLED ONE'S, AND FAR MORE OFTEN LOST.** The
-    # next run truncates them, and the reflex after a red run is to run it again -- so an
-    # INTERMITTENT failure erases its own evidence every time. Measured: a 1-in-6 behaviour failure
-    # was seen and lost inside three minutes. Preserved here, not only on a stall.
-    # ⚠ NOT `errors`: the two exit-time teardown lines (PagedAllocator pages, resources in use) are
-    # present on EVERY run including a fully green one, so including them here preserved the logs of
-    # a passing run and would have filled the disk one copy per run. Standing noise is not
-    # perishable evidence -- only a real suite failure or an abnormal exit is.
+# ⚠ A FAILING RUN'S LOGS ARE PRESERVED TOO: the next run truncates them, so re-running a red run
+# erases an intermittent's evidence. Not on `errors`: two exit-time teardown lines are on EVERY
+# run, green included, so that would keep a copy of every run.
     if not stalled and (suite_failures or crashed):
         print("[exit-time] this run FAILED; logs preserved at: %s" % preserve_logs("failed"))
 
     if args.keep_output:
-        # The streams are the only record of the exit-time errors -- godot.log is already closed
-        # when the engine emits them -- and they die with the temporary file they are read from.
+# The streams are the only record of the exit-time errors -- godot.log is already closed
+# when the engine emits them -- and they die with the temporary file they are read from.
         kept_path = os.path.join(os.path.dirname(LOG_DIR),
                                  "run-output-%s.log" % time.strftime("%Y%m%d-%H%M%S"))
         with open(kept_path, "w", encoding="utf-8", errors="replace") as handle:

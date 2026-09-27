@@ -49,6 +49,9 @@ var _total_suites := 0
 ## Configure and truncate the log files.
 func _enter_tree() -> void:
 	_run_start_msec = Time.get_ticks_msec()
+#run_tests.py starts the window minimized so loading never covers the desktop; loaded now, show it.
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	DisplayServer.window_move_to_foreground()
 	SettingsManager.isolated = true
 	_total_suites = get_child_count()
 	_filter = OS.get_cmdline_user_args()
