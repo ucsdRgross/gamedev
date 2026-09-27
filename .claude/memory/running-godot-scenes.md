@@ -94,6 +94,13 @@ failed, to locate the suite. `test_output_errors.log` empty = green; LEAK CANARY
 
 ## ⚠ Diagnosing a red, hung or flaky run
 
+⚠ **A MINIMIZED WINDOW STOPS DRAWING.** Godot draws only while some Godot window is not minimized
+(`DisplayServerWindows::can_any_window_draw`), and it sleeps `low_processor_usage_mode_sleep_usec`
+every frame while it cannot draw (`OS::add_frame_delay`) - engine source, 4.4 branch. So a gate the
+owner minimized stalls on frame awaits and fails frame-count rows. Measured cost on the playtest
+stream: two red gates blamed on a step, a 900 s stall and a measurement step aimed at the wrong
+cause. Before diagnosing a stall or a timing row, ask whether the window was minimized.
+
 **A green run is a sample, not a property of the branch.** Measured: a branch reported
 `ALL 45 SUITES ... CHECKS PASSED` on the run that closed it, and 2 of 16 runs of that identical code
 failed. **Quote the denominator** — `2 failures in 16 runs`, never "about one in eight".

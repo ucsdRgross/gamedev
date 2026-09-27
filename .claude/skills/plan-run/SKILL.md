@@ -63,6 +63,11 @@ until a bounded command confirms them ([[brief-premise-is-a-hypothesis]]).
 insert it**, with what it delays ("this puts the square cards a session later"). Measured: seven
 review-comment steps went ahead of an owner-ordered merge, and the owner learned it by asking why
 they had not seen the feature yet.
+⚠ **A new task goes to the END of the queue by default.** Owner, verbatim: "from now on new tasks
+should go to end of queue unless it would make much more sense to put in the end" (read as: in
+front). Measured on the playtest stream: twelve found-along-the-way rows went ahead of the
+owner-ordered square cards and pushed them a session back. Put one in front only when it clearly
+blocks or invalidates the next item, and say so as above.
 
 **Split a brief that moves more than one mechanism.** A layout rebuild plus a retired lock-out plus
 six re-pointed rows hit the implementer's 150-turn cap mid-edit.

@@ -82,6 +82,9 @@ skipped check as a pass.
 - **NO `git add`, NO commits, NO staging.** The owner commits by hand. Just edit files.
 - **Never `git checkout`/`restore`/`reset`/`stash` a tracked file** — the overseer and other agents
   share the tree. Park a file with `Copy-Item` and copy it back.
+- **Never remove or relax an assertion to reach green.** A red your change exposes is reported
+  (NOTES / OWNER QUESTIONS), with the assertion left in. A deletion you claim is proved in the
+  report by a grep of the deleted name coming back empty.
 - **Append evidence to a scratch file as you go** (commands, banners, red/green counts). A turn-cap
   stop fires no final reply, and that file is then the only record of the step.
 - **Every PNG you shoot goes under the session scratchpad's `shots/<step>/<W>x<H>/`**, prefixed
