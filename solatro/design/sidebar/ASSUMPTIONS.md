@@ -328,7 +328,7 @@
 - S12 new names NAMES.md does not list: `InfoEntry.relay_to(out)` (the "emit it, or free the live
   preview nothing will take delivery of" shape `GameView._relay_info_requested` spelled out, now
   shared with `HudContainer.host_viewer()` and both viewers); `HudContainer.rect_beside(picture)`;
-  `WallPicture.window_scale(window)`; `DeckViewer.info_requested` /
+  `DeckViewer.info_requested` /
   `highlight_cleared` / `fit_beside()` and the same three on `ChoiceViewer`;
   `GameView.wall_picture` (set by `Main.enter_game()` beside `hud_container`) and
   `GameView._open_deck_viewer()`.
@@ -414,9 +414,13 @@
   `is_visible_in_tree()` (a viewer's opening highlight hides the pile buttons that opened it,
   stranding a pad player). The viewer never assumes its opener's owner type. `Q68`=b's `ui_up`-off-the-top rule
   is unchanged.
-- The picker's Dim is `MOUSE_FILTER_STOP` and covers the menu picture, keeping the picker's modal
-  guard over the menu behind it; the viewer is above every picture on the sidebar's layer, so its
-  hover and click-to-close are its own, and the picker's buttons are behind it until it closes.
+- The deck picker is UI on the sidebar's layer at the UI scale (`HudContainer.host_deck_picker()`),
+  filed under the overlay's own controls: its `MOUSE_FILTER_STOP` Dim covers the menu picture, so
+  the menu behind is deaf, while the Back row and the sidebar keep their pointer. Opening it slides
+  the menu's sidebar in, empty, and it fades with that slide like every viewer (owner,
+  thirty-fourth round: "a: yes, slide sidebar in"); its list is centred beside the sidebar as
+  shown. Its viewer is one layer above it and, like every viewer, opaque in the sidebar's
+  `hud_background` ("Every viewer"), so the picker vanishes behind it.
 - S14: new names `CardVisual.held_lift_px()` and `CardVisual.cursor_ride_offset()`,
   `PlayArea.follow_cards()`, `PlayArea._on_pointer_moved()` / `_origin_cell_rect()` and
   `PlayArea._next_grab_follows`.

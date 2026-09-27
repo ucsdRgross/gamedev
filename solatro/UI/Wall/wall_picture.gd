@@ -269,11 +269,6 @@ func update_wall_view_size(footprint_px: Vector2) -> void:
 	_rescale_screen()
 	mark_for_rerender()
 
-## How big a window pixel is against one of this picture's own while focused -- what a hosted screen converts through to match window space.
-func window_scale(window: Vector2) -> float:
-	return focused_scale(rect.size, window, settings().wall_overfill_margin) \
-			* cover_scale(Vector2(_design_size), rect.size)
-
 # The space LEFT beside `rect` (the shared `HudContainer`'s rect, against this viewport's own
 # `window` size) once both convert into THIS picture's own space -- the unmargined cover scale and
 # inset `GameView._publish_board_inset()` uses, extended to a rect a focused screen can centre in.

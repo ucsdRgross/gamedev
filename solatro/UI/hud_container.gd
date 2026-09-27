@@ -205,11 +205,11 @@ func _slide_offset(rect: Rect2) -> Vector2:
 	return Vector2(-out * rect.size.x, 0.0)
 
 # Whether any screen wants this container at all: never in wall view, and on the menu, which carries
-# no HUD of its own, only while a viewer is open there or a description is up -- slid in empty for
-# a viewer, so the viewer fades with it as on every other screen.
+# no HUD of its own, only while its deck picker or a viewer is up there -- slid in empty, so they
+# fade with it as on every other screen. Every description the menu shows comes from that viewer.
 func _wants_container() -> bool:
 	if _active_screen == &"": return false
-	if _active_screen == MENU_SCREEN: return showing_description() or _shown_hosted_viewer() != null
+	if _active_screen == MENU_SCREEN: return _deck_picker != null or _shown_hosted_viewer() != null
 	return true
 
 ## The space left beside this container inside `picture`'s own space -- the one conversion every hosted screen insets by; a fixture with no picture falls back to the plain window rect.
@@ -334,17 +334,48 @@ func _forget_hosted_viewer(viewer: Node) -> void:
 	_follow_the_menus_own_content()
 
 # ⚠ A VIEWER ON THIS LAYER IS UI LIKE THE SIDEBAR, never part of the picture: it fades with the
-# slide, gone in wall view and on every other screen, and a hidden one answers no input at all --
-# a hidden node still hears `_unhandled_input`, which is where a viewer keeps its keys.
+# slide, gone in wall view and on every other screen, and so does the menu's deck picker.
 func _fade_overlay_viewers() -> void:
 	for hosted : _HostedViewer in _hosted_viewers:
-		var shown := _slide if hosted.screen == _active_screen else 0.0
 		var drawn : CanvasItem = hosted.viewer as CanvasItem if hosted.viewer is CanvasItem \
 				else (hosted.viewer as DeckViewer).margin_container
-		drawn.modulate.a = shown
-		drawn.visible = shown > 0.0
-		hosted.viewer.process_mode = Node.PROCESS_MODE_INHERIT if shown > 0.0 \
-				else Node.PROCESS_MODE_DISABLED
+		_show_on_this_layer(hosted.viewer, drawn, _slide if hosted.screen == _active_screen else 0.0)
+	if _deck_picker:
+		_show_on_this_layer(_deck_picker, _deck_picker, _slide if _active_screen == MENU_SCREEN else 0.0)
+
+# A hidden node still hears `_unhandled_input`, which is where a viewer keeps its keys, so a hidden
+# one is disabled too and answers no input at all.
+func _show_on_this_layer(node: Node, drawn: CanvasItem, shown: float) -> void:
+	drawn.modulate.a = shown
+	drawn.visible = shown > 0.0
+	node.process_mode = Node.PROCESS_MODE_INHERIT if shown > 0.0 else Node.PROCESS_MODE_DISABLED
+
+## The menu's deck picker while it is up on this layer; set by `host_deck_picker()`, cleared as it leaves the tree.
+var _deck_picker : DeckPicker = null
+
+# ⚠ UNDER THE OVERLAY'S OWN CONTROLS: the picker's dim takes every pointer over the picture, and the
+# Back row and this container must still take theirs. It slides the menu's sidebar in, empty, and
+# is centred beside it as it is shown, so the slide shifts it as it shifts the menu's own content.
+func host_deck_picker(picker: DeckPicker) -> void:
+	get_parent().move_child(picker, 0)
+	_deck_picker = picker
+	picker.tree_exiting.connect(_forget_the_deck_picker)
+	picker.visibility_changed.connect(_refocus_the_deck_picker)
+	var fit := func() -> void: picker.fit_beside(rect_beside(null))
+	connect_for_screen(picker, container_rect_changed, fit)
+	fit.call()
+	_fade_overlay_viewers()
+	_follow_the_menus_own_content()
+
+# ⚠ A HIDDEN CONTROL LOSES THE FOCUS, so the picker takes it again each time it fades back in --
+# unless a viewer is up over it: that viewer is the focus, and a key enters it as on every screen
+# rather than pressing a Pick hidden behind it.
+func _refocus_the_deck_picker() -> void:
+	if _shown_hosted_viewer() == null: _deck_picker.focus_the_first_pick()
+
+func _forget_the_deck_picker() -> void:
+	_deck_picker = null
+	_follow_the_menus_own_content()
 
 static func _hosts(hosted: _HostedViewer, viewer: Node) -> bool:
 	return hosted.viewer == viewer
@@ -454,8 +485,8 @@ func set_active_screen(screen: StringName) -> void:
 	_fade_overlay_viewers()
 
 # THE MENU CARRIES NO HUD, so on that one screen the container's own content decides whether it is
-# there at all: the picker's viewer opening or a description slides it in, and the last of them
-# going slides it out. Every other screen is driven by `Main` landing on it and leaving it.
+# there at all: the deck picker or its viewer opening slides it in, and the last of them going
+# slides it out. Every other screen is driven by `Main` landing on it and leaving it.
 func _follow_the_menus_own_content() -> void:
 	if _active_screen != MENU_SCREEN: return
 	slide_to(1.0 if _wants_container() else 0.0)

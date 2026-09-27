@@ -12,6 +12,7 @@ const MAP_HUD_TOP_OUT_PATH := "user://sidebar_snapshot/map_hud_top.png"
 const MAP_POPUP_OUT_PATH := "user://sidebar_snapshot/map_popup.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
+const MENU_PICKER_OUT_PATH := "user://sidebar_snapshot/menu_picker.png"
 const MENU_INSPECT_OUT_PATH := "user://sidebar_snapshot/menu_inspect.png"
 const MENU_INSPECT_HOVER_OUT_PATH := "user://sidebar_snapshot/menu_inspect_hover.png"
 const DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/description.png"
@@ -1022,14 +1023,18 @@ func _open_a_booster_pack(main: Main) -> void:
 	if not cards.is_empty(): cards[0].grab_focus()
 	await get_tree().process_frame
 
-# The MENU still with a viewer up: New Run opens the deck picker, the first deck's Inspect opens a
-# viewer over the menu. That viewer is inset beside the container like every other, so the menu's
-# own sidebar is never drawn over its listed cards. Returns the picker, to free the pair by.
+# The MENU stills: New Run opens the deck picker, shot alone once the sidebar is in, then the first
+# deck's Inspect opens a viewer over it, inset beside the container like every other, so the
+# sidebar is never drawn over its listed cards. Returns the picker, to free the pair by.
 func _open_the_pickers_viewer(main: Main) -> DeckPicker:
 	main.menu_scene.new_run_button.pressed.emit()
 	await get_tree().process_frame
-	var picker : DeckPicker = main.menu_scene.find_child("DeckPicker", true, false) as DeckPicker
+	var picker : DeckPicker = main.hud_container.get_parent().find_child("DeckPicker", false, false) as DeckPicker
 	if picker == null: return null
+	if main.hud_container.slid_fraction() < 1.0: await main.hud_container.slide_settled
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(MENU_PICKER_OUT_PATH)
 	((picker.rows.get_child(0) as HBoxContainer).get_child(1) as Button).pressed.emit()
 	await get_tree().process_frame
 	return picker

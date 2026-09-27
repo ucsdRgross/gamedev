@@ -146,7 +146,7 @@ func _shoot(label: String, id: StringName) -> void:
 func _shoot_the_pickers_description() -> void:
 	_main.menu_scene.new_run_button.pressed.emit()
 	await get_tree().process_frame
-	var picker : DeckPicker = _main.menu_scene.find_child("DeckPicker", true, false) as DeckPicker
+	var picker : DeckPicker = _main.hud_container.get_parent().find_child("DeckPicker", false, false) as DeckPicker
 	var inspect : Button = (picker.rows.get_child(0) as HBoxContainer).get_child(1) as Button
 	inspect.pressed.emit()
 	await _await_still()

@@ -449,7 +449,7 @@ func _session_cycle() -> void:
 # Menus: DeckPicker open, which builds every starter deck list, inspect one in a DeckViewer, close
 # it, then Pick. No deck_picked listener on purpose: the run below starts from the FROZEN TestDecks
 # so per-cycle allocations stay replay-stable, while the picker still exercises its full path.
-	var picker := DeckPicker.add_to_scene(self)
+	var picker := DeckPicker.add_to_scene(self, null)
 	await _settle()
 	var first_deck : Array[CardData] = picker._deck.get_deck_list()[0]["cards"]
 	var inspect := picker.rows.get_child(0).get_child(1) as Button
@@ -504,11 +504,9 @@ func _session_cycle() -> void:
 	await _settle()
 
 	_mark_phase("3 map + booster")
-	# --- 4. A real show WITH a GameView: Nexts, grab/place, discard, a real placement pass with
-	# real scoring (props spawn + finish inside the awaited resolution -- see the placement fill
-	# below), UNDO across it (the quiescent Game.undo() drops the popped snapshot), redo,
-	# quit-mid-show -> resume, win.
-	## Out of reach until the resumed board is in place: a met goal ends a show by itself, and this phase needs the quit to interrupt a LIVE show.
+# A real show WITH a GameView: Nexts, grab/place, discard, a scoring placement, UNDO across it, redo,
+# quit mid-show and resume, win. The goal is out of reach until the resumed board is in place: a
+# met goal ends a show by itself, and the quit must interrupt a LIVE show.
 	run.pending_goal = GOAL_OUT_OF_REACH
 	run.pending_node_id = 2
 	seed(424242)

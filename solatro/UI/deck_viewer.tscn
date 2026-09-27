@@ -27,7 +27,6 @@ theme_override_constants/margin_bottom = 80
 
 [node name="ColorRect" type="ColorRect" parent="MarginContainer" unique_id=384025132]
 layout_mode = 2
-color = Color(1, 0.384314, 0.498039, 0.141176)
 
 [node name="CloseTab" type="Button" parent="MarginContainer/ColorRect" unique_id=902417365]
 unique_name_in_owner = true

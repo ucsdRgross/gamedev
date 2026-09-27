@@ -29,6 +29,12 @@ var _return_focus : Control = null
 ## Where the focus goes on close when the opener is hidden; set by the `HudContainer` hosting this viewer.
 var fallback_focus : Control = null
 
+# ⚠ OPAQUE, in the sidebar's and the chooser's one background: nothing behind a viewer shows
+# between or under its cards -- the menu's deck picker it opens over least of all.
+func _ready() -> void:
+	(margin_container.get_node(^"ColorRect") as ColorRect).color = \
+			PaletteDB.color(PaletteDB.ROLES.hud_background)
+
 # ⚠ THE OPENER HANDS ITS OWN CONTROL IN: focus is cleared across every viewport of one window. A
 # SECOND PRESS OF THAT SAME opener is a close and returns null; any other replaces the viewer, as
 # swapping piles does, or opens `over` it, which stays open underneath.

@@ -236,6 +236,12 @@ func _ready() -> void:
 	await test_the_menus_viewer_fades_with_the_sidebar_across_a_leave()
 	await test_picking_a_deck_with_the_viewer_open_closes_it()
 	await test_closing_the_picker_drops_the_menus_description()
+	await test_the_deck_picker_draws_at_the_ui_size_on_screen_at_both_window_shapes()
+	await test_the_deck_pickers_viewer_draws_over_the_picker()
+	await test_keys_reach_every_deck_picker_control_in_the_windows_own_viewport()
+	await test_the_menu_behind_the_deck_picker_answers_no_pointer()
+	await test_the_deck_picker_is_hidden_in_wall_view_and_back_on_return()
+	await test_a_return_to_the_menu_leaves_the_focus_to_the_pickers_viewer()
 	await test_the_deck_builder_tool_loads_and_stands_up()
 	behavior_section("S14: LIFTED, AND CARRIED")
 	await test_a_held_card_lifts_and_does_not_follow()
@@ -1319,7 +1325,7 @@ func _last_fully_out(samples: Array[Array]) -> int:
 		if (samples[i][0] as float) <= 0.001: last = i
 	return last
 
-## The menu carries no HUD, so its sidebar is there only while it has something to show: the picker's viewer open, or a description.
+## The menu carries no HUD, so its sidebar is there only while it has something to show: the deck picker, its viewer, or a description.
 func test_the_sidebar_is_hidden_on_the_menu_until_the_picker_shows_something() -> void:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
@@ -1343,18 +1349,21 @@ func test_the_sidebar_is_hidden_on_the_menu_until_the_picker_shows_something() -
 	check(not container.showing_description() and not container.visible,
 			"a click where the sidebar would be is not taken by it")
 
-	main.menu_scene.new_run_button.pressed.emit()
-	await get_tree().process_frame
-	var picker : DeckPicker = main.menu_scene.find_child("DeckPicker", true, false) as DeckPicker
-	var inspect : Button = (picker.rows.get_child(0) as HBoxContainer).get_child(1) as Button
-	inspect.pressed.emit()
-	await get_tree().process_frame
+	await _press_new_run(main)
 	await _await_the_menus_slide(container, 1.0)
 	var hud_stack : Control = container.get_node(^"%HudStack")
 	var empty := hud_stack.visible and not (container.get_node(^"%GameHud") as Control).visible 			and not (container.get_node(^"%MapHud") as Control).visible
 	check(container.visible and is_equal_approx(container.slid_fraction(), 1.0)
 			and not container.showing_description() and empty,
-			"the picker's viewer opening slides the sidebar in, empty: neither HUD, no description",
+			"the deck picker opening slides the sidebar in, empty: neither HUD, no description",
+			"slide %.3f description %s" % [container.slid_fraction(), container.showing_description()])
+	var picker : DeckPicker = _the_deck_picker(main)
+	var inspect : Button = (picker.rows.get_child(0) as HBoxContainer).get_child(1) as Button
+	inspect.pressed.emit()
+	await get_tree().process_frame
+	check(container.visible and is_equal_approx(container.slid_fraction(), 1.0)
+			and not container.showing_description(),
+			"the picker's viewer opening keeps the sidebar in, empty",
 			"slide %.3f description %s" % [container.slid_fraction(), container.showing_description()])
 	var listed := _listed_viewer_cards()
 	check(not listed.is_empty(), "the picker's viewer lists cards", str(listed.size()))
@@ -1370,9 +1379,13 @@ func test_the_sidebar_is_hidden_on_the_menu_until_the_picker_shows_something() -
 			"dismissing it leaves the sidebar in, empty, while the viewer is still open",
 			"%.3f" % container.slid_fraction())
 	await _close_open_viewer(viewport)
+	check(container.visible and is_equal_approx(container.slid_fraction(), 1.0),
+			"closing the viewer leaves the sidebar in while the picker is still up",
+			"%.3f" % container.slid_fraction())
+	await _close_open_viewer(viewport)
 	await _await_the_menus_slide(container, 0.0)
 	check(not container.visible and is_zero_approx(container.slid_fraction()),
-			"closing the viewer with nothing described slides the sidebar back out and hides it",
+			"closing the picker with nothing described slides the sidebar back out and hides it",
 			"%.3f" % container.slid_fraction())
 	await _end_booted_fixture(viewport, main)
 
@@ -1615,10 +1628,6 @@ func _check_drawn_unstretched(id: StringName, where: String) -> void:
 			"the focused %s is drawn at one scale on both axes at %s" % [id, where],
 			"drawn %s sprite %s camera %s" % [drawn, sprite.scale,
 					(_main.wall.get_node(^"%Camera2D") as Camera2D).zoom])
-	var window := _container.get_viewport().get_visible_rect().size
-	check(absf(drawn.x / picture.window_scale(window) - 1.0) <= UNSTRETCHED_TOLERANCE,
-			"...the scale its window_scale reports, which a screen sizes its UI through, at %s" % where,
-			"drawn %s vs window_scale %.4f" % [drawn, picture.window_scale(window)])
 
 # The slide itself, which no still frame can show: after the picture lands the sidebar travels in
 # from off the window while the camera holds still, and the board's own window opens up with it.
@@ -5903,7 +5912,9 @@ func _beside_the_chooser(chooser: ChoiceViewer) -> Vector2:
 
 ## A point in picture `id`'s own viewport in the booted window's pixels: the wall's own routing, run backwards.
 func _point_in_window(id: StringName, at: Vector2) -> Vector2:
-	var picture : WallPicture = _main._pictures[id]
+	return _picture_point_in_window(_main._pictures[id], at)
+
+func _picture_point_in_window(picture: WallPicture, at: Vector2) -> Vector2:
 	var sprite : Sprite2D = picture.get_node(^"%Screen")
 	return sprite.get_global_transform_with_canvas() * (at - Vector2(picture.viewport.size) * 0.5)
 
@@ -7005,14 +7016,9 @@ func _await_the_menus_slide(container: HudContainer, aim: float) -> void:
 # picker, the first deck's Inspect button opens a viewer over the menu. Returns
 # `[viewport, main, inspect_button]`.
 func _open_the_pickers_inspect_viewer(size := Vector2i(1280, 720)) -> Array:
-	backup_real_save(suite_tag())
-	_prev_run = RunManager.run
-	_prev_save_info = Main.save_info
-	var booted := await _boot_main_at(size)
-	var main : Main = booted[1]
-	main.menu_scene.new_run_button.pressed.emit()
-	await get_tree().process_frame
-	var picker : DeckPicker = main.menu_scene.find_child("DeckPicker", true, false) as DeckPicker
+	var opened := await _open_the_deck_picker(size)
+	var main : Main = opened[1]
+	var picker : DeckPicker = opened[2]
 	var inspect : Button = null
 	if picker: inspect = (picker.rows.get_child(0) as HBoxContainer).get_child(1) as Button
 	if inspect: inspect.pressed.emit()
@@ -7020,7 +7026,7 @@ func _open_the_pickers_inspect_viewer(size := Vector2i(1280, 720)) -> Array:
 	await get_tree().process_frame
 	var container : HudContainer = main.wall.get_node(^"%HudContainer")
 	await _await_the_menus_slide(container, 1.0)
-	return [booted[0], main, inspect]
+	return [opened[0], main, inspect]
 
 ## The start menu is a screen like the others: the picker's viewer lists its cards beside the container, never under it.
 func test_the_start_menus_inspect_viewer_lists_beside_the_container() -> void:
@@ -7036,7 +7042,7 @@ func test_the_start_menus_inspect_viewer_lists_beside_the_container() -> void:
 				"every card the picker's viewer lists lies beside the container and inside the window (S12.16)")
 	await _end_booted_fixture(viewport, main)
 
-## The picker's viewer slides the menu's sidebar in, so a click on the sidebar is the sidebar's, and a click anywhere else beside the list closes the viewer -- which, nothing described, slides the sidebar back out.
+## With the picker's viewer up the menu's sidebar is in, so a click on it is the sidebar's, and a click anywhere else beside the list closes the viewer; the sidebar stays in for the picker, and slides out once the picker closes with nothing described.
 func test_a_click_beside_the_menus_viewer_closes_it_and_the_sidebar_slides_out() -> void:
 	var opened := await _open_the_pickers_inspect_viewer()
 	var viewport : SubViewport = opened[0]
@@ -7054,9 +7060,12 @@ func test_a_click_beside_the_menus_viewer_closes_it_and_the_sidebar_slides_out()
 		await _click(outside, viewport)
 		check(not is_instance_valid(DeckViewer._open) or DeckViewer._open.is_queued_for_deletion(),
 				"a click beside the list closes the picker's viewer", str(outside))
+		check(container.visible and is_equal_approx(container.slid_fraction(), 1.0),
+				"...and the menu's sidebar stays in while the picker is up", "%.3f" % container.slid_fraction())
+		await _close_open_viewer(viewport)
 		await _await_the_menus_slide(container, 0.0)
 		check(not container.visible and is_zero_approx(container.slid_fraction()),
-				"...and with nothing described the menu's sidebar slides back out",
+				"...and closing the picker with nothing described slides the sidebar back out",
 				"%.3f" % container.slid_fraction())
 	await _end_booted_fixture(viewport, main)
 
@@ -7069,7 +7078,6 @@ func test_the_start_menus_inspect_viewer_publishes_into_the_container() -> void:
 	var container : HudContainer = main.wall.get_node(^"%HudContainer")
 	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
 	var title : Label = panel.get_node(^"%Title")
-	var menu_viewport : SubViewport = main._pictures[&"start_menu"].viewport
 	var cards : Array[ControlCard] = []
 	if is_instance_valid(DeckViewer._open): cards = _listed_viewer_cards()
 	check(cards.size() >= 2, "the inspected deck lists cards to point at", str(cards.size()))
@@ -7082,9 +7090,9 @@ func test_the_start_menus_inspect_viewer_publishes_into_the_container() -> void:
 				"...and the title reads that card's own name (S12.17)", title.text)
 		await _close_open_viewer(viewport)
 		check(not is_instance_valid(DeckViewer._open), "escape closed the picker's viewer")
-		check(menu_viewport.gui_get_focus_owner() == inspect,
+		check(viewport.gui_get_focus_owner() == inspect,
 				"...and the focus is back on the Inspect button that opened it (S12.17)",
-				str(menu_viewport.gui_get_focus_owner()))
+				str(viewport.gui_get_focus_owner()))
 	await _end_booted_fixture(viewport, main)
 
 ## The picker's own dimmer must not eat the viewer it opened: a POINTER on a listed card publishes, exactly as the keyboard does.
@@ -7163,7 +7171,7 @@ func test_picking_a_deck_with_the_viewer_open_closes_it() -> void:
 	var main : Main = opened[1]
 	var container : HudContainer = main.wall.get_node(^"%HudContainer")
 	var viewer := DeckViewer._open
-	var picker : DeckPicker = main.menu_scene.find_child("DeckPicker", true, false) as DeckPicker
+	var picker : DeckPicker = _the_deck_picker(main)
 	check(is_instance_valid(viewer) and picker != null, "sanity: the picker's viewer is open over the picker")
 	if picker != null:
 		var landed : Array[bool] = [false]
@@ -7188,7 +7196,6 @@ func test_closing_the_picker_drops_the_menus_description() -> void:
 	var viewport : SubViewport = opened[0]
 	var main : Main = opened[1]
 	var container : HudContainer = main.wall.get_node(^"%HudContainer")
-	var menu_viewport : SubViewport = main._pictures[&"start_menu"].viewport
 	var cards : Array[ControlCard] = []
 	if is_instance_valid(DeckViewer._open): cards = _listed_viewer_cards()
 	check(not cards.is_empty(), "the inspected deck lists a card to read", str(cards.size()))
@@ -7197,13 +7204,272 @@ func test_closing_the_picker_drops_the_menus_description() -> void:
 		await get_tree().process_frame
 		check(container.showing_description(), "sanity: the menu is describing a picker card")
 		await _close_open_viewer(viewport)
-		await _close_open_viewer(menu_viewport)
-		check(main.menu_scene.find_child("DeckPicker", true, false) == null,
+		await _close_open_viewer(viewport)
+		check(_the_deck_picker(main) == null,
 				"sanity: the second escape closed the picker itself")
 		await main._go_to_wall_view()
 		await main._focus_picture(&"start_menu")
 		check(not container.showing_description(),
 				"Close fix 2: returning to the menu after the picker closed finds the HUD")
+	await _end_booted_fixture(viewport, main)
+
+## The deck picker wherever it is up, or null while none is: where it lives is what the rows check.
+func _the_deck_picker(main: Main) -> DeckPicker:
+	return main.find_child("DeckPicker", true, false) as DeckPicker
+
+# The player's route to the picker: Play unfolds the run row, New Run opens the picker. The row
+# must be showing, since closing the picker hands the focus back to New Run.
+func _press_new_run(main: Main) -> void:
+	(main.menu_scene.get_node(^"Main/Play") as Button).pressed.emit()
+	main.menu_scene.new_run_button.pressed.emit()
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## The deck picker open on a booted menu at `size`. Returns `[viewport, main, picker]`.
+func _open_the_deck_picker(size := Vector2i(1280, 720)) -> Array:
+	backup_real_save(suite_tag())
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	var booted := await _boot_main_at(size)
+	var main : Main = booted[1]
+	await _press_new_run(main)
+	await _await_the_menus_slide(main.hud_container, 1.0)
+	return [booted[0], main, _the_deck_picker(main)]
+
+## Where `control` is drawn in `viewport`'s own window pixels.
+func _drawn_in_window(viewport: SubViewport, control: Control) -> Rect2:
+	return viewport.get_final_transform() * control.get_global_transform_with_canvas() \
+			* Rect2(Vector2.ZERO, control.size)
+
+func _tap_key_in(viewport: SubViewport, keycode: Key) -> void:
+	_push_key(viewport, keycode, true)
+	_push_key(viewport, keycode, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## The deck picker is UI like its viewer: in the window's own viewport, drawn at its own size whatever the menu picture's zoom, wholly on screen and centred where the menu centres its own content, at both window shapes.
+func test_the_deck_picker_draws_at_the_ui_size_on_screen_at_both_window_shapes() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		var opened := await _open_the_deck_picker(size)
+		var viewport : SubViewport = opened[0]
+		var main : Main = opened[1]
+		var picker : DeckPicker = opened[2]
+		check(picker != null and picker.get_viewport() == viewport,
+				"the deck picker opens in the window's own viewport at %s" % size,
+				str(picker.get_viewport() if picker else null))
+		if picker != null:
+			var panel : Control = picker.get_node(^"Panel")
+			var drawn := _drawn_in_window(viewport, panel)
+			var ui := panel.size * viewport.get_final_transform().get_scale()
+			check(drawn.size.is_equal_approx(ui),
+					"...drawn at its own size at the window's UI scale, never the menu's zoom, at %s" % size,
+					"%s vs %s" % [drawn.size, ui])
+			check(Rect2(Vector2.ZERO, Vector2(size)).encloses(drawn),
+					"...wholly inside the window at %s" % size, str(drawn))
+			var scroll : ScrollContainer = picker.get_node(^"Panel/VBox/Scroll")
+			var first_pick : Control = picker.rows.get_child(0).get_child(2)
+			check(scroll.scroll_vertical == 0 and viewport.gui_get_focus_owner() == first_pick
+					and _drawn_in_window(viewport, scroll).encloses(_drawn_in_window(viewport, first_pick)),
+					"...its list at the top, the focused first Pick in view, at %s" % size,
+					"scroll %d focus %s" % [scroll.scroll_vertical, viewport.gui_get_focus_owner()])
+			var beside := viewport.get_final_transform() * main.hud_container.rect_beside(null)
+			check(drawn.get_center().distance_to(beside.get_center()) <= 1.0,
+					"...centred where the menu centres its own content, beside the sidebar as shown, at %s"
+					% size, "%s vs %s" % [drawn.get_center(), beside.get_center()])
+		await _end_booted_fixture(viewport, main)
+
+## Inspect opens its viewer OVER the picker, on the layer above it, and opaque: the pointer over the picker's list is the viewer's, and no picker row shows through between the viewer's cards.
+func test_the_deck_pickers_viewer_draws_over_the_picker() -> void:
+	var opened := await _open_the_pickers_inspect_viewer()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var picker := _the_deck_picker(main)
+	var viewer := DeckViewer._open
+	check(picker != null and is_instance_valid(viewer), "sanity: the picker's viewer is open over the picker")
+	if picker != null and is_instance_valid(viewer):
+		var panel : Control = picker.get_node(^"Panel")
+		check(viewer.layer > panel.get_canvas_layer_node().layer,
+				"the picker's viewer is on a layer above the picker",
+				"%d vs %d" % [viewer.layer, panel.get_canvas_layer_node().layer])
+		_hover_in(viewport, _drawn_in_window(viewport, panel).get_center())
+		await get_tree().process_frame
+		var hovered := viewport.gui_get_hovered_control()
+		check(hovered != null and (hovered == viewer.margin_container
+				or viewer.margin_container.is_ancestor_of(hovered)),
+				"...and the pointer over the picker's list is the viewer's", str(hovered))
+		var label := _a_picker_label_under_the_viewer_between_its_cards(viewport, picker, viewer)
+		check(label != Rect2(), "sanity: a picker row's label lies under the viewer, clear of its cards")
+		if label != Rect2():
+			viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+			await await_drawn_frames(2)
+			var image := viewport.get_texture().get_image()
+			var hud := PaletteDB.color(PaletteDB.ROLES.hud_background)
+			var through := 0
+			for y : int in range(int(label.position.y), int(label.end.y)):
+				for x : int in range(int(label.position.x), int(label.end.x)):
+					if _colour_distance(image.get_pixel(x, y), hud) > 0.05: through += 1
+			check(through == 0,
+					"...and the picker's row does not show through the viewer: its label's pixels are all the HUD background",
+					"%d of %s differ" % [through, label])
+	await _end_booted_fixture(viewport, main)
+
+## A picker row's label, in window pixels, that lies wholly inside the viewer's backdrop and inside the picker's own scroll, clear of every listed card; empty if none does.
+func _a_picker_label_under_the_viewer_between_its_cards(viewport: SubViewport, picker: DeckPicker,
+		viewer: DeckViewer) -> Rect2:
+	var backdrop := _drawn_in_window(viewport, viewer.margin_container.get_node(^"ColorRect") as Control)
+	var scroll := _drawn_in_window(viewport, picker.get_node(^"Panel/VBox/Scroll") as Control)
+	for row : Node in picker.rows.get_children():
+		var label := _drawn_in_window(viewport, row.get_child(0) as Control)
+		if not (backdrop.encloses(label) and scroll.encloses(label)): continue
+		if viewer.cards().controls.any(func(card: ControlCard) -> bool:
+				return _drawn_in_window(viewport, card).intersects(label)): continue
+		return label
+	return Rect2()
+
+## One device reaches every control, in the window's own viewport with the menu's picture holding no focus: Left to Inspect, Enter opens its viewer, Escape closes it back onto Inspect, Down walks every Pick to Close, Close hands the focus back to New Run, and Enter on a Pick starts the run.
+func test_keys_reach_every_deck_picker_control_in_the_windows_own_viewport() -> void:
+	var opened := await _open_the_deck_picker()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var picker : DeckPicker = opened[2]
+	var menu_viewport : SubViewport = main._pictures[&"start_menu"].viewport
+	check(picker != null, "sanity: New Run opened the deck picker")
+	if picker != null:
+		var first_row := picker.rows.get_child(0) as HBoxContainer
+		var inspect := first_row.get_child(1) as Button
+		check(viewport.gui_get_focus_owner() == first_row.get_child(2)
+				and menu_viewport.gui_get_focus_owner() == null,
+				"the picker opens on its first Pick in the window's own viewport, the menu holding no focus",
+				"%s / %s" % [viewport.gui_get_focus_owner(), menu_viewport.gui_get_focus_owner()])
+		await _tap_key_in(viewport, KEY_LEFT)
+		check(viewport.gui_get_focus_owner() == inspect, "Left reaches the row's Inspect",
+				str(viewport.gui_get_focus_owner()))
+		await _tap_key_in(viewport, KEY_ENTER)
+		check(is_instance_valid(DeckViewer._open) and DeckViewer._open.get_viewport() == viewport,
+				"Enter on Inspect opens its viewer in the window's own viewport")
+		await _tap_key_in(viewport, KEY_ESCAPE)
+		check(not is_instance_valid(DeckViewer._open) and _the_deck_picker(main) == picker
+				and viewport.gui_get_focus_owner() == inspect,
+				"Escape closes the viewer alone, the focus back on Inspect", str(viewport.gui_get_focus_owner()))
+		await _tap_key_in(viewport, KEY_RIGHT)
+		var close : Button = picker.get_node(^"Panel/VBox/Close")
+		var reached : Array[Control] = [viewport.gui_get_focus_owner()]
+		for _step : int in picker.rows.get_child_count():
+			await _tap_key_in(viewport, KEY_DOWN)
+			reached.append(viewport.gui_get_focus_owner())
+		var picks : Array[Control] = []
+		for row : Node in picker.rows.get_children():
+			picks.append(row.get_child(2) as Control)
+		check(picks.all(func(pick: Control) -> bool: return pick in reached) and close in reached,
+				"Down walks every row's Pick and on to Close", str(reached))
+		if viewport.gui_get_focus_owner() == close:
+			await _tap_key_in(viewport, KEY_ENTER)
+			check(_the_deck_picker(main) == null
+					and menu_viewport.gui_get_focus_owner() == main.menu_scene.new_run_button,
+					"Enter on Close closes the picker, the focus back on New Run in the menu's picture",
+					str(menu_viewport.gui_get_focus_owner()))
+		main.menu_scene.new_run_button.pressed.emit()
+		await _await_the_menus_slide(main.hud_container, 1.0)
+		var landed : Array[bool] = [false]
+		main.map_scene.controller.map_ready.connect(func() -> void: landed[0] = true, CONNECT_ONE_SHOT)
+		await _tap_key_in(viewport, KEY_ENTER)
+		var waited := 0.0
+		while not landed[0] and waited < CARD_CONTROL_TIMEOUT_SEC:
+			await get_tree().process_frame
+			waited += get_process_delta_time()
+		check(landed[0] and _the_deck_picker(main) == null,
+				"Enter on a reopened picker's Pick starts the new run and closes the picker")
+	await _end_booted_fixture(viewport, main)
+
+## The menu behind the picker answers no pointer: the picker's dim takes it over the menu's Profile, the overlay's Wall button still takes it above the dim, and with the picker closed the same click presses Profile.
+func test_the_menu_behind_the_deck_picker_answers_no_pointer() -> void:
+	var opened := await _open_the_deck_picker()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var picker : DeckPicker = opened[2]
+	check(picker != null, "sanity: New Run opened the deck picker")
+	if picker != null:
+		var profile := main.menu_scene.get_node(^"Main/Profile") as Button
+		var at := _picture_point_in_window(main._pictures[&"start_menu"],
+				profile.get_global_rect().get_center())
+		var presses : Array[int] = [0]
+		profile.pressed.connect(func() -> void: presses[0] += 1)
+		_hover_in(viewport, at)
+		await get_tree().process_frame
+		check(viewport.gui_get_hovered_control() == picker.get_node(^"Dim"),
+				"the pointer over the menu's Profile is the picker's dim's", str(viewport.gui_get_hovered_control()))
+		await _click(at, viewport)
+		check(presses[0] == 0, "...and its click does not press Profile behind the picker", str(presses[0]))
+		var wall_button : Button = main.wall.get_node(^"%Overlay").get_node(^"%WallButton")
+		_hover_in(viewport, wall_button.get_global_rect().get_center())
+		await get_tree().process_frame
+		check(viewport.gui_get_hovered_control() == wall_button,
+				"the overlay's Wall button still takes the pointer above the dim", str(viewport.gui_get_hovered_control()))
+		await _close_open_viewer(viewport)
+		check(_the_deck_picker(main) == null, "sanity: Escape closed the picker")
+		await _await_the_menus_slide(main.hud_container, 0.0)
+		at = _picture_point_in_window(main._pictures[&"start_menu"], profile.get_global_rect().get_center())
+		_hover_in(viewport, at)
+		await get_tree().process_frame
+		await _click(at, viewport)
+		check(presses[0] == 1, "sanity: with the picker closed the same click presses Profile", str(presses[0]))
+	await _end_booted_fixture(viewport, main)
+
+## Leaving the menu takes the picker out with the sidebar -- not drawn, deaf in wall view -- and coming back fades it in with the sidebar's slide, focused on its first Pick, and Escape still closes it.
+func test_the_deck_picker_is_hidden_in_wall_view_and_back_on_return() -> void:
+	var opened := await _open_the_deck_picker()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var picker : DeckPicker = opened[2]
+	check(picker != null, "sanity: New Run opened the deck picker")
+	if picker != null:
+		await main._go_to_wall_view()
+		check(main._current_focus == &"", "sanity: the menu was left for wall view", str(main._current_focus))
+		var panel : Control = picker.get_node(^"Panel")
+		check(not panel.is_visible_in_tree() and not picker.can_process(),
+				"in wall view the deck picker is neither drawn nor hears input")
+		main._focus_picture(&"start_menu")
+		while main._current_focus != &"start_menu": await get_tree().process_frame
+		var landing := Vector2(main.hud_container.slid_fraction(), picker.modulate.a)
+		await _await_the_menus_slide(main.hud_container, 1.0)
+		check(is_equal_approx(landing.y, landing.x),
+				"coming back it fades in with the sidebar's slide", "slide %.2f, alpha %.2f at the landing"
+				% [landing.x, landing.y])
+		check(panel.is_visible_in_tree() and picker.can_process() and is_equal_approx(picker.modulate.a, 1.0)
+				and viewport.gui_get_focus_owner() == picker.rows.get_child(0).get_child(2),
+				"...and is drawn and answering again, focused on its first Pick", str(viewport.gui_get_focus_owner()))
+		await _close_open_viewer(viewport)
+		check(_the_deck_picker(main) == null, "...and Escape closes it")
+	await _end_booted_fixture(viewport, main)
+
+## The picker's viewer is the focus: left up across a leave, the return hands no focus to a Pick hidden behind it, Enter starts no run, and the first arrow enters the viewer in the window's own viewport -- as a game viewer left up across a leave does.
+func test_a_return_to_the_menu_leaves_the_focus_to_the_pickers_viewer() -> void:
+	var opened := await _open_the_pickers_inspect_viewer()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var picker := _the_deck_picker(main)
+	var viewer := DeckViewer._open
+	check(picker != null and is_instance_valid(viewer), "sanity: the picker's viewer is open over the picker")
+	if picker != null and is_instance_valid(viewer):
+		viewer.cards().controls[1].grab_focus()
+		await main._go_to_wall_view()
+		main._focus_picture(&"start_menu")
+		while main._current_focus != &"start_menu": await get_tree().process_frame
+		await _await_the_menus_slide(main.hud_container, 1.0)
+		var owner := viewport.gui_get_focus_owner()
+		check(owner == null or not picker.is_ancestor_of(owner),
+				"back on the menu, no Pick behind the open viewer holds the focus", str(owner))
+		var runs : Array[int] = [0]
+		main.menu_scene.new_run_requested.connect(func(_cards: Array[CardData], _rules: Array[CardData]) -> void:
+				runs[0] += 1)
+		await _tap_key_in(viewport, KEY_ENTER)
+		check(runs[0] == 0 and _the_deck_picker(main) == picker,
+				"...Enter starts no run and the picker stays up", str(runs[0]))
+		await _tap_key_in(viewport, KEY_DOWN)
+		owner = viewport.gui_get_focus_owner()
+		check(owner != null and viewer.margin_container.is_ancestor_of(owner)
+				and owner.get_viewport() == viewport,
+				"...and the first arrow enters the viewer, in the window's own viewport", str(owner))
 	await _end_booted_fixture(viewport, main)
 
 # A real booster pack open on a live map at `size`, reached through a map node rather than a button.

@@ -81,7 +81,8 @@ func _on_play_pressed() -> void:
 # The picker is the only content on the menu that describes anything, so what it described goes
 # when the picker does.
 func _on_new_run_pressed() -> void:
-	var picker := DeckPicker.add_to_scene(self)
+	var picker := DeckPicker.add_to_scene(hud_container.get_parent(), new_run_button)
+	hud_container.host_deck_picker(picker)
 	picker.deck_picked.connect(func(cards: Array[CardData], rules: Array[CardData]) -> void:
 		new_run_requested.emit(cards, rules))
 	picker.inspect_pressed.connect(_open_deck_viewer.bind(picker))

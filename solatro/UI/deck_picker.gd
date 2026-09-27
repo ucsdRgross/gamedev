@@ -1,5 +1,5 @@
 class_name DeckPicker
-extends CanvasLayer
+extends Control
 
 ## Menu overlay listing every starter deck (Deck.get_deck_list): inspect a deck's cards, or pick one to start a new run with.
 
@@ -11,6 +11,8 @@ signal inspect_pressed(cards: Array[CardData], inspect: Button)
 const DECK_PICKER := preload("res://UI/deck_picker.tscn")
 
 @onready var rows: VBoxContainer = %Rows
+@onready var _panel: PanelContainer = $Panel
+@onready var _scroll: ScrollContainer = $Panel/VBox/Scroll
 
 var _deck : Deck = Deck.new()
 # Focus to restore on close (keyboard/controller flow back to the opening button).
@@ -19,9 +21,11 @@ var _return_focus : Control = null
 # built list without force-building it on a plain close.
 var _rules_built : bool = false
 
-static func add_to_scene(parent: Node) -> DeckPicker:
+# ⚠ THE OPENER HANDS ITS OWN CONTROL IN: it is in the menu's picture, another viewport than this
+# picker's, and the focus this picker grabs clears it across every viewport of the window.
+static func add_to_scene(parent: Node, opener: Control) -> DeckPicker:
 	var picker : DeckPicker = DECK_PICKER.instantiate()
-	picker._return_focus = parent.get_viewport().gui_get_focus_owner() if parent.is_inside_tree() else null
+	picker._return_focus = opener
 	parent.add_child(picker)
 	return picker
 
@@ -42,9 +46,19 @@ func _ready() -> void:
 		pick.pressed.connect(_on_pick.bind(cards))
 		row.add_child(pick)
 		rows.add_child(row)
-	var first_row := rows.get_child(0) as HBoxContainer
-	if first_row:
-		(first_row.get_child(2) as Button).grab_focus()
+	focus_the_first_pick()
+
+# The scroll follows this focus off rows not yet laid out -- measured, one 39 px row past the top --
+# so it is set back.
+## Focuses the first deck's Pick with the list at its top; a no-op while the picker is hidden.
+func focus_the_first_pick() -> void:
+	if not is_visible_in_tree(): return
+	(rows.get_child(0).get_child(2) as Button).grab_focus()
+	_scroll.scroll_vertical = 0
+
+## Centres the list in `remaining`, the space the menu's own content is centred in.
+func fit_beside(remaining: Rect2) -> void:
+	_panel.position = remaining.get_center() - _panel.size / 2.0
 
 ## Keyboard/controller close.
 func _unhandled_input(event: InputEvent) -> void:
