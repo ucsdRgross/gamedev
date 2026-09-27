@@ -71,6 +71,7 @@ func _ready() -> void:
 	await test_the_legal_cell_lights_the_face_and_the_focus_lights_the_rim()
 	await test_balls_alternate_directions()
 	await test_the_card_mask_is_the_card_the_player_sees()
+	await test_a_translucent_face_draws_at_its_authored_alpha()
 	check_all_tests_registered()
 	finish()
 
@@ -449,110 +450,156 @@ func test_one_pixel_size_for_all_art() -> void:
 # see when it fails is one you cannot check for drift. ⚠ DO NOT RAISE EITHER TO GO GREEN.
 func test_the_card_mask_is_the_card_the_player_sees() -> void:
 	behavior_section("A REAL CardVisual: THE MASK IS THE SILHOUETTE THE PLAYER SEES")
-	for t : float in [0.0] as Array[float]:
-		var card := await _real_card(t)
-		if not card: return
-		var poly := (card.fx._poly as PackedVector2Array).duplicate()
-		var wedge := (card.fx._wedge as PackedFloat32Array).duplicate()
-		var half : Vector2 = card.fx._poly_half
-		var inner : Vector2 = card.fx._poly_inner
-		var rig := (card._rig_outline() as PackedVector2Array).duplicate()
-		var shape : int = card.fx.shape
-		var img := await _shoot()
-		check(shape == int(FxAttachment.Shape.RADII) and poly.size() == rig.size(),
-				"t=%.2f: the real card hands its rig to the mask, vertex for vertex (%d)"
-				% [t, rig.size()],
-				"shape %d with %d of the rig's %d vertices — a real card fell back to the BOX branch or "
-				% [shape, poly.size(), rig.size()]
-				+ "was resampled, so every warp claim in FX_HANDOFF would be about a rectangle")
-		if poly.size() < 3: continue
-		var _bad_cells : Array[Vector2] = []
-		var no_art := 0
-		var no_mask := 0
-		var worst_no_art := Vector2.ZERO
-		var worst_no_mask := Vector2.ZERO
-		var checked := 0
-		var skipped := 0
-		var centre := Vector2(VP_SIZE, VP_SIZE) * 0.5
-		var cell : float = StatusBurning.CARD_FIRE_STYLE.pixel
-		var cells := int(ceilf((half.length() + 4.0) / cell))
-		for ky : int in range(-cells, cells + 1):
-			for kx : int in range(-cells, cells + 1):
-				var p := (Vector2(float(kx), float(ky)) + Vector2(0.5, 0.5)) * cell
-				var art := _art_at(img, p, centre)
-				if art < 0:
-					skipped += 1
-					continue
-				checked += 1
-				var masked := PixelProbe.mask_contains(p, poly, wedge, half, inner)
-				if masked and art == 0:
-					no_art += 1
-					worst_no_art = p
-					_bad_cells.append(p)
-				elif not masked and art == 1:
-					no_mask += 1
-					worst_no_mask = p
-					_bad_cells.append(p)
-		var near_corner := 0
-		var on_edge := 0
-		for p : Vector2 in _bad_cells:
-			var cell_x : bool = absf(p.x) > half.x * 0.5
-			var cell_y : bool = absf(p.y) > half.y * 0.5
-			if cell_x and cell_y: near_corner += 1
-			else: on_edge += 1
-		var _we := 0.0
-		var _wc := 0.0
-		for p : Vector2 in _bad_cells:
-			var dd := _distance_to_outline(p, poly)
-			if absf(p.x) > half.x * 0.5 and absf(p.y) > half.y * 0.5: _wc = maxf(_wc, dd)
-			else: _we = maxf(_we, dd)
-		TestLog.line(("    [mask vs face WHERE] t=%.2f  %d in a CORNER cell, %d elsewhere on the edge"
-				+ "  |  worst edge %.2f, worst corner %.2f art units")
-				% [t, near_corner, on_edge, _we, _wc])
-		TestLog.line("    [mask vs face] t=%.2f  %d cells (%d on the boundary, skipped)  "
-				% [t, checked, skipped]
-				+ "mask-without-art %d (e.g. %s)  art-without-mask %d (e.g. %s)"
-				% [no_art, worst_no_art, no_mask, worst_no_mask])
-		check(checked > 100, "t=%.2f: the real card's face rendered at all" % t,
-				"only %d cells were decidable — the card did not draw" % checked)
-		if is_equal_approx(t, 0.0):
-			check(no_art == 0 and no_mask == 0,
-					"t=0.00: at rest the mask and the drawn face agree exactly",
-					"%d mask-without-art, %d art-without-mask at REST — alignment itself broke"
-					% [no_art, no_mask])
-		else:
-			check(no_art + no_mask <= 130,
-					"t=%.2f: the disagreement count stays at its measured scale" % t,
-					("%d cells disagree (measured worst was 104) — a shallow uniform boundary shift "
-					+ "the distance bars cannot see") % (no_art + no_mask))
-		var worst_edge := 0.0
-		var worst_edge_at := Vector2.ZERO
-		var worst_corner := 0.0
-		var worst_corner_at := Vector2.ZERO
-		for p : Vector2 in _bad_cells:
-			var d := _distance_to_outline(p, poly)
-			if absf(p.x) > half.x * 0.5 and absf(p.y) > half.y * 0.5:
-				if d > worst_corner:
-					worst_corner = d
-					worst_corner_at = p
-			elif d > worst_edge:
-				worst_edge = d
-				worst_edge_at = p
-		const EDGE_WEDGE_DRIFT := 1.7
-		check(worst_edge <= cell * EDGE_WEDGE_DRIFT,
-				"t=%.2f: along the EDGES the mask tracks the drawn face to within the wedge index" % t,
-				("worst is %.2f art units from the outline at %s (cell = %.2f) — the edge mask is the "
-				+ "skinned boundary and should be exact to quantization, so this is a real defect. "
-				+ "%d mask-without-art, %d art-without-mask")
-				% [worst_edge, worst_edge_at, cell, no_art, no_mask])
-		const CORNER_BITE_DRIFT := 2.6
-		check(worst_corner <= cell * CORNER_BITE_DRIFT,
-				"t=%.2f: and the CORNER bite stays within its measured %.1f-unit approximation"
-				% [t, CORNER_BITE_DRIFT],
-				("worst is %.2f art units from the outline at %s — corner_points()'s parallelogram "
-				+ "model has drifted further than it ever measured, so the bite geometry changed")
-				% [worst_corner, worst_corner_at])
-		_report_stand_in_fidelity(t, rig)
+	for face : GDScript in [TypePaper, TypeInput] as Array[GDScript]:
+		var face_name := String(face.get_global_name())
+		for t : float in [0.0] as Array[float]:
+			var card := await _real_card(t, face)
+			if not card: return
+			var poly := (card.fx._poly as PackedVector2Array).duplicate()
+			var wedge := (card.fx._wedge as PackedFloat32Array).duplicate()
+			var half : Vector2 = card.fx._poly_half
+			var inner : Vector2 = card.fx._poly_inner
+			var rig := (card._rig_outline() as PackedVector2Array).duplicate()
+			var shape : int = card.fx.shape
+			var img := await _shoot()
+			check(shape == int(FxAttachment.Shape.RADII) and poly.size() == rig.size(),
+					"%s t=%.2f: the real card hands its rig to the mask, vertex for vertex (%d)"
+					% [face_name, t, rig.size()],
+					"shape %d with %d of the rig's %d vertices — a real card fell back to the BOX branch "
+					% [shape, poly.size(), rig.size()]
+					+ "or was resampled, so every warp claim in FX_HANDOFF would be about a rectangle")
+			if poly.size() < 3: continue
+			var _bad_cells : Array[Vector2] = []
+			var no_art := 0
+			var no_mask := 0
+			var worst_no_art := Vector2.ZERO
+			var worst_no_mask := Vector2.ZERO
+			var checked := 0
+			var skipped := 0
+			var centre := Vector2(VP_SIZE, VP_SIZE) * 0.5
+			var cell : float = StatusBurning.CARD_FIRE_STYLE.pixel
+			var cells := int(ceilf((half.length() + 4.0) / cell))
+			for ky : int in range(-cells, cells + 1):
+				for kx : int in range(-cells, cells + 1):
+					var p := (Vector2(float(kx), float(ky)) + Vector2(0.5, 0.5)) * cell
+					var art := _art_at(img, p, centre)
+					if art < 0:
+						skipped += 1
+						continue
+					checked += 1
+					var masked := PixelProbe.mask_contains(p, poly, wedge, half, inner)
+					if masked and art == 0:
+						no_art += 1
+						worst_no_art = p
+						_bad_cells.append(p)
+					elif not masked and art == 1:
+						no_mask += 1
+						worst_no_mask = p
+						_bad_cells.append(p)
+			var near_corner := 0
+			var on_edge := 0
+			for p : Vector2 in _bad_cells:
+				var cell_x : bool = absf(p.x) > half.x * 0.5
+				var cell_y : bool = absf(p.y) > half.y * 0.5
+				if cell_x and cell_y: near_corner += 1
+				else: on_edge += 1
+			var _we := 0.0
+			var _wc := 0.0
+			for p : Vector2 in _bad_cells:
+				var dd := _distance_to_outline(p, poly)
+				if absf(p.x) > half.x * 0.5 and absf(p.y) > half.y * 0.5: _wc = maxf(_wc, dd)
+				else: _we = maxf(_we, dd)
+			TestLog.line(("    [mask vs face WHERE] %s t=%.2f  %d in a CORNER cell, %d elsewhere on "
+					+ "the edge  |  worst edge %.2f, worst corner %.2f art units")
+					% [face_name, t, near_corner, on_edge, _we, _wc])
+			TestLog.line("    [mask vs face] %s t=%.2f  %d cells (%d on the boundary, skipped)  "
+					% [face_name, t, checked, skipped]
+					+ "mask-without-art %d (e.g. %s)  art-without-mask %d (e.g. %s)"
+					% [no_art, worst_no_art, no_mask, worst_no_mask])
+			check(checked > 100, "%s t=%.2f: the real card's face rendered at all" % [face_name, t],
+					"only %d cells were decidable — the card did not draw" % checked)
+			if is_equal_approx(t, 0.0):
+				check(no_art == 0 and no_mask == 0,
+						"%s t=0.00: at rest the mask and the drawn face agree exactly" % face_name,
+						"%d mask-without-art, %d art-without-mask at REST — alignment itself broke"
+						% [no_art, no_mask])
+			else:
+				check(no_art + no_mask <= 130,
+						"%s t=%.2f: the disagreement count stays at its measured scale" % [face_name, t],
+						("%d cells disagree (measured worst was 104) — a shallow uniform boundary "
+						+ "shift the distance bars cannot see") % (no_art + no_mask))
+			var worst_edge := 0.0
+			var worst_edge_at := Vector2.ZERO
+			var worst_corner := 0.0
+			var worst_corner_at := Vector2.ZERO
+			for p : Vector2 in _bad_cells:
+				var d := _distance_to_outline(p, poly)
+				if absf(p.x) > half.x * 0.5 and absf(p.y) > half.y * 0.5:
+					if d > worst_corner:
+						worst_corner = d
+						worst_corner_at = p
+				elif d > worst_edge:
+					worst_edge = d
+					worst_edge_at = p
+			const EDGE_WEDGE_DRIFT := 1.7
+			check(worst_edge <= cell * EDGE_WEDGE_DRIFT,
+					"%s t=%.2f: along the EDGES the mask tracks the drawn face to within the wedge index"
+					% [face_name, t],
+					("worst is %.2f art units from the outline at %s (cell = %.2f) — the edge mask is "
+					+ "the skinned boundary and should be exact to quantization, so this is a real defect. "
+					+ "%d mask-without-art, %d art-without-mask")
+					% [worst_edge, worst_edge_at, cell, no_art, no_mask])
+			const CORNER_BITE_DRIFT := 2.6
+			check(worst_corner <= cell * CORNER_BITE_DRIFT,
+					"%s t=%.2f: and the CORNER bite stays within its measured %.1f-unit approximation"
+					% [face_name, t, CORNER_BITE_DRIFT],
+					("worst is %.2f art units from the outline at %s — corner_points()'s "
+					+ "parallelogram model has drifted further than it ever measured, so the bite geometry changed")
+					% [worst_corner, worst_corner_at])
+			_report_stand_in_fidelity(t, rig)
+
+# A face texel with 0 < alpha < 1 is BODY drawn at that alpha, so what is under the card shows
+# through it, and it takes no rim: the ink it borders on the inside of a ring is the ring's own.
+func test_a_translucent_face_draws_at_its_authored_alpha() -> void:
+	behavior_section("A TRANSLUCENT FACE DRAWS AT ITS AUTHORED ALPHA, WITH NO INNER RIM")
+	var backdrop := PaletteDB.color(PaletteDB.ROLES.hud_background)
+	var under := Polygon2D.new()
+	var h := CardVisual.CARD_SIZE * 0.5
+	under.polygon = PackedVector2Array([-h, Vector2(h.x, -h.y), h, Vector2(-h.x, h.y)])
+	under.color = backdrop
+	_stage.add_child(under)
+	var card := await _real_card(0.0, TypeInput)
+	var ink := PaletteDB.color(card.outline_style().outline_index)
+	var img := await _shoot()
+	var src := CardModifierType.TYPE_TEXTURE.get_image()
+	var frame := CardModifier.frame_rect(CardModifierType.TYPE_TEXTURE, CardModifierType.H_FRAMES,
+			CardModifierType.V_FRAMES, TypeInput.new().get_frame())
+	var centre := Vector2(VP_SIZE, VP_SIZE) * 0.5
+	var translucent := 0
+	var off := 0
+	var inked := 0
+	var first_bad := ""
+	for fy : int in int(frame.size.y):
+		for fx : int in int(frame.size.x):
+			var texel := src.get_pixel(int(frame.position.x) + fx, int(frame.position.y) + fy)
+			if texel.a <= 0.0 or texel.a >= 1.0: continue
+			translucent += 1
+			var p := Vector2(fx, fy) + Vector2(0.5, 0.5) - frame.size * 0.5
+			var got := img.get_pixelv(Vector2i(centre + p * _zoom))
+			var want := backdrop.lerp(Color(texel.r, texel.g, texel.b), texel.a)
+			if _channels_within(got, ink, PIXEL_TOLERANCE): inked += 1
+			if _channels_within(got, want, PIXEL_TOLERANCE): continue
+			off += 1
+			if first_bad.is_empty():
+				first_bad = "first at frame texel (%d, %d): drew %s, want %s" % [fx, fy, got, want]
+	check(translucent > 0, "the Input face has translucent texels to measure",
+			"none in frame %s" % frame)
+	check(off == 0,
+			"the Input face draws its %d translucent texels at their authored alpha over what is "
+			% translucent + "under the card",
+			"%d of %d are not the blend, %s" % [off, translucent, first_bad])
+	check(inked == 0, "...and no rim ink lines the inside of its ring",
+			"%d translucent texels drew the rim ink" % inked)
 
 # Zero on the boundary and growing in BOTH directions, which is what makes it the right measure: a
 # cell that should have been masked and one that should not are equally wrong, and both are only
@@ -568,22 +615,23 @@ func _distance_to_outline(p: Vector2, poly: PackedVector2Array) -> float:
 		best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, a, b)))
 	return best
 
-# Read as a 3x3 screen-pixel neighbourhood, which at this zoom is well under half an FX cell.
+# Read as a 3x3 screen-pixel neighbourhood, which at this zoom is well under half an FX cell. Any
+# alpha counts: a translucent face is still face.
 
 ## Whether the drawn face covers art point `p`: 1 yes, 0 no, -1 undecidable (the rasterizer's call).
 func _art_at(img: Image, p: Vector2, centre: Vector2) -> int:
 	var at := centre + p * _zoom
-	var opaque := 0
+	var drawn := 0
 	var seen := 0
 	for dy : int in [-1, 0, 1] as Array[int]:
 		for dx : int in [-1, 0, 1] as Array[int]:
 			var px := Vector2i(int(at.x) + dx, int(at.y) + dy)
 			if px.x < 0 or px.y < 0 or px.x >= VP_SIZE or px.y >= VP_SIZE: continue
 			seen += 1
-			if PixelProbe.is_opaque(img.get_pixelv(px)): opaque += 1
+			if img.get_pixelv(px).a > 0.0: drawn += 1
 	if seen == 0: return -1
-	if opaque == 0: return 0
-	if opaque == seen: return 1
+	if drawn == 0: return 0
+	if drawn == seen: return 1
 	return -1
 
 # Reported, never asserted: a statement about the harnesses, not about the game, and the number tells
@@ -635,9 +683,11 @@ func _report_stand_in_fidelity(t: float, rig: PackedVector2Array) -> void:
 # awaited for the seek to reach the skinned polygons before the rig is re-read into the mask — the
 # same call `_process` makes every frame on a board card.
 
-## A REAL `CardVisual`, its animation parked at `secs`, its rig already handed to the mask.
-func _real_card(secs: float) -> CardVisual:
-	var card := await _host_card()
+## A REAL `CardVisual` of type `face`, its animation parked at `secs`, its rig in the mask.
+func _real_card(secs: float, face: GDScript) -> CardVisual:
+	var card := await _host_card(CardData.new().with_type(face.new() as CardModifier))
+	card.show_front = true
+	await card.update_visual()
 	var ap := card.get_node_or_null("AnimationPlayer") as AnimationPlayer
 	if ap and ap.has_animation(CardVisual.RIG_ANIM):
 		ap.play(CardVisual.RIG_ANIM)
@@ -654,13 +704,14 @@ func _real_card(secs: float) -> CardVisual:
 			+ "say anything about a deforming card")
 	return card if card.fx else null
 
-# A real CardVisual on the stage, parked and still. `_process` is off because
-# `delta_self_moving_logic` queue_frees any non-PLAY_AREA card without a `control_anchor` on its
-# first frame; `floating` off stops the bob; scale is reset AFTER `_ready` wrote card_scale into it.
-func _host_card() -> CardVisual:
+# Parked and still: `_process` off, since `delta_self_moving_logic` frees an anchorless non-PLAY_AREA
+# card; `floating` off; scale reset AFTER `_ready`. `data` goes in BEFORE the tree, as `with_data`
+# does, because the rig binds to its type's drawn extent once, in `_ready`.
+func _host_card(data: CardData) -> CardVisual:
 	_zoom_to_fit(CardVisual.CARD_SIZE.length() * 0.5 + 6.0)
 	var card := CardVisual.CARD_VISUAL.instantiate() as CardVisual
 	card.current_context = CardVisual.DisplayContext.PREVIEW
+	card.data = data
 	_stage.add_child(card)
 	if not card.is_node_ready(): await card.ready
 	card.set_process(false)
@@ -992,11 +1043,10 @@ func _pixels_differing(a: Image, b: Image, area: Rect2i) -> int:
 # suit, stamp and art printed over it left showing -- they share one node, so the exclusion is only
 # measurable a layer at a time. A real printed card, so all five polygons have something to draw.
 func _shoot_card(on_drop_map: bool, focused: bool, face: bool) -> Image:
-	var card := await _host_card()
-	card.data = CardData.new().with_type(TypePaper.new()) \
+	var card := await _host_card(CardData.new().with_type(TypePaper.new()) \
 			.with_suit(PipSuitKnife.new()) \
 			.with_rank(PipRankNumeral.new().with_value(5)) \
-			.with_stamp(StampRevealing.new())
+			.with_stamp(StampRevealing.new()))
 	card.show_front = true
 	await card.update_visual()
 	card.on_drop_map = on_drop_map

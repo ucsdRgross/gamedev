@@ -117,8 +117,8 @@ func test_per_texel_is_one() -> void:
 # ------------------------------------------------------------------ the rim, against an oracle
 
 # THE RIM, PIXEL FOR PIXEL, against a CPU oracle built from the sheet's own alpha. The oracle is
-# written from the RULE, not from the shader: a texel is BODY where this frame's alpha is opaque,
-# RIM where any of its eight neighbours INSIDE THIS FRAME is opaque, and transparent otherwise.
+# written from the RULE, not from the shader: a texel is BODY at its own alpha where this frame's
+# alpha is above 0, RIM where any of its eight neighbours INSIDE THIS FRAME is, else transparent.
 
 # Three defects fail it and only it. NEIGHBOUR BLEED: the sheets carry no transparent gutter, so the
 # padded window overlaps four neighbouring frames and only u_frame_uv stops them being sampled -
@@ -176,7 +176,6 @@ func _check_frame_against_oracle(label : String, sheet : Texture2D, h_frames : i
 			var want : Color
 			if _frame_alpha(src, frame, fx, fy):
 				want = src.get_pixel(int(frame.position.x) + fx, int(frame.position.y) + fy)
-				want.a = 1.0
 			elif _any_neighbour(src, frame, fx, fy, w):
 				want = ink
 			else:
@@ -199,7 +198,7 @@ func _check_frame_against_oracle(label : String, sheet : Texture2D, h_frames : i
 # the two can genuinely disagree.
 func _frame_alpha(src : Image, frame : Rect2, fx : int, fy : int) -> bool:
 	if fx < 0 or fy < 0 or fx >= int(frame.size.x) or fy >= int(frame.size.y): return false
-	return src.get_pixel(int(frame.position.x) + fx, int(frame.position.y) + fy).a > 0.5
+	return src.get_pixel(int(frame.position.x) + fx, int(frame.position.y) + fy).a > 0.0
 
 # Is any texel within Chebyshev distance w opaque? EIGHT directions at w = 1, corners included,
 # which is the half a 4-tap implementation gets wrong.
