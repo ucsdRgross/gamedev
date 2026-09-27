@@ -3412,6 +3412,9 @@ func _sync_row_label_heights() -> void:
 #⚠ THE LABELS ARE RE-BOUND FIRST. A line scoring at a height nothing has reached before has no
 #label yet, and a pop on a label that does not exist is a silently dropped animation — which is
 #what "the scores are not popping up" looked like from the outside.
+
+#⚠ AND TAKE THE GROUP'S FONT BEFORE THE POP. A font change re-sorts the stack, and a container's
+#sort resets its child's scale to 1, so a label left for the next tick's sync loses its pop.
 func pop_grid_score_label(section: ScoringSection) -> void:
 	var game := CardEnvironment.get_current_game()
 	if not game: return
@@ -3422,6 +3425,7 @@ func pop_grid_score_label(section: ScoringSection) -> void:
 	var panel := grid_container.get_child(gi) as Control
 	_bind_grid_score_labels(panel, grid)
 	_sync_cell_score_labels()
+	_sync_score_label_font()
 	var label := _grid_score_label(panel, section)
 	if label: label.anim_pop()
 

@@ -31,29 +31,33 @@ func _update_font_size() -> void:
 	if font_size_override >= 0:
 		_current_font_size = font_size_override
 	else:
-		_current_font_size = _calculate_best_font_size()
+		_current_font_size = _calculate_best_font_size(size)
 
 	add_theme_font_size_override("font_size", _current_font_size)
 
-## The size this label WOULD choose for its own rect and text right now. Pure in the applied
-## font: the box comes from `custom_minimum_size`, so asking does not depend on the answer.
-func best_font_size() -> int:
-	return _calculate_best_font_size()
+# ⚠ MEASURED AGAINST `custom_minimum_size`, NOT `size`: a label is never shorter than its own font,
+# so a size that already overflows the box inflates `size` to fit and then passes its own test.
+# Asking must not depend on the answer, or a group sharing one font never shrinks it.
 
-## Force one size on this label, overriding the autosize; -1 hands it back. Used where a GROUP of
-## labels has to read as one set rather than each fitting its own box.
+## The size this label WOULD choose for its minimum box and its text right now.
+func best_font_size() -> int:
+	return _calculate_best_font_size(custom_minimum_size)
+
+# Used where a GROUP of labels has to read as one set rather than each fitting its own box.
+
+## Force one size on this label, overriding the autosize; -1 hands it back.
 func force_font_size(px: int) -> void:
 	if font_size_override == px: return
 	font_size_override = px
 	_update_font_size()
 
-func _calculate_best_font_size() -> int:
-	var available_width := size.x * font_size_width_percent
-	var available_height := size.y
+# The largest size that fits, by binary search since fit is monotonic in size: ~7 string
+# measurements instead of one per size stepping down, and this runs on every resize.
+func _calculate_best_font_size(box: Vector2) -> int:
+	var available_width := box.x * font_size_width_percent
+	var available_height := box.y
 
 	var font := get_theme_font("font")
-	# Largest size that fits (fit is monotonic in size): binary search, ~7 string
-	# measurements instead of one per size stepping down — this runs on every resize.
 	var lo := font_size_min
 	var hi := font_size_max
 	while lo < hi:
