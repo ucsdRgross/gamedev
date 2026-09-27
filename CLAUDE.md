@@ -187,9 +187,10 @@ Everything else is a smaller game-jam or study project.
   the owner sees it, and proposes better designs as well as fixes; `/flowchart-design` § Pair
   review says when.
 - **`plan-auditor`** subagent — audits a plan or doc against the live code before you execute it.
-- **`bloat-reviewer`** subagent — reads ONE diff and asks only the three questions a single diff can
-  answer: hard rules 7 and 8, plus functions with one call site. Cross-file duplication is
-  `dup_check.py`'s job and the branch is `/simplify`'s; do not ask this one for a broad verdict.
+- **`bloat-reviewer`** subagent (Fable) — reads ONE diff: hard rules 7 and 8 and functions with one
+  call site, then the overseer's 2-4 targeted questions, the step's test rows and shots when asked.
+  Dispatched by hand per `/plan-run` § "Spending the reviewer"; no hook runs it. Cross-file
+  duplication is `dup_check.py`'s job and the branch is `/simplify`'s.
 
 Deliberately NOT installed, each for a measured reason:
 
