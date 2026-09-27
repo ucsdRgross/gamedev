@@ -7,25 +7,14 @@ metadata:
 ---
 
 Before designing around any engine, library or platform feature: **fetch the official doc page and
-search for the known bug that page does not mention.** Cite the URL beside the fact.
+search for the known bug that page does not mention.** Cite the URL beside the fact; where sources
+disagree, mark it UNVERIFIED and check it in-project. Grepping this repo tells you what this repo
+does, not what the engine offers.
 
-**Why:** grepping this repo tells you what this repo does, not what the engine offers. The
-picture-wall design needed to pause one screen while another ran; nothing in the project used
-`get_tree().paused`, so the root fork was authored as *"`PROCESS_MODE_DISABLED` on a subtree **or** a
-hand-rolled `pause()` contract"*. That dichotomy does not exist —
-[Godot's pause tutorial](https://docs.godotengine.org/en/latest/tutorials/scripting/pausing_games.html)
-describes a **global** `SceneTree.paused` plus a per-node `process_mode`, and says outright that
-pausing "only affects the entire game". The owner answered by pasting the doc URL. Twelve downstream
-questions were built on the wrong premise.
-
-**How to apply:** the test is **"could the owner answer this by pasting a doc link?"** If yes, it was
-never a design question — a design question asks what the owner WANTS, not what the engine DOES, and
-a plausible wrong option set steers the answer rather than surfacing the gap. The facts worth hunting
-are the ones the tutorial omits: `SceneTree.create_timer()` defaults `process_always = true` and runs
-through a pause; shader `TIME` keeps advancing while paused. Where sources disagree, mark the fact
-UNVERIFIED and check it in-project — see [[verify-visuals-by-eye]].
-
-Applies to any design work, but the `/flowchart-design` skill carries the full rule in its §1.
+**The test: "could the owner answer this by pasting a doc link?"** If yes, it was never a design
+question. The measured case (a pause design built on a dichotomy the engine's pause tutorial
+dispels, twelve downstream questions on the wrong premise) and the facts that tutorial omits:
+`/flowchart-design` §1, "Search the web before you turn ignorance into a question".
 Related: [[seam-checks-not-rereading]], [[general-not-shape-specific]].
 
 ## ⚠ AND CONFIRM THE METHOD EXISTS BEFORE YOU CALL IT

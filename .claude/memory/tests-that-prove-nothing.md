@@ -18,6 +18,8 @@ A green suite is the weakest evidence there is. Every test below passed review w
 5. **A loop or sampler whose body never runs, or a chosen target that is degenerate.** Assert the
    sample count is non-zero *before* asserting anything about its contents, and that a picked target
    has extent: `Rect2.encloses` accepts a zero-area rect, so a zero-height cell passed vacuously.
+   Same shape: a check that cannot fail at all - `check(true, ...)`, an assertion on a constant, or
+   a comparison of two things that are equal when both are empty.
 6. **An assertion on a local the production path never touches** — it re-proves a data structure's
    own arithmetic while being unable to fail for the wiring bug it exists to catch. Same shape: an
    EXPECTED value computed by the production function under test (`viewport.size ==
@@ -51,7 +53,9 @@ A green suite is the weakest evidence there is. Every test below passed review w
     does.** Green tests plus a feature no user could trigger.
     ⚠ **Event ORDER is part of "the way the platform does".** Godot delivers a touch's emulated
     mouse form (`device == -1`) BEFORE the `InputEventScreenTouch`, at press and at release; helpers
-    pushed the reverse twice on one branch.
+    pushed the reverse twice on one branch. ⚠ **After a pad route, assert the FOCUS OWNER in the
+    viewport the pad moves on next** - two rows asserted only the state change and both features
+    stranded the pad ([[godot-key-events-no-bubble]]).
 12. **The test SETS UP the very condition whose absence is the bug.** Measured: a "no cut-off grid
     at rest" test called the centring routine itself before measuring — the one call the resting
     product never made — so it could not see that nothing positioned the view at startup. **A test
@@ -104,18 +108,28 @@ A green suite is the weakest evidence there is. Every test below passed review w
     still open: assert A else: assert B` - measured: the product took each branch in 3 of 6 full
     gates on unchanged code, so the gate stayed green while the game behaved two ways. The only
     trace was a per-suite count that moved by 3. Two possible outcomes is a finding: pin the
-    product to one and assert only that one.
+    product to one and assert only that one. Same shape: a gate that SKIPS its later checks when a
+    walk fails shrinks the per-suite count instead of going red.
 21. **A teardown that frees the scene while an awaited product flow is still running.** A row
     pressed Travel, asserted, and freed Main while the token was still walking onto a node whose
     arrival builds a viewer: an intermittent RID / GL texture / PagedAllocator leak at exit (1 run
     in 5), invisible to every check. See the flow through before teardown, and read the EXIT
     PROFILE of every run, filtered ones included.
 
-**The rule that catches every one: prove every new test red-then-green**, and **compare PER-SUITE
-check counts across the red and green runs** — a suite whose count dropped had assertions silently
-skipped, which the drifting total cannot show. The procedure and its two traps (a red run that
-failed the wrong checks; adjusting a test a fix turned red) are `/plan-run`'s "Red-then-green is
-mandatory". Applies to any suite in any project here.
+**The rule that catches every one: prove every new test red-then-green** — neutralise the
+behaviour, watch the test fail, restore it, watch it pass, report both — and **compare PER-SUITE
+check counts across the two runs**: a suite whose count dropped had assertions silently skipped,
+which the drifting total cannot show. Applies to any suite in any project here.
+
+- ⚠ **The red run must fail the checks you EXPECTED.** A neutralisation that breaks the TEST rather
+  than the behaviour aborts the test function, and the banner reads all-passed with those
+  assertions silently missing.
+- ⚠ **When HEAD cannot run the new test** (new node paths, a restructured scene), "it could not be
+  red on HEAD" is no exemption: prove it red with a MUTANT on the new code that breaks exactly the
+  property the row claims (the old formula back, the overlap restored, the container swapped), one
+  mutant per claim. Measured: four mutants on one restructured menu each turned their row red.
+- ⚠ **A fix that turns an existing test red is investigated before the test is touched** - item 7's
+  calibrated tolerance was found exactly that way.
 
 ## ⚠ RED-THEN-GREEN IS NECESSARY, NOT SUFFICIENT
 

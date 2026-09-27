@@ -91,15 +91,23 @@ grep on a red run returns nothing, which reads exactly like a hang; the passing 
 stdout, so "no match" there means red or crashed, never green. Read the full log only when it
 failed, to locate the suite. `test_output_errors.log` empty = green; LEAK CANARY's stderr
 `push_error`/ObjectDB lines are deliberate.
+⚠ **Check the log's mtime.** Engine logs are overwritten by whichever process wrote last; one run
+read a stale 0-byte errors log for its entire length. `gate.py` reads its own fresh `APPDATA`.
 
 ## ⚠ Diagnosing a red, hung or flaky run
 
-⚠ **A MINIMIZED WINDOW STOPS DRAWING.** Godot draws only while some Godot window is not minimized
-(`DisplayServerWindows::can_any_window_draw`), and it sleeps `low_processor_usage_mode_sleep_usec`
-every frame while it cannot draw (`OS::add_frame_delay`) - engine source, 4.4 branch. So a gate the
-owner minimized stalls on frame awaits and fails frame-count rows. Measured cost on the playtest
-stream: two red gates blamed on a step, a 900 s stall and a measurement step aimed at the wrong
-cause. Before diagnosing a stall or a timing row, ask whether the window was minimized.
+⚠ **Attribute a red environment-first. Before blaming the step for a failure in a suite it cannot
+reach**, check in this order: the environment (a minimized or unfocused window, another Godot, the
+box's load), the listed intermittents, one rerun, then an A/B with the step's files parked by copy.
+Measured on one run: a stall, a map-fit "regression" and a leak were a minimized window, a
+test-helper settle race and a test waiting on the wrong signal - none was the step.
+
+⚠ **A minimized window stops drawing.** Godot draws only while some Godot window is not minimized
+(`DisplayServerWindows::can_any_window_draw`) and sleeps `low_processor_usage_mode_sleep_usec` every
+frame it cannot (`OS::add_frame_delay`) - engine source, 4.4 branch. Solatro's `all_tests.gd` keeps
+an off-screen native 1x1 window open so the suite still draws, and fails `MINIMIZED RUN STOPS
+DRAWING` if it does not; a minimized run still slows readbacks, so listed timing and frame-count
+rows can go red. A snapshot scene or another project's scene has no such window.
 
 **A green run is a sample, not a property of the branch.** Measured: a branch reported
 `ALL 45 SUITES ... CHECKS PASSED` on the run that closed it, and 2 of 16 runs of that identical code
@@ -113,11 +121,6 @@ failed. **Quote the denominator** — `2 failures in 16 runs`, never "about one 
   identical trees; a suite silent for 27 minutes in 1 run of 6 passed 215/215 alone in a minute. If
   the failure follows the change across several runs, it is yours. ⚠ Never re-run until it passes
   and call that a result.
-- **Before blaming the step for a failure in a suite it cannot reach**, in this order: the
-  environment (a minimized or unfocused window, another Godot, the box's load), the listed
-  intermittents, one rerun, then an A/B with the step's files parked by copy. Measured on one run:
-  a stall, a map-fit "regression" and a leak were a minimized window, a test-helper settle race and a
-  test waiting on the wrong signal - none was the step.
 - **Run the failing suite ALONE to discriminate cross-suite interference.** Measured: two checks
   failed at every commit through five different diagnoses; alone the suite passed 74/74 with a
   0.0 px delta. Deterministic interference reads exactly like a deterministic bug. The tell is a

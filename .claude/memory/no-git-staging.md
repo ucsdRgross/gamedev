@@ -6,16 +6,10 @@ metadata:
   type: feedback
 ---
 
-Don't run `git add` / staging commands in this repo **by default**.
+**Never commit to `main`.** The owner drives it through GitHub Desktop, which picks up working-tree
+changes by itself, so agent staging there is noise that interrupts their flow.
 
-⚠ **THE EXCEPTION, granted by the owner:** *"you are allowed to commit when its not in main branch."*
-So on a feature branch, committing is permitted; on `main` it is not, and staging noise is still
-unwelcome anywhere the owner has not asked for commits.
-
-**Why:** The user manages the repo with GitHub Desktop, which picks up working-tree changes
-automatically; agent-side staging is redundant noise and interrupted their flow. The branch
-exception exists because a long agent-run needs rollback points, and only commits provide them.
-
-**How to apply:** On `main`, just edit files and let GitHub Desktop see them. On a feature branch,
-commit after a verification you ran yourself, one logical step per commit, with the evidence in the
-message. `/plan-run` depends on this. Related: [[running-godot-scenes]], [[one-fix-at-a-time]].
+**On any other branch committing is fine and needs no permission.** Owner, verbatim: *"you are
+allowed to commit when its not in main branch."* Commit after a verification you ran yourself, one
+logical step per commit, the evidence in the message — a long agent run needs those rollback points,
+and `/plan-run` depends on them. CLAUDE.md hard rule 1 is the enforced form.

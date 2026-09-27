@@ -30,10 +30,9 @@
 **Running a plan** (everything else lives in the `/plan-run` skill)
 - [Tests that prove nothing](tests-that-prove-nothing.md) — the ways a green test asserts nothing; prove every one red first
 - [Built but not wired](built-but-not-wired.md) — a done-when must name the call site, or the component ships with no caller
-- [Implementer routing](implementer-routing.md) — Opus 5.5 main agent; implementers Opus medium/low or Sonnet low by what the brief knows; Fable reviews with targeted questions
+- [Implementer routing](implementer-routing.md) — which implementer preset a step gets, by what its brief already knows; Fable reviews
 - [Brief premise is a hypothesis](brief-premise-is-a-hypothesis.md) — measure first; a contradicted premise stops the step for an owner question
 - [One fix at a time](one-fix-at-a-time.md) — full suite between fixes; a crashing batch cannot be diagnosed
-- [Reflect at every gate](reflect-at-every-gate.md) — session end, plan finish, close: record each repeatable cost where it is read, unprompted
 
 **Design workflow** (everything else lives in the `/flowchart-design` skill)
 - [Design answers need a claimant](design-answers-need-a-claimant.md) — check nodes→steps, not just steps→nodes

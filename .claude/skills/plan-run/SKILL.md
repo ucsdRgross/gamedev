@@ -18,56 +18,43 @@ what that shipped. Everything below aims at that failure.
 ## Setup
 
 - A **git worktree on its own branch**, never the main working tree. The owner merges when done.
-- **The overseer session runs Opus 5.5 at high effort, with Fable 5.1 as its read-only reviewer.
-  Implementers run Opus 5.5, and the lever is EFFORT**: `plan-implementer-low` for a step whose
-  writer and row the brief names, `plan-implementer` (medium) for input routing, focus ownership,
-  a modal or lock state machine, a proving deletion, an open-cause diagnosis
-  ([[implementer-routing]] carries the rule, the arithmetic, and the Sonnet tier kept for purely
-  mechanical steps). Effort lives in the agent
-  frontmatter only - the dispatch cannot override it. A session's model is chosen at startup, so
-  check yours before the first dispatch.
-- **The repo's no-commit rule is REVERSED for the overseer on that branch**: commit after every step
-  you verified yourself, one step per commit. Commits are the only rollback points, and a long run
-  will lose sessions to API limits — assume it.
-- The implementer still never commits, never stages, never stashes.
+- **Models:** the overseer runs Opus 5.5 at high effort with Fable 5.1 as its read-only reviewer;
+  each step's implementer is picked by [[implementer-routing]]. Effort lives in agent frontmatter
+  only - the dispatch cannot override it - and a session's model is fixed at startup, so check
+  yours before the first dispatch.
+- **The overseer COMMITS every step it verified itself, one step per commit** (hard rule 1).
+  Commits are the only rollback points, and a long run will lose sessions to API limits — assume it.
+  The implementer never commits, stages or stashes.
 - Use `/handoff` for `<project>/HANDOFF_<topic>.md`. Record the EVIDENCE that proved each done-when
   (the grep output, the banner line), not prose. A cold overseer must be able to resume from it.
-- ⚠ **RECORD THE IMPLEMENTING MODEL AND ITS EFFORT IN THE HANDOFF** — `/handoff` owns the format
-  (its `IMPLEMENTED-BY` line and the section on why it is not bookkeeping); do not restate it here.
-  Update it if the run changes models partway; list every model that wrote code. The close reads
-  that line and nothing else to pick a reviewer, so a run that does not write it cannot be
-  reviewed correctly.
+- ⚠ **Keep the handoff's `IMPLEMENTED-BY` line current** — every model that wrote code, with its
+  effort, updated the moment the run changes models. The close reads that line and nothing else
+  to pick a reviewer; `/handoff` says why.
 
 ## The overseer's rules
 
 **Never** read, edit or write source files; never print file contents; never `git diff` without
 `--stat`. **May** read the plan documents, the handoff, cited design sections, gap files and agent
-reports; may run `grep -c`/`-l`, `git status --porcelain`, `ls`, and the suite. Line endings are
-checked with `git ls-files --eol`, never `grep`: Git Bash's `grep -c $'\r'` counted CR on every line of an LF file.
+reports; may run `grep -c`/`-l`, `git status --porcelain`, `ls`, and the suite. Line endings:
+`git ls-files --eol`, never Git Bash's `grep -c $'\r'`, which counted CR on every line of an LF file.
 
 **Verify every done-when yourself with a bounded command.** Never accept a self-reported green.
 
-**The gate is one command:** `py .claude/tools/gate.py --out <scratchpad> --handoff
-<project>/HANDOFF_<topic>.md`, run in the background. It refuses while any Godot runs, launches the
-wrapper with a fresh private APPDATA, and prints the banner, the exit profile and leak lines, the
-grab-focus warnings by source, the per-suite changes since the last full gate, and each failure
-matched against the handoff's Open bugs ("listed ... count it" or "NEW"). `--parse <run dir>`
-re-reads a finished run. Only its GREEN clears a commit; a NEW failure is never called a flake.
-Hand-typing the launch and the greps cost three to four tool calls per gate, eighteen gates on one
-session.
+**The gate is one command, run in the background:** `py .claude/tools/gate.py --out <scratchpad>
+--handoff <project>/HANDOFF_<topic>.md` (what it checks: its docstring; `--parse <run dir>`
+re-reads a run). Only its GREEN clears a commit; a failure it marks NEW is never called a flake.
 
 **Verify the recon premise before dispatch** — the site and cause a brief names are a hypothesis
 until a bounded command confirms them ([[brief-premise-is-a-hypothesis]]).
 
-**A step inserted ahead of an item the owner ordered is a schedule change: say so the moment you
-insert it**, with what it delays ("this puts the square cards a session later"). Measured: seven
-review-comment steps went ahead of an owner-ordered merge, and the owner learned it by asking why
-they had not seen the feature yet.
-⚠ **A new task goes to the END of the queue by default.** Owner, verbatim: "from now on new tasks
-should go to end of queue unless it would make much more sense to put in the end" (read as: in
-front). Measured on the playtest stream: twelve found-along-the-way rows went ahead of the
-owner-ordered square cards and pushed them a session back. Put one in front only when it clearly
-blocks or invalidates the next item, and say so as above.
+⚠ **A new task goes to the END of the queue.** Owner, verbatim: "from now on new tasks should go to
+end of queue unless it would make much more sense to put in the end" (read as: in front). Put one
+in front only when it clearly blocks or invalidates the next item, and **say so the moment you
+insert it**, with what it delays ("this puts the square cards a session later"). Measured: twelve
+found-along-the-way rows pushed the owner-ordered square cards a session back; seven review-comment
+steps went ahead of an owner-ordered merge and the owner learned it by asking. Bugs surfaced by a
+step that MOVES structure (a node to another layer or viewport, a scene restructured - five on one
+run) queue at the end too.
 
 **Split a brief that moves more than one mechanism.** A layout rebuild plus a retired lock-out plus
 six re-pointed rows hit the implementer's 150-turn cap mid-edit.
@@ -99,28 +86,22 @@ but it MUST carry:
    pad or keyboard route, name the VIEWPORT the focus must END in and require the row to assert
    its focus owner** — two pad features on one branch were green on their state change while the
    pad was stranded in the other viewport ([[godot-key-events-no-bubble]]).
-5. Any trap below that applies, named specifically.
-6. ⚠ **The comment rule, stated.** A comment sits at column 0, above the method, at most 3 lines,
-   and says WHY the method exists. No comment may have whitespace before it and none may trail
-   code. An implementer that is not told this ships indented prose every time.
-7. ⚠ **The complexity rule, stated** — engine method before hand-rolled, existing helper before new
-   one, each thing at its proper altitude. See the section below.
+5. Any trap that applies — from [[tests-that-prove-nothing]] or [[running-godot-scenes]] — named
+   specifically.
+6. ⚠ **The comment rule, named** in one line — an implementer not told ships indented prose.
+7. ⚠ **The complexity rule, named** in one line — engine method, existing helper, proper altitude.
 8. ⚠ **Every field the step adds: what it belongs to, and which event ends it** (show end, New Run,
    screen leave, a refused action). A test drives that event and asserts the field is gone.
    Measured: 6 defects of state outliving its owner on one branch, each found only by a reviewer.
-9. ⚠ **Every identifier the step ADDS goes into `NAMES.md` in the same step.** Measured: a run's
-   close found fourteen public names (`cell_type_at`, `col_cells`, `printed_card_same`, a static
-   clock …) in the code and none in the registry — each added mid-step because the plan could not
-   foresee it, each recorded in a commit message nobody reads at the next step. The registry is
-   authoritative only while it is complete; tell the implementer to append, and check it.
-10. **The report states that no Godot process it started is left running.**
+9. ⚠ **Every identifier the step ADDS goes into `NAMES.md` in the same step**, in one line — a
+   run's close found fourteen public names in the code and none in the registry. Check it.
 
 ⚠ **Do not paste what the implementer's definition already carries** - the report schema, parking by
-copy, the exit-profile rule, the comment and complexity rules, `NAMES.md`, the shots folder. Items 6,
-7 and 9 are ONE line each in the brief, naming the rule; the paragraphs live in
-`.claude/agents/plan-implementer*.md`. Measured: one session's briefs restated ~25 lines of the
-definition per dispatch. A brief's words go to what only this step knows: the ruling verbatim, the
-suspected writer with `file:line`, the done-when, the traps that apply, the verification filter.
+copy, the exit-profile rule, the comment and complexity rules, design ids, red-then-green, leftover
+processes, `NAMES.md`, the shots folder (`.claude/agents/plan-implementer*.md`). Measured: one
+session's briefs restated ~25 lines of the definition per dispatch. A brief's words go to what only
+this step knows: the ruling verbatim, the suspected writer with `file:line`, the done-when, the
+traps that apply, the verification filter.
 
 **Never accept `STATUS: done` on a component whose consumer does not exist.**
 
@@ -138,16 +119,6 @@ cell barred from its own face) was right only after its measurement too. Write t
 test must pin and the ruling it comes from; let the implementer propose the mechanism and report
 what it measured, and expect `blocked` with a measurement to be the good outcome.
 
-⚠ **6 and 7 are here because they were reaching nobody.** They lived in memory and in `/simplify`
-while this template carried lines about tunable literals, design ids and registry names and not
-these — so briefs never said them, and the code came back with both violated. Where a rule matters,
-put it in the brief and gate it; restating it somewhere else is how it gets ignored.
-
-⚠ **The brief hands the implementer design ids, and they come back out in the code unless you say
-so** — including into `@export_group` labels Godot renders as Inspector headings. **The citation
-belongs in the `STEP:` report and in `PLAN.md`; the code gets the rule.**
-[[design-ids-stay-out-of-code]].
-
 ## The verification hierarchy — weakest to strongest
 
 Each layer caught things the one above it missed.
@@ -158,12 +129,9 @@ Each layer caught things the one above it missed.
 4. **Red-then-green proof** — caught a real defect *every single time*.
 5. **An adversarial reviewer tracing what a player actually does** — highest yield of the whole run.
 
-**Between gates, run the inner loop, not the gate.** On solatro that is
-`py solatro/Tools/run_tests.py --logic` — the renderer-independent tier, headless, several times
-faster than the windowed run ([[running-godot-scenes]] carries the timings). It is a debugging aid
-and says so in its own banner (`FILTERED n of <total>`, no clean verdict): a step is still only
-done on a FULL windowed run, and an implementer reporting `done` has
-run one. `--filter <NodeName>` narrows further while you are chasing one suite.
+**Between gates, run the inner loop, not the gate:** on solatro `py solatro/Tools/run_tests.py
+--logic` (headless, several times faster; `--filter <NodeName>` narrows to one suite). It is a
+debugging aid with no verdict; a step is done only on a FULL windowed run ([[running-godot-scenes]]).
 
 **Do 3 and 5 at every phase boundary.** Doing them only at the end means finding six critical defects
 after the work is already "complete".
@@ -188,7 +156,8 @@ a journey — and it is the one thing an overseer can check without reading code
 ## The reviewer's model floor
 
 **A reviewer is never a weaker model than the author it reviews** — same generation or newer, same
-effort or higher, no exceptions. This binds layer 5, the run's highest-yield check.
+effort or higher, no exceptions; the same model clears it. This binds layer 5, the run's
+highest-yield check.
 
 A weaker reviewer on stronger code is NET NEGATIVE, not merely useless: reviewing a strong draft, the
 weaker model rewrote whole solutions instead of patching, scoring 13 regressions against 3 fixes and
@@ -198,13 +167,9 @@ Cross-vendor review buys decorrelated blind spots and is worth having *at or abo
 never below it.
 
 Owner ruling (verbatim): "reviewer ideally fable always, but it never touches the code itself,
-just finds issues." Every reviewer in this list runs `fable` and is read-only; a finding is a
-brief for an implementer ([[implementer-routing]]), never an edit by the reviewer. The floor is
-therefore always cleared whatever the author. Raising an implementer's tier raises the floor with
-it.
-
-**A review pass REPORTS, never applies.** `/simplify`'s apply phase and `/code-review --fix` are
-not used here: the reviewer never touches the code (owner ruling above); its findings go to an
+just finds issues." Every reviewer runs `fable`, read-only, so the floor is cleared whatever the
+author; raising an implementer's tier raises the floor with it. **A review pass REPORTS, never
+applies:** `/simplify`'s apply phase and `/code-review --fix` are not used; a finding goes to an
 implementer as a step, red-then-green and gated like any other.
 
 ⚠ **THE FLOOR IS A RULE THE OVERSEER FOLLOWS, NOT ONE IT CAN CHECK.** `effort` is declared in agent
@@ -219,26 +184,13 @@ hands over rather than dispatching.
 ⚠ **A usage limit on the higher tier mid-close:** continue on the next tier only if it still clears
 the floor, and write the switch into `IMPLEMENTED-BY` before the next dispatch.
 
-**The floor is unenforceable without provenance** — record which model wrote the code, in the
-handoff's `## Provenance` section (`/handoff`). A run that never wrote it cannot be reviewed
-correctly, because the close has nothing to clear.
-
 ## Red-then-green is mandatory
 
-For **every new test**, not only for bug fixes: neutralise the behaviour, watch the test fail,
-restore it, watch it pass, report both observations.
-
-⚠ **Check the red run failed the checks you EXPECTED.** A neutralisation that breaks the TEST rather
-than the behaviour aborts the test function, and the banner then reads all-passed with those
-assertions silently missing — the same shape as the defect you are hunting.
-
-⚠ **When HEAD cannot run the new test** (new node paths, a restructured scene), "it could not be red
-on HEAD" is not an exemption: prove it red with a MUTANT on the new code that breaks exactly the
-property the row claims (the old formula back, the overlap restored, the container swapped), one
-mutant per claim. Measured: four mutants on one restructured menu each turned their row red.
-
-⚠ When a fix makes an existing test fail, **investigate before adjusting it** — one run found a
-tolerance that had been calibrated to the bug, so it passed *because* the defect existed.
+For **every new test**, not only for bug fixes. The implementer's definition binds it and
+[[tests-that-prove-nothing]] (its end) carries the procedure. Refuse a report without the red and
+the green observation and their per-suite counts, with a red that failed checks other than the
+expected ones (a mutant's, when HEAD cannot run the test), or with an existing test adjusted to
+green after a fix turned it red.
 
 ## The ways a test passes while proving nothing
 
@@ -249,43 +201,27 @@ SAME observable, where the test measures which writer ran second.
 
 ## Traps that are not about tests
 
-- **Know exactly which log is the gate, and check its mtime.** One run read a stale 0-byte error log
-  for its entire length. Engine logs are overwritten by whichever process wrote last — including the
-  overseer's own runs.
-- **A banner can report a failure that is not a check** ("0 behavior, 0 implementation") — that is an
-  unexpected engine error. Read the newest engine log's backtrace.
 - **One critical fix at a time**, full suite between each — [[one-fix-at-a-time]].
-- **A tunable literal in a source file is a defect**, even when it looks like an epsilon. Sweep
-  touched files for numeric and colour literals at the end of every step.
-- **Diff your identifiers against the registry before reporting.** Invented names and signals stop
-  the registry being authoritative.
 - **Comments deferring to "a later step"** become lies when that step lands. Grep the deferral
   language when closing one.
-- ⚠ **WHEN YOU CHANGE A RULE IN A SKILL, GREP THE AGENT DEFINITIONS THAT ENFORCE IT.** A run
-  corrected the reviewer rule here and left `.claude/agents/adversarial-review.md` carrying the
-  inverted one — *"if you are the implementing model, review nothing"*. Dispatched at the floor it
-  would have refused and returned an empty report, and the close would have recorded a review that
-  never happened. A skill and the agent that implements it are one change, not two.
+- ⚠ **WHEN YOU CHANGE A RULE IN A SKILL, GREP THE AGENT DEFINITIONS AND SKILLS THAT RESTATE IT.** A
+  run corrected the reviewer rule here and left `.claude/agents/adversarial-review.md` carrying the
+  inverted one — *"if you are the implementing model, review nothing"*: dispatched at the floor it
+  would have returned an empty report recorded as a review. A skill and the agent that implements
+  it are one change, not two.
 - ⚠ **AGENT DEFINITIONS RESOLVE FROM THE SESSION'S PROJECT ROOT, NOT THE WORKTREE.** An agent that
   exists only on the branch cannot be dispatched by name from a session rooted in the main checkout.
   Inline its definition into a general-purpose agent and tell that agent to read the file.
-- ⚠ **A TEST THAT ASSERTS A FIELD THE PRODUCT DOES NOT READ PASSES BECAUSE THE DEFECT EXISTS.** Not
-  a tolerance calibrated to a bug — a whole check pointed at a retired accumulator that still moved.
-  Ask of every green check: *is this the value the player is shown, or merely one that changes?*
 
 ## Gaps
 
-Follow the plan's own gap protocol. As overseer: **a bug is not a gap.** A gap is a decision the
-design does not cover. If exactly one choice is defensible, it is a defect — fix it and record it.
-File a gap only when two defensible options differ in observable behaviour, when reversal is
-expensive, or when it is an owner call.
+Follow the plan's own gap protocol (its propagation block). As overseer: **a bug is not a gap** —
+if exactly one choice is defensible, it is a defect; fix it and record it.
 
 ⚠ **SIZE A GENERAL RULING BEFORE BUILDING IT.** An owner answer phrased as a principle ("UI never
 zooms with the picture") applies to every instance of it, not the one asked about. The moment it
 arrives, list the instances it covers and the steps they make, and say so with the queue impact.
-Measured: one such answer became six steps nobody had estimated. **A step that MOVES structure** (a
-node to another layer or viewport, a scene restructured) surfaces bugs that were already there - five
-on one run; queue them at the end rather than ahead of the owner's order.
+Measured: one such answer became six steps nobody had estimated.
 
 **Quote a gap's own option text when asking the owner to decide.** Paraphrasing one caused an answer
 to be given against a mislabelled list.
@@ -301,17 +237,15 @@ Sessions die to API limits — plan for it. On resume: read the handoff, then `g
 green and the last claimed step's done-when still passes, continue; otherwise that step is suspect —
 reset to the last commit and redo it.
 
-**An implementer cut off mid-step is resumed with `SendMessage` to the same agent id first** — it
-still holds the step's context. Reset only if that fails, and not when its last act was a completed
-full-suite run: read that run's banner instead.
-
-⚠ **A CUT-OFF IMPLEMENTER'S WORK IS IN THE TREE AND ITS RUNS ARE IN THE LOGS.** An API-limit stop
-mid-step leaves the edits, and the suite script keeps `all_<label>.log` / `errors_<label>.log` per
-run, so the red and green banners, the per-suite counts and the failure set are all readable
-without the agent. Verify from those and the diff before spending a resume; resume with
-`SendMessage` (never a fresh dispatch — its context holds the code) only when something is missing.
-Wait for a background agent by polling the lock file (`until [ $(grep -c . .claude/.subagent.lock)
--lt N ]; do sleep 20; done` in a background shell), not by re-reading its transcript.
+⚠ **A CUT-OFF IMPLEMENTER (turn cap, API limit, app restart) LEAVES ITS EDITS IN THE TREE, ITS RUNS
+IN THE LOGS AND `.claude/.subagent.lock` HELD.** The suite script keeps `all_<label>.log` /
+`errors_<label>.log` per run, so the banners, per-suite counts and failure set are readable without
+the agent, beside its scratch evidence file. Verify from those and the diff first; resume with
+`SendMessage` to the same agent id (never a fresh dispatch — its context holds the code) only when
+something is missing, and reset only if that fails — never when its last act was a completed full
+run. Clear the lock by hand when nothing runs. Wait for a background agent by polling the lock file
+(`until [ $(grep -c . .claude/.subagent.lock) -lt N ]; do sleep 20; done` in a background shell),
+not by re-reading its transcript.
 
 ⚠ **Never reset the tree while a subagent is working in it.** One run did, and the agent correctly
 reported the worktree as corrupted — it had no way to know the overseer had rolled it back. Tell it
@@ -349,26 +283,17 @@ Open a NEW session, select a model AT OR ABOVE that floor, and paste:
   "Closing the run", and work its numbered list in order.
 ```
 
-⚠ **THE SAME MODEL IS FINE; A WEAKER ONE IS NOT.** The floor is about capability, not variety — a
-same-model review at equal effort clears it. Reaching for a different vendor is a bonus worth having
-*at or above* the floor and never a reason to drop below it.
-
 ⚠ **A NEW SESSION, NOT THIS ONE.** The overseer has held the plan for dozens of commits and has
-every reason to believe the work is done — that is exactly the bias the close exists to defeat. It
-is also the only way to choose the reviewer's model, since a session's model is chosen when it
-starts and `model:` on a subagent selects only a family.
+every reason to believe the work is done — that is exactly the bias the close exists to defeat —
+and a new session is the only way to choose the reviewer's model (§ floor, `model:`).
 
 ## Closing the run — a phase, not a gesture
 
-⚠ **THIS IS A NUMBERED PHASE AND EVERY ITEM EITHER RAN OR DID NOT.** It replaces an earlier prose
-close that said "run an adversarial review" and named no tool — a run could satisfy that by
-claiming it had thought hard. Every other gate here is written to be un-talk-past-able; so is this
-one. Record each result in the handoff the way a done-when is recorded: the output, not a claim.
+⚠ **THIS IS A NUMBERED PHASE AND EVERY ITEM EITHER RAN OR DID NOT.** Record each result in the
+handoff the way a done-when is recorded: the output, not a claim.
 
-⚠ **DISPATCH THE READING WORK TO SUBAGENTS, AT MOST TWO AT A TIME, ONE OF THEM RUNNING GODOT.**
-The overseer never reads source, so every item that reads code is a subagent. **A hook enforces the
-count**; the suite is a one-process rule, so a parallel second agent is a read-only reviewer or
-docs work, never a second suite run. Dispatch, wait for the report, dispatch the next.
+⚠ **The overseer never reads source, so every item that reads code is a subagent**, within hard
+rule 2: a parallel second agent is a read-only reviewer or docs work, never a second suite run.
 
 Run in this order. Earlier items change the diff the later ones read.
 
@@ -387,40 +312,23 @@ Run in this order. Earlier items change the diff the later ones read.
    this order, keep a running list, and if you sense you are running long STOP INVESTIGATING AND
    REPORT WHAT YOU HAVE", and say that a partial report with three solid findings beats a thorough
    investigation that never lands.
-3. **`/code-review`** on the branch diff, at high effort — correctness. ⚠ Its finder agents run in
-   parallel, which the cap forbids: run its angles serially inside ONE read-only reviewer.
+3. **`/code-review`** on the branch diff, at high effort — correctness. ⚠ It wants eight parallel
+   finder agents and a verifier per candidate, which the cap forbids: one Fable finder for the
+   three correctness angles (background, beside a read-only reviewer), the cleanup angles inline
+   from your own read of the diff, and ONE verifier over the whole deduped candidate list.
+   Measured: 14 candidates verified in one pass, 10 findings reported.
 4. **A TEST-SURFACE review subagent — the tests, as their own pass.** Items 2 and 3 read
    production; a test that passes while proving nothing is invisible to them by construction and
-   invisible to the suite by definition, so nothing else in this list can find it. Hand it
-   [[tests-that-prove-nothing]] as a CHECKLIST and scope it to the engine tests first.
+   invisible to the suite by definition. Hand it [[tests-that-prove-nothing]] as a CHECKLIST, engine
+   tests first; items 5, 9, 11, 13, 14 and 20 had the highest yield on one branch.
    ⚠ **DO NOT FOLD THIS INTO `/code-review` OR `bloat-reviewer`.** Both are pointed at production,
    and `bloat-reviewer` is told tests are out of scope — so "the diff was reviewed" is routinely
    true while 12,000 lines of tests in that same diff were read by nobody.
-   The four highest-yield questions, all measured on one branch:
-   - **Does a check assert a value the SHIPPED game reads?** One asserted a retired accumulator and
-     therefore passed BECAUSE points were being lost.
-   - **Does any production function have only TEST callers?** Three did — the suites certifying them
-     are what made the dead code look live.
-   - **Does a fixture omit ambient state the real game always has?** Three built a board with no
-     grids, silently banking score into a grid that does not exist.
-   - **Can this check fail at all?** `check(true, ...)`, an assertion on a constant, or a comparison
-     of two things that are equal when both are empty.
-   - **After a pad route, does the row assert the FOCUS OWNER, in the viewport the pad moves on
-     next?** Two rows asserted the state change and never the owner; both features stranded the
-     pad. And a gate that SKIPS its later checks when a walk fails shrinks the count instead of
-     going red — compare per-suite counts.
-5. **`/simplify`** — the complexity section below is what it enforces.
-   ⚠ **IT ASKS FOR FOUR PARALLEL AGENTS AND THIS REPO FORBIDS THAT.** `/simplify` is a built-in
-   skill and cannot be edited here; its Phase 1 says to launch four review agents "in a single
-   message so they run concurrently", which the two-subagent cap blocks. Run its four angles
+5. **`/simplify`** — the complexity section below is what it enforces. ⚠ It is a built-in skill
+   whose Phase 1 launches four agents concurrently, which the cap blocks: run its four angles
    (reuse, simplification, efficiency, altitude) inline yourself, or serially. On a small diff
-   inline is strictly better anyway — four cold agents re-deriving context to read ten lines is
-   the expensive path.
-   ⚠ **`/code-review` HAS THE SAME PROBLEM AS `/simplify`** — its Phase 1 wants eight finder agents
-   in parallel and its Phase 2 one verifier per candidate. Under the two-subagent cap that is one
-   Fable finder for the three correctness angles (background, beside a read-only reviewer), the
-   cleanup angles inline from your own read of the diff, and ONE verifier over the whole deduped
-   candidate list. Measured: 14 candidates verified in one pass, 10 findings reported.
+   inline is strictly better — four cold agents re-deriving context to read ten lines is the
+   expensive path.
 6. **`/fx-verify`** — mandatory if ANY step touched a visual, a shader or prop art. Green tests are
    not evidence about pixels. Dispatch as a subagent; it renders and LOOKS.
 7. **Fix everything 1–6 found** — one fix at a time, full suite between them ([[one-fix-at-a-time]])
@@ -428,35 +336,24 @@ Run in this order. Earlier items change the diff the later ones read.
    diff and get their own item-2 pass.** Measured: of nine fixes on one close, one asserted on a
    producer the row's fixture never reached (End with an empty Entrance) and one over-reached
    (a grab meant for the pad fired on every pointer pick); the re-review caught both, the suite
-   neither. A fix brief for a FLAKE says "measure the quantity first; the diagnosis is a claim" —
-   one diagnosed settle race was a float-ULP boundary, found by a print.
-   ⚠ **THE OWNER'S WHOLE-FILE COMMENT SWEEP IS ITS OWN STEP, AFTER THE FIXES, NOT PART OF EACH.**
-   A file an implementer edits must leave compliant, and the files a close fixes are the big ones
-   (`game.gd` ~350 legacy findings, `play_area.gd` ~640). Folding the sweep into a defect fix
-   multiplies the blast radius of both and a sweep once deleted a load-bearing note. Brief every
+   neither.
+   ⚠ **THE OWNER'S WHOLE-FILE COMMENT SWEEP IS ITS OWN STEP, AFTER THE FIXES, NOT PART OF EACH** —
+   an exception to the definition's whole-file-on-touch rule. The files a close fixes are the big
+   ones (`game.gd` ~350 legacy findings, `play_area.gd` ~640); folding the sweep into a defect fix
+   multiplies the blast radius of both, and a sweep once deleted a load-bearing note. Brief every
    fix with "touch only the comments this fix changes; the sweep is a separate final step", then
-   dispatch the sweep once, no behaviour change, its own full gate, reviewer floor applies.
+   dispatch the sweep once: no behaviour change, `sweep_check.py`, its own full gate, reviewer floor.
    Test-only repairs in different suites may share one gate: a red there names its suite.
 8. **`/docs`** — fold the run's residue into the living docs.
 9. **`consolidate-memory`** — merge duplicates, fix facts the run made stale, prune the index.
-10. **Feed the run's findings back into the skills and agents** — the `/handoff` skill's "Reflect
-   and record" step, run over the WHOLE run (it also runs at every session end, unprompted).
-   Every trap this run hit that a
-   skill, an agent definition or a memory did not warn about is a gap in the tooling, not bad luck.
-   Add it where it will be READ next time — the step-brief template, the agent's rules, the trap
-   list — and delete anything the run proved wrong.
+10. **`/handoff`'s "Reflect and record", over the WHOLE run.** Every trap the run hit that no skill,
+   agent definition or memory warned about is a tooling gap, not bad luck; also delete anything
+   the run proved wrong.
 11. **Delete the temporary plan documents** the run produced.
 
-⚠ **9 AND 10 ARE THE ANTI-DEBT STEPS, AND THEY ARE THE FIRST TO BE SKIPPED.** A run that lands its
-code and skips these leaves every later session paying for it twice: re-reading memory that
-duplicates itself, and re-discovering a trap that was already paid for once. Both shrink what the
-next session must load — the cost of skipping them is measured in tokens on every run after this
-one, which is exactly why nobody notices it happening.
-
-⚠ **A finding is only fed back if it lands where the reader already looks.** Memory records the
-shape of this failure: the reuse rule lived in memory and in `/simplify` while the step-brief
-template did not carry it, so implementer briefs never said it and the code came back duplicated.
-Adding a rule to a document nobody reads at that moment is indistinguishable from not adding it.
+⚠ **9 AND 10 ARE THE ANTI-DEBT STEPS, AND THEY ARE THE FIRST TO BE SKIPPED.** Skipping them makes
+every later session re-read memory that duplicates itself and re-discover a trap already paid for
+once — a cost in tokens on every later run, which is why nobody notices it.
 
 ⚠ **A REVIEWER'S FINDING IS A CLAIM, NOT A VERDICT.** Reproduce it before you act: the reviewer is
 told to hunt aggressively and is explicitly allowed to file "suspected". Fixing an unreproduced

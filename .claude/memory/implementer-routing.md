@@ -35,9 +35,8 @@ reads of its own growing context, so continuing a finished implementer with `Sen
 next round is cheaper than a fresh one re-reading the tree - until its context is very large
 (a 600k-token round is the sign to start fresh with a sharp brief).
 
-**Reviewers are Fable, always, and never edit.** Owner, verbatim: "reviewer ideally fable always,
-but it never touches the code itself, just finds issues." Every finding is an implementer step,
-verified and gated like any other; `/simplify`'s apply phase and `/code-review --fix` are not used.
+**Reviewers are Fable and read-only** - the owner's ruling, verbatim, is in `/plan-run` "The
+reviewer's model floor"; every finding becomes an implementer step.
 ⚠ **Ask each per-diff review two to four questions about THIS diff's riskiest interactions**, beyond
 rules 7 and 8 (which inputs reach the new path, what state it inherits, whether a re-pointed test got
 looser, which docs now contradict it). About two in three such reviews on the playtest stream
@@ -56,13 +55,6 @@ answered "go". Design checkpoints: `/flowchart-design` § Pair review.
   subagent's `/tasks` row after any edit to a definition.
 - A NEW agent file is offered in the same session; whether an EDIT to an already-loaded definition
   applies before the next session is unmeasured - treat it as next-session.
-- A 150-turn cap stop (a broad medium step: a layout rebuild plus a lock-out retired plus six
-  re-pointed rows) leaves the edits in the tree and is resumable: `SendMessage` to the same agent
-  continues with its context intact. A step that big is the sign to split the next brief.
-- An app restart or a usage limit kills a running subagent mid-step and leaves its last edits in
-  the tree and `.claude/.subagent.lock` held. Read the diff and its scratch evidence before
-  redispatching, and clear the lock by hand when nothing runs.
+- A subagent cut off by its turn cap, a usage limit or an app restart: `/plan-run` "Interruptions".
 
-**How to apply:** dispatch by `subagent_type`; record every model that wrote code in the handoff's
-`IMPLEMENTED-BY` line the moment it changes. Related: [[one-fix-at-a-time]],
-[[tests-that-prove-nothing]], [[brief-premise-is-a-hypothesis]].
+Related: [[one-fix-at-a-time]], [[tests-that-prove-nothing]], [[brief-premise-is-a-hypothesis]].

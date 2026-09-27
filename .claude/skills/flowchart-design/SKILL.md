@@ -16,11 +16,7 @@ answering questions**, not by writing the design themselves. The bar:
 test plan.** Those belong to a separate implementation plan written after every node is approved.
 Mixing them is what makes a design doc unreviewable.
 
-## Why this exists
-
-A previous cycle (the Solatro FX editor) shipped from a plan that was not thorough enough, and the
-gaps became decisions made silently during implementation. A design decision made by the
-implementer is a design decision the owner never got to make.
+A design decision made by the implementer is a design decision the owner never got to make.
 
 ---
 
@@ -93,11 +89,11 @@ implementation plan's normative section — a signature, a default, a schema, a 
 - **Q9** `[QR1=a]` ⚑contract — Ship the general `blocks_spotlight` seam now, or keep `is_data_topmost`? · …
 ```
 
-⚠ **The tag exists because `Q9` above was NOT one, and that cost a round.** It asked *whether* to
-ship a seam and never what the seam's default was or what it replaced, so the plan's §1 invented
-both — and inverted the default, which would have lit up every covered card on the board. A
-scheduling question is not a contract question, and `npm run check` now reports every normative
-block in the plan that no `⚑contract` question authorises. **If the plan will have to write a
+⚠ **Measured: `Q9` above was NOT one, and that cost a round.** It asked *whether* to ship a seam
+and never what the seam's default was or what it replaced, so the plan's §1 invented both — and
+inverted the default, which would have lit up every covered card on the board. A scheduling
+question is not a contract question; `npm run check` reports every normative block in the plan
+that no `⚑contract` question authorises. **If the plan will have to write a
 literal — a default, a bound, a name — the question that fixes it is `⚑contract`.**
 
 ⚠⚠ **IF A QUESTION'S ANSWER APPEARS IN ANY OTHER QUESTION'S GATE, IT IS A `⚑gate`. NO EXCEPTIONS.**
@@ -115,9 +111,7 @@ questions are re-asked FIRST with the previous answer prefilled, and the round c
 whole ask is satisfied. If you need an answer *now*, ask in chat and write it back through the store
 API so `answers.json` does not drift from the design.
 
-### `run check` now catches all of this — read its bottom four lines
-
-These were manual greps; they are automated, and none of them existed when the defects above shipped:
+### `run check` catches all of this — read its bottom lines
 
 ```bash
 npm --prefix designloop run check -- <project>/<slug>
@@ -136,17 +130,15 @@ form, so the judgement is yours. Being *told* is not optional: every one of them
 the owner's side of the screen. **A non-zero count in either is a defect until you have looked at it
 and said why not.**
 
-⚠ **Re-run `check` after ANY answer round, not just after authoring.** `stale` compares charts
-against answers, so it only turns red once answers exist — which is exactly when nobody thinks to
-run it. Spotlight accumulated **20 stale nodes across 11 charts** over four rounds and the owner
-found them by eye.
+⚠ **Re-run `check` after ANY answer round, not only after authoring** — `stale` only turns red once
+answers exist (§3b).
 
-**A `⚑gate` option with no `→ next:` is a warning, not a parse error** (`GAP-001`, resolved).
-The document still parses and the owner can still answer it — blocking the person who
-cannot fix it helps nobody — but the shortfall is *yours* to fix: `run check` names the question and
-its line, and the design's card in the index carries a warning badge until it is gone. The owner
-sees the option marked **→ next: not described**, which is exactly the blind choice rule 5 exists to
-prevent. Treat any warning on that badge as an authoring defect.
+**A `⚑gate` option with no `→ next:` is a warning, not a parse error.** The document still parses
+and the owner can still answer it — blocking the person who cannot fix it helps nobody — but the
+shortfall is *yours* to fix: `run check` names the question and its line, and the design's card in
+the index carries a warning badge until it is gone. The owner sees the option marked **→ next: not
+described**, which is exactly the blind choice the preview exists to prevent. Treat any warning on
+that badge as an authoring defect.
 
 **Free text at a gating question cannot be routed** — there is no path for an answer the DAG does
 not know about. So a free-text answer at a `⚑gate` question **ends the round immediately** and
@@ -318,10 +310,9 @@ architecture ones. If a structural choice has a behavioural consequence, ask abo
 ### 3. SKETCH the flow to find the questions — do NOT ship it yet
 
 ⚠⚠ **CHARTS GO IN AFTER THE FIRST ANSWER ROUND, NOT BEFORE IT** (owner: *"no way will
-chart ever be accurate before first question round"*). This reverses what this step used to say, and
-the reversal was earned: Spotlight's charts were authored up front, patched across four rounds, and
-ended with **20 stale nodes across 11 charts** that the owner found by eye. A chart of behaviour
-nobody has chosen yet is a guess with an ID on it.
+chart ever be accurate before first question round"*). Measured: Spotlight's charts were authored up
+front, patched across four rounds, and ended with **20 stale nodes across 11 charts** that the owner
+found by eye. A chart of behaviour nobody has chosen yet is a guess with an ID on it.
 
 **Sketching still comes first, because drawing the flow is HOW you find the questions.** A step you
 cannot draw is a decision you have not noticed. So:
@@ -333,12 +324,10 @@ cannot draw is a decision you have not noticed. So:
   it must not be published — a published sketch is something you will feel obliged to patch instead
   of re-derive, which is exactly how drift accumulates.
 
-⚠⚠ **AND THE RULE THAT WOULD HAVE PREVENTED MOST OF IT: NEVER DRAW A QUESTION'S OPTION SET AS A
-CHART FORK.** This step used to say the opposite — *"draw unresolved forks as explicit option
-branches, cross-referenced to the question ID that decides them"* — and that single instruction
-produced Spotlight's worst charts: a whole chart offering three origin models (`Q113`), a node
-branching on the three answers to `QR10`, forks reading *"does it have anything to announce? — Q246"*.
-Every one of them was **the questionnaire, redrawn**. Before the answer it tells the owner nothing
+⚠⚠ **NEVER DRAW A QUESTION'S OPTION SET AS A CHART FORK.** Spotlight's worst charts did exactly
+that: a whole chart offering three origin models (`Q113`), a node branching on the three answers to
+`QR10`, forks reading *"does it have anything to announce? — Q246"*. Every one of them was **the
+questionnaire, redrawn**. Before the answer it tells the owner nothing
 the question did not; after the answer it is a lie. If a fork's branches are a question's options, it
 belongs in the questionnaire and nowhere else.
 
@@ -367,12 +356,12 @@ statements instead of guesses.
   how a reader reads it), but it is a trap for everyone: **name every chart by its own node prefix.**
 - **A label that names another chart becomes a drawn link.** Write the reference the way the
   documents already do — `A6["owner answers one question at a time — chart B"]` — and the canvas
-  draws it dashed, node to chart, and puts it in `graph.json` as a `links` entry (GAP-002, design
-  version 3). There is no cross-chart arrow in the mermaid subset, so this prose form IS the way to
+  draws it dashed, node to chart, and puts it in `graph.json` as a `links` entry. There is no
+  cross-chart arrow in the mermaid subset, so this prose form IS the way to
   connect charts. A name that resolves to nothing is reported as an authoring warning.
 
 ⚠ **On a LATER round, RE-DERIVE the charts from the answers; do not patch them.** Patching is what
-accumulated the 20 stale nodes: each round I fixed the nodes I remembered and left the rest. The
+accumulated the 20 stale nodes: each round fixed the nodes remembered and left the rest. The
 answers are the source; the charts are output. `run check`'s `stale` line is the check, and it only
 turns red once answers exist — **so re-run it after every round, not only after authoring.**
 
@@ -838,17 +827,14 @@ last reachable question answered
 ⚠ **The owner's review gate is the flowcharts, and only the flowcharts.** §1 is audited
 mechanically; escalate a block only when the audit says nothing authorises it.
 
-⚠ **This is the FIRST time the charts exist**, and that is deliberate (§3): a chart drawn before the
-answers is a guess with an ID on it. The owner's verdict that put it here — *"no way will chart ever
-be accurate before first question round"* — was earned by 20 stale nodes across 11 charts on
-Spotlight.
+⚠ **This is the FIRST time the charts exist**, and that is deliberate (§3).
 
 The review stage exists because the questionnaire settles *decisions* while the flowcharts settle
 *sequence and completeness* — "between D6 and D7 there must be…" is feedback that only arrives when
 someone looks at the chart. Producing the plan before that is building on an unreviewed design.
 
-**Until the Design Loop tool ships**, the review stage is the markdown document's own mermaid
-charts: after the last question, present the updated flowcharts, say what changed as a result of the
+The review stage is the canvas (`canvas.html`), or the document's own mermaid charts when the tool
+is not in use: after the last question, present the flowcharts, say what changed as a result of the
 answers, and **ask for confirmation**. Do not assume it. Confirmation is the owner saying the
 flowcharts are right — not their having answered the questions.
 
@@ -858,8 +844,7 @@ recommendation, and a copy-paste prompt. Do not stop at the plan and wait to be 
 
 ### 8a. The implementation plan is NOT bound by the design doc's no-code rule
 
-⚠ **This is the mistake that produced this section.** The no-code rule belongs to the
-*design* document only. The *implementation plan* is the last document anyone should need to build
+⚠ The no-code rule belongs to the *design* document only. The *implementation plan* is the last document anyone should need to build
 the thing, and it must carry every normative contract:
 
 - **File formats / schemas** — every file, field by field, with who writes it. Anything read by two
@@ -874,12 +859,9 @@ the thing, and it must carry every normative contract:
 Writing "the plan deliberately contains no implementation detail" is not restraint. It is an
 unfinished plan with a justification attached.
 
-⚠ **THE PLAN CARRIES THE IDS; THE CODE NEVER DOES.** Everything above says the plan quotes answers
-and cites node ids — and it should. But that stops at the plan's edge. A `Q183=a` or `GAP-017=c` in
-a comment, a doc comment, or an `@export_group("…")` label names a document the reader of the code
-cannot open, and Godot renders both of those last two as Inspector UI. **The code gets the RULE the
-answer produced.** Traceability is the plan's job, and `PLAN.md`'s `(implements …)` line is where
-the checker reads it. See [[design-ids-stay-out-of-code]].
+⚠ **THE PLAN CARRIES THE IDS; THE CODE NEVER DOES** — the code gets the RULE the answer produced,
+and `PLAN.md`'s `(implements …)` line is where the checker reads the citation
+([[design-ids-stay-out-of-code]]).
 
 ⚠ **QUOTE A FREE-TEXT ANSWER; NEVER SUMMARISE IT.** An answer with no lettered option is prose, and
 the plan's habit of compressing everything into a contract line destroys it: Spotlight's `Q16` became
@@ -909,8 +891,7 @@ better placed to make, with more context, under review. So the handoff ships **t
 
 Every generated `PLAN.md` ends with a phase whose steps are the closing sequence in `/plan-run`
 ("Closing the run"), not prose telling the reader to be careful. Without a phase, closing is
-optional — and a run whose last feature step goes green simply stops, which is exactly what
-happened before this rule existed.
+optional — and a run whose last feature step goes green simply stops.
 
 Write it as a real phase with a gate:
 
@@ -918,7 +899,7 @@ Write it as a real phase with a gate:
 ### Phase N — closing (ALWAYS LAST, never skipped)
 
 **S<n>** — Run the closing sequence in `/plan-run` in order, dispatching the reading work to
-subagents one at a time. The adversarial review MUST run on a model that did not implement.
+subagents within hard rule 2. Every reviewer clears `/plan-run`'s reviewer floor.
 
 **Done-when (phase):** every numbered item in that sequence has run and its output is recorded in
 the handoff; `doc_check.py` is clean on a FULL run; no reviewer finding is left unreproduced.
@@ -943,7 +924,7 @@ a passing one.
   authored angles" is. If the plan does not fix the data, the implementer invents the data, and
   invented data tests whatever it happened to make true.
 - **Say which are self-checking gates** — the ones that cannot be talked past — and which are
-  by-eye verifications a human must sign off (this repo's rule 4: no green test is evidence about
+  by-eye verifications a human must sign off (hard rule 5: no green test is evidence about
   pixels).
 - **Say what is deliberately NOT tested**, and why. An untested area that nobody chose is a hole; one
   the designer chose is a decision.
@@ -979,10 +960,9 @@ exposed live, which it did not.
 
 #### ⚠ THE GAP REHEARSAL — predict the gaps, then delete them. MANDATORY before handoff.
 
-**Measured: one `/plan-run` produced ~50 gaps.** That is not a design that met an unusually rough
-patch; it is a design that shipped its unfinished decisions to an implementer and let them be
-rediscovered one owner-round at a time. The triage table above stops the *wrong* ones being filed.
-This step stops the *right* ones existing.
+The ~50-gap run above was a design that shipped its unfinished decisions to an implementer and let
+them be rediscovered one owner-round at a time. The triage table stops the *wrong* ones being
+filed; this step stops the *right* ones existing.
 
 **Sit down with `PLAN.md` and write the gap list yourself, before anyone runs it.** Go step by step
 and ask, of each: *what will an implementer hit here that no document answers?* Aim for volume —
@@ -1000,13 +980,9 @@ is a round trip. Then resolve every entry into exactly one of:
 every pre-authorised choice. That section is what an implementer reads instead of filing.
 
 ⚠⚠ **THIS STEP HAS ITS OWN FAILURE MODE, AND IT IS THE ONE TO WATCH FOR.** Pre-authorising is fast
-by design — a row, a sentence, move on — and that speed is exactly wrong for a STRUCTURAL choice.
-Measured on `sidebar`, one turn after this step was written: the row *"`HudContainer` is
-instantiated inside `wall.tscn`'s `%Overlay`"* looked like a tidy pre-authorisation and was in fact
-the load-bearing architecture decision of the whole plan. The thing it replaced lived inside a
-`SubViewport` two levels away, so that one line silently required nine controls to move between
-scenes, every `@onready` in the host to break, six signal connections to cross an object-lifetime
-boundary, and a teardown that did not exist. In a table cell it got none of §1's scrutiny.
+by design — a row, a sentence, move on — and that speed is exactly wrong for a STRUCTURAL choice:
+`sidebar`'s `HudContainer` row (the next section) looked like a tidy pre-authorisation and was the
+load-bearing architecture decision of the whole plan. In a table cell it got none of §1's scrutiny.
 
 **So: a rehearsal row that decides WHERE SOMETHING LIVES, WHAT OWNS IT, or WHAT IT OUTLIVES is not
 a pre-authorisation — it is a contract. Promote it into §1 and work it out there.** The tell is that
@@ -1139,10 +1115,8 @@ editing `main` in place, which is the one thing this repo's hard rules forbid ou
 
 - **`/plan-run` by name**, so the overseer loads the skill instead of improvising a run;
 - **a NEW worktree and branch**, because commits are that run's only rollback points;
-- **ONE implementer subagent at a time.** A hook enforces it, and the reason is that these
-  subagents run the Godot suite, which is a one-process rule — two at once race for the same
-  `user://settings.tres`, the same `godot.log` and the same window, so a failure stops being
-  attributable to either.
+- **ONE implementer subagent at a time** — they run the Godot suite, a one-process rule (hard
+  rule 2).
 
 Template:
 
@@ -1154,7 +1128,7 @@ one verified step at a time with evidence in the message; those commits are the 
 rollback points.
 
 Dispatch ONE implementer subagent at a time and wait for its report before dispatching the
-next. A hook enforces this; it is not a preference.
+next (CLAUDE.md hard rule 2; a hook enforces the subagent count).
 
 Read <plan path> first; it is self-contained. <design path> is the authority on behaviour -
 where they disagree the design wins and the plan is wrong.
@@ -1185,12 +1159,12 @@ Use /handoff to keep resumable state.
 ```
 
 Include `/handoff` whenever the run spans more than one session's work. Repo-level rules (git
-policy, code style) propagate through directory-keyed memory and do not need restating.
+policy, code style) reach every session through `CLAUDE.md` and do not need restating.
 
 ## ⚠ A questionnaire settles what a thing DOES, not whether anyone can tell
 
-Learned twice, on the tool this skill drives (and), and it is the most
-reliable class of miss in the whole procedure. Both owner reviews of built screens produced findings
+Learned twice, on the tool this skill drives, and it is the most reliable class of miss in the
+whole procedure. Both owner reviews of built screens produced findings
 that were **already decided in the design and simply never shown**:
 
 - Enter accepts the recommendation (Q12, answered) — and nothing on the screen said so, so the only
@@ -1222,6 +1196,6 @@ have caught, **fix this file in the same session**:
 - A gate that was wrong, or a question the owner had to answer that their earlier answers had
   already made irrelevant → that is a DAG bug, and it is the most important kind to fix here.
 
-Then save the lesson to memory as a `feedback` note so it survives the session. Ask the owner after
-each review pass whether the format itself needs changing; the questionnaire's own shape is
-reviewable too.
+Fixing this file is the record; a memory only if the lesson reaches beyond design work (`/docs`
+first). Ask the owner after each review pass whether the format itself needs changing; the
+questionnaire's own shape is reviewable too.

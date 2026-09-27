@@ -54,7 +54,7 @@ for that.
 
 ## Code hygiene
 
-Two more mechanical checks, same shape as `doc_check.py`, sharing the same `Stop` hook:
+More mechanical checks, same shape as `doc_check.py`; the first two share its `Stop` hook:
 
 - **`py .claude/tools/dup_check.py`** — the same logic in two homes. A green suite never fails on a
   duplicate and `doc_check` stays silent because every NAME in it resolves, so nothing else here
@@ -62,15 +62,9 @@ Two more mechanical checks, same shape as `doc_check.py`, sharing the same `Stop
   games, and a shader one jam copied from another has no next edit that touches both.
 - **`py .claude/tools/diff_shape.py`** — a change that only ADDS lines to an existing file, which is
   what bolting a new path alongside the old one looks like. `--history N` re-derives the baseline.
-
 - **`py .claude/tools/sweep_check.py <file>`** — proves a comment sweep changed no code: the
   comment-stripped code of HEAD and of the working copy must be byte-identical. A trailing
   comment's removal edits its code line, which a diff cannot tell from a code change; this can.
-
-- **`py .claude/tools/gate.py --out <scratchpad> --handoff <project>/HANDOFF_*.md`** — solatro's full
-  windowed gate in one call: a fresh private APPDATA, refused while any Godot runs, and a short
-  verdict (banner, exit profile, leaks, per-suite changes since the last gate, each failure matched
-  against the handoff's Open bugs). `--parse <run dir>` re-reads a finished run.
 
 **`.claude/hooks/commit-gate.ps1` blocks an agent commit whose staged diff duplicates existing
 logic**, with `[dup-ok]` in the commit message as the deliberate-duplication escape. It fires only
@@ -135,6 +129,9 @@ most of them test-to-test setup. About ten touch production code.
 - **Track every PID you start.** Before reporting done, no Godot console process you started is
   left (kill your own, by `-Id`); `.claude/hooks/leftover-godot-warn.ps1` lists survivors at every
   stop. A suite with no banner inside its timeout is a hang — look for a parse error first.
+- **Solatro's full gate is one call:** `py .claude/tools/gate.py --out <scratchpad> --handoff
+  <project>/HANDOFF_*.md` — private APPDATA, refused while any Godot runs, a short verdict (its
+  docstring says what it checks).
 - **A `.gd` edit is parse-checked** by `.claude/hooks/gd-parse-check.ps1` in ~3-4 s, warn-only,
   skipped while another Godot console process runs.
 - **Plans and design records.** Fold new work and rulings into the EXISTING plan steps and tests
@@ -152,7 +149,7 @@ most of them test-to-test setup. About ten touch production code.
   presets: model aliases and explicit effort in frontmatter ([[implementer-routing]]).
 - **Reflect at every gate, unprompted.** Every session end, plan finish and `/plan-run` close runs
   `/handoff`'s "Reflect and record": what cost time, whether it will recur, the rule written where
-  it is read next time, and the last message says what was recorded ([[reflect-at-every-gate]]).
+  it is read next time, and the last message says what was recorded. Do not wait to be asked.
 
 ## Where to start
 

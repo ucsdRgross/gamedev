@@ -13,9 +13,10 @@ create a parallel copy of an existing handoff. Update it in place.
 
 1. Read it, plus the `entry_docs` it names. Do not rely on conversation history — the file is the
    source of truth.
-2. Confirm the tree is actually green before trusting any `done` status: run the full suite through
-   `py solatro/Tools/run_tests.py`, **windowed, no `--headless`**. `running-godot-scenes.md` in
-   `.claude/memory/` carries the launch rules and timings. Check the owner's Godot editor is closed first.
+2. Confirm the tree is actually green before trusting any `done` status: the full suite,
+   **windowed, no `--headless`** — on solatro `py .claude/tools/gate.py --out <scratchpad>`.
+   `running-godot-scenes.md` in `.claude/memory/` carries the launch rules. Check the owner's Godot
+   editor is closed first.
 3. Summarize goal, what is done (with its evidence), what is in progress or blocked, what is
    next. That summary must stand on its own with zero prior context.
 4. Continue from the first `pending` task.
@@ -75,14 +76,11 @@ The next 3 tasks in priority order, then a copy-paste opening prompt for the nex
 
 1. Set `status: in_progress`.
 2. **Before writing code: name the competing READINGS of whatever the step specifies, and test the
-   input that separates them.** Two sentences is enough. ⚠ Measured on the spotlight stream: a rule
-   that arrives with a worked example has two representations — the example and the general rule —
-   and they can differ. Both readings reproduce the example, so **the case that matters is the one the
-   example does not cover**, and that is exactly the case with no test.
+   input that separates them** — the case its worked example does not cover. Two sentences is
+   enough (`seam-checks-not-rereading.md`, "A rule stated with an EXAMPLE").
 3. **If the design has a plan beside it, run its checks before starting** — for a `/flowchart-design`
    stream that is `npm --prefix designloop run check -- <project>/<slug>`, and **read `unclaimed`**:
-   answered questions no plan step implements. First run on spotlight: 190 of 255, including the one
-   that had already shipped wrong through three phases.
+   answered questions no plan step implements (`design-answers-need-a-claimant.md`).
 4. Do the work.
 5. Run its `verification_command`. For `verification_kind: snapshot` that means the `/fx-verify`
    gate — render and actually look at the PNG. ⚠ **If the change has a DURATION, a still frame is the
@@ -97,9 +95,9 @@ the entire point.
 
 ## Reflect and record — at every session end, unprompted
 
-Owner: "make sure to do these type of cleanup and reflections steps every time for self-learning at
-planned gates such as at end of sessions or when finishing a plan, not just when i ask you to
-reflect. Having issues repeat is a waste of time." It runs before the session's last message, at
+Owner, verbatim: "make sure to do these type of cleanup and reflections steps every time for
+self-learning at planned gates such as at end of sessions or when finishing a plan, not just when i
+ask you to reflect. Having issues repeat is a waste of time." It runs before the session's last message, at
 every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
 
 1. **List what cost time this session**, from the transcript, not memory: a brief whose premise
@@ -109,7 +107,8 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
    scaffolding** - a command, a grep chain or a snippet typed three or more times, or boilerplate
    pasted into every brief.
 2. **For each, ask "will this happen again?"** If yes, write the rule WHERE IT IS READ AT THAT
-   MOMENT (`/plan-run` § "A finding is only fed back if it lands where the reader already looks"):
+   MOMENT — a rule in a document nobody reads then is indistinguishable from no rule (the reuse rule
+   lived in memory and `/simplify`, never in the brief template, and code came back duplicated):
    an implementer trap → `.claude/agents/plan-implementer*.md`; a test trap →
    `tests-that-prove-nothing`; a brief trap → `brief-premise-is-a-hypothesis` or `/plan-run`'s
    brief section; a project fact → that project's doc; a cross-project agreement → a memory
@@ -127,12 +126,8 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
 
 - **Repo-relative paths only** — no machine-local absolute paths, no references to memory files.
   The next agent may be on a different machine.
-- **Do not `git add` or commit on your own.** The owner drives this repo through GitHub Desktop.
-  Evidence lives in this file rather than in commit messages. If they have authorized commits for
-  the session, commit after a green verification with a message naming the task id.
-  ⚠ `/plan-run` REVERSES this for the overseer on a worktree branch — one commit per verified step,
-  because commits are that run's only rollback points. If both skills are in play, plan-run's rule
-  wins on its branch; this one governs everywhere else.
+- **Commits follow CLAUDE.md hard rule 1:** never on `main` (the owner commits through GitHub
+  Desktop); on any other branch, one verified task per commit, its id and evidence in the message.
 - **No dated history logs in living docs** (owner policy). When the stream lands, fold the residue
   into `ARCHITECTURE_REVIEW.md` / `todo.md` and delete the handoff — but run `git ls-files <path>`
   first, since deleting an untracked file destroys it.

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """The overseer's windowed gate for solatro, run and read in one call.
 
-Each gate used to be the same long launch line plus three or four greps over the banner,
-the errors log, the exit profile and godot.log, with the per-suite comparison against the
-last gate done by eye and the intermittent list checked from memory. This does all of it and
-prints a short verdict, so a gate costs one tool call and a dozen lines of reading.
+Prints a short verdict: the banner, the exit profile and leak lines, grab-focus warnings by
+source, the per-suite count changes since the last full gate, and each failure matched against
+the handoff's "## Open bugs" (listed - count it, or NEW).
 
     py .claude/tools/gate.py --out <scratchpad> [--handoff solatro/HANDOFF_x.md] [-- --filter Sidebar]
     py .claude/tools/gate.py --out <scratchpad> --parse <scratchpad>/gate_<stamp>   # re-read a run

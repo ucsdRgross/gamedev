@@ -9,8 +9,7 @@ The docs are the primary source of information in this repo. Memory is a thin in
 not a second copy. This skill keeps that true.
 
 **Run `py .claude/tools/doc_check.py` first, always.** It is the mechanical half; everything
-below is the judgement half. Never do the judgement work without the check output in hand —
-that is how the last cleanup found a doc listing a class that had been deleted.
+below is the judgement half. Never do the judgement work without the check output in hand.
 
 ## The two rules this enforces
 
@@ -77,10 +76,9 @@ a comment deferring to a doc is only useful if the doc resolves. The style findi
 category rather than listed, because there are thousands and a wall of warnings is a wall nobody
 reads.
 
-⚠ **THE THREE COMMENT RULES ARE ERRORS ON A CHANGED FILE AND A COUNT ON A FULL RUN**, and the split
-is deliberate. No comment may have whitespace before it, none may share a line with code, a `#`
-block is capped at 3 lines and a `##` doc comment at 1. The repo carries thousands of pre-existing
-violations, so the rules bind **whole-file on touch**: whatever a session edits, it leaves clean.
+⚠ **THE COMMENT RULES ([[code-style-lean-documented]]) ARE ERRORS ON A CHANGED FILE AND A COUNT ON
+A FULL RUN**, and the split is deliberate. The repo carries thousands of pre-existing violations, so
+the rules bind **whole-file on touch**: whatever a session edits, it leaves clean.
 This skill does not sweep the backlog — draining it that way is a separate job (`solatro/todo.md`),
 and attempting it here would bury the findings that are always bugs.
 

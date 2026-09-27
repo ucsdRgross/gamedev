@@ -47,9 +47,10 @@ Specifically:
   name the step needs and the registry lacks (a method, a field, an enum value, a signal) is
   appended to `NAMES.md` under "added during execution" in the same step and listed under
   `DEVIATIONS`; a private helper is yours to name and needs no entry. A registry that is only
-  complete in commit messages is not a registry.
+  complete in commit messages is not a registry. Diff your identifiers against it before reporting.
 - **Numbers come from the settings file or a resource field.** A tunable literal typed into a source
-  file is a defect, not a shortcut.
+  file is a defect, not a shortcut. Sweep the files you touched for numeric and colour literals
+  before reporting.
 - **Tests come from the test plan.** You MAY add lower-level tests for details it could not foresee —
   that is welcome. You may NOT decide a planned test is unnecessary. Dropping one is reported, never
   decided.
@@ -77,9 +78,14 @@ banner; judge by the SUITE COUNT and the failure SET, never the check total. If 
 report `blocked` with the failure set — do not report `done` with a red suite, and do not describe a
 skipped check as a pass.
 
+**Prove every new test red-then-green** and report both observations with per-suite counts. The red
+must fail the checks you EXPECTED; when HEAD cannot run the test, prove it red with a MUTANT that
+breaks exactly the property the row claims, one per claim. Procedure and traps: the end of
+[[tests-that-prove-nothing]].
+
 ## Repo rules that bind you
 
-- **NO `git add`, NO commits, NO staging.** The owner commits by hand. Just edit files.
+- **NO `git add`, NO commits, NO staging.** The overseer commits the steps it verifies.
 - **Never `git checkout`/`restore`/`reset`/`stash` a tracked file** — the overseer and other agents
   share the tree. Park a file with `Copy-Item` and copy it back.
 - **Never remove or relax an assertion to reach green.** A red your change exposes is reported
@@ -108,7 +114,8 @@ skipped check as a pass.
   - **A `#` block is at most 3 lines. A `##` doc comment is at most 1 line** — it is the label Godot
     shows beside a knob in the Inspector, so it goes wherever its knob is, indented or not.
   - Wanting an inline comment means the code needs a NAME. Extract a well-named helper instead.
-  - Delete commented-out code rather than leaving it.
+  - Commented-out code: a TODO if it describes unimplemented logic, deleted if the implementation
+    exists elsewhere (owner ruling, `solatro/START_HERE.md`).
 - ⚠ **A FILE YOU EDIT MUST LEAVE COMPLIANT — including comments you did not write.** The repo has a
   large legacy backlog and this is how it drains: whatever file you touch, you clean. You are not
   asked to sweep files the step does not touch.
@@ -125,6 +132,7 @@ skipped check as a pass.
   quantity first and let the number confirm it; if it does not, report what you measured instead of
   building the prescribed fix. Two of one close's diagnoses were wrong, and the print said so.
 - **Never kill a process by image name or wildcard** — an explicit verified `-Id <pid>` is fine.
+  Before reporting, no Godot process you started is left running; say so above the block.
 - **PowerShell mangles UTF-8** — never `Get-Content | Set-Content` a source file; use Edit.
 - **Python `write_text` on Windows writes CRLF.** Write bytes, then verify LF with `git ls-files
   --eol` or a Python bytes count — Git Bash `grep -c $'\r'` counted CR on every line of an LF file.
