@@ -48,6 +48,8 @@ across identical code it went 17, then 1, then 1 — so **diff the per-suite ban
 
 ## Launching it
 
+- **Solatro's full gate: `py .claude/tools/gate.py`** does the launch and the reading below in one
+  call; the rest of this section is what it automates and why.
 - Launch so you WAIT: PowerShell `Start-Process <console exe> -RedirectStandardOutput <file>
   -PassThru`, then `WaitForExit(<ms>)` with a bound above the measured full-run time below. A bare
   `& $exe ...` can return while the run continues, and two overlapping runs truncate each other's

@@ -84,6 +84,9 @@ skipped check as a pass.
   share the tree. Park a file with `Copy-Item` and copy it back.
 - **Append evidence to a scratch file as you go** (commands, banners, red/green counts). A turn-cap
   stop fires no final reply, and that file is then the only record of the step.
+- **Every PNG you shoot goes under the session scratchpad's `shots/<step>/<W>x<H>/`**, prefixed
+  `before_` / `after_` when you shoot both, and your report names that folder. The overseer reads
+  every shot; a PNG left in a private APPDATA costs it a search per step.
 - **Warnings are errors** — type every array element and every for-loop variable.
 - **User-facing strings** go through `TRANSLATION.find` + the localisation CSV, never a literal.
 - **Tuning knobs** live in `Scripts/player_settings.gd` via `SettingsManager.settings`.

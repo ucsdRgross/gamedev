@@ -105,13 +105,18 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
 1. **List what cost time this session**, from the transcript, not memory: a brief whose premise
    measurement overturned; an owner question a ruling already answered (or one asked so the owner
    rejected the options); a rerun, a leak, a hang, a turn-cap stop; a review shot that misled the
-   owner; tool or hook friction; a schedule change the owner learned about by asking.
+   owner; tool or hook friction; a schedule change the owner learned about by asking; **repeated
+   scaffolding** - a command, a grep chain or a snippet typed three or more times, or boilerplate
+   pasted into every brief.
 2. **For each, ask "will this happen again?"** If yes, write the rule WHERE IT IS READ AT THAT
    MOMENT (`/plan-run` § "A finding is only fed back if it lands where the reader already looks"):
    an implementer trap → `.claude/agents/plan-implementer*.md`; a test trap →
    `tests-that-prove-nothing`; a brief trap → `brief-premise-is-a-hypothesis` or `/plan-run`'s
    brief section; a project fact → that project's doc; a cross-project agreement → a memory
-   (`.claude/memory/`, run `/docs` first). A one-off goes nowhere.
+   (`.claude/memory/`, run `/docs` first); repeated scaffolding → a script in `.claude/tools/`
+   (the `gate.py` shape: it runs the work and prints a short verdict), or a line in the brief
+   template or the agent definition - proposed here and built as its own small reviewed step,
+   never improvised mid-run. A one-off goes nowhere.
 3. **Prune this file** (the ~300-line rule below): a finished row shrinks to id, description,
    status and its commits - the commit message holds the evidence; an open item it carried moves
    to Open bugs; a resolved Open bug goes.

@@ -47,6 +47,15 @@ checked with `git ls-files --eol`, never `grep`: Git Bash's `grep -c $'\r'` coun
 
 **Verify every done-when yourself with a bounded command.** Never accept a self-reported green.
 
+**The gate is one command:** `py .claude/tools/gate.py --out <scratchpad> --handoff
+<project>/HANDOFF_<topic>.md`, run in the background. It refuses while any Godot runs, launches the
+wrapper with a fresh private APPDATA, and prints the banner, the exit profile and leak lines, the
+grab-focus warnings by source, the per-suite changes since the last full gate, and each failure
+matched against the handoff's Open bugs ("listed ... count it" or "NEW"). `--parse <run dir>`
+re-reads a finished run. Only its GREEN clears a commit; a NEW failure is never called a flake.
+Hand-typing the launch and the greps cost three to four tool calls per gate, eighteen gates on one
+session.
+
 **Verify the recon premise before dispatch** — the site and cause a brief names are a hypothesis
 until a bounded command confirms them ([[brief-premise-is-a-hypothesis]]).
 
@@ -100,6 +109,13 @@ but it MUST carry:
    foresee it, each recorded in a commit message nobody reads at the next step. The registry is
    authoritative only while it is complete; tell the implementer to append, and check it.
 10. **The report states that no Godot process it started is left running.**
+
+⚠ **Do not paste what the implementer's definition already carries** - the report schema, parking by
+copy, the exit-profile rule, the comment and complexity rules, `NAMES.md`, the shots folder. Items 6,
+7 and 9 are ONE line each in the brief, naming the rule; the paragraphs live in
+`.claude/agents/plan-implementer*.md`. Measured: one session's briefs restated ~25 lines of the
+definition per dispatch. A brief's words go to what only this step knows: the ruling verbatim, the
+suspected writer with `file:line`, the done-when, the traps that apply, the verification filter.
 
 **Never accept `STATUS: done` on a component whose consumer does not exist.**
 

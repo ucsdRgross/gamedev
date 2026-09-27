@@ -67,6 +67,11 @@ Two more mechanical checks, same shape as `doc_check.py`, sharing the same `Stop
   comment-stripped code of HEAD and of the working copy must be byte-identical. A trailing
   comment's removal edits its code line, which a diff cannot tell from a code change; this can.
 
+- **`py .claude/tools/gate.py --out <scratchpad> --handoff <project>/HANDOFF_*.md`** — solatro's full
+  windowed gate in one call: a fresh private APPDATA, refused while any Godot runs, and a short
+  verdict (banner, exit profile, leaks, per-suite changes since the last gate, each failure matched
+  against the handoff's Open bugs). `--parse <run dir>` re-reads a finished run.
+
 **`.claude/hooks/commit-gate.ps1` blocks an agent commit whose staged diff duplicates existing
 logic**, with `[dup-ok]` in the commit message as the deliberate-duplication escape. It fires only
 on commits an agent makes, never on the owner's GitHub Desktop flow.
