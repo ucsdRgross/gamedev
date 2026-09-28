@@ -18,3 +18,43 @@
 {"event":"verdict","id":"map_after_travel","verdict":"approve","comment":"","at":"2026-09-25T00:53:14Z"}
 {"event":"verdict","id":"deck_over_chooser","verdict":"comment","comment":"deck button should be close deck, and should be before any of the descriptive stuff at very top, not in middle of card and descriptors. i think we can do better though, by having an x button tab sticking out the side of the deck viewer window instead similar to a bookmark sticking out which is used to close the viewer since that is more intuitive. ","at":"2026-09-25T00:59:28Z"}
 {"event":"verdict","id":"deck_card_hover_over_chooser","verdict":"comment","comment":"as mentioned in previous comment, deck button should not be in middle of description, it should be on top but below the back forward wall row.","at":"2026-09-25T01:00:56Z"}
+{"event":"verdict","id":"grid3_overview","verdict":"approve","comment":"","at":"2026-09-28T11:18:36Z"}
+{"event":"verdict","id":"grid3_focused","verdict":"approve","comment":"","at":"2026-09-28T11:18:52Z"}
+{"event":"verdict","id":"grid1_focused","verdict":"approve","comment":"sidebar doesnt show current chips x mult and total score so far.","at":"2026-09-28T11:19:14Z"}
+{"event":"verdict","id":"window_show_open","verdict":"approve","comment":"","at":"2026-09-28T11:19:16Z"}
+{"event":"verdict","id":"lifted_focus_elsewhere","verdict":"approve","comment":"","at":"2026-09-28T11:19:45Z"}
+{"event":"verdict","id":"entrance_focus_rim","verdict":"approve","comment":"","at":"2026-09-28T11:20:04Z"}
+{"event":"verdict","id":"chooser_overlay_greyed","verdict":"comment","comment":"center the reroll text under the card","at":"2026-09-28T11:20:36Z"}
+{"event":"verdict","id":"map_fit","verdict":"comment","comment":"looks like top buffer isnt there? check bottom too.","at":"2026-09-28T11:21:31Z"}
+{"event":"verdict","id":"map_zoomed_edge","verdict":"approve","comment":"","at":"2026-09-28T11:21:43Z"}
+{"event":"verdict","id":"map_after_travel","verdict":"approve","comment":"","at":"2026-09-28T11:29:37Z"}
+{"event":"verdict","id":"deck_over_chooser","verdict":"comment","comment":"cannot tell where deck viewer and pack chooser edges are separate. color each colored background differently from now on, they are all placeholders anyways. X button should not be transparent. otherwise looks improved and I accept.","at":"2026-09-28T11:31:37Z"}
+{"event":"verdict","id":"deck_card_hover_over_chooser","verdict":"approve","comment":"","at":"2026-09-28T11:32:10Z"}
+{"event":"verdict","id":"grid1_overview","verdict":"comment","comment":"looks right, but I notice resolution looks off and causing heavy aliasing in general for your review images","at":"2026-09-28T11:34:21Z"}
+{"event":"verdict","id":"grid2_overview","verdict":"approve","comment":"","at":"2026-09-28T11:34:33Z"}
+{"event":"verdict","id":"grid2_focused","verdict":"approve","comment":"","at":"2026-09-28T11:34:39Z"}
+{"event":"verdict","id":"board_window_1280x720","verdict":"approve","comment":"","at":"2026-09-28T11:34:43Z"}
+{"event":"verdict","id":"board_window_600x1000","verdict":"approve","comment":"","at":"2026-09-28T11:34:49Z"}
+{"event":"verdict","id":"entrance_card_lifted","verdict":"approve","comment":"","at":"2026-09-28T11:34:53Z"}
+{"event":"verdict","id":"deck_viewer","verdict":"comment","comment":"no same buffer above and below top and bottom cards of deck viewer I believe. top cards are touching top edge of the window but there should be same separation.","at":"2026-09-28T11:36:02Z"}
+{"event":"verdict","id":"deck_viewer_600x1000","verdict":"approve","comment":"","at":"2026-09-28T11:36:10Z"}
+{"event":"verdict","id":"rules_viewer","verdict":"approve","comment":"","at":"2026-09-28T11:36:16Z"}
+{"event":"verdict","id":"pack_chooser","verdict":"comment","comment":"empty space above and below the cards is extreme. expand only when card count increases. at max limit it becomes scrolling.","at":"2026-09-28T11:37:06Z"}
+{"event":"verdict","id":"possible_cards","verdict":"comment","comment":"looks fine but empty card should probably have a description. zero description at all looks off.","at":"2026-09-28T11:37:45Z"}
+{"event":"verdict","id":"description_card","verdict":"approve","comment":"","at":"2026-09-28T11:38:05Z"}
+{"event":"verdict","id":"fire_on_cards","verdict":"approve","comment":"","at":"2026-09-28T11:38:56Z"}
+{"event":"verdict","id":"fire_on_bent_cards","verdict":"approve","comment":"","at":"2026-09-28T11:39:17Z"}
+{"event":"verdict","id":"fx_editor_overview","verdict":"approve","comment":"","at":"2026-09-28T11:39:25Z"}
+{"event":"verdict","id":"fx_editor_card_fire","verdict":"approve","comment":"","at":"2026-09-28T11:39:30Z"}
+{"event":"verdict","id":"props_on_a_card","verdict":"approve","comment":"","at":"2026-09-28T11:39:40Z"}
+{"event":"verdict","id":"hoop_on_a_card","verdict":"approve","comment":"","at":"2026-09-28T11:40:09Z"}
+{"event":"verdict","id":"formation_editor_hoop","verdict":"comment","comment":"hoops should be aligned horizontally.","at":"2026-09-28T11:40:37Z"}
+{"event":"verdict","id":"formation_editor_knife","verdict":"approve","comment":"","at":"2026-09-28T11:40:41Z"}
+{"event":"verdict","id":"pip_row","verdict":"comment","comment":"looks fine except for the super heavy aliasing making it hard to judge, its screwing with outline shader results.","at":"2026-09-28T11:41:20Z"}
+{"event":"verdict","id":"outline_glare_start","verdict":"approve","comment":"","at":"2026-09-28T11:41:26Z"}
+{"event":"verdict","id":"outline_glare_middle","verdict":"approve","comment":"","at":"2026-09-28T11:41:30Z"}
+{"event":"verdict","id":"outline_glare_end","verdict":"approve","comment":"","at":"2026-09-28T11:41:31Z"}
+{"event":"verdict","id":"spotlight_glow_field","verdict":"approve","comment":"","at":"2026-09-28T11:41:41Z"}
+{"event":"verdict","id":"spotlight_tool_glow","verdict":"approve","comment":"","at":"2026-09-28T11:41:46Z"}
+{"event":"verdict","id":"spotlight_tool_glow_rest","verdict":"approve","comment":"","at":"2026-09-28T11:41:49Z"}
+{"event":"verdict","id":"win_overlay","verdict":"comment","comment":"result is not centered over game view screen oddly.","at":"2026-09-28T11:42:19Z"}

@@ -1,65 +1,205 @@
 {
   "shots": {
     "grid3_overview": {
-      "verdict": "comment",
-      "comment": "before we switched to grids, cards stacked on top of a cell/zone would shift slightly to reveal the zone beneath if holding a card and the zone below was a legal spot to place a card. otherwise it should select card on top since no reason to view the zone/cell. otherwise looks fine.",
-      "at": "2026-09-25T00:46:09Z"
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:18:36Z"
     },
     "grid3_focused": {
       "verdict": "approve",
       "comment": "",
-      "at": "2026-09-25T00:46:24Z"
+      "at": "2026-09-28T11:18:52Z"
     },
     "grid1_focused": {
-      "verdict": "comment",
+      "verdict": "approve",
       "comment": "sidebar doesnt show current chips x mult and total score so far.",
-      "at": "2026-09-25T00:47:06Z"
+      "at": "2026-09-28T11:19:14Z"
     },
     "window_show_open": {
       "verdict": "approve",
       "comment": "",
-      "at": "2026-09-25T00:47:26Z"
+      "at": "2026-09-28T11:19:16Z"
     },
     "lifted_focus_elsewhere": {
-      "verdict": "comment",
-      "comment": "looks fine except for x on the card description which implies card has been clicked on but that shouldnt be possible since an entrance card has also been clicked on?",
-      "at": "2026-09-25T00:48:37Z"
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:19:45Z"
     },
     "entrance_focus_rim": {
       "verdict": "approve",
       "comment": "",
-      "at": "2026-09-25T00:48:57Z"
+      "at": "2026-09-28T11:20:04Z"
     },
     "chooser_overlay_greyed": {
       "verdict": "comment",
-      "comment": "covering whole map looks off. have it be a square window which pack chooser and its elements are inside of instead. outside of the sub window you can still see map so you know which picture you are in. also no reason to lock out the back forward and wall, if you leave you can just come back to the in progress chooser",
-      "at": "2026-09-25T00:50:58Z"
+      "comment": "center the reroll text under the card",
+      "at": "2026-09-28T11:20:36Z"
     },
     "map_fit": {
-      "verdict": "approve",
-      "comment": "",
-      "at": "2026-09-25T00:51:45Z"
+      "verdict": "comment",
+      "comment": "looks like top buffer isnt there? check bottom too.",
+      "at": "2026-09-28T11:21:31Z"
     },
     "map_zoomed_edge": {
-      "verdict": "comment",
-      "comment": "looks fine. i assume edges missing between nodes is expected from it no longer being reachable? if not thats an issue",
-      "at": "2026-09-25T00:52:36Z"
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:21:43Z"
     },
     "map_after_travel": {
       "verdict": "approve",
       "comment": "",
-      "at": "2026-09-25T00:53:14Z"
+      "at": "2026-09-28T11:29:37Z"
     },
     "deck_over_chooser": {
       "verdict": "comment",
-      "comment": "deck button should be close deck, and should be before any of the descriptive stuff at very top, not in middle of card and descriptors. i think we can do better though, by having an x button tab sticking out the side of the deck viewer window instead similar to a bookmark sticking out which is used to close the viewer since that is more intuitive. ",
-      "at": "2026-09-25T00:59:28Z"
+      "comment": "cannot tell where deck viewer and pack chooser edges are separate. color each colored background differently from now on, they are all placeholders anyways. X button should not be transparent. otherwise looks improved and I accept.",
+      "at": "2026-09-28T11:31:37Z"
     },
     "deck_card_hover_over_chooser": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:32:10Z"
+    },
+    "grid1_overview": {
       "verdict": "comment",
-      "comment": "as mentioned in previous comment, deck button should not be in middle of description, it should be on top but below the back forward wall row.",
-      "at": "2026-09-25T01:00:56Z"
+      "comment": "looks right, but I notice resolution looks off and causing heavy aliasing in general for your review images",
+      "at": "2026-09-28T11:34:21Z"
+    },
+    "grid2_overview": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:34:33Z"
+    },
+    "grid2_focused": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:34:39Z"
+    },
+    "board_window_1280x720": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:34:43Z"
+    },
+    "board_window_600x1000": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:34:49Z"
+    },
+    "entrance_card_lifted": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:34:53Z"
+    },
+    "deck_viewer": {
+      "verdict": "comment",
+      "comment": "no same buffer above and below top and bottom cards of deck viewer I believe. top cards are touching top edge of the window but there should be same separation.",
+      "at": "2026-09-28T11:36:02Z"
+    },
+    "deck_viewer_600x1000": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:36:10Z"
+    },
+    "rules_viewer": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:36:16Z"
+    },
+    "pack_chooser": {
+      "verdict": "comment",
+      "comment": "empty space above and below the cards is extreme. expand only when card count increases. at max limit it becomes scrolling.",
+      "at": "2026-09-28T11:37:06Z"
+    },
+    "possible_cards": {
+      "verdict": "comment",
+      "comment": "looks fine but empty card should probably have a description. zero description at all looks off.",
+      "at": "2026-09-28T11:37:45Z"
+    },
+    "description_card": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:38:05Z"
+    },
+    "fire_on_cards": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:38:56Z"
+    },
+    "fire_on_bent_cards": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:39:17Z"
+    },
+    "fx_editor_overview": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:39:25Z"
+    },
+    "fx_editor_card_fire": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:39:30Z"
+    },
+    "props_on_a_card": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:39:40Z"
+    },
+    "hoop_on_a_card": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:40:09Z"
+    },
+    "formation_editor_hoop": {
+      "verdict": "comment",
+      "comment": "hoops should be aligned horizontally.",
+      "at": "2026-09-28T11:40:37Z"
+    },
+    "formation_editor_knife": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:40:41Z"
+    },
+    "pip_row": {
+      "verdict": "comment",
+      "comment": "looks fine except for the super heavy aliasing making it hard to judge, its screwing with outline shader results.",
+      "at": "2026-09-28T11:41:20Z"
+    },
+    "outline_glare_start": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:41:26Z"
+    },
+    "outline_glare_middle": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:41:30Z"
+    },
+    "outline_glare_end": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:41:31Z"
+    },
+    "spotlight_glow_field": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:41:41Z"
+    },
+    "spotlight_tool_glow": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:41:46Z"
+    },
+    "spotlight_tool_glow_rest": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-09-28T11:41:49Z"
+    },
+    "win_overlay": {
+      "verdict": "comment",
+      "comment": "result is not centered over game view screen oddly.",
+      "at": "2026-09-28T11:42:19Z"
     }
   },
-  "updated": "2026-09-25T01:00:56Z"
+  "updated": "2026-09-28T11:42:19Z"
 }
