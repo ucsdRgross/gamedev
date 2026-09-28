@@ -207,15 +207,10 @@ func _held_by_a_sticky_description() -> bool:
 func _refresh_rerolls() -> void:
 	if not is_node_ready(): return
 	rerolls_label.text = TRANSLATION.find('CHOICE_REROLLS_LEFT') % data.rerolls
-	_hold(confirm_button, _held_by_a_sticky_description())
+	HudContainer.hold(confirm_button, _held_by_a_sticky_description())
 	for button : Button in _reroll_buttons:
 		if is_instance_valid(button):
-			_hold(button, _held_by_a_sticky_description() or data.rerolls <= 0)
-
-## Puts one button beyond every input mode at once: a disabled button still answers a pad focus, so the focus goes with it.
-static func _hold(button: Button, held: bool) -> void:
-	button.disabled = held
-	button.focus_mode = Control.FOCUS_NONE if held else Control.FOCUS_ALL
+			HudContainer.hold(button, _held_by_a_sticky_description() or data.rerolls <= 0)
 
 # The card the highlight reached, drawn at this viewer's own card size.
 func _publish_info(card: CardData) -> void:

@@ -298,6 +298,7 @@ func _ready() -> void:
 	await test_a_stocked_slot_draws_its_card_as_flat_as_an_exhausted_one()
 	behavior_section("S22: END IS REVEALED ONLY WHEN THE SHOW CAN NO LONGER PROGRESS")
 	await test_end_is_revealed_when_no_action_remains()
+	await test_a_keyed_end_leaves_no_focus_on_the_disabled_button()
 	await test_end_stays_hidden_through_the_shows_first_frames()
 	behavior_section("THE RESOLVED SHOW LEAVES NOTHING ARMED")
 	await test_the_outcome_screen_leaves_no_card_held()
@@ -369,6 +370,45 @@ func test_end_is_revealed_when_no_action_remains() -> void:
 	check(not view.submit_button.visible,
 			"7.5: a stock with a card AND an empty tile hides End again")
 	await _end_main_fixture()
+
+## A keyed End disables the button it was pressed on: the focus leaves it for a live control in the show, and the button takes the focus again once play resumes.
+func test_a_keyed_end_leaves_no_focus_on_the_disabled_button() -> void:
+	await _start_game_fixture()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	for stock : ArrayCardData in view.game.state.entrance_stocks():
+		stock.datas.clear()
+	view.game.state.revision += 1
+	await get_tree().process_frame
+	view.submit_button.grab_focus()
+	await get_tree().process_frame
+	check(view.submit_button.visible and _booted_viewport.gui_get_focus_owner() == view.submit_button,
+			"sanity: End is revealed and holds the key focus", str(_booted_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_ENTER)
+	var waited := 0.0
+	while not view.game.state.show_ended and waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	await get_tree().process_frame
+	check(view.game.state.show_ended and view.submit_button.disabled, "sanity: Enter on End ended the show, End disabled")
+	check(view.submit_button.focus_mode == Control.FOCUS_NONE and _booted_viewport.gui_get_focus_owner() != view.submit_button,
+			"the disabled End is no focus target and gave its focus up", str(_booted_viewport.gui_get_focus_owner()))
+	check(_holds_a_live_focus(_game_viewport), "...which rests on a live control in the show",
+			str(_game_viewport.gui_get_focus_owner()))
+	view.undo_button.pressed.emit()
+	waited = 0.0
+	while view.game.processing and waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	await get_tree().process_frame
+	check(not view.submit_button.disabled and view.submit_button.focus_mode == Control.FOCUS_ALL,
+			"End enabled again with play is a focus target again")
+	check(_holds_a_live_focus(_game_viewport), "...and the show's own focus rests on a live control",
+			str(_game_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+func _holds_a_live_focus(viewport: Viewport) -> bool:
+	var focused := viewport.gui_get_focus_owner()
+	return focused != null and focused.focus_mode != Control.FOCUS_NONE and not (focused is BaseButton and (focused as BaseButton).disabled)
 
 # The reveal asks about EMPTY tiles, so the fixture above needs a board with none left.
 func _fill_every_grid_cell(state: GameData) -> void:
@@ -2402,6 +2442,17 @@ func test_keys_alone_start_a_run_from_the_start_menu_and_find_it_again() -> void
 			str(menu_viewport.gui_get_focus_owner()))
 	await _tap_key(KEY_ENTER)
 	check(not _main.menu_scene.play_row.visible, "keys: ...and Enter presses it there, folding the submenu away")
+	await _tap_key(KEY_ENTER)
+	var continue_button : Button = _main.menu_scene.continue_button
+	check(RunManager.has_save() and not continue_button.disabled,
+			"keys: sanity: the run started is saved, so the submenu opened again offers Continue")
+	await _tap_key(KEY_DOWN)
+	var steps := 0
+	while menu_viewport.gui_get_focus_owner() != continue_button and steps < _main.menu_scene.play_row.get_child_count():
+		await _tap_key(KEY_RIGHT if menu_viewport.gui_get_focus_owner() == _main.menu_scene.new_run_button else KEY_LEFT)
+		steps += 1
+	check(menu_viewport.gui_get_focus_owner() == continue_button,
+			"keys: ...where a live Continue takes the key focus again", str(menu_viewport.gui_get_focus_owner()))
 	await _end_main_fixture()
 
 ## A pad alone starts a run from the start menu, with the d-pad and the accept button only.
@@ -2439,24 +2490,34 @@ func _start_a_run_from_the_menu_with(device: String, accept: Callable, down: Cal
 	check(menu.play_row.visible and menu_viewport.gui_get_focus_owner() == play,
 			"%s: accept presses Play, the submenu opens and Play keeps the focus" % device,
 			str(menu_viewport.gui_get_focus_owner()))
+	check(menu.continue_button.disabled, "%s: sanity: with no save on disk Continue is disabled" % device)
 	await down.call()
 	check(menu_viewport.gui_get_focus_owner() in menu.play_row.get_children(),
 			"%s: down from Play reaches the submenu below it" % device, str(menu_viewport.gui_get_focus_owner()))
+	check(menu_viewport.gui_get_focus_owner() != menu.continue_button,
+			"%s: ...on a live button, never the disabled Continue" % device, str(menu_viewport.gui_get_focus_owner()))
 	await down.call()
 	check(menu_viewport.gui_get_focus_owner() in bottom_row.get_children(),
 			"%s: ...and down again the bottom row, in the column's order" % device,
 			str(menu_viewport.gui_get_focus_owner()))
 	await up.call()
-	check(menu_viewport.gui_get_focus_owner() in menu.play_row.get_children(),
-			"%s: up from the bottom row comes back into the submenu" % device,
+	check(menu_viewport.gui_get_focus_owner() in menu.play_row.get_children()
+			and menu_viewport.gui_get_focus_owner() != menu.continue_button,
+			"%s: up from the bottom row comes back into the submenu, on a live button" % device,
 			str(menu_viewport.gui_get_focus_owner()))
-	var lefts := 0
-	while menu_viewport.gui_get_focus_owner() != menu.new_run_button and lefts < menu.play_row.get_child_count():
+	await down.call()
+	var presses := 0
+	var reached_continue := menu_viewport.gui_get_focus_owner() == menu.continue_button
+	while menu_viewport.gui_get_focus_owner() != bottom_row.get_child(0) and presses < bottom_row.get_child_count():
 		await left.call()
-		lefts += 1
-	check(lefts > 0 and menu_viewport.gui_get_focus_owner() == menu.new_run_button,
-			"%s: left walks the submenu to New Run" % device,
-			"%d lefts, on %s" % [lefts, menu_viewport.gui_get_focus_owner()])
+		presses += 1
+		reached_continue = reached_continue or menu_viewport.gui_get_focus_owner() == menu.continue_button
+	await up.call()
+	reached_continue = reached_continue or menu_viewport.gui_get_focus_owner() == menu.continue_button
+	check(not reached_continue, "%s: no press of the walk lands on the disabled Continue" % device)
+	check(menu_viewport.gui_get_focus_owner() == menu.new_run_button,
+			"%s: left along the bottom row to its first button, then up, reaches New Run" % device,
+			"%d lefts, on %s" % [presses, menu_viewport.gui_get_focus_owner()])
 	await accept.call()
 	var picker := _the_deck_picker(_main)
 	check(picker != null and _booted_viewport.gui_get_focus_owner() == picker.rows.get_child(0).get_child(2),

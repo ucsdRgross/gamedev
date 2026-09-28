@@ -576,6 +576,11 @@ func _join_focus_while_shown(button: Button, shown: bool) -> void:
 	button.visible = shown
 	button.focus_mode = Control.FOCUS_ALL if shown else Control.FOCUS_NONE
 
+## Puts one button beyond every input mode at once: a disabled button still answers a pad focus, so the focus goes with it.
+static func hold(button: Button, held: bool) -> void:
+	button.disabled = held
+	button.focus_mode = Control.FOCUS_NONE if held else Control.FOCUS_ALL
+
 # A lock survives leaving and returning, exactly as the remembered entry does, and a lost highlight
 # comes back to the entry held here.
 ## The entry each screen's description is LOCKED to, and the only record that the screen is locked at all.

@@ -327,7 +327,7 @@ func _open_deck_viewer(cards: Array[CardData], opener: Button, close_key: String
 # Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores
 # the press where it cannot act.
 func _on_processing_changed(busy: bool) -> void:
-	submit_button.disabled = busy
+	HudContainer.hold(submit_button, busy)
 	hud_container.set_processing(busy)
 	if not busy: _rest_the_board_focus()
 

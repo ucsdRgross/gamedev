@@ -78,4 +78,4 @@ func _open_deck_viewer(cards: Array[CardData], inspect: Button, picker: DeckPick
 
 ## Continue is only clickable while a resumable run exists on disk.
 func refresh_continue() -> void:
-	continue_button.disabled = not RunManager.has_save()
+	HudContainer.hold(continue_button, not RunManager.has_save())
