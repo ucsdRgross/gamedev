@@ -1536,12 +1536,22 @@ const PICTURE_EDGE_MARGIN := 2.0
 # wall itself, wherever it shows.
 func _uncovered_pixels() -> Dictionary[Vector2i, Color]:
 	var image := _booted_viewport.get_texture().get_image()
-	var covered := _drawn_wall_view_parts()
+	var columns := ceili(float(image.get_width()) / THUMBNAIL_SAMPLE_STEP)
+	var rows := ceili(float(image.get_height()) / THUMBNAIL_SAMPLE_STEP)
+	var covered := PackedByteArray()
+	covered.resize(columns * rows)
+	for r : Rect2 in _drawn_wall_view_parts():
+		for row : int in range(clampi(ceili(r.position.y / THUMBNAIL_SAMPLE_STEP), 0, rows),
+				clampi(ceili(r.end.y / THUMBNAIL_SAMPLE_STEP), 0, rows)):
+			for column : int in range(clampi(ceili(r.position.x / THUMBNAIL_SAMPLE_STEP), 0, columns),
+					clampi(ceili(r.end.x / THUMBNAIL_SAMPLE_STEP), 0, columns)):
+				covered[row * columns + column] = 1
 	var uncovered : Dictionary[Vector2i, Color] = {}
-	for y : int in range(0, image.get_height(), THUMBNAIL_SAMPLE_STEP):
-		for x : int in range(0, image.get_width(), THUMBNAIL_SAMPLE_STEP):
-			if not covered.any(func(r: Rect2) -> bool: return r.has_point(Vector2(x, y))):
-				uncovered[Vector2i(x, y)] = image.get_pixel(x, y)
+	for row : int in rows:
+		for column : int in columns:
+			if covered[row * columns + column] == 0:
+				var at := Vector2i(column, row) * THUMBNAIL_SAMPLE_STEP
+				uncovered[at] = image.get_pixel(at.x, at.y)
 	return uncovered
 
 # Each uncovered pixel that is not `surface_colour`, as its place and colour.
