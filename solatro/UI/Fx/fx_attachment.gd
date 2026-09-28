@@ -240,7 +240,7 @@ var _poly_half : Vector2 = Vector2.ZERO
 ## The largest origin-centred box inside the silhouette: the mask's early ACCEPT (`_inner_box`).
 var _poly_inner : Vector2 = Vector2.ZERO
 
-# Scratch for `_fill_poly_from_outline`, allocated once: it runs per frame on every card on the board.
+# Scratch for `_fill_poly_from_outline`, allocated once: it runs on every frame a card's rig moves.
 var _next := PackedVector2Array()
 var _ring := PackedVector2Array()
 var _angles := PackedFloat32Array()
@@ -253,6 +253,9 @@ var _angles_src := PackedFloat32Array()
 
 ## `_poly` padded to POLY, reused per push for a host whose rig is shorter than POLY.
 var _poly_padded := PackedVector2Array()
+
+## The outline `_poly` was resolved from: `track_outline` compares against it before resolving.
+var _poly_source := PackedVector2Array()
 
 # ⚠ AN APPROXIMATION, THE FALLBACK FOR A HOST WITH NO RIG: unordered points are bucketed into POLY
 # angular slots (from straight up, empty buckets filled from their neighbours), which puts vertices at
@@ -307,12 +310,13 @@ func measure_outline(outline: PackedVector2Array) -> void:
 	_restyle()
 
 # ⚠ DO NOT SHORT-CIRCUIT THIS ON `_fx.is_empty()`: `_poly` is a published property test_pixels reads
-# off an UNLIT card, and skipping the resolve leaves it at rest while the rig deforms. Instanced and
-# shape-overriding quads read no silhouette, so they get no upload.
+# off an UNLIT card. Only an unmoved INPUT skips the resolve, since `_poly` already is that input's
+# (78 resting cards: 4.7 -> 2.6 ms/frame, Box A). Instanced and shape-overriding quads: no upload.
 
 ## Re-read the deformed outline and push it to the live quads; a no-op when nothing moved.
 func track_outline(outline: PackedVector2Array) -> void:
 	if shape != Shape.RADII or outline.size() < 3: return
+	if not _moved_from(_poly_source, outline): return
 	if not _fill_poly_from_outline(outline): return
 	for id : StringName in _fx:
 		var fx : Effect = _fx[id]
@@ -386,19 +390,22 @@ func _fill_poly_from_outline(outline: PackedVector2Array) -> bool:
 		var a := float(k) * TAU / float(WEDGES)
 		while j < m - 1 and _angles[j + 1] <= a: j += 1
 		_wedge[k] = float(m - 1) if a < _angles[0] else float(j)
-	var moved := _poly.size() != m or not is_equal_approx(top, _poly_max) \
-			or not half.is_equal_approx(_poly_half)
-	if not moved:
-		for k : int in m:
-			if (_next[k] - _poly[k]).length() > 0.05:
-				moved = true
-				break
+	var moved := not is_equal_approx(top, _poly_max) or not half.is_equal_approx(_poly_half) \
+			or _moved_from(_poly, _next)
 	if not moved: return false
 	_poly = _next.duplicate()
+	_poly_source = outline.duplicate()
 	_poly_max = top
 	_poly_half = half
 	_poly_inner = _inner_box(_poly, half)
 	return true
+
+## Whether `now` differs from `was` in length or by more than 0.05 art units at any point.
+func _moved_from(was: PackedVector2Array, now: PackedVector2Array) -> bool:
+	if was.size() != now.size(): return true
+	for k : int in now.size():
+		if now[k].distance_to(was[k]) > 0.05: return true
+	return false
 
 # Intersecting every edge's half-plane gives a convex region inside a star-shaped outline -
 # conservative where the shape is not convex, the safe direction. A corner staircase's short step

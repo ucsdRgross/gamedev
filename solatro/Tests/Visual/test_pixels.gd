@@ -71,6 +71,7 @@ func _ready() -> void:
 	await test_the_legal_cell_lights_the_face_and_the_focus_lights_the_rim()
 	await test_balls_alternate_directions()
 	await test_the_card_mask_is_the_card_the_player_sees()
+	await test_a_moved_card_re_masks_on_the_same_frame()
 	await test_a_translucent_face_draws_at_its_authored_alpha()
 	check_all_tests_registered()
 	finish()
@@ -557,6 +558,34 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 					+ "parallelogram model has drifted further than it ever measured, so the bite geometry changed")
 					% [worst_corner, worst_corner_at])
 			_report_stand_in_fidelity(t, rig)
+
+# `track_outline` skips the resolve while its INPUT is unmoved, so a posed rig must still reach
+# `_poly` on the very call that sees it - on an UNLIT card, whose `_poly` nothing else refreshes.
+func test_a_moved_card_re_masks_on_the_same_frame() -> void:
+	behavior_section("A MOVED CARD RE-MASKS ON THE SAME FRAME, LIT OR NOT")
+	var card := await _real_card(0.0, TypePaper)
+	if not card: return
+	card._track_fx_outline()
+	var rest := (card.fx._poly as PackedVector2Array).duplicate()
+	check_impl(card.fx._fx.is_empty(), "the card is unlit, the case the skip must not freeze",
+			"%d effects on it" % card.fx._fx.size())
+	var ap := card.get_node("AnimationPlayer") as AnimationPlayer
+	ap.play(CardVisual.RIG_ANIM)
+	ap.seek(0.30, true)
+	ap.pause()
+	card._track_fx_outline()
+	var posed := card._rig_outline()
+	var poly : PackedVector2Array = card.fx._poly
+	var missing := 0
+	for p : Vector2 in posed:
+		var found := false
+		for q : Vector2 in poly: found = found or p.is_equal_approx(q)
+		if not found: missing += 1
+	check(poly != rest and poly.size() == posed.size() and missing == 0,
+			"one _track_fx_outline call after the rig moved, the mask holds every posed vertex",
+			"%d of %d posed vertices missing from a %d-vertex mask (unchanged from rest: %s)"
+			% [missing, posed.size(), poly.size(), poly == rest])
+	card.queue_free()
 
 # A face texel with 0 < alpha < 1 is BODY drawn at that alpha, so what is under the card shows
 # through it, and it takes no rim: the ink it borders on the inside of a ring is the ring's own.

@@ -404,13 +404,14 @@ that instrument reported two rejected builds as successes.
 Reviewed and deliberately NOT applied. Each was judged, not missed — the reason is the useful part.
 
 - **⚠ DO NOT ADD `if _fx.is_empty(): return` TO `FxAttachment.track_outline`.** It looks like the single
-  biggest per-frame win in the layer (an unlit card walks its whole rig, ~24 `atan2` plus the wedge index,
-  and pushes the result nowhere — across a 78-card board and a 50-card deck viewer). **It was applied and
+  biggest per-frame win in the layer (an unlit card walks its whole rig and pushes the result nowhere —
+  across a 78-card board and a 50-card deck viewer). **It was applied and
   it broke `PIXELS / the mask and the drawn face agree in EVERY FX cell` at 3 of 4 phases.** `_poly` is a
   PUBLISHED property, not a cache for the quads: that check reads it off an UNLIT card, and it has to be
   unlit because it samples the card's own face pixels — flames drawn over them would decide the
-  comparison. A guard at the call site has the same problem. To actually collect this, make the resolve
-  cheaper or have the HOST stop calling it; the reasoning is repeated at the guard site in the code.
+  comparison. A guard at the call site has the same problem. What IS taken: the resolve (40 `atan2`
+  plus the wedge index) runs only when the INPUT outline moved, `_poly_source` against it, so `_poly`
+  stays that input's (78 resting cards: 4.7 -> 2.6 ms per frame, Box A); the reasoning is at the guard.
 - **The outline RESAMPLE path in `_fill_poly_from_outline` is reachable, despite looking dead.** Every
   shipped caller hands over at most `POLY = 40` points, so it never runs today — but `CardVisual`'s rig
   generator has an `edge_subdivisions` `@export`, and raising it to 4 bakes 28 points and drops straight
