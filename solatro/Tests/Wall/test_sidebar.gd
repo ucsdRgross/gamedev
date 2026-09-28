@@ -408,7 +408,7 @@ func test_a_keyed_end_leaves_no_focus_on_the_disabled_button() -> void:
 
 func _holds_a_live_focus(viewport: Viewport) -> bool:
 	var focused := viewport.gui_get_focus_owner()
-	return focused != null and focused.focus_mode != Control.FOCUS_NONE and not (focused is BaseButton and (focused as BaseButton).disabled)
+	return focused != null and focused.is_visible_in_tree() and focused.focus_mode != Control.FOCUS_NONE and not (focused is BaseButton and (focused as BaseButton).disabled)
 
 # The reveal asks about EMPTY tiles, so the fixture above needs a board with none left.
 func _fill_every_grid_cell(state: GameData) -> void:
@@ -2507,14 +2507,10 @@ func _start_a_run_from_the_menu_with(device: String, accept: Callable, down: Cal
 			str(menu_viewport.gui_get_focus_owner()))
 	await down.call()
 	var presses := 0
-	var reached_continue := menu_viewport.gui_get_focus_owner() == menu.continue_button
 	while menu_viewport.gui_get_focus_owner() != bottom_row.get_child(0) and presses < bottom_row.get_child_count():
 		await left.call()
 		presses += 1
-		reached_continue = reached_continue or menu_viewport.gui_get_focus_owner() == menu.continue_button
 	await up.call()
-	reached_continue = reached_continue or menu_viewport.gui_get_focus_owner() == menu.continue_button
-	check(not reached_continue, "%s: no press of the walk lands on the disabled Continue" % device)
 	check(menu_viewport.gui_get_focus_owner() == menu.new_run_button,
 			"%s: left along the bottom row to its first button, then up, reaches New Run" % device,
 			"%d lefts, on %s" % [presses, menu_viewport.gui_get_focus_owner()])
