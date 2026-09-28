@@ -2304,53 +2304,68 @@ func test_the_menus_column_only_shifts_while_the_sidebar_slides() -> void:
 		_check_the_bottom_row_beside_the_sidebar(viewport, main, "with the picker closed at %s" % size)
 		await _end_booted_fixture(viewport, main)
 
-# One sample a frame from `start` until the sidebar rests at `aim` and no move is in flight: the
-# sidebar's drawn position and each bottom-row button's rect, both in the window's pixels.
+# ⚠ THE COLUMN IS READ IN THE MENU'S OWN CANVAS, the sidebar in window pixels: the landing's slide
+# starts while the camera still settles its zoom (measured ~25 px of drift), which moves the whole
+# picture and is not the menu's layout. One sample a frame until the slide rests at `aim`.
 func _sample_the_menus_slide(viewport: SubViewport, main: Main, aim: float, start: Callable) -> Array[Dictionary]:
 	var container := main.hud_container
 	var row : Container = main.menu_scene.get_node(^"Content/Main")
 	var picture : WallPicture = main._pictures[&"start_menu"]
+	var column : Control = main.menu_scene.get_node(^"Content")
 	var samples : Array[Dictionary] = []
 	start.call()
 	for _frame : int in range(300):
 		var buttons : Array[Rect2] = []
 		for button : Node in row.get_children():
-			buttons.append(_menu_control_in_window(viewport, picture, button as Control))
+			buttons.append((button as Control).get_global_rect())
 		samples.append({&"slid": container.slid_fraction(),
-				&"sidebar": viewport.get_final_transform() * container.position, &"buttons": buttons})
-		if is_equal_approx(container.slid_fraction(), aim) and not main._move_in_flight and _frame > 0: break
+				&"sidebar": viewport.get_final_transform() * container.position,
+				&"drawn": _menu_control_in_window(viewport, picture, column).size.x / column.get_global_rect().size.x,
+				&"centre": column.get_global_rect().get_center(), &"buttons": buttons})
+		if is_equal_approx(container.slid_fraction(), aim) and not main._move_in_flight: break
 		await get_tree().process_frame
+	check(is_equal_approx(container.slid_fraction(), aim) and not main._move_in_flight,
+			"sanity: the slide toward %.0f settled inside the sampled frames" % aim,
+			"slid %.3f, moving %s" % [container.slid_fraction(), main._move_in_flight])
 	return samples
 
-# Mid-slide (the sidebar neither in nor out) the bottom row keeps ONE line layout, and between two
-# mid-slide frames no button moves further than the sidebar itself did.
+# THE SPACE BESIDE THE SIDEBAR MOVES ITS CENTRE AT HALF THE SIDEBAR'S SPEED: from the frame before the
+# slide to the one after it, the column's centre and its one-layout row step no further, except the
+# row across the one frame it may re-wrap (the opening's first, the closing's last).
 func _check_the_column_only_shifts(samples: Array[Dictionary], what: String) -> void:
-	var mid : Array[Dictionary] = samples.filter(func(s: Dictionary) -> bool:
-			return s[&"slid"] > 0.001 and s[&"slid"] < 0.999)
-	check(mid.size() >= 3, "sanity: %s is sampled mid-slide" % what, "%d of %d" % [mid.size(), samples.size()])
+	var first := samples.find_custom(func(s: Dictionary) -> bool: return s[&"slid"] > 0.001 and s[&"slid"] < 0.999)
+	var last := samples.rfind_custom(func(s: Dictionary) -> bool: return s[&"slid"] > 0.001 and s[&"slid"] < 0.999)
+	check(first >= 1 and last - first >= 2 and last + 1 < samples.size(),
+			"sanity: %s is sampled mid-slide, with a rest frame either side" % what,
+			"mid %d..%d of %d" % [first, last, samples.size()])
+	if first < 1 or last + 1 >= samples.size(): return
+	var opening : bool = samples[-1][&"slid"] > 0.5
+	var rewrap_step := first if opening else last + 1
 	var layouts : Dictionary[String, bool] = {}
-	var worst := 0.0
-	for i : int in mid.size():
-		layouts[_line_layout(mid[i][&"buttons"] as Array)] = true
-		if i == 0: continue
-		var sidebar_step := ((mid[i][&"sidebar"] as Vector2) - (mid[i - 1][&"sidebar"] as Vector2)).length()
-		for b : int in (mid[i][&"buttons"] as Array).size():
-			var step := ((mid[i][&"buttons"][b] as Rect2).position - (mid[i - 1][&"buttons"][b] as Rect2).position).length()
-			worst = maxf(worst, step - sidebar_step)
+	var centre_worst := -INF
+	var button_worst := -INF
+	for i : int in range(first - 1, last + 2):
+		if i != (first - 1 if opening else last + 1):
+			var lines : Array[int] = []
+			for rect : Rect2 in samples[i][&"buttons"]:
+				if not lines.has(roundi(rect.position.y)): lines.append(roundi(rect.position.y))
+			lines.sort()
+			layouts[str((samples[i][&"buttons"] as Array).map(
+					func(rect: Rect2) -> int: return lines.find(roundi(rect.position.y))))] = true
+		if i == first - 1: continue
+		var sidebar_step := ((samples[i][&"sidebar"] as Vector2) - (samples[i - 1][&"sidebar"] as Vector2)).length()
+		var bound := (sidebar_step / 2.0 + 0.5) / (samples[i][&"drawn"] as float)
+		centre_worst = maxf(centre_worst,
+				((samples[i][&"centre"] as Vector2) - (samples[i - 1][&"centre"] as Vector2)).length() - bound)
+		if i == rewrap_step: continue
+		for b : int in (samples[i][&"buttons"] as Array).size():
+			var step := ((samples[i][&"buttons"][b] as Rect2).position - (samples[i - 1][&"buttons"][b] as Rect2).position).length()
+			button_worst = maxf(button_worst, step - bound)
 	check(layouts.size() == 1, "the bottom row keeps one line layout through %s" % what, str(layouts.keys()))
-	check(worst <= 0.5, "...and no button moves further in a frame than the sidebar does, through %s" % what,
-			"%.2f px beyond the sidebar's step" % worst)
-
-## Which line each button sits on, as a key: two frames with the same key wrap the row the same way.
-func _line_layout(buttons: Array) -> String:
-	var tops : Array[float] = []
-	for rect : Rect2 in buttons:
-		if not tops.any(func(y: float) -> bool: return absf(y - rect.position.y) < 1.0): tops.append(rect.position.y)
-	tops.sort()
-	var key := ""
-	for rect : Rect2 in buttons:
-		key += str(tops.find_custom(func(y: float) -> bool: return absf(y - rect.position.y) < 1.0))
-	return key
+	check(centre_worst <= 0.0, "...the column's centre steps at most half the sidebar's step a frame, through %s" % what,
+			"%.2f px over" % centre_worst)
+	check(button_worst <= 0.0, "...and its buttons move with it outside the one re-wrap frame, through %s" % what,
+			"%.2f px over" % button_worst)
 
 # At rest the bottom row flows across the whole width beside the sidebar as it rests, and every
 # button lies in that space.
