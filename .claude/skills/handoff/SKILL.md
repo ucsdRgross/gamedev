@@ -150,6 +150,9 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
 
 - **Repo-relative paths only** — no machine-local absolute paths, no references to memory files.
   The next agent may be on a different machine.
+- **A parked branch that predates a merge restores only its OWN hunks** - `git diff <its base> <branch> -- <file> |
+  git apply --3way`, never a wholesale `git checkout <branch> -- <file>`: measured, a wholesale restore of a test file
+  from a branch parked before the square-card merge would have reverted four later steps' rows.
 - **A parked branch is local until pushed.** Work parked on a side branch (the temp-index commit
   shape) does not exist on the owner's other machine: name it in the handoff as LOCAL ONLY and ask
   the owner to push it (never push unasked) - or park it as an UNFINISHED commit on the work branch

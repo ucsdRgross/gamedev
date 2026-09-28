@@ -40,6 +40,8 @@ the scenes take their knobs. Shots with the same `scene` and `env` share one God
    `py solatro/visual-review/review.py refresh`. It reshoots BEFORE on `git merge-base main HEAD`
    in a temporary `git worktree` (imported headless first, then removed) and AFTER on the working tree.
    `shoot` redoes AFTER only; `shoot --base <ref>` redoes BEFORE only, against `<ref>`.
+   ⚠ Once main is merged into the branch, the merge base is main's tip: shoot BEFORE on the
+   branch's commit just before the merge, so a pair shows only the reviewed group's change.
    Every run gets a fresh private APPDATA and a hard timeout that kills by PID. A scene that is
    absent or fails on the base leaves no BEFORE, and the page says "no before"; a shot that fails
    on the working tree fails the command.

@@ -92,3 +92,7 @@ SUSPECTED
 Close with `PLAN DRIFT:` listing every step id whose done-when you believe is not actually met, and
 `CLEAN:` naming the areas you read carefully and found nothing in — an area you did not read is not
 clean, and saying so is part of the report.
+
+## Before you report
+
+Run every command in the foreground and leave nothing running: no background shell, no Godot, no watcher. Measured: a reviewer's `cat > file` with no input waited 9 hours after it reported.

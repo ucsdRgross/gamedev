@@ -282,6 +282,11 @@ run. Clear the lock by hand when nothing runs. Wait for a background agent by po
 (`until [ $(grep -c . .claude/.subagent.lock) -lt N ]; do sleep 20; done` in a background shell),
 not by re-reading its transcript.
 
+⚠ **A STOPPED OR FINISHED SUBAGENT CAN LEAVE PROCESSES RUNNING.** After `TaskStop`, or a notice that an
+agent stopped with background work, list Godot / python / bash / node by start time and end the
+orphans by explicit PID (hard rule 3). Measured: a reviewer's hung command ran 9 hours; a stopped
+implementer's mutant script kept swapping files in the tree.
+
 ⚠ **Never reset the tree while a subagent is working in it.** One run did, and the agent correctly
 reported the worktree as corrupted — it had no way to know the overseer had rolled it back. Tell it
 first, and confirm it has stopped.

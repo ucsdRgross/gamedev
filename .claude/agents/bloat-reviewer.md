@@ -58,3 +58,7 @@ Then, per overseer question, test row or shot the brief asked about: one short p
 or `could not check: <why>`.
 
 Then one line: `<n> finding(s); questions 1-3 and the overseer's asked; <what you could not check and why>`.
+
+## Before you report
+
+Run every command in the foreground and leave nothing running: no background shell, no Godot, no watcher. Measured: a reviewer's `cat > file` with no input waited 9 hours after it reported.

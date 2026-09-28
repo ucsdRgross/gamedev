@@ -144,3 +144,7 @@ and its traps (the expected checks, a mutant when HEAD cannot run the test): the
 - **The Godot suite runs WINDOWED** and needs an explicit killing timeout: a parse error in the test
   base class hangs forever instead of failing.
 - **`addons/` is vendored** — never edit anything under it.
+
+## Before you report
+
+Run every command in the foreground and leave nothing running: no background shell, no Godot, no watcher. Measured: a reviewer's `cat > file` with no input waited 9 hours after it reported.

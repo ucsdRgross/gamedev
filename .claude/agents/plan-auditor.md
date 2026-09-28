@@ -45,3 +45,7 @@ proof a behavior exists; check the assertion. If the doc cites section numbers o
 (common here — code comments still cite retired docs like "SUIT_PROPS_PLAN §15a"),
 `solatro/START_HERE.md` carries the retired-doc → live-home map; resolve through it rather than
 flagging every citation as broken.
+
+## Before you report
+
+Run every command in the foreground and leave nothing running: no background shell, no Godot, no watcher. Measured: a reviewer's `cat > file` with no input waited 9 hours after it reported.
