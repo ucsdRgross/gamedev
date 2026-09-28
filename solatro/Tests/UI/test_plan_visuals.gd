@@ -454,73 +454,78 @@ func test_the_reveal_cascades_over_one_tunable_duration() -> void:
 	var delay := g.get_delay()
 	var total := CASCADE_MULTIPLIER * delay
 	var stagger := total / float(expected.size())
-	var starts : Array[float] = []
+	var fired_at : Array[float] = []
+	var fired_after : Array[float] = []
 	var overlaps := 0
 	var order_held := true
 	var running : Array[bool] = [false]
 	_reveal(pa, running)
-	var began := Time.get_ticks_msec()
-	var waited := 0.0
+#TIMED ON THE FRAME CLOCK, the summed deltas the cascade's own tween steps by: a cell is dealt on the
+#first frame at or past its share and read on the frame after, so a long frame moves when it is read
+#without moving the claim.
+	var clock := 0.0
+	var frame_delta := 0.0
+	var previous_delta := 0.0
 #Sampled until every start is in rather than until the coroutine returns: the last cell starts on
 #the very frame the cascade ends, so a loop keyed on the return misses it.
-	while starts.size() < expected.size() and waited < WATCHDOG_SECS:
+	while clock < WATCHDOG_SECS:
 		var dealt : int = expected.size() - pa._plan_reveal_pending.size()
-		while starts.size() < dealt:
-			var k := starts.size()
-			starts.append(float(Time.get_ticks_msec() - began) / 1000.0)
+		while fired_at.size() < dealt:
+			var k := fired_at.size()
+			fired_at.append(clock - frame_delta)
+			fired_after.append(clock - frame_delta - previous_delta)
 			if not pa.data_card[expected[k]].mark_drawn: order_held = false
 			if k > 0 and _is_spinning(pa.data_card[expected[k - 1]]): overlaps += 1
-		await get_tree().process_frame
-		waited += get_process_delta_time()
-	var spinning := true
-	while spinning and waited < WATCHDOG_SECS:
-		spinning = false
+		var spinning := false
 		for mark : CardData in expected:
 			if _is_spinning(pa.data_card[mark]): spinning = true
-		if spinning:
-			await get_tree().process_frame
-			waited += get_process_delta_time()
-	var finished_at := float(Time.get_ticks_msec() - began) / 1000.0
+		if fired_at.size() == expected.size() and not spinning: break
+		await get_tree().process_frame
+		previous_delta = frame_delta
+		frame_delta = get_process_delta_time()
+		clock += frame_delta
+	var ended_after := clock - frame_delta - previous_delta
 #Read off `anim_spin` itself rather than retyping the fraction it turns a delay into, so the bound
 #below cannot drift away from the spin it is about.
 	var spin_secs : float = pa.data_card[expected[0]].anim_spin(delay)
 	restore_settings_snapshot(plan_snapshot)
 	restore_settings_snapshot(delay_snapshot)
 
-	check(starts.size() == expected.size(),
+	check(fired_at.size() == expected.size(),
 			"TP-92: precondition: every cell's start was sampled",
-			"%d of %d sampled after %.1fs" % [starts.size(), expected.size(), waited])
+			"%d of %d sampled after %.1fs" % [fired_at.size(), expected.size(), clock])
 	check(spin_secs > 0.0, "TP-92: precondition: a spin has a length of its own",
 			"%.3f s" % spin_secs)
-	check(not running[0], "TP-92: the cascade dealt every cell", "waited %.1fs" % waited)
+	check(not running[0], "TP-92: the cascade dealt every cell", "waited %.1fs" % clock)
 	check(order_held,
 			"TP-92: each cell that starts is the next one in the deal's own walk order")
-#The probe samples once a frame and a scheduled start lands on the frame after its deadline, so a
-#start is read a frame or two late -- one whole stagger of slack, still an order tighter than the
-#half-a-delay per cell this replaced.
-	var tolerance := stagger
-	var worst := 0.0
-	var worst_cell := 0
-	for k : int in starts.size():
-		var drift := absf(starts[k] - float(k) * stagger)
-		if drift > worst:
-			worst = drift
-			worst_cell = k
-	check(worst <= tolerance,
+	var off_share := ""
+	for k : int in fired_at.size():
+		var share := float(k) * stagger
+		if not (_at_or_past(fired_at[k], share) and _at_or_past(share, fired_after[k])):
+			off_share = "cell %d started on the frame at %.3f s (the one before at %.3f s) for a share at %.3f s" \
+					% [k, fired_at[k], fired_after[k], share]
+			break
+	check(off_share.is_empty(),
 			"TP-92: cell k starts k shares of the whole duration in, the knob setting that duration",
-			"stagger %.3f s, worst drift %.3f s at cell %d" % [stagger, worst, worst_cell])
-	var last_start : float = starts[starts.size() - 1] if not starts.is_empty() else INF
-	check(last_start < total,
+			"stagger %.3f s; %s" % [stagger, off_share])
+	var last_at : float = fired_at.back() if not fired_at.is_empty() else INF
+	var last_after : float = fired_after.back() if not fired_after.is_empty() else INF
+	check(last_after < total,
 			"TP-92: the last cell has started before the whole duration is up",
-			"last start %.3f s of %.3f s" % [last_start, total])
+			"the frame before the last start at %.3f s of %.3f s" % [last_after, total])
 	check(overlaps > 0,
 			"TP-92: a cell starts while the cell before it is still spinning",
-			"%d of %d starts overlapped the previous spin" % [overlaps, starts.size()])
-	check(finished_at <= total + spin_secs + tolerance,
+			"%d of %d starts overlapped the previous spin" % [overlaps, fired_at.size()])
+	check(_at_or_past(last_at + spin_secs, ended_after),
 			"TP-92: the whole deal is over within that duration plus one spin",
-			"last spin ended %.2f s, budget %.2f s"
-			% [finished_at, total + spin_secs + tolerance])
+			"the frame before the last spin ended at %.3f s, the last start %.3f s plus a spin %.3f s"
+			% [ended_after, last_at, spin_secs])
 	await cleanup(g, pa)
+
+# ON THE FRAME GRID, a clock reading and a share it is compared with can land on the same instant.
+func _at_or_past(clock: float, share: float) -> bool:
+	return clock > share or is_equal_approx(clock, share)
 
 # A spin is IN FLIGHT while its own tween still turns the card, which is the state the overlap claim
 # is about -- a wall clock alone cannot see it.
@@ -552,7 +557,8 @@ func test_a_placement_during_the_reveal_can_be_undone() -> void:
 	var g : Game = booted.game
 	var board : PlayArea = booted.play_area
 	var dealing := await wait_for(func() -> bool:
-			return not board._plan_reveal_pending.is_empty() 					and _topmost_entrance_card(g.state) != null)
+			return not board._plan_reveal_pending.is_empty() \
+					and _topmost_entrance_card(g.state) != null)
 	check(dealing, "TP-94: precondition: the Entrance is filled while cells are still to be dealt",
 			"%d cells pending" % board._plan_reveal_pending.size())
 	var coord := _first_marked_cell(g.state)

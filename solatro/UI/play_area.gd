@@ -2392,6 +2392,11 @@ func reveal_plan() -> void:
 	var cells := _plan_reveal_pending.size()
 	var stagger := SettingsManager.settings.plan_reveal_multiplier * game.get_delay() / float(cells)
 	var cascade := create_tween()
+#⚠ A TWEEN'S FIRST STEP IS CREDITED WITH THE WHOLE FRAME IT WAS CREATED IN, time spent before the
+#reveal began (measured: 0.13 s after a board build, the first cells dealt at once). Held to the
+#next frame, its clock starts at this one.
+	cascade.pause()
+	get_tree().process_frame.connect(cascade.play, CONNECT_ONE_SHOT)
 	for i : int in cells:
 		cascade.tween_callback(_deal_next_mark.bind(game)).set_delay(stagger if i > 0 else 0.0)
 	await cascade.finished
