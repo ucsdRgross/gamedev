@@ -74,8 +74,8 @@ func _ready() -> void:
 	flow_container.add_theme_constant_override(&"h_separation", gap)
 	flow_container.add_theme_constant_override(&"v_separation",
 			roundi(REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT) + gap)
-	confirm_button.grab_focus()
 	_populate()
+	take_the_focus()
 
 func _populate() -> void:
 	_cards = CardsViewer.new(flow_container)
@@ -91,6 +91,14 @@ func _follow_the_pick() -> void:
 		control.child.selected = control.child.data == _cards.sticky
 	_refresh_rerolls()
 
+## Where a key or pad player finds this pack: on Take, or on the stuck card while Take is held.
+func take_the_focus() -> void:
+	if not _held_by_a_sticky_description():
+		confirm_button.grab_focus()
+		return
+	for control : ControlCard in _cards.controls:
+		if control.child.data == _cards.sticky: control.grab_focus()
+
 ## This viewer's listed cards, which carry the modal and sticky model its host wires itself to.
 func cards() -> CardsViewer:
 	return _cards
@@ -100,16 +108,18 @@ func cards() -> CardsViewer:
 func close_from_sidebar() -> void:
 	_cards.unstick()
 
-# ⚠ THE MAP AROUND THE WINDOW STAYS IN VIEW AND ANSWERS NO POINTER: a mouse event no control took
-# stops here, ahead of the wall's routing into the map; a touch passes on to the wall's pinch. A
-# cancel reads as a close and is SWALLOWED: Take alone finishes this pack.
+# ⚠ THE MAP AROUND THE WINDOW ANSWERS NO POINTER: a mouse event stops here, ahead of the wall's
+# routing into the map; a touch passes on to the wall's pinch. A cancel only lets a stuck card go;
+# with none stuck it reaches the wall, leaving the pack waiting -- Take alone finishes it.
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouse:
 		get_viewport().set_input_as_handled()
 		return
 	var verdict := _cards.modal_verdict(event)
 	if verdict == CardsViewer.Modal.PASS: return
-	if verdict == CardsViewer.Modal.CLOSE: _cards.unstick()
+	if verdict == CardsViewer.Modal.CLOSE:
+		if not _held_by_a_sticky_description(): return
+		_cards.unstick()
 	get_viewport().set_input_as_handled()
 
 # THE WINDOW IS A SQUARE CENTRED IN THE SPACE BESIDE THE SIDEBAR, wide enough for a full row and

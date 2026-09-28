@@ -236,6 +236,7 @@ func host_viewer(viewer: Node, relay: Signal, screen: StringName) -> void:
 	viewer.connect(&"highlight_cleared", _close_hosted_viewer.bind(viewer))
 	viewer.tree_exiting.connect(_forget_hosted_viewer.bind(viewer))
 	if viewer is DeckViewer: (viewer as DeckViewer).fallback_focus = _exit_button
+	else: (viewer as ChoiceViewer).visibility_changed.connect(_refocus_the_chooser.bind(viewer))
 	var cards : CardsViewer = viewer.call(&"cards")
 	cards.sticky_changed.connect(_follow_the_viewers_sticky)
 	cards.sidebar_requested.connect(_exit_button.grab_focus)
@@ -372,6 +373,11 @@ func host_deck_picker(picker: DeckPicker) -> void:
 # rather than pressing a Pick hidden behind it.
 func _refocus_the_deck_picker() -> void:
 	if _shown_hosted_viewer() == null: _deck_picker.focus_the_first_pick()
+
+# ⚠ A HIDDEN CONTROL LOSES THE FOCUS, so a pack chooser takes it again each time it fades back in
+# -- unless the run deck is up over it, which is the focus then, as over the picker.
+func _refocus_the_chooser(chooser: ChoiceViewer) -> void:
+	if chooser.visible and _shown_hosted_viewer().viewer == chooser: chooser.take_the_focus()
 
 func _forget_the_deck_picker() -> void:
 	_deck_picker = null

@@ -5871,7 +5871,7 @@ func _check_the_map_shows_around_the_chooser(window: Rect2, space: Rect2) -> voi
 static func _colour_distance(a: Color, b: Color) -> float:
 	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()
 
-## A click outside closes the pack's possible-cards viewer; the chooser cannot be left that way -- Take is the only way out of it.
+## A click outside closes the pack's possible-cards viewer and closes nothing of the chooser; a cancel with nothing stuck leaves it waiting and reaches the wall.
 func test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser() -> void:
 	await _start_map_fixture()
 	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
@@ -5884,6 +5884,7 @@ func test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser() -> void
 		check(not is_instance_valid(DeckViewer._open)
 				or DeckViewer._open.is_queued_for_deletion(),
 				"a click outside the possible-cards viewer closes it")
+		_map.controller.clear_selection()
 		await _map._open_booster(pack)
 		await get_tree().process_frame
 		var chooser := _map._chooser
@@ -5897,8 +5898,10 @@ func test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser() -> void
 			cancel.pressed = true
 			_booted_viewport.push_input(cancel)
 			await get_tree().process_frame
-			check(not chooser.is_queued_for_deletion(),
-					"...and neither does a cancel: Take is the only way out")
+			await _wait_out_the_move()
+			check(_main._current_focus == &"" and _chooser_is_up(chooser),
+					"...and a cancel with nothing stuck reaches the wall, the chooser left waiting",
+					"focus=%s chooser_up=%s" % [_main._current_focus, _chooser_is_up(chooser)])
 			chooser.queue_free()
 			await get_tree().process_frame
 	await _end_main_fixture()
@@ -5942,11 +5945,24 @@ func test_every_route_leaves_the_chooser_and_comes_back_to_it_in_progress() -> v
 			check(_main._current_focus == &"map" and _the_chooser_in_progress(chooser) == left_as,
 					"...and coming back after %s finds the chooser as it was left" % route[0],
 					"focus=%s %s vs %s" % [_main._current_focus, _the_chooser_in_progress(chooser), left_as])
+			_check_the_key_focus_is_on(_stuck_control(chooser), "after %s" % route[0])
 		await _tap_key(KEY_ESCAPE)
 		check(chooser.cards().sticky == null and not chooser.confirm_button.disabled
 				and _main._current_focus == &"map",
-				"sanity: a cancel let the stuck card go, Take back within reach, the map still the screen",
+				"a cancel with a card stuck only lets it go, Take back within reach, the map still the screen",
 				str(_main._current_focus))
+		var let_go_as := _the_chooser_in_progress(chooser)
+		await _tap_key(KEY_ESCAPE)
+		await _wait_out_the_move()
+		check(_main._current_focus == &"" and _chooser_is_up(chooser),
+				"...and the next cancel, nothing stuck, reaches the wall, the chooser waiting on the map",
+				"focus=%s chooser_up=%s" % [_main._current_focus, _chooser_is_up(chooser)])
+		await _click_overlay(&"BackButton")
+		await _wait_out_the_return()
+		check(_main._current_focus == &"map" and _the_chooser_in_progress(chooser) == let_go_as,
+				"...and Back from the wall finds the chooser in progress",
+				"focus=%s %s vs %s" % [_main._current_focus, _the_chooser_in_progress(chooser), let_go_as])
+		_check_the_key_focus_is_on(chooser.confirm_button, "after the cancel to the wall")
 		check(await _click_button(chooser.confirm_button, _booted_viewport),
 				"a real click on Take pressed it")
 		await get_tree().process_frame
@@ -6060,6 +6076,9 @@ func test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it() -> 
 				and not deck.is_queued_for_deletion() and _chooser_is_up(chooser),
 				"...and Forward comes back to the deck still open over the chooser",
 				str(_main._current_focus))
+		var focused := _booted_viewport.gui_get_focus_owner()
+		check(focused == null or not chooser.is_ancestor_of(focused),
+				"...the key focus not put back under the deck, on a chooser control", str(focused))
 		await _tap_key(KEY_ESCAPE)
 		check(not is_instance_valid(DeckViewer._open) or DeckViewer._open.is_queued_for_deletion(),
 				"a cancel closes the deck viewer")
@@ -7028,6 +7047,18 @@ func _see_the_travel_through() -> void:
 
 func _chooser_is_up(chooser: ChoiceViewer) -> bool:
 	return is_instance_valid(chooser) and not chooser.is_queued_for_deletion()
+
+## The chooser's listed control showing its stuck card, or null while none is stuck.
+func _stuck_control(chooser: ChoiceViewer) -> Control:
+	for control : ControlCard in chooser.cards().controls:
+		if control.child.data == chooser.cards().sticky: return control
+	return null
+
+## The key and pad focus in the window's own viewport, where the chooser lives, is on `expected`.
+func _check_the_key_focus_is_on(expected: Control, when: String) -> void:
+	var focused := _booted_viewport.gui_get_focus_owner()
+	check(expected != null and focused == expected,
+			"the key focus is back on the chooser %s" % when, "on %s, expected %s" % [focused, expected])
 
 ## Every way off the map screen a player has, each beside the press that brings them back to it: `[label, leave, return]`.
 func _routes_off_the_map() -> Array[Array]:

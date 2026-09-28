@@ -41,7 +41,7 @@ func _ready() -> void:
 	await test_an_edge_arrow_asks_for_the_sidebar_only_while_a_card_is_stuck()
 	await test_the_same_opener_pressed_again_closes_the_viewer()
 	await test_a_viewer_opened_over_another_leaves_it_open_beneath()
-	await test_the_pack_chooser_swallows_a_cancel_it_cannot_answer()
+	await test_the_pack_chooser_passes_a_cancel_on_once_nothing_is_stuck()
 	await test_a_viewer_opens_with_nothing_focused_and_nothing_published()
 	await test_the_first_navigation_press_enters_the_list()
 	await test_the_pack_chooser_draws_only_a_square_window()
@@ -495,16 +495,21 @@ func test_a_viewer_opened_over_another_leaves_it_open_beneath() -> void:
 	other.queue_free()
 	await _drop_viewer(under)
 
-## The pack cannot be reopened, so its cancel unsticks and is then SWALLOWED: the wall never hears it either.
-func test_the_pack_chooser_swallows_a_cancel_it_cannot_answer() -> void:
-	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0)
+## A cancel over the pack first lets its stuck card go and stops there; with nothing stuck it passes on to the wall, the pack still open behind it.
+func test_the_pack_chooser_passes_a_cancel_on_once_nothing_is_stuck() -> void:
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(_focus_window, _card, 3, 0)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_click(viewer._cards.controls[0])
-	viewer._unhandled_input(_action_event(&"ui_cancel"))
+	_focus_window.push_input(_action_event(&"ui_cancel"))
 	check(viewer.cards().sticky == null, "a cancel lets the pack's picked card go")
+	check(_focus_window.is_input_handled(), "...and goes no further than the pack")
 	check(not viewer.is_queued_for_deletion(), "...and the pack itself is still open")
 	check(not viewer.confirm_button.disabled, "...with Take back within reach")
+	_focus_window.push_input(_action_event(&"ui_cancel"))
+	check(not _focus_window.is_input_handled(),
+			"the next cancel, nothing stuck, passes on to the wall behind the pack")
+	check(not viewer.is_queued_for_deletion(), "...and the pack is still open")
 	viewer.queue_free()
 	await get_tree().process_frame
 

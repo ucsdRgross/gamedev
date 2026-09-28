@@ -1004,3 +1004,6 @@
   same time."
 - Playtest follow-up ruling on the overview camera pan and its bounce, which the no-wall clamp
   left unable to move at 16:9 - owner: "yes retire so as to not leave behind clutter".
+- A return to the map with the pack chooser up puts the key focus on Take, or on the stuck card
+  while Take is held (the button a sticky description holds out of reach), never under the run
+  deck open over it - without the grab a return leaves no focus owner at all (measured).
