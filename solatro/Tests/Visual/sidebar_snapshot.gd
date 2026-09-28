@@ -32,6 +32,8 @@ const CHOOSER_WINDOW_OUT_PATH := "user://sidebar_snapshot/chooser_window.png"
 const DECK_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_over_chooser.png"
 const DECK_CARD_HOVER_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_card_hover_over_chooser.png"
 const DECK_OVER_POSSIBLE_CARDS_OUT_PATH := "user://sidebar_snapshot/deck_over_possible_cards.png"
+const POSSIBLE_CARDS_OUT_PATH := "user://sidebar_snapshot/possible_cards.png"
+const RULES_VIEWER_OUT_PATH := "user://sidebar_snapshot/rules_viewer.png"
 const MAP_ZOOMED_EDGE_OUT_PATH := "user://sidebar_snapshot/map_zoomed_edge.png"
 const MAP_AFTER_TRAVEL_OUT_PATH := "user://sidebar_snapshot/map_after_travel.png"
 ## Wheel notches pushed at the map: far enough past the fit that the view has room to reach an edge.
@@ -273,7 +275,7 @@ func _ready() -> void:
 	print("SIDEBAR_SNAPSHOT cancel_first_press held=%d description=%s" % [
 			view.play_area.selected_cards.size(), str(cancelled)])
 
-	await _open_the_deck_viewer(view)
+	await _open_a_board_viewer(view, view.deck_ui)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(VIEWER_DESCRIPTION_OUT_PATH)
@@ -289,6 +291,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 
 	await _shoot_the_sticky_trio(view)
+	await _shoot_the_rules_viewer(view)
 
 	await _refill_the_whole_entrance(view)
 	_capture(ENTRANCE_FLIP_MID_OUT_PATH)
@@ -667,6 +670,18 @@ func _shoot_the_sticky_trio(view: GameView) -> void:
 	print("SIDEBAR_SNAPSHOT viewer_closed description=%s"
 			% view.hud_container.showing_description())
 
+## The Rules viewer opened and closed by its own button, a card under the highlight as in the deck's still.
+func _shoot_the_rules_viewer(view: GameView) -> void:
+	await _open_a_board_viewer(view, view.rules_ui)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(RULES_VIEWER_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT rules_viewer listed=%d rules_deck=%d"
+			% [DeckViewer._open.cards().controls.size(), view.game.state.rules_deck.size()])
+	(view.rules_ui.get_node(^"Button") as Button).pressed.emit()
+	await get_tree().process_frame
+	print("SIDEBAR_SNAPSHOT rules_viewer_closed open=%s" % is_instance_valid(DeckViewer._open))
+
 # ⚠ EVERY WAIT HERE IS ON A STATE, NOT A FRAME COUNT: the wall camera is still easing into the
 # picture, an unreachable pack refuses the pick outright, and the preview cards come from a
 # coroutine -- a fixed number of frames photographed a half-travelled map with no viewer.
@@ -780,6 +795,11 @@ func _shoot_the_deck_over_the_possible_cards(main: Main) -> void:
 	var list := DeckViewer._open
 	var first := _listed_cards(list.flow_container)[0]
 	await _click_the_control(first)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(POSSIBLE_CARDS_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT possible_cards listed=%d stuck=%s"
+			% [list.cards().controls.size(), list.cards().sticky])
 	await _click_the_control(map.selection_deck_button)
 	await _await_a_viewer()
 	await RenderingServer.frame_post_draw
@@ -996,8 +1016,8 @@ func _push_map_click(main: Main, at: Vector2, pressed: bool) -> void:
 func _window_px(item: CanvasItem, local: Vector2) -> Vector2:
 	return get_viewport().get_final_transform() * (item.get_global_transform_with_canvas() * local)
 
-func _open_the_deck_viewer(view: GameView) -> void:
-	var button := view.deck_ui.get_node(^"Button") as Button
+func _open_a_board_viewer(view: GameView, opener_ui: Control) -> void:
+	var button := opener_ui.get_node(^"Button") as Button
 	view.hud_container.show_hud()
 	await get_tree().process_frame
 	button.grab_focus()

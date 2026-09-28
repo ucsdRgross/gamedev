@@ -11,14 +11,21 @@
       "png": "user://reveal_shots/grid_zoom_3_overview.png",
       "crops": [
         {
-          "label": "grid 1 top-left card: outline stays dark, a 1 px cream sliver outside it",
-          "x": 437,
-          "y": 294,
-          "w": 68,
-          "h": 84
+          "label": "grid 1 top-left printed card",
+          "x": 455,
+          "y": 450,
+          "w": 130,
+          "h": 80
+        },
+        {
+          "label": "grid 3 focused cell",
+          "x": 1440,
+          "y": 570,
+          "w": 140,
+          "h": 70
         }
       ],
-      "seen": "Three 5x5 grids side by side with a small even gap; grid 1 has its top row placed (6 of Knives, 4 of Balls, 8 of Balls, 3 of Hoops, Ace of Fires) and the five Entrance cards sit under grid 1. The grid 1 top-left card (the one the pink sliver sat on in round 1) keeps its own dark brown outline; cream shows only as a 1 px sliver outside that outline (this run: down part of its left edge; the previous run: along its top and lower-left edges). Compare the Entrance card in entrance_focus_rim, whose whole outer outline turns cream. I cannot tell from a still whether this card holds the keyboard focus; if it does, an occupied cell's focus rim is almost entirely hidden under the placed card."
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: three 5x5 grids of SQUARE cells; grid 1's top row holds five printed cards with its row score '1' level with their pip row; the other cells are grid cells with the new pale translucent fill over the board and their pips drawn in suit colour; one cell in grid 3 (row 3, col 4) wears the cream focus rim. BEFORE: portrait cells drawn as orange dashed rings with dark interiors. The set sits a little lower (the square grids are shorter)."
     },
     {
       "id": "grid3_focused",
@@ -29,7 +36,7 @@
         "GRID_COUNT": "3"
       },
       "png": "user://reveal_shots/grid_zoom_3_focused.png",
-      "seen": "The middle grid of three centred alone, 25 empty-cell marks (dashed red/yellow frames with their ranks and suits), no neighbours in view and no Entrance (it belongs to grid 1). No rim on any cell. Same as the round-1 approval."
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the one focused grid centred, 25 square grid cells with the pale fill, no printed cards on it. No cell wears a focus rim in this shot (BEFORE had one on row 3, col 5) - the staging differs, not a rule."
     },
     {
       "id": "grid1_focused",
@@ -40,14 +47,21 @@
         "GRID_COUNT": "1"
       },
       "png": "user://reveal_shots/grid_zoom_1_focused.png",
-      "seen": "One grid centred, its top row of five placed cards, four rows of marks, the five Entrance cards centred under it with columns aligned, the row label 1 left of the top row. The top-left placed card (6 of Knives) shows the same 1 px cream sliver outside its dark outline as in grid3_overview, not a full cream rim.",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: one grid; the top row is five printed square cards with the row score '1' level with their pips; rows 2-5 are grid cells with the pale fill; row 3, col 4 has the cream focus rim; the Entrance row of five printed cards below. BEFORE: the same layout with portrait cards and dashed rings.",
       "crops": [
         {
-          "label": "top-left placed card: 1 px cream sliver outside a dark outline",
-          "x": 776,
-          "y": 88,
-          "w": 86,
-          "h": 104
+          "label": "focused cell row 3 col 4",
+          "x": 1065,
+          "y": 305,
+          "w": 115,
+          "h": 110
+        },
+        {
+          "label": "top-left printed card",
+          "x": 750,
+          "y": 95,
+          "w": 120,
+          "h": 110
         }
       ]
     },
@@ -58,7 +72,7 @@
       "scene": "res://Tests/Visual/focused_pose_probe.tscn",
       "env": {},
       "png": "user://focused_pose_probe/focused_focused.png",
-      "seen": "A show opening, caught mid-deal: the 5x5 marks, several still tilted as they fly in, five Entrance cards along the bottom (the rightmost face-down with a star back), the sidebar at left with Back/Forward/Wall above the HUD. The top-left cell wears a cream rim. Same shot as round 1.",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the show opening - the cells deal in tumbling (rotated 10-45 degrees), empty cells plain pale-filled squares with a gold rim, dealt ones showing pips; the top-left cell rotated with the focus rim; the Entrance row four printed cards and one red star card back, all square.",
       "crops": [
         {
           "label": "top-left cell: cream rim",
@@ -76,7 +90,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/lifted_focus_elsewhere.png",
-      "seen": "Jack of Fires lifted out of the Entrance (raised, a red strip under its slot); the keyboard focus on the bottom-left grid cell (an empty Queen of Hoops mark), which wears a cream rim. The sidebar describes that cell - title Queen of Hoops, then Hoop with its effect, then Grid Cell - with an X at top right and NO Deck button under the title.",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: with the Entrance's 8 of Hoops lifted (raised, a red/yellow base under it) every legal cell is lit with a yellow rim; the sidebar describes a grid cell (6 of Knives) - its preview is now a square pale-filled cell, not a hollow ring - with no Deck row and no X.",
       "crops": [
         {
           "label": "sidebar: no Deck row under the title",
@@ -101,7 +115,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/description.png",
-      "seen": "Jack of Fires, the leftmost Entrance card, hovered/focused: its whole outer outline is cream (2 px), against the dark brown outline of the King of Hoops beside it; it sits a few px higher than its neighbours. The sidebar describes it (Jack of Fires, Fire and its effect) with no X and no Deck button.",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the Entrance's first card (8 of Hoops) wears the cream focus rim outside its gold band; its neighbour has the plain dark outline; the sidebar describes it.",
       "crops": [
         {
           "label": "focused Jack of Fires: cream outline vs the dark one beside it",
@@ -119,14 +133,14 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/chooser_window.png",
-      "seen": "The pack chooser covers the whole map picture (opaque dark), five offered cards with Reroll under each, Rerolls: 5 top right, Take greyed at the bottom. The first card (5 of Knives) is stuck: cream rim, described in the sidebar with an X and the chooser's Deck button under the title. Back, Forward and Wall are all greyed.",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the pack chooser's square window is 688 px at 1280x720 (was 516): five cards in one row at the 8 px gap, 'Reroll' under each, Rerolls: 5 and Take at the foot; it nearly fills the screen's height, so the map shows only as sea at the window's sides with slivers of land above and below it. QUESTION for the owner: round 2 asked for a square window with the map visible outside it - is this much map enough, or should the window stop short of the screen's height?",
       "crops": [
         {
-          "label": "Back / Forward / Wall greyed while the chooser holds the player",
-          "x": 0,
-          "y": 20,
-          "w": 300,
-          "h": 64
+          "label": "land sliver above the window",
+          "x": 730,
+          "y": 0,
+          "w": 90,
+          "h": 20
         }
       ]
     },
@@ -137,7 +151,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/map_hud.png",
-      "seen": "The whole map at the fit beside the sidebar: land from about y=40 to y=660, sea-blue on every side of it, no grey and no wall anywhere; the token (yellow diamond) at the top with a highlighted yellow route. The sidebar shows the map HUD (Fame 0, Lap 1, Luck 0%, Deck). Because the map is square and the space beside the sidebar is wide, most of the buffer is sea left and right of the land.",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the map at its fit beside the sidebar with the sea buffer; a different generated map from BEFORE (the two commits generate differently) - the framing is the same.",
       "crops": [
         {
           "label": "top edge: sea buffer above the land",
@@ -155,7 +169,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/map_zoomed_edge.png",
-      "seen": "Zoomed in (2.76x against the 1.19 fit) and dragged against the map's top and right edges: land in the middle, sea to the right and above out to the window edge, no grey and no wall. On the left the map runs on under the sidebar - a small island is cut by the sidebar's edge at x=320. The sidebar shows the HUD. The wheel zooms about the token, not the pointer.",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: zoomed in at the map's edge, sea to the right edge of the window; a different generated map; same behaviour.",
       "crops": [
         {
           "label": "right edge: sea to the window edge, no grey",
@@ -180,7 +194,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/map_after_travel.png",
-      "seen": "The first frame after Travel from the zoomed view: back at the fit (zoom 1.19), the whole map with sea round it, no grey; the token at the top of the map, just leaving its node. The sidebar shows the HUD, no description."
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: after a Travel the map is back at its fit (same framing as map_fit); a different generated map."
     },
     {
       "id": "deck_over_chooser",
@@ -189,21 +203,21 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/deck_over_chooser.png",
-      "seen": "The run deck open over the chooser: a scrolling grid of the deck's cards on a dark panel, Rerolls: 5 and a greyed Take still visible, Back/Forward/Wall greyed. The sidebar keeps the stuck 5 of Knives with NO X, and the chooser's Deck button is visible under its title. Between the deck's second and third rows (y about 300-345) pieces of the chooser's own cards show through, and faint Reroll text near y=440 - the deck panel does not fully cover the chooser.",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the run deck open over the chooser: five columns of square cards at the 8 px gap, an opaque panel (nothing shows through between cards), the bookmark X on its right edge, 'Close deck' at the top of the sidebar. Below the deck's list the chooser's own Rerolls: 5 / Take row stays visible, because the chooser window is now taller than the deck's panel. QUESTION for the owner: should the open deck cover the chooser's bottom row too?",
       "crops": [
         {
-          "label": "chooser cards showing through the deck's row gap",
-          "x": 570,
-          "y": 290,
-          "w": 440,
-          "h": 170
+          "label": "the chooser's Rerolls/Take row below the deck",
+          "x": 456,
+          "y": 590,
+          "w": 690,
+          "h": 115
         },
         {
-          "label": "sidebar: stuck card, no X, Deck visible",
-          "x": 0,
-          "y": 90,
-          "w": 320,
-          "h": 160
+          "label": "the bookmark X",
+          "x": 1095,
+          "y": 85,
+          "w": 85,
+          "h": 50
         }
       ]
     },
@@ -214,7 +228,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/deck_card_hover_over_chooser.png",
-      "seen": "As deck_over_chooser, with the pointer on the deck's Queen of Knives: the sidebar now describes Queen of Knives (Knife and its effect) and the Deck row sits under its title - a run-deck card's description over the chooser carries Deck. YOUR RULING: keep it (the row stays up while the chooser's deck is open) or hide Deck on a deck card's description. The same chooser cards show through the deck's row gap as in deck_over_chooser.",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the same deck over the chooser; the sidebar describes the hovered Ace of Knives ('Ace of / Knives' wraps), 'Close deck' at the top; the chooser's Rerolls/Take row again visible below the deck.",
       "crops": [
         {
           "label": "Deck row under a run-deck card's description",
@@ -224,6 +238,332 @@
           "h": 160
         }
       ]
+    },
+    {
+      "id": "grid1_overview",
+      "title": "One grid, the overview: square cells with their pale see-through fill",
+      "row": "P58b-2b",
+      "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
+      "env": {
+        "GRID_COUNT": "1"
+      },
+      "png": "user://reveal_shots/grid_zoom_1_overview.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: one grid - same picture as grid1_focused (a one-grid board has no separate overview)."
+    },
+    {
+      "id": "grid2_overview",
+      "title": "Two grids, the overview: square cells with their pale see-through fill",
+      "row": "P58b-2b",
+      "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
+      "env": {
+        "GRID_COUNT": "2"
+      },
+      "png": "user://reveal_shots/grid_zoom_2_overview.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: two grids side by side about one card apart; grid 1's top row printed with the score '1'; row 3, col 4 of grid 1 focused; the Entrance under grid 1. All cells square with the pale fill."
+    },
+    {
+      "id": "grid2_focused",
+      "title": "Two grids, the first grid focused",
+      "row": "P58b-2b",
+      "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
+      "env": {
+        "GRID_COUNT": "2"
+      },
+      "png": "user://reveal_shots/grid_zoom_2_focused.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: one of two grids focused and centred, 25 pale-filled square cells; the other grid off-screen."
+    },
+    {
+      "id": "board_window_1280x720",
+      "title": "The board in a 1280x720 window, centred beside the sidebar",
+      "row": "P58b-4",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/game_hud.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the board centred in the space beside the sidebar, caught mid-deal (cells tumbling in); the Entrance row printed cards and red star backs; all square."
+    },
+    {
+      "id": "board_window_600x1000",
+      "title": "The board in a tall 600x1000 window, under the sidebar",
+      "row": "P58b-4",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/game_hud_top.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the tall window - the sidebar across the top, the board centred below it about 85 px from each side, the Entrance row under it, caught mid-deal; the top-left cell rotated with the focus rim."
+    },
+    {
+      "id": "entrance_card_lifted",
+      "title": "A card lifted out of the Entrance: the cells it can go to light up",
+      "row": "P58b-2b",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/card_lifted.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: a lifted Entrance card (8 of Hoops, raised with its base), every legal cell lit with a yellow rim - the lift brightens the ring fully and the pale fill a little (owner: 'Yes, cells filled too'); the sidebar describes the held card with its X."
+    },
+    {
+      "id": "deck_viewer",
+      "title": "The Deck viewer: an even gap between cards, whole columns, centred",
+      "row": "P58b-7",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/viewer_description.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the game's deck viewer - five whole columns of square cards with 8 px gaps, centred on the space beside the sidebar, the scrollbar at the right, the bookmark X outside the panel; the board's top row peeks above the panel. BEFORE: seven portrait columns with a ragged right edge."
+    },
+    {
+      "id": "deck_viewer_600x1000",
+      "title": "The Deck viewer in a tall 600x1000 window",
+      "row": "P58b-7",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/viewer_description_top.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the deck viewer at 600x1000: eight whole columns, centred (58-541 of 600), the X tab on its right edge. BEFORE: eleven portrait columns."
+    },
+    {
+      "id": "rules_viewer",
+      "title": "The Rules viewer: the same gap and centred columns",
+      "row": "P58b-7",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/rules_viewer.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the Rules viewer - rule cards in whole columns (five Ace-of-Hoops rules with the upper-zone icon, one with its cream rim; then 'II', a three-cards icon, '13'). The fourth card of row 2 draws its '12' art on the bare panel with NO card behind it - a rule card with no body (the same cause as the possible-cards list, P71). The sidebar describes the stuck rule (Input Zone Upper Adder).",
+      "crops": [
+        {
+          "label": "'12' with no card body",
+          "x": 860,
+          "y": 220,
+          "w": 130,
+          "h": 130
+        }
+      ]
+    },
+    {
+      "id": "pack_chooser",
+      "title": "Opening a pack: the offered cards, with a gap under each Reroll button",
+      "row": "P58b-7",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/choice_viewer_description.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the chooser alone - five square cards at the 8 px gap, Reroll under each, Rerolls: 5 and an active Take; the window square and centred beside the sidebar (see chooser_overlay_greyed's question about its height)."
+    },
+    {
+      "id": "possible_cards",
+      "title": "A pack's possible cards, one of them picked",
+      "row": "P58b-7",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/possible_cards.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: a pack's possible-cards list over the map: three card faces (a blank paper, two grey backs) and every other entry drawn as loose art with no card - '+1', icons, ranks '3 4 5 6 7' - the known partial-card problem the owner ruled 'c: icons, not cards' (P71, queued). Left of the narrower list the map's 'Ta(lent pack)' label peeks out. The sidebar shows the stuck blank card with no title.",
+      "crops": [
+        {
+          "label": "label peeking left of the list",
+          "x": 430,
+          "y": 250,
+          "w": 60,
+          "h": 80
+        }
+      ]
+    },
+    {
+      "id": "description_card",
+      "title": "A clicked Entrance card described in the sidebar, with its picture",
+      "row": "P58b",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/description_locked.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the sidebar's description card (8 of Hoops at the preview size) with its X while that card is lifted; the board's legal cells lit."
+    },
+    {
+      "id": "fire_on_cards",
+      "title": "Fire on cards, from one flame to a blaze",
+      "row": "P58b-2",
+      "scene": "res://Tests/Visual/fx_snapshot.tscn",
+      "env": {},
+      "png": "user://fx_snapshots/01_fire_ladder.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: fire at 1 / 3 / 12 / 40 / 200 stacks on square card outlines; the flame base sits on the top edge and turns the stepped corners."
+    },
+    {
+      "id": "fire_on_bent_cards",
+      "title": "Fire on cards whose corners stretch as they move",
+      "row": "P58b-2",
+      "scene": "res://Tests/Visual/fx_snapshot.tscn",
+      "env": {},
+      "png": "user://fx_snapshots/02b_card_warp.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: fire on cards deformed +0 / 10 / 25 / 45 %: the flames follow the bent top edge and the stretched lower corners; at the stretched tips the stepped corner shows as a small zigzag (larger than the old 1-texel bite, because the staircase is now 4/2/1/1 texels)."
+    },
+    {
+      "id": "fx_editor_overview",
+      "title": "The fire editor tool: every thing that can burn",
+      "row": "P58c-1",
+      "scene": "res://Tests/Visual/fx_editor_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/fx_editor_overview.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the fx editor: a burning 7 of Hoops, a sparking one, a burning hoop, knife, ball and fire props - the owner's 'fire not wrapping the corner' check is fx_editor_card_fire."
+    },
+    {
+      "id": "fx_editor_card_fire",
+      "title": "The fire editor tool, close up: flames stepping round the card's corners",
+      "row": "P58c-1",
+      "scene": "res://Tests/Visual/fx_editor_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/fx_editor_card_fire.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the fx editor's card at ~8x: the flames step down BOTH top corners' staircases and sit on the rim (the owner's bug: fixed). The thin blue line along the top-left step is the editor's own debug outline. The pip row (7 and 0) sits ~11 art units in from each edge - see pip_row's question.",
+      "crops": [
+        {
+          "label": "top-left corner: the flames on the stepped corner",
+          "x": 350,
+          "y": 50,
+          "w": 90,
+          "h": 90
+        },
+        {
+          "label": "top-right corner",
+          "x": 720,
+          "y": 50,
+          "w": 90,
+          "h": 100
+        },
+        {
+          "label": "the bottom pip row on the wider card",
+          "x": 430,
+          "y": 420,
+          "w": 290,
+          "h": 95
+        }
+      ]
+    },
+    {
+      "id": "props_on_a_card",
+      "title": "Every prop over a card",
+      "row": "P58b-6",
+      "scene": "res://Tests/Visual/prop_art_snapshot.tscn",
+      "env": {},
+      "png": "user://prop_art_snapshots/10_prop_kinds.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the five prop kinds over square card outlines (was portrait); the props themselves unchanged."
+    },
+    {
+      "id": "hoop_on_a_card",
+      "title": "A hoop riding on a card",
+      "row": "P58b-6",
+      "scene": "res://Tests/Visual/prop_art_snapshot.tscn",
+      "env": {},
+      "png": "user://prop_art_snapshots/15_hoop_alignment.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the hoop at card-jump height over square card outlines at card_scale 2.5 and 4.0; the jumped card's centre meets the ring's centre, as before."
+    },
+    {
+      "id": "formation_editor_hoop",
+      "title": "The formation tool: hoops laid out over cards",
+      "row": "P58c-2",
+      "scene": "res://Tests/Visual/formation_editor_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/formation_editor_hoop.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the formation editor's hoop formation over two real cards: the five rings centred on the first card, the outer ones overhanging its edges as they did on the old 40-wide card (the points were widened 20 -> 27 to the new half-width)."
+    },
+    {
+      "id": "formation_editor_knife",
+      "title": "The formation tool: knives laid out over cards",
+      "row": "P58c-2",
+      "scene": "res://Tests/Visual/formation_editor_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/formation_editor_knife.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the knife formation widened the same way: three knives near the cards' top edge, two on the first card, one on the second; the authored formation still leans left of centre (its points were authored that way). QUESTION for the owner: keep the lean, or re-author the knife formation centred?"
+    },
+    {
+      "id": "pip_row",
+      "title": "A printed card's bottom row of rank, suit and stamp on the wider card",
+      "row": "P58b-6",
+      "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
+      "env": {
+        "GRID_COUNT": "1"
+      },
+      "png": "user://reveal_shots/grid_zoom_1_focused.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the top row's rank and suit/stamp pips with the row score '1' level with them. On the wider square card the rank / suit / stamp sit where they were authored for the 40-wide card, so the row is bunched mid-card with ~10 art units of face each side (was 3). QUESTION for the owner: keep that spacing, or spread the pip row to the new width?",
+      "crops": [
+        {
+          "label": "the top row's bottom pips and the row score beside them",
+          "x": 730,
+          "y": 160,
+          "w": 548,
+          "h": 40
+        }
+      ]
+    },
+    {
+      "id": "outline_glare_start",
+      "title": "The card outline's glare sweep, at its start",
+      "row": "P58c-1",
+      "scene": "res://Tests/Visual/outline_atlas_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/outline_atlas_glare_000.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the outline atlas tool's card-type sheet ('52 x 52 source'); the glare highlight at the start of its sweep lights the top-right corner arcs - on the square frames' stepped corners (the owner's 'glare assumes the old card size': fixed). Some sheet frames still hold the old tall art (the strips on the lower rows)."
+    },
+    {
+      "id": "outline_glare_middle",
+      "title": "The card outline's glare sweep, halfway",
+      "row": "P58c-1",
+      "scene": "res://Tests/Visual/outline_atlas_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/outline_atlas_glare_025.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the glare mid-sweep lights the middle of the top and bottom edges of every frame."
+    },
+    {
+      "id": "outline_glare_end",
+      "title": "The card outline's glare sweep, at its end",
+      "row": "P58c-1",
+      "scene": "res://Tests/Visual/outline_atlas_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/outline_atlas_glare_050.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the glare at the end of its sweep on the left corner arcs; it reaches 25 art units from centre on the 27-unit half-width."
+    },
+    {
+      "id": "spotlight_glow_field",
+      "title": "The spotlight glow around a card",
+      "row": "P58b-2",
+      "scene": "res://Tests/Visual/fx_snapshot.tscn",
+      "env": {},
+      "png": "user://fx_snapshots/09_glow_falloff.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the spotlight glow's falloff settings on square card outlines; the glow rounds the corners."
+    },
+    {
+      "id": "spotlight_tool_glow",
+      "title": "The spotlight tool: the glow around each lit card",
+      "row": "P58c-1",
+      "scene": "res://Tests/Visual/spotlight_tool_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/spotlight_tool_glow.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the spotlight tool - three beams on the first three of six card stacks, the rig live (the first card slightly wobbled); the glow hugs each lit card."
+    },
+    {
+      "id": "spotlight_tool_glow_rest",
+      "title": "The spotlight tool with the cards held still: the glow round the corners",
+      "row": "P58c-1",
+      "scene": "res://Tests/Visual/spotlight_tool_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/spotlight_tool_glow_rest.png",
+      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the same with the rig at rest: the glow steps round the cards' staircase corners instead of a square L (the owner's 'bevel ignored': fixed).",
+      "crops": [
+        {
+          "label": "first card's top-left corner",
+          "x": 45,
+          "y": 265,
+          "w": 70,
+          "h": 60
+        },
+        {
+          "label": "first card's bottom-left corner",
+          "x": 45,
+          "y": 440,
+          "w": 70,
+          "h": 65
+        }
+      ]
+    },
+    {
+      "id": "win_overlay",
+      "title": "The show won: the result over the board",
+      "row": "P58b",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/outcome_buttons.png",
+      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: 'Fame +4' over the dimmed board with Continue focused and Undo; the dimmed square board and star backs behind."
     }
   ]
 }
