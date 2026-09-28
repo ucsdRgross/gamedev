@@ -5,7 +5,7 @@ and gated, each against the ruling below, on this branch, ready for the owner to
 **State:** P1-P72, P74, P75 and P58a-c done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
 by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P58b-7, 3eea92a6): `ALL 51 SUITES: 8100 CHECKS PASSED`, ~15 min with
 `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. P73 built and parked
-on the local branch p73-wip. Pending, in order: P76, P73, P64b part 3, P71, P66, the review
+on the local branch p73-wip. Pending, in order: P58e, P73, P64b part 3, P71, P66, the review
 round (P58d), the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -452,9 +452,9 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [d0670eca]
 - id: P76
   description: The listed intermittents already past the three-failure budget become fixes (thirty-seventh round, queued right after the square cards) - PLAN VISUALS TP-92 (a wall-clock stagger row, ~1 gate in 3), SIDEBAR test_the_wall_view_shows_one_surface_colour_behind_the_pictures's frame-count sanity (a full-image readback per frame; ~4-5 informative frames against >4), UI VIEWERS "a later arrow never drags the focus back to the first card" (a focus race with another suite's Main in the same window). One fix at a time, each MEASURED first (the Open-bugs lines carry the counts and leads); a row that measures a wall-clock quantity is made robust to frame rate or re-pointed to what the player sees, never loosened.
-  status: in_progress
-  commits: [2b6804de, 763dac1f]
-  progress: 'P76a TP-92 DONE (the cascade dealt early - a product defect; the rows on the frame clock). P76b DONE (763dac1f, the sanity was starved by the test''s own per-pixel classification). Next P76c the UI VIEWERS later-arrow (and its sibling test_pack_click_selects).'
+  status: done
+  commits: [2b6804de, 763dac1f, bfd03c32]
+  progress: 'P76a TP-92 DONE (the cascade dealt early - a product defect; the rows on the frame clock). P76b DONE (763dac1f, the sanity was starved by the test''s own per-pixel classification). P76c DONE (bfd03c32, another suite''s Main took the shared window''s focus - the rows host their viewers in a Window of their own).'
 - id: P58e
   description: The square-card group's broad Fable review, its findings (queued right after P76, ahead of P73 - the group's own follow-ups, and P73 touches the same test file).
   status: pending

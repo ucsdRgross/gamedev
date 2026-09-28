@@ -24,7 +24,9 @@ worlds and a pad reaches the other only through a handler that grabs on its beha
 root viewport nulled a SubViewport's pad cursor. A control that leaves the tree (a detached
 grid) releases its focus, leaving no owner at all. So: read the owner BEFORE a detach to know
 whether a pick came by focus, grab on the pad's behalf only then, and rest the focus back inside
-the viewport the pad was in.
+the viewport the pad was in. ⚠ **Focus is one per WINDOW:** a separate `Window` (embedded or
+native) keeps its own owner through grabs elsewhere - the only way to isolate a test's focus from
+other suites sharing the run's window; a SubViewport host does not isolate it (measured).
 
 **How to apply:** never handle focus-driven key actions in a parent's `gui_input`; test
 input paths with real synthesized events (see `Tests/Interaction/test_interaction.gd`),
