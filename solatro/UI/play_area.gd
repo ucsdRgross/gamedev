@@ -227,6 +227,11 @@ static func row_open_span(settings_res: PlayerSettings, separation_px: float) ->
 static func board_separation_px(settings_res: PlayerSettings) -> float:
 	return float(BOARD_SEPARATION) * settings_res.card_scale
 
+#The same gap in a card viewer's UI pixels, drawn at the viewer's card scale, so a list of cards
+#keeps the board's spacing in art whatever size either draws a card at.
+static func viewer_separation_px() -> int:
+	return roundi(BOARD_SEPARATION * CardVisual.DECK_VIEWER_SCALE)
+
 #One grid's CELL BLOCK in board pixels: `grid_width` cards across and `grid_height` down with the
 #board separation between them. ⚠ The score gutters are deliberately NOT in it -- they sit inside
 #the buffer between grids, which is what `_apply_grid_buffer()` enforces on screen.

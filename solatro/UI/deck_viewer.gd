@@ -11,6 +11,7 @@ signal highlight_cleared
 
 @onready var flow_container: FlowContainer = %FlowContainer
 @onready var margin_container: MarginContainer = $MarginContainer
+@onready var _scroll: ScrollContainer = $MarginContainer/SmoothScrollContainer
 ## The X tab sticking out of the window's side, closing this viewer alone; its host sizes it to a touch target.
 @onready var close_tab: Button = %CloseTab
 
@@ -34,6 +35,9 @@ var fallback_focus : Control = null
 func _ready() -> void:
 	(margin_container.get_node(^"ColorRect") as ColorRect).color = \
 			PaletteDB.color(PaletteDB.ROLES.hud_background)
+	var gap := PlayArea.viewer_separation_px()
+	flow_container.add_theme_constant_override(&"h_separation", gap)
+	flow_container.add_theme_constant_override(&"v_separation", gap)
 
 # ⚠ THE OPENER HANDS ITS OWN CONTROL IN: focus is cleared across every viewport of one window. A
 # SECOND PRESS OF THAT SAME opener is a close and returns null; any other replaces the viewer, as
@@ -101,13 +105,32 @@ func fit_catcher(shown: Rect2) -> void:
 	margin_container.offset_right = shown.end.x - picture.x
 	margin_container.offset_bottom = shown.end.y - picture.y
 
-# THE LIST RESTS BESIDE WHERE THE SIDEBAR RESTS, inset inside the catcher by the scene's own padding.
+# THE LIST RESTS BESIDE WHERE THE SIDEBAR RESTS, inset by the scene's own padding, then WHOLE COLUMNS
+# ONLY, centred: the width no column fits in goes to the side margins in halves. A scrolling list
+# gives up its bar's width first, as the chooser's does; the scroll's own minimum is its focus border.
 func fit_beside(remaining: Rect2) -> void:
 	var catcher := margin_container.get_rect()
 	_inset_margin(&"margin_left", remaining.position.x - catcher.position.x)
 	_inset_margin(&"margin_top", remaining.position.y - catcher.position.y)
 	_inset_margin(&"margin_right", catcher.end.x - remaining.end.x)
 	_inset_margin(&"margin_bottom", catcher.end.y - remaining.end.y)
+	var left := margin_container.get_theme_constant(&"margin_left")
+	var right := margin_container.get_theme_constant(&"margin_right")
+	var inner := catcher.size - _scroll.get_combined_minimum_size() - Vector2(left + right,
+			margin_container.get_theme_constant(&"margin_top")
+			+ margin_container.get_theme_constant(&"margin_bottom"))
+	var columns := _whole_columns(inner.x)
+	if _cards.column_px(ceili(float(_cards.controls.size()) / columns)) > inner.y:
+		inner.x -= _scroll.get_v_scroll_bar().get_combined_minimum_size().x
+		columns = _whole_columns(inner.x)
+	var spare := inner.x - _cards.row_px(columns)
+	margin_container.add_theme_constant_override(&"margin_left", left + floori(spare / 2.0))
+	margin_container.add_theme_constant_override(&"margin_right",
+			right + floori(spare - floori(spare / 2.0)))
+
+func _whole_columns(width: float) -> int:
+	var gap := flow_container.get_theme_constant(&"h_separation")
+	return floori((width + gap) / (CardVisual.preview_window_px().x + gap))
 
 ## Publishes the card its highlight is on again -- asked by the opener only while a description is UP, so one the player dismissed stays dismissed across a re-fit.
 func republish_highlight() -> void:

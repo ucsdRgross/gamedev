@@ -52,6 +52,7 @@ func _ready() -> void:
 	test_the_card_scene_ships_no_baked_material()
 	test_card_separation_derives_from_the_pip_row()
 	test_leaf_bones_do_not_auto_calculate()
+	test_the_glare_slider_limits_are_the_card_width()
 	check_all_tests_registered()
 	finish()
 
@@ -619,6 +620,21 @@ func _scene_node_block(text: String, node_name: String) -> String:
 	if start == -1: return ""
 	var end := text.find("[node ", start + 1)
 	return text.substr(start, (end - start) if end > start else -1)
+
+# OutlineStyle types its glare slider limits out, naming CardVisual there being a cyclic reference,
+# so a card-size change reaches them only through this row going red.
+func test_the_glare_slider_limits_are_the_card_width() -> void:
+	var limits : Dictionary[String, float] = {}
+	for property : Dictionary in OutlineStyle.new().get_property_list():
+		var knob : String = property["name"]
+		if knob in ["glare_thickness", "glare_buffer"]:
+			limits[knob] = float((property["hint_string"] as String).split(",")[1])
+	var thickness : float = limits.get("glare_thickness", -1.0)
+	var buffer : float = limits.get("glare_buffer", -1.0)
+	check(thickness == CardVisual.CARD_SIZE.x,
+			"the glare thickness slider tops out at the card's width", str(limits))
+	check(buffer == CardVisual.CARD_SIZE.x / 2.0,
+			"the glare buffer slider tops out at half the card's width", str(limits))
 
 # An editor re-save drops `auto_calculate_length_and_angle = false` from the childless Arm_* bones.
 # With the default a leaf bone warns on every transform change: 86k log lines, ms/frame 25 -> 50.

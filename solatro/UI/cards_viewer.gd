@@ -22,6 +22,16 @@ func populate(cards: Array[CardData], on_inspect := Callable()) -> ControlCard:
 			inspect_on_highlight(control, data)
 	return controls[0] if controls else null
 
+## The width `columns` listed cards take side by side with the list's own gap between them: every viewer sizes a row by it.
+func row_px(columns: int) -> float:
+	var gap := (_container as Control).get_theme_constant(&"h_separation")
+	return columns * CardVisual.preview_window_px().x + (columns - 1) * gap
+
+## The height `rows` listed cards take stacked with the list's own gap between them: every viewer sizes its rows by it.
+func column_px(rows: int) -> float:
+	var gap := (_container as Control).get_theme_constant(&"v_separation")
+	return rows * CardVisual.preview_window_px().y + (rows - 1) * gap
+
 ## The callback `populate()` wired, kept so a list that has been re-sized can publish through it again.
 var _on_inspect : Callable = Callable()
 

@@ -1,16 +1,10 @@
 @tool
 class_name FormationEditor
 extends Node2D
-## Standalone formation AUTHORING + PREVIEW tool (owner spec) — open
-## res://tools/formation_editor.tscn, select the root node, and work entirely
-## from the inspector: pick a prop kind, add/generate/hand-edit formations, save them to the
-## kind's PropFormationSet .tres (what PropLayer loads in game), and spawn real prop visuals
-## over the points to see the result — including OVERFLOW: preview counts beyond one
-## formation spill into extra columns, each drawing its own seeded formation exactly like
-## adjacent in-game slots would. The card footprint/stack drawings are PURELY debug scenery
-## (size/separation knobs below), never used in game. Editor-only; ships no runtime code.
+## Authors prop formations from the inspector and previews real props over them; the card drawings are debug scenery, and nothing here ships.
 
-const CARD := CardVisual.CARD_SIZE   # unscaled card footprint; points live in this space
+## The unscaled card footprint the formation points live in.
+const CARD := CardVisual.CARD_SIZE
 
 enum Kind { HOOP, KNIFE, BALL, FIRE, FIREWORK }
 enum Pattern { GRID, RING, SCATTER, LINE }
@@ -26,35 +20,25 @@ enum Pattern { GRID, RING, SCATTER, LINE }
 	set(value):
 		formation_index = maxi(value, 0)
 		_pull_points()
-## How a batch maps onto this formation's points: ORDERED = exact point-list order
-## (prop i -> point i), RANDOM = seeded shuffle of the list (points only, no repeats until
-## all are used). Saved per formation.
+## How a batch maps onto the points: ORDERED gives prop i point i, RANDOM a seeded shuffle; saved per formation.
 @export var mode : PropFormationData.Mode = PropFormationData.Mode.ORDERED:
 	set(value):
 		mode = value
 		var f := _formation()
 		if f: f.mode = mode
 		_live_update()
-## When ON, the formation's HEIGHT spreads with the card-separation setting (see
-## PropFormationData.spread_by_separation) and point storage flips to full-card NORMALIZED space:
-## `points` below always shows/edits the CURRENT strip's positions (at stack_separation), and the
-## conversion pair strip_to_norm/norm_to_strip keeps the stored .tres separation-agnostic —
-## placing points at ANY separation level authors the same normalized pattern. Toggling keeps the
-## visible positions put (they are re-encoded under the new flag). Saved alongside `mode`.
+# Pushed only when set by hand, re-encoding the on-screen points: while `_pull_points` assigns it
+# FROM the formation, a push would overwrite the stored points with the previous strip view.
+## Spreads the formation's height with the card separation, its points stored normalised to the full card.
 @export var spread_by_separation : bool = false:
 	set(value):
 		spread_by_separation = value
 		var f := _formation()
-		# _syncing: _pull_points assigns this field FROM the formation — pushing then would
-		# overwrite the stored points with the previous strip view before they were pulled.
 		if f and not _syncing:
 			f.spread_by_separation = spread_by_separation
-			_push_points()   # re-encode the on-screen points under the new storage rule
+			_push_points()
 		_live_update()
-## The current formation's points as SEEN at the current stack_separation — for
-## spread_by_separation formations this is the projection of the stored full-card points into the
-## visible strip (edits convert back on the way in, so the stored pattern is separation-agnostic);
-## otherwise raw unscaled card space. Points outside the valid area draw RED.
+## The current formation's points as seen at the current stack_separation; points outside the valid area draw red.
 @export var points : PackedVector2Array = PackedVector2Array():
 	set(value):
 		points = value
@@ -76,38 +60,30 @@ enum Pattern { GRID, RING, SCATTER, LINE }
 @export_tool_button("Generate Points") var _btn_gen : Callable = _generate
 
 @export_group("Preview (debug only)")
-## How many props to spawn over the formation(s); beyond one formation's capacity the rest
-## spill into further columns, one seeded formation each — in-game adjacent slots.
+## Props to spawn; beyond one formation's capacity the rest spill into further columns, as adjacent slots do in game.
 @export_range(0, 64) var preview_count : int = 8
 ## Per-column formation pick/point-subset seed (column i uses preview_seed + i).
 @export var preview_seed : int = 0
-## Stand-in for the game's card_scale: scales the card footprint, the point offsets, AND the
-## prop art relative to PropVisual.AUTHORED_CARD_SCALE — exactly like in game (PropLayer writes
-## vis.scale = card_scale / AUTHORED_CARD_SCALE every frame, owner spec). Default =
-## the game's default card_scale for exact parity.
+## Stand-in for the game's card_scale: scales the footprint, the offsets and the prop art as PropLayer does.
 @export var preview_scale : float = 2.5
 ## Debug stack scenery: cards drawn per column and their vertical separation (unscaled).
 @export_range(1, 12) var stack_cards : int = 3
-## Card vertical separation stand-in (unscaled). Also the separation FACTOR source for
-## spread_by_separation formations: factor = stack_separation / CARD_SEPARATION. Changing it
-## re-spreads a live preview in realtime (mirrors the in-game card-separation setting).
+# Changing it re-projects the SAME stored normalised points into the new strip: `points` moves, the
+# .tres pattern does not. Skipped during scene load, when this setter fires before `_load_set`.
+## Card separation stand-in (unscaled), and the spread factor's source: stack_separation / CARD_SEPARATION.
 @export var stack_separation : float = float(CardVisual.CARD_SEPARATION):
 	set(value):
 		stack_separation = value
-		# Re-project the SAME stored normalized points into the new strip: `points` (the strip-space
-		# view) moves, the .tres pattern doesn't — the separation-agnostic invariant, live in-editor.
-		# Guarded on _set: during scene load this setter fires before _load_set and must not wipe
-		# points saved with the scene.
 		if _set: _pull_points()
 		_live_update()
-## Distance between column anchors (unscaled) — matches the play area's REAL default column
-## pitch: card width + PlayArea.separation's unscaled default (4).
-@export var column_pitch : float = CardVisual.CARD_SIZE.x + 4.0
+## Distance between column anchors, unscaled: the board's own card width plus its gap.
+@export var column_pitch : float = CardVisual.CARD_SIZE.x + PlayArea.BOARD_SEPARATION
 @export_tool_button("Spawn Preview Props") var _btn_preview : Callable = _spawn_preview
 @export_tool_button("Clear Preview") var _btn_clear : Callable = _clear_preview
 
 var _set : PropFormationSet
-var _preview_columns : int = 1   # columns the last preview used (drives the scenery)
+## Columns the last preview used, which the scenery draws.
+var _preview_columns : int = 1
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
@@ -117,28 +93,25 @@ func _formation() -> PropFormationData:
 	if _set == null or _set.formations.is_empty(): return null
 	return _set.formations[clampi(formation_index, 0, _set.formations.size() - 1)]
 
-## Load (or start fresh) the selected kind's set and show its first formation.
+# A kind with no saved set KEEPS the points already in the inspector: they may be saved with this
+# scene and never to a .tres, and clearing them would lose that work.
 func _load_set() -> void:
 	_set = PropFormationSet.load_for_kind(kind)
 	if _set == null:
 		_set = PropFormationSet.new()
 		print("FormationEditor: no saved set for %s yet (Add Formation + SAVE to create %s)"
 				% [PropFormationSet.KIND_NAMES[kind], PropFormationSet.path_for_kind(kind)])
-		# KEEP any points already sitting in the inspector (e.g. saved with this scene but
-		# never SAVEd to a .tres) — clearing them here would lose unsaved work.
 		queue_redraw()
 		return
 	print("FormationEditor: loaded %s (%d formation(s))"
 			% [PropFormationSet.path_for_kind(kind), _set.formations.size()])
-	formation_index = 0   # setter pulls points + mode + redraws
+	formation_index = 0
 
-## Current separation as the shared normalization factor (mirrors the game's
-## card_separation_scale: factor 1 == default separation, CARD.y/CARD_SEPARATION == full card).
+## The game's card_separation_scale: 1 at the default separation, CARD.y / CARD_SEPARATION at a full card.
 func _sep_factor() -> float:
 	return stack_separation / float(CardVisual.CARD_SEPARATION)
 
-## Stored (.tres) representation of strip-space edited points: spread formations store full-card
-## normalized y (strip_to_norm); non-spread formations store the points as-is.
+## What the .tres stores for strip-space points: full-card normalised y for a spread formation, else as-is.
 func _to_stored(pts: PackedVector2Array) -> PackedVector2Array:
 	var out := pts.duplicate()
 	if spread_by_separation:
@@ -164,7 +137,7 @@ func _pull_points() -> void:
 		mode = f.mode
 		spread_by_separation = f.spread_by_separation
 		_syncing = false
-	points = _to_strip(f.points) if f else PackedVector2Array()   # setter pushes back + redraws
+	points = _to_strip(f.points) if f else PackedVector2Array()
 
 func _push_points() -> void:
 	var f := _formation()
@@ -197,7 +170,8 @@ func _save_set() -> void:
 	if err == OK: print("FormationEditor: saved %s" % path)
 	else: push_error("FormationEditor: save FAILED (%s): %s" % [path, error_string(err)])
 
-## Fill `points` from the chosen pattern; hand-tweak afterwards in the inspector.
+# Fills `points` from the chosen pattern, to hand-tweak afterwards in the inspector. A formation
+# stays inside ONE card; a spread one inside the CURRENT strip, which storage scales to the card.
 func _generate() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = gen_seed
@@ -226,25 +200,19 @@ func _generate() -> void:
 		if gen_jitter > 0.0:
 			out[i] += Vector2(rng.randf_range(-gen_jitter, gen_jitter),
 					rng.randf_range(-gen_jitter, gen_jitter))
-		# A formation stays inside ONE card; spread formations additionally edit inside the
-		# CURRENT strip (storage scales them up to full-card space).
 		out[i] = out[i].clamp(-CARD * 0.5, Vector2(CARD.x * 0.5, y_max))
-	points = out   # setter pushes into the live formation + redraws
+	points = out
 
-## Bottom of the valid editing area: the visible strip for spread formations (top-anchored,
-## stack_separation tall, capped at one card), the full card footprint otherwise.
+## Bottom of the valid editing area: the top-anchored visible strip for a spread formation, else the card.
 func _edit_y_max() -> float:
 	if spread_by_separation:
 		return -CARD.y * 0.5 + minf(stack_separation, CARD.y)
 	return CARD.y * 0.5
 
-# --- preview -------------------------------------------------------------------
-
 func _column_origin(col: int) -> Vector2:
 	return Vector2(float(col) * column_pitch * preview_scale, 0.0)
 
-## Realtime refresh: if a preview is currently spawned, re-spawn it so tuning knobs
-## (spread_by_separation, stack_separation, mode) update the view immediately; else just redraw.
+## Realtime refresh: a spawned preview re-spawns so the tuning knobs show at once; otherwise just a redraw.
 func _live_update() -> void:
 	if not Engine.is_editor_hint(): return
 	if get_child_count() > 0:
@@ -258,8 +226,9 @@ func _clear_preview() -> void:
 	_preview_columns = 1
 	queue_redraw()
 
-## Spawn real PropVisuals over assigned points, chunked into columns EXACTLY like the game
-## assigns a batch: column i draws formation + point subset from seed preview_seed + i.
+# Real PropVisuals over the assigned points, in columns EXACTLY as the game assigns a batch: column i
+# draws a formation and point subset from seed preview_seed + i, spread by the stack's separation
+# factor, and positions and art scale by the card-scale stand-in as PropLayer does at runtime.
 func _spawn_preview() -> void:
 	_clear_preview()
 	if _set == null or _set.formations.is_empty():
@@ -272,13 +241,9 @@ func _spawn_preview() -> void:
 		var f := _set.pick_formation(seed_value)
 		if f == null or f.points.is_empty(): break
 		var n := mini(remaining, f.points.size())
-		# Separation factor mirrors the game's card_separation_scale: how much the debug stack's
-		# separation exceeds the authored base. Formations flagged spread_by_separation stretch by it.
 		var sep_factor := stack_separation / float(CardVisual.CARD_SEPARATION)
 		var offsets := _set.offsets_for(n, seed_value, sep_factor)
 		for i : int in n:
-			# Game parity: positions scale by the card-scale stand-in, and the ART scales
-			# relative to its authored card scale exactly like PropLayer does at runtime.
 			var vis := _make_prop()
 			add_child(vis)
 			vis.position = _column_origin(col) + offsets[i] * preview_scale
@@ -296,21 +261,18 @@ func _make_prop() -> PropVisual:
 		Kind.FIREWORK: return FireworkVisual.new()
 		_: return HoopVisual.new()
 
-# --- debug scenery -------------------------------------------------------------
-
+# The debug scenery: each column's card stack fanning DOWN by stack_separation, back cards first so
+# the overlap reads right, then the current formation's points on column 0 with their indices, red
+# outside the valid edit area.
 func _draw() -> void:
 	if not Engine.is_editor_hint(): return
 	var half := CARD * 0.5 * preview_scale
 	for col : int in _preview_columns:
 		var origin := _column_origin(col)
-		# Card stack scenery (play-area look-alike: cards fan DOWN by stack_separation,
-		# formation sits on the TOP card's anchor). Back cards first so overlap reads right.
 		for j : int in range(stack_cards - 1, -1, -1):
 			var top_left := origin - half + Vector2(0.0, float(j) * stack_separation * preview_scale)
 			var alpha := 0.7 if j == 0 else 0.25
 			draw_rect(Rect2(top_left, CARD * preview_scale), Color(0.4, 0.8, 1.0, alpha), false, 1.0)
-	# Editable points of the CURRENT formation on column 0 (strip-space view), with indices;
-	# outside the valid edit area (the strip for spread formations, the card otherwise) = RED.
 	var font := ThemeDB.fallback_font
 	var y_max := _edit_y_max()
 	for i : int in points.size():

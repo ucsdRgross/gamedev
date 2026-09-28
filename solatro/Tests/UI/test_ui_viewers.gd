@@ -48,6 +48,9 @@ func _ready() -> void:
 	await test_a_wrapped_row_lies_below_the_reroll_buttons_above()
 	await test_the_window_shows_five_rows_then_scrolls()
 	await test_a_deck_viewer_carries_a_close_tab_and_the_pack_chooser_none()
+	behavior_section("A VIEWER SPACES ITS CARDS AS THE BOARD DOES, IN THE PLAYER'S WINDOW")
+	await test_the_viewers_gap_is_the_boards_at_their_card_scale()
+	await test_the_deck_viewers_list_is_whole_columns_centred()
 	finish()
 
 ## Every deck viewer carries its close tab; the pack chooser carries none, Take being its only way out.
@@ -197,6 +200,97 @@ func test_the_window_shows_five_rows_then_scrolls() -> void:
 		viewer.queue_free()
 	await get_tree().process_frame
 
+## A container places its children on whole canvas pixels, which the window's UI scale can carry a fraction of a window pixel off.
+const GAP_TOLERANCE_PX := 0.5
+
+# Measured in the ROOT window at whatever size it has, so at its real UI scale: no suite resizes the
+# OS window the others share. The 600x1000 top case is covered by the shots.
+## The gap between two listed cards, a row's and a column's, is the board's gap in art units at the card's own drawn scale -- in the deck viewer and in the pack chooser, where it sits below each row's Reroll band.
+func test_the_viewers_gap_is_the_boards_at_their_card_scale() -> void:
+	var size := get_tree().root.size
+	var visible := get_tree().root.get_visible_rect()
+	var viewer := await _fitted_deck_viewer(20, visible)
+	var cards := viewer.cards().controls
+	var per_row := _cards_in_the_first_row_of(cards)
+	var first := _in_window(cards[0])
+	var gap := PlayArea.BOARD_SEPARATION * first.size.x / CardVisual.CARD_SIZE.x
+	check(per_row >= 2 and cards.size() > per_row,
+			"sanity: the deck viewer at %s shows a row and a second below it" % size, str(per_row))
+	var across := _in_window(cards[1]).position.x - first.end.x
+	var down := _in_window(cards[per_row]).position.y - first.end.y
+	check(absf(across - gap) <= GAP_TOLERANCE_PX and absf(down - gap) <= GAP_TOLERANCE_PX,
+			"the deck viewer's cards stand the board's gap apart, across and down, at its card scale (%s)" % size,
+			"across %.2f down %.2f vs %.2f window px" % [across, down, gap])
+	await _drop_viewer(viewer)
+	var chooser := await _fitted_chooser(ChoiceViewer.ROW_CARDS + 1, visible)
+	var slot := _in_window(chooser._cards.controls[0])
+	var beside := _in_window(chooser._cards.controls[1]).position.x - slot.end.x
+	var under_band := _in_window(chooser._cards.controls[ChoiceViewer.ROW_CARDS]).position.y \
+			- _in_window(chooser._reroll_buttons[0]).end.y
+	check(absf(beside - gap) <= GAP_TOLERANCE_PX and absf(under_band - gap) <= GAP_TOLERANCE_PX,
+			"the chooser's cards stand the board's gap apart, and a wrapped row the same gap under the Reroll band above (%s)" % size,
+			"beside %.2f under the band %.2f vs %.2f window px" % [beside, under_band, gap])
+	chooser.queue_free()
+	await get_tree().process_frame
+
+# Measured in the ROOT window at whatever size it has, after the re-fit its host makes once the list
+# is laid out; the 600x1000 top case is covered by the shots.
+## The deck viewer's list is the widest whole number of columns its margins leave room for, centred where it rests: no strip narrower than a card is left on one side, beside a sidebar or over the whole picture.
+func test_the_deck_viewers_list_is_whole_columns_centred() -> void:
+	var size := get_tree().root.size
+	var visible := get_tree().root.get_visible_rect()
+	var strip := Vector2(visible.size.x / 3.0, 0.0)
+	var beside_a_strip := Rect2(visible.position + strip, visible.size - strip)
+	for remaining : Rect2 in [visible, beside_a_strip] as Array[Rect2]:
+		var viewer := await _fitted_deck_viewer(52, remaining)
+		var where := "%s resting in %s" % [size, remaining]
+		var cards := viewer.cards().controls
+		var columns := _cards_in_the_first_row_of(cards)
+		var row := _in_window(cards[0]).merge(_in_window(cards[columns - 1]))
+		var list := _in_window(viewer.flow_container)
+		check(absf(list.size.x - row.size.x) <= GAP_TOLERANCE_PX,
+				"the deck viewer's list is exactly its whole columns wide (%s)" % where,
+				"list %.2f vs %d columns %.2f window px" % [list.size.x, columns, row.size.x])
+		var scale := get_tree().root.get_final_transform().get_scale().x
+		var resting := get_tree().root.get_final_transform() * remaining
+		var bar := viewer._scroll.get_v_scroll_bar()
+		var shown := row.grow_side(SIDE_RIGHT, _in_window(bar).size.x if bar.visible else 0.0)
+		check(absf(shown.get_center().x - resting.get_center().x) <= CENTRED_TOLERANCE_PX * scale,
+				"...its cards, and the scrollbar beside them, centred where it rests (%s)" % where,
+				"%s in %s" % [shown, resting])
+		var room := resting.size.x - scale * (2.0 * viewer._authored_margins[&"margin_left"]
+				+ 2.0 * viewer.flow_container.position.x)
+		var column := (CardVisual.preview_window_px().x + PlayArea.viewer_separation_px()) * scale
+		check(shown.size.x <= room + GAP_TOLERANCE_PX and room - shown.size.x < column,
+				"...the widest whole number of columns inside the authored margins (%s)" % where,
+				"%.2f shown of %.2f, a column %.2f" % [shown.size.x, room, column])
+		await _drop_viewer(viewer)
+
+## A control's rect in the OS window's own pixels, its canvas layer and the window's UI scale applied.
+func _in_window(control: Control) -> Rect2:
+	return get_tree().root.get_final_transform() * control.get_global_transform_with_canvas() \
+			* Rect2(Vector2.ZERO, control.size)
+
+## A deck viewer of `count` cards opened through the product's entry and fitted as its host fits it: on open, then again once laid out, the catcher over the whole picture and the list resting in `remaining`.
+func _fitted_deck_viewer(count: int, remaining: Rect2) -> DeckViewer:
+	_test_opener = Button.new()
+	add_child(_test_opener)
+	var deck : Array[CardData] = []
+	for index : int in count:
+		deck.append(_card())
+	var viewer := DeckViewer.show_deck(self, deck, _test_opener)
+	for fit : int in 2:
+		viewer.fit_catcher(get_tree().root.get_visible_rect())
+		viewer.fit_beside(remaining)
+		for frame : int in 3:
+			await get_tree().process_frame
+	return viewer
+
+func _cards_in_the_first_row_of(cards: Array[ControlCard]) -> int:
+	var top := cards[0].get_global_rect().position.y
+	return cards.filter(func(card: ControlCard) -> bool:
+			return is_equal_approx(card.get_global_rect().position.y, top)).size()
+
 ## A chooser of `count` cards opened through the product's entry and fitted to `remaining`.
 func _fitted_chooser(count: int, remaining: Rect2) -> ChoiceViewer:
 	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, count, 0)
@@ -207,9 +301,7 @@ func _fitted_chooser(count: int, remaining: Rect2) -> ChoiceViewer:
 	return viewer
 
 func _cards_in_the_first_row(viewer: ChoiceViewer) -> int:
-	var top := viewer._cards.controls[0].get_global_rect().position.y
-	return viewer._cards.controls.filter(func(card: ControlCard) -> bool:
-			return is_equal_approx(card.get_global_rect().position.y, top)).size()
+	return _cards_in_the_first_row_of(viewer._cards.controls)
 
 ## The button a test viewer was opened from, kept so the toggle can press the SAME one again.
 var _test_opener : Button = null

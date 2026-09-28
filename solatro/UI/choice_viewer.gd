@@ -68,9 +68,12 @@ static func add_choices_to_scene(parent:Node, data:Data) -> ChoiceViewer:
 func _ready() -> void:
 # ui_accept confirms immediately; arrow keys walk the (focusable) cards.
 	confirm_button.text = TRANSLATION.find('CHOICE_TAKE')
-	(_layout.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = 			PaletteDB.color(PaletteDB.ROLES.hud_background)
+	(_layout.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = \
+			PaletteDB.color(PaletteDB.ROLES.hud_background)
+	var gap := PlayArea.viewer_separation_px()
+	flow_container.add_theme_constant_override(&"h_separation", gap)
 	flow_container.add_theme_constant_override(&"v_separation",
-			roundi(REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT))
+			roundi(REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT) + gap)
 	confirm_button.grab_focus()
 	_populate()
 
@@ -113,18 +116,18 @@ func _unhandled_input(event: InputEvent) -> void:
 # tall enough for ROWS_SHOWN rows over the Rerolls-and-Take foot, cut to the space with the rest
 # scrolling. It is UI, so its cards draw at the one UI size and no picture scale applies.
 func fit_beside(remaining: Rect2) -> void:
-	var slot := _cards.controls[0].get_combined_minimum_size() \
-			+ Vector2(0.0, REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT)
 	var rows := ceili(float(_cards.controls.size()) / ROW_CARDS)
-	var gap := flow_container.get_theme_constant(&"h_separation")
-	var row_px := ROW_CARDS * slot.x + (ROW_CARDS - 1) * gap
-	flow_container.custom_minimum_size = Vector2(row_px, rows * slot.y)
+	var row_px := _cards.row_px(ROW_CARDS)
+	var band := REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT
+	var rows_px := _cards.column_px(rows) + band
+	flow_container.custom_minimum_size = Vector2(row_px, rows_px)
 	var pad := _bottom_row.offset_left
 	var foot := -_bottom_row.offset_top
-	var wanted := maxf(row_px + 2.0 * pad, pad + mini(rows, ROWS_SHOWN) * slot.y + foot)
+	var wanted := maxf(row_px + 2.0 * pad,
+			pad + _cards.column_px(mini(rows, ROWS_SHOWN)) + band + foot)
 	var side := minf(wanted, minf(remaining.size.x, remaining.size.y))
-	var shown := Vector2(row_px, minf(rows * slot.y, side - pad - foot))
-	if shown.y < rows * slot.y:
+	var shown := Vector2(row_px, minf(rows_px, side - pad - foot))
+	if shown.y < rows_px:
 		shown.x += _scroll.get_v_scroll_bar().get_combined_minimum_size().x
 	_scroll.position = Vector2((side - shown.x) / 2.0, pad + (side - pad - foot - shown.y) / 2.0)
 	_scroll.size = shown
