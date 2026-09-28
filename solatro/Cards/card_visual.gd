@@ -572,6 +572,8 @@ static func corner_points(corner: Vector2, prev: Vector2, next: Vector2,
 		out.append(corner + (prev - corner) * f.x + (next - corner) * f.y)
 	return out
 
+# A face-down card keeps its type's drawn extent: its back draws only while show_front hides all FX.
+
 # Find the rig once. Absent - a stripped card in a test, or art without a skeleton - simply means the
 # caller falls back to the baked polygon. The drawn box and the corners come from this card's own
 # type frame and never change at runtime, while _rig_outline runs every frame on every card.

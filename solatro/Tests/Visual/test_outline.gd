@@ -284,32 +284,39 @@ func _check_the_hand_model_is_the_resting_card(rig: PackedVector2Array) -> void:
 			"%d model points, %d rig points, first differing index %d (%s vs %s)" % [model.size(),
 			rig.size(), first_bad, model[maxi(first_bad, 0)], rig[maxi(first_bad, 0)]])
 
-## The idle animation's poses whose deformation test_pixels documents.
-const POSED_SECONDS : Array[float] = [0.15, 0.30]
-
-# The shader covers a wedge slot by testing WEDGE_CANDIDATES consecutive wedges, so a slot holding
-# that many vertices leaves its last sliver untested and the mask shows a hole there. A sheared
-# corner crowds its staircase into fewer slots, so the bound is asserted on the posed rig.
+# A slot holding WEDGE_CANDIDATES vertices leaves its last sliver untested: a hole in the mask. A
+# sheared corner crowds its staircase into fewer slots, so the bound holds for the idle's worst pose
+# at the animation's own step; the 40-point types peak at 7 over t 0.27-0.67.
 func _check_posed_rigs_fit_the_wedge_candidates(vis: CardVisual, type_script: GDScript,
 		rest: PackedVector2Array) -> void:
 	var ap := vis.get_node("AnimationPlayer") as AnimationPlayer
 	check_impl(ap.has_animation(CardVisual.RIG_ANIM), "the card carries its idle animation",
 			str(CardVisual.RIG_ANIM))
+	var anim := ap.get_animation(CardVisual.RIG_ANIM)
 	var type_name := String(type_script.get_global_name())
-	for t : float in POSED_SECONDS:
+	var worst := -1
+	var worst_t := 0.0
+	var worst_pose := PackedVector2Array()
+	for k : int in int(ceilf(anim.length / anim.step)) + 1:
+		var t := minf(float(k) * anim.step, anim.length)
 		ap.play(CardVisual.RIG_ANIM)
 		ap.seek(t, true)
 		ap.pause()
 		var posed := (vis._rig_outline() as PackedVector2Array).duplicate()
 		var busiest := _busiest_wedge_slot(posed)
-		TestLog.line("    [posed wedge slots] %s t=%.2f  busiest slot holds %d of %d vertices"
-				% [type_name, t, busiest, posed.size()])
-		check_impl(posed != rest, "%s t=%.2f: the rig is posed, not at rest" % [type_name, t])
-		check(busiest + 1 <= FxAttachment.WEDGE_CANDIDATES,
-				"%s t=%.2f: the posed rig's busiest wedge slot holds %d vertices, so %d candidates cover it"
-				% [type_name, t, busiest, busiest + 1],
-				"%d candidates are tested - the slot's last sliver reads as a HOLE in the mask"
-				% FxAttachment.WEDGE_CANDIDATES)
+		if busiest > worst:
+			worst = busiest
+			worst_t = t
+			worst_pose = posed
+	TestLog.line("    [posed wedge slots] %s worst t=%.2f  busiest slot holds %d of %d vertices"
+			% [type_name, worst_t, worst, worst_pose.size()])
+	check_impl(worst_pose != rest, "%s t=%.2f: the worst pose is posed, not at rest"
+			% [type_name, worst_t])
+	check(worst + 1 <= FxAttachment.WEDGE_CANDIDATES,
+			"%s: the idle's busiest wedge slot (t=%.2f) holds %d vertices, so %d candidates cover it"
+			% [type_name, worst_t, worst, worst + 1],
+			"%d candidates are tested - the slot's last sliver reads as a HOLE in the mask"
+			% FxAttachment.WEDGE_CANDIDATES)
 
 func _busiest_wedge_slot(outline: PackedVector2Array) -> int:
 	var slots := PackedInt32Array()
