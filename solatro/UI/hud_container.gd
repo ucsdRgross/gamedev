@@ -212,6 +212,10 @@ func _wants_container() -> bool:
 	if _active_screen == MENU_SCREEN: return _deck_picker != null or _shown_hosted_viewer() != null
 	return true
 
+## The menu is the screen shown with neither its deck picker nor a viewer up over it.
+func shows_the_bare_menu() -> bool:
+	return _active_screen == MENU_SCREEN and not _wants_container()
+
 ## The space left beside this container inside `picture`'s own space -- the one conversion every hosted screen insets by; a fixture with no picture falls back to the plain window rect.
 func rect_beside(picture: WallPicture) -> Rect2:
 	return _space_beside(picture, published_rect())

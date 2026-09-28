@@ -30,6 +30,7 @@ func _ready() -> void:
 	new_run_button.pressed.connect(_on_new_run_pressed)
 	continue_button.pressed.connect(continue_requested.emit)
 	refresh_continue()
+	hud_container.connect_for_screen(self, hud_container.active_screen_changed, take_the_focus)
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed,
 			_apply_container_inset)
 	_apply_container_inset()
@@ -43,6 +44,12 @@ func _apply_container_inset() -> void:
 	_content.scale = Vector2.ONE * ui_per_canvas
 	_content.position = remaining.position
 	_content.size = remaining.size / ui_per_canvas
+
+# A KEY OR PAD PLAYER STARTS HERE: Play takes the focus each time the menu becomes the screen shown,
+# so one device alone reaches every button -- unless the picker or a viewer is up over it, which
+# holds the focus itself, and a return never focuses a control behind a viewer.
+func take_the_focus() -> void:
+	if hud_container.shows_the_bare_menu(): ($Content/Play as Button).grab_focus()
 
 func _on_play_pressed() -> void:
 	play_row.visible = not play_row.visible

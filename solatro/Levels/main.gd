@@ -95,12 +95,14 @@ func _ready() -> void:
 		game_wp.mark_for_rerender()
 		RenderingServer.frame_post_draw.connect(_end_the_warm_up.bind(current), CONNECT_ONE_SHOT)
 
-#Rendered once more without the throwaway show, so wall view never shows its deal in the frame.
+#Rendered once more without the throwaway show, so wall view never shows its deal in the frame. Its
+#board rested the key focus as a bare view does, which cleared the menu's, so the menu takes it back.
 func _end_the_warm_up(current: CardEnvironment) -> void:
 	var game_wp : WallPicture = _pictures[&"game"]
 	game_wp.detach_screen()
 	game_wp.mark_for_rerender()
 	CardEnvironment.CURRENT = current
+	menu_scene.take_the_focus()
 
 # Packs `Wall.load_layout()` and builds every UNLOCKED picture, reparenting the already-
 # instantiated `menu_scene`/`map_scene` as their `screen_root`. `deck` and `game` start with no

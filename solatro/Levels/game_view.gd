@@ -134,9 +134,14 @@ func _ready() -> void:
 	_refresh_hud.call_deferred()
 	_publish_board_inset()
 
+# ⚠ ANOTHER SCREEN'S FOCUS CLEARS THIS VIEWPORT'S (the menu takes Play, a viewer closed elsewhere
+# hands none back), so the show rests its own focus each time its picture goes live: on the
+# outcome's Continue while it is up, whose board then takes no focus, else on the board.
 func _start_on_screen() -> void:
 	scene_root.process_mode = Node.PROCESS_MODE_INHERIT
 	play_area.ease_the_opening_in()
+	if not _continue_button: _rest_the_board_focus()
+	elif not _the_focus_is_elsewhere(): _continue_button.grab_focus()
 
 # ⚠ THE SHOW'S CONTAINER STATE DIES WITH THE SHOW: `Main` reuses one screen id for every show, so
 # the view leaving the tree hands back its memory, its lock and its cascade flag.
@@ -317,15 +322,7 @@ func _open_deck_viewer(cards: Array[CardData], opener: Button, close_key: String
 	if not _viewer: return
 	DeckViewer.read_close_while_open(opener, close_key, _viewer)
 	hud_container.host_viewer(_viewer, info_requested, HudContainer.GAME_SCREEN)
-	_viewer.highlight_cleared.connect(_rest_the_board_behind_another_screen)
 	tree_exiting.connect(_viewer.queue_free)
-
-# ⚠ A VIEWER ANOTHER SCREEN CLOSED hands no focus back, and any focus that screen takes clears this
-# viewport's, so the board rests on the return -- as though the viewer had never opened. A bare
-# view with no picture is always the screen shown.
-func _rest_the_board_behind_another_screen() -> void:
-	if wall_picture and not wall_picture.is_focused:
-		wall_picture.went_live.connect(play_area.rest_focus_on_board, CONNECT_ONE_SHOT)
 
 # Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores
 # the press where it cannot act.

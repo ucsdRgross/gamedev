@@ -84,6 +84,10 @@ func _ready() -> void:
 	await test_menus_title_and_button_row_centre_on_the_remaining_space()
 	await test_every_menu_control_draws_at_the_ui_size_inside_the_window_and_none_overlaps()
 	await test_the_menus_bottom_row_wraps_beside_the_slid_in_sidebar()
+	await test_keys_alone_start_a_run_from_the_start_menu_and_find_it_again()
+	await test_a_pad_alone_starts_a_run_from_the_start_menu()
+	await test_a_show_resumed_through_the_menu_rests_a_key_focus_on_its_board()
+	await test_a_resolved_show_resumed_through_the_menu_rests_the_key_focus_on_continue()
 	behavior_section("S5: A HIGHLIGHT PUBLISHES AND THE CONTAINER SHOWS")
 	await test_a_highlight_opens_the_description()
 	await test_the_description_titles_a_card_and_sizes_its_effect_names()
@@ -2288,6 +2292,141 @@ func _menu_control_in_window(viewport: SubViewport, picture: WallPicture, contro
 	var start := viewport.get_final_transform() * _picture_point_in_window(picture, canvas.position * texels)
 	var end := viewport.get_final_transform() * _picture_point_in_window(picture, canvas.end * texels)
 	return Rect2(start, end - start)
+
+## A keyboard alone starts a run from the start menu: Play holds the focus from a fresh boot, the arrows walk the column (Play, the submenu below it, the bottom row), Enter presses, and the menu shown again after the map rests the focus on Play once more.
+func test_keys_alone_start_a_run_from_the_start_menu_and_find_it_again() -> void:
+	await _start_a_run_from_the_menu_with("keys", _tap_key.bind(KEY_ENTER), _tap_key.bind(KEY_DOWN),
+			_tap_key.bind(KEY_UP), _tap_key.bind(KEY_LEFT))
+	_main._focus_picture(&"start_menu")
+	await _wait_out_the_move()
+	check(_main._current_focus == &"start_menu", "keys: sanity: the move back to the menu landed",
+			str(_main._current_focus))
+	var menu_viewport : SubViewport = _main._pictures[&"start_menu"].viewport
+	check(menu_viewport.gui_get_focus_owner() == _main.menu_scene.get_node(^"Content/Play"),
+			"keys: the menu shown again rests the key focus on Play",
+			str(menu_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_ENTER)
+	check(not _main.menu_scene.play_row.visible, "keys: ...and Enter presses it there, folding the submenu away")
+	await _end_main_fixture()
+
+## A pad alone starts a run from the start menu, with the d-pad and the accept button only.
+func test_a_pad_alone_starts_a_run_from_the_start_menu() -> void:
+	await _start_a_run_from_the_menu_with("pad", _tap_pad.bind(JOY_BUTTON_A),
+			_tap_pad.bind(JOY_BUTTON_DPAD_DOWN), _tap_pad.bind(JOY_BUTTON_DPAD_UP),
+			_tap_pad.bind(JOY_BUTTON_DPAD_LEFT))
+	await _end_main_fixture()
+
+# ONE DEVICE, each press a tap pushed into the window's viewport as the engine delivers it, the
+# focus owner checked in the viewport the next press moves in. Sees the new run onto the map.
+func _start_a_run_from_the_menu_with(device: String, accept: Callable, down: Callable, up: Callable,
+		left: Callable) -> void:
+	backup_real_save(suite_tag())
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	check(RunManager.run == null, "%s: sanity: a fresh boot, so the game's warm-up runs behind the menu" % device)
+	var booted := await _boot_main_at(Vector2i(1280, 720))
+	_booted_viewport = booted[0]
+	_main = booted[1]
+	var menu := _main.menu_scene
+	var menu_viewport : SubViewport = _main._pictures[&"start_menu"].viewport
+	var play : Button = menu.get_node(^"Content/Play")
+	var bottom_row : Container = menu.get_node(^"Content/Main")
+	check(menu_viewport.gui_get_focus_owner() == play and _booted_viewport.gui_get_focus_owner() == null,
+			"%s: a fresh boot rests the key focus on Play, in the menu's picture" % device,
+			"%s / %s" % [menu_viewport.gui_get_focus_owner(), _booted_viewport.gui_get_focus_owner()])
+	await down.call()
+	check(menu_viewport.gui_get_focus_owner() in bottom_row.get_children(),
+			"%s: down from Play reaches the bottom row" % device, str(menu_viewport.gui_get_focus_owner()))
+	await up.call()
+	check(menu_viewport.gui_get_focus_owner() == play, "%s: ...and up comes back to Play" % device,
+			str(menu_viewport.gui_get_focus_owner()))
+	await accept.call()
+	check(menu.play_row.visible and menu_viewport.gui_get_focus_owner() == play,
+			"%s: accept presses Play, the submenu opens and Play keeps the focus" % device,
+			str(menu_viewport.gui_get_focus_owner()))
+	await down.call()
+	check(menu_viewport.gui_get_focus_owner() in menu.play_row.get_children(),
+			"%s: down from Play reaches the submenu below it" % device, str(menu_viewport.gui_get_focus_owner()))
+	await down.call()
+	check(menu_viewport.gui_get_focus_owner() in bottom_row.get_children(),
+			"%s: ...and down again the bottom row, in the column's order" % device,
+			str(menu_viewport.gui_get_focus_owner()))
+	await up.call()
+	check(menu_viewport.gui_get_focus_owner() in menu.play_row.get_children(),
+			"%s: up from the bottom row comes back into the submenu" % device,
+			str(menu_viewport.gui_get_focus_owner()))
+	var lefts := 0
+	while menu_viewport.gui_get_focus_owner() != menu.new_run_button and lefts < menu.play_row.get_child_count():
+		await left.call()
+		lefts += 1
+	check(lefts > 0 and menu_viewport.gui_get_focus_owner() == menu.new_run_button,
+			"%s: left walks the submenu to New Run" % device,
+			"%d lefts, on %s" % [lefts, menu_viewport.gui_get_focus_owner()])
+	await accept.call()
+	var picker := _the_deck_picker(_main)
+	check(picker != null and _booted_viewport.gui_get_focus_owner() == picker.rows.get_child(0).get_child(2),
+			"%s: accept on New Run opens the deck picker, the focus on its first Pick" % device,
+			str(_booted_viewport.gui_get_focus_owner()))
+	var map_ready : Array[bool] = [false]
+	_main.map_scene.controller.map_ready.connect(func() -> void: map_ready[0] = true, CONNECT_ONE_SHOT)
+	await accept.call()
+	var waited := 0.0
+	while (_main._current_focus != &"map" or _main._move_in_flight or not map_ready[0]) 			and waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	_container = _main.wall.get_node(^"%HudContainer")
+	await _wait_out_the_return()
+	check(_main._current_focus == &"map" and RunManager.run != null and map_ready[0]
+			and is_equal_approx(_container.slid_fraction(), 1.0),
+			"%s: accept on the Pick starts the run and lands on the map, its sidebar slid in" % device,
+			"%s ready %s slid %.3f" % [_main._current_focus, map_ready[0], _container.slid_fraction()])
+	check(menu_viewport.gui_get_focus_owner() == null,
+			"%s: ...where the menu, not the screen shown, takes no focus" % device,
+			str(menu_viewport.gui_get_focus_owner()))
+
+## A show left for the menu and resumed with keys alone lands with a key focus on its board, though the menu took the focus while it was shown.
+func test_a_show_resumed_through_the_menu_rests_a_key_focus_on_its_board() -> void:
+	await _start_game_fixture()
+	check(_game_viewport.gui_get_focus_owner() != null, "sanity: the dealt board holds the key focus",
+			str(_game_viewport.gui_get_focus_owner()))
+	await _through_the_menu_and_back_by_keys()
+	var owner := _game_viewport.gui_get_focus_owner()
+	check(owner != null and _play_area.is_ancestor_of(owner),
+			"the resumed show rests a key focus on its board, in the game's own viewport", str(owner))
+	await _end_main_fixture()
+
+## A show whose outcome is up, left for the menu and resumed with keys alone, lands with the key focus on the outcome's Continue, its board taking none.
+func test_a_resolved_show_resumed_through_the_menu_rests_the_key_focus_on_continue() -> void:
+	await _start_game_fixture()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	await _end_the_show_by_its_button(view)
+	await get_tree().process_frame
+	check(view.game.state.show_ended and _game_viewport.gui_get_focus_owner() == view._continue_button,
+			"sanity: the outcome is up, Continue holding the focus", str(_game_viewport.gui_get_focus_owner()))
+	await _through_the_menu_and_back_by_keys()
+	check(_game_viewport.gui_get_focus_owner() == view._continue_button,
+			"the resumed outcome rests the key focus on Continue, in the game's own viewport",
+			str(_game_viewport.gui_get_focus_owner()))
+	await _end_main_fixture()
+
+# wall_back's key until the menu is shown -- a focused board takes the first press to zoom out --
+# then wall_forward's twice back to the show, each move seen through before the next press.
+func _through_the_menu_and_back_by_keys() -> void:
+	for _press : int in range(4):
+		if _main._current_focus == &"start_menu": break
+		await _tap_key(KEY_BRACKETLEFT)
+		await _wait_out_the_move()
+		if _main._current_focus != &"start_menu": await _wait_out_the_return()
+	var menu_viewport : SubViewport = _main._pictures[&"start_menu"].viewport
+	check(_main._current_focus == &"start_menu"
+			and menu_viewport.gui_get_focus_owner() == _main.menu_scene.get_node(^"Content/Play"),
+			"sanity: wall_back's key reaches the menu, the focus on Play",
+			"%s / %s" % [_main._current_focus, menu_viewport.gui_get_focus_owner()])
+	for _press : int in range(2):
+		await _tap_key(KEY_BRACKETRIGHT)
+		await _wait_out_the_return()
+	check(_main._current_focus == &"game", "sanity: wall_forward's key twice resumes the show",
+			str(_main._current_focus))
 
 
 # ------------------------------------------------------------------ S5: publish and show
@@ -5997,7 +6136,7 @@ func _stand_the_map_between_two_pictures() -> void:
 # THE CHOOSER COMES BACK WITH THE SIDEBAR, fading in on its slide, which runs on after the move lands.
 func _wait_out_the_return() -> void:
 	await _wait_out_the_move()
-	if _container.slid_fraction() < 1.0: await _container.slide_settled
+	await _await_the_menus_slide(_container, 1.0)
 
 ## A window point halfway between the chooser's window and the space's left edge.
 func _beside_the_chooser(chooser: ChoiceViewer) -> Vector2:
@@ -7131,7 +7270,7 @@ func _click_a_listed_card(control: ControlCard) -> void:
 	press.pressed = true
 	control.gui_input.emit(press)
 
-## The menu's sidebar settled at `aim`, or the wait ran out: the menu decides its own slide, so one that never starts must fail a check rather than hang the suite.
+## The sidebar settled at `aim`, or the wait ran out: a slide that never starts must fail a check rather than hang the suite.
 func _await_the_menus_slide(container: HudContainer, aim: float) -> void:
 	var waited := 0.0
 	while not is_equal_approx(container.slid_fraction(), aim) and waited < CARD_CONTROL_TIMEOUT_SEC:
@@ -7585,6 +7724,9 @@ func test_a_return_to_the_menu_leaves_the_focus_to_the_pickers_viewer() -> void:
 		var owner := viewport.gui_get_focus_owner()
 		check(owner == null or not picker.is_ancestor_of(owner),
 				"back on the menu, no Pick behind the open viewer holds the focus", str(owner))
+		var menu_owner := main._pictures[&"start_menu"].viewport.gui_get_focus_owner()
+		check(menu_owner == null, "...and no menu button behind it holds the menu picture's focus",
+				str(menu_owner))
 		var runs : Array[int] = [0]
 		main.menu_scene.new_run_requested.connect(func(_cards: Array[CardData], _rules: Array[CardData]) -> void:
 				runs[0] += 1)
