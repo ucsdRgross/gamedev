@@ -1249,7 +1249,7 @@ the fire riding them), which keeps the dependency inside the one class that owns
   between sizes.
   - **⚠ Undo the Y FLIP when snapping.** `fx_local` quantizes and THEN negates y, so the art-space y
     lattice is `extent.y/2 - (j+0.5)·cell` while x is `(k+0.5)·cell - extent.x/2`. Those coincide only
-    when `extent/pixel` is a whole number, which it generally is not (67.20 at pixel 1.0 on a 40x54 card). Snapping y
+    when `extent/pixel` is a whole number, which it generally is not (the card's diagonal at pixel 1.0). Snapping y
     with the x formula lands between rows and the asymmetry survives — it did, on the first attempt.
   - **⚠ The ball-fire quad must snap on the BALL quad's lattice**, not its own: the two have different
     reaches and different `pixel`. `FxRequest.partner_reach` / `partner_pixel` carry it, pushed as
@@ -1633,11 +1633,11 @@ entry).
 `Shaders/outline.gdshader` rims every element of a card — face, rank/suit/stamp pips, art — with a
 1-unit 8-directional palette colour, and ABSORBED `Assets/color_picker.gdshader` (deleted): a
 Polygon2D has one material and the rank pip and card art need both the recolour and the rim. The card
-grew `38x50 -> 40x54` to make room. Design record: `design/card_size_outline/`.
+is `CardVisual.CARD_ART_SIZE` plus the rim (`CardVisual.CARD_SIZE`). Design record: `design/card_size_outline/`.
 
 **THE ONE RULE: the source frame maps to the polygon's INNER rect, and the polygon extends
 `CardOutline.WIDTH` past it on all four sides** — 8x8 art in a 10x10 polygon, 32x32 in 34x34, the face
-38x52 in 40x54. `CardOutline.frame_polygon` is the only supported way to UV such a polygon;
+`CARD_ART_SIZE` in `CARD_SIZE`. `CardOutline.frame_polygon` is the only supported way to UV such a polygon;
 `CardModifier.update_polygon_uv_frame` (unpadded) stays for PROPS, which get no outline at all.
 
 **Tuning** is `Shaders/Styles/outline_default.tres` (`OutlineStyle`, instance `CardOutline.STYLE`):

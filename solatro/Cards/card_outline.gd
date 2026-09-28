@@ -6,8 +6,8 @@ class_name CardOutline
 #REAL card, and nothing in this file needs a running game.
 
 #THE RULE: the source frame maps to the polygon's INNER rect, and the polygon extends WIDTH art
-#units past it on all four sides. 8x8 art in a 10x10 polygon, 32x32 in 34x34, and the card's face
-#38x52 in a 40x54 polygon. One rule, five clients, one shader.
+#units past it on all four sides: 8x8 art in a 10x10 polygon, 32x32 in 34x34, and the card's face
+#CardVisual.CARD_ART_SIZE in CardVisual.CARD_SIZE. One rule, five clients, one shader.
 
 #⚠ THIS IS A VARIANT OF CardModifier.update_polygon_uv_frame, NOT A REPLACEMENT FOR IT. That
 #function is the project's one definition of sheet geometry and it is SHARED with prop art, and
@@ -141,10 +141,10 @@ static func frame_polygon(poly : Polygon2D, sheet : Texture2D, h_frames : int, v
 
 #⚠ frame_polygon ALREADY PUSHES poly.position, which is correct for a real card and WRONG for
 #any tool that lays elements out on a grid. The alert band sweeps card space and exists only within
-#the card's own extent, +/-20 in x.
+#the card's own extent, half of CardVisual.CARD_SIZE.x either side.
 
 #So an atlas that leaves its layout coordinates in there sees the band on the handful of frames
-#whose grid position happens to fall inside +/-20 and on nothing else: measured on outline_atlas,
+#whose grid position happens to fall inside that extent and on nothing else: measured on outline_atlas,
 #exactly three frames glowed, the first pip of the rank, suit and stamp rows, each at x about 15.
 
 #A tool laying frames out must say which element each frame IS.

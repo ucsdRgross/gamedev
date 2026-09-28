@@ -44,7 +44,6 @@ func best_font_size() -> int:
 	return _calculate_best_font_size(custom_minimum_size)
 
 # Used where a GROUP of labels has to read as one set rather than each fitting its own box.
-
 ## Force one size on this label, overriding the autosize; -1 hands it back.
 func force_font_size(px: int) -> void:
 	if font_size_override == px: return

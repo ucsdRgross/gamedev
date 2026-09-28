@@ -47,12 +47,15 @@ extends Resource
 ## The glare band's palette entry.
 @export_range(0, 255, 1) var glare_color : int = 31
 
-#⚠ Card space, not element space: a band right for the card's 40-unit rim may barely register on
+#⚠ Card space, not element space: a band right for the card-wide rim may barely register on
 #a 10-unit pip, which sees only the slice crossing it. If it cannot serve both, the escape hatch is
 #a per-host thickness scale. Judge it on the atlas's assembled card, not the grid.
 
+#Both slider limits are CardVisual.CARD_SIZE.x and half of it, typed out because naming the
+#constant anywhere in this script is a cyclic reference: CardOutline preloads this style.
+
 ## Band thickness in CARD-SPACE art units.
-@export_range(0.5, 40.0, 0.25) var glare_thickness : float = 8.0
+@export_range(0.5, 54.0, 0.25) var glare_thickness : float = 8.0
 
 #⚠ IT FIXES A STRUCTURAL BLINK, NOT A TUNING ACCIDENT (owner). A card's side rims are VERTICAL
 #LINES, so the band's centre reaching that x lights the whole side at once and off again - a flash,
@@ -62,7 +65,7 @@ extends Resource
 #tapers instead of clipping. 0 is no buffer at all.
 
 ## How far from each SIDE the glare stops, in card-space units.
-@export_range(0.0, 20.0, 0.25) var glare_buffer : float = 4.0
+@export_range(0.0, 27.0, 0.25) var glare_buffer : float = 4.0
 
 @export_group("Throb")
 #Its own knob: a sweeping band and a pulsing rim are different cues with no reason to share a

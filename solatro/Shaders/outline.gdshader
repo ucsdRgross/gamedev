@@ -53,7 +53,7 @@ uniform float u_brighten = 1.0;
 // the alert against ONE coordinate and show one band. 1 texel = 1 art unit makes local -> card a
 // pure translation, pushed per polygon by `CardOutline`, so the band rides the art's texels.
 uniform vec2 u_card_offset = vec2(0.0);
-uniform vec2 u_card_extent = vec2(40.0, 54.0);
+uniform vec2 u_card_extent;
 
 // The alert kind, in `CardOutline.Alert`'s order: 0 none, 1 GLARE, 2 THROB, 3 SHIMMER. ⚠ NO `TIME`:
 // `u_alert_clock` is a PHASE in turns that `CardVisual._process` advances over a fraction of

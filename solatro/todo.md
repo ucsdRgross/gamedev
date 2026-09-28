@@ -595,7 +595,7 @@ them from git history without an owner ruling that patience is back.
 
 ## Card size + outline — landed, one thing open
 
-Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules and landmines:
+Card is `CardVisual.CARD_SIZE`; every element wears `Shaders/outline.gdshader`'s rim. Rules and landmines:
 **ARCHITECTURE_REVIEW §4j**. Design record: `design/card_size_outline/`. Tuning:
 `Shaders/Styles/outline_default.tres`, edited live on `tools/outline_atlas.tscn`.
 

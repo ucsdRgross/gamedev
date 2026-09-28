@@ -9,8 +9,8 @@ const CARD_ART_SIZE := Vector2(52, 52)
 ## The rim `Shaders/outline.gdshader` paints, in art units. Not a second opinion — `CardOutline` owns it.
 const ART_OUTLINE := CardOutline.WIDTH
 # ⚠ THE MASK AND THE DRAWN EDGE AGREE ONLY BECAUSE THE RIM EXACTLY FILLS THE POLYGON, AND NOTHING
-# ELSE IN THE CODE SAYS SO. Switch the outline off and the art shrinks to 38x52 while the
-# geometry-derived mask still says 40x54, rooting every flame one art unit off on all four sides.
+# ELSE IN THE CODE SAYS SO. Switch the outline off and the art shrinks to CARD_ART_SIZE while
+# the geometry-derived mask still says CARD_SIZE, rooting every flame one art unit off on all four sides.
 
 # ⚠ It is NOT a one-line "remove the outline": the 16 bones are AUTHORED in card_visual.tscn, so a
 # real removal is a scene edit plus a skin re-bake. This constant makes the shader and the mask
@@ -19,7 +19,7 @@ const ART_OUTLINE := CardOutline.WIDTH
 # ⚠ Do not read the mask from alpha instead. The rig is what DEFORMS, and alpha can describe the
 # shape at rest but not where it went when Arm_TopLeft swings out 26 %.
 
-## The DRAWN card: 40x54, stated as art + rim so the shader and the FX mask move together.
+## The DRAWN card, stated as art + rim so the shader and the FX mask move together.
 const CARD_SIZE := CARD_ART_SIZE + Vector2.ONE * ART_OUTLINE * 2.0
 # Stacks grow UPWARD, so the visible strip of a covered card is its BOTTOM band and that card's pip
 # row has to fit inside it. The Rank/Suit polygons sit at y = 18 with a +/-5 extent and the bottom

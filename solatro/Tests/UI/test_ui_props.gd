@@ -24,9 +24,9 @@ const WATCHDOG_SECS := 10.0
 func suite_name() -> String:
 	return "UI PROPS"
 
+#Runs before VISUAL LAYERS / E2E, which wait on it (shared CardEnvironment.CURRENT), so it excludes
+#them or deadlocks. See TestSuite.await_siblings_except and its DEADLOCK RULE.
 func _ready() -> void:
-	# Runs before VISUAL LAYERS / E2E (they wait on this — shared CardEnvironment.CURRENT), so
-	# exclude them to avoid a deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
 	await await_siblings_except(["VISUAL LAYERS", "GRID LAYOUT", "GRID VIEW", "SIDEBAR",
 			"DRAG PLACE", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ UI PROPS TEST PASS ============")
@@ -1018,17 +1018,15 @@ func test_status_and_description_surface() -> void:
 	check(text.contains(card.suit.get_str()), "the card description names the suit", text)
 	await cleanup(g, pa)
 
-# ==============================================================================
-# FULL VIEW SCORING PASS — a real GameView (real game_view.begin_prop_tick seam), real
-# starter deck (every card suited -> scored melds spawn props), driven like E2E's
-# win scenario but WITH the view attached. The scoring pass runs under a watchdog: a
-# prop-tick sync regression fails the check instead of hanging the suite.
-# The deck is FROZEN (TestDecks.seeded_deck, never Decks/deck.gd) and the seed is chosen so the
-# deal scores prop-spawning melds.
-# ⚠ THE PASS IS DRIVEN BY A PLACEMENT, NOT BY A SUBMIT. Scoring is no longer an act that
-# banks a performed board -- a line scores the instant a placement completes it, so the
-# fifth card into row 0 is what makes the props fly.
-# ==============================================================================
+#A real GameView scoring pass under a watchdog, so a prop-tick sync regression fails instead of
+#hanging. ⚠ DRIVEN BY A PLACEMENT: a line scores the instant a placement completes it, so the fifth
+#card into row 0 makes the props fly.
+
+#Every hoop/knife holds its anchor row's y through the pass (score labels re-lay the board, where
+#the live diagonal drift appeared), and every spawned kind enters the viewport at least once.
+
+#⚠ THE WATCHER STARTS FIRST, the placements after: a pass resolving inside one frame would finish
+#before the watcher polled, and the test would report "no props" about a pass it never saw.
 func test_game_view_scoring_pass_with_props() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -1060,15 +1058,6 @@ func test_game_view_scoring_pass_with_props() -> void:
 			break
 	check(focusable != null, "the dealt board has a focusable card control")
 	if focusable: focusable.grab_focus()
-	# fire the submit WITHOUT awaiting it, then poll EVERY FRAME: watchdog + prop high-water
-	# mark + the live-seam guards (owner reports 2026-07-13): every hoop/knife must hold its
-	# anchor row's y through the REAL submit — score labels re-lay the board every banked pass,
-	# which is exactly where the live diagonal drift appeared — and every kind that spawns must
-	# enter the visible viewport at least once (hoops reportedly never show in the real view).
-	# ⚠ THE WATCHER GOES FIRST, and the placements are driven in the foreground after it. The
-	# other way round -- start the action, then await the watcher -- lets a scoring pass that
-	# resolves inside one frame finish before the watcher has polled even once, and the test
-	# then reports "no props" about a pass it never actually looked at.
 	var finished : Array[bool] = [false]
 	var spawned_kinds : Dictionary[String, bool] = {}
 	var visible_kinds : Dictionary[String, bool] = {}
@@ -1213,7 +1202,7 @@ func _suited(rank: int, suit: PipSuit) -> CardData:
 	c.stage = CardData.Stage.PLAY
 	return c
 
-# ⚠ NOTHING ASSERTED THAT A FULL-WIDTH BOARD FITS THE WINDOW. The 40x54 card pushed a 7-column
+# ⚠ NOTHING ASSERTED THAT A FULL-WIDTH BOARD FITS THE WINDOW. A wider card pushed a 7-column
 # board 35 px past a 1152 px viewport, and the way that surfaced was a FIRE PROP being invisible: a
 # prop-visibility check reporting a layout fact, three steps from the cause.
 

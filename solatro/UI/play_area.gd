@@ -3487,8 +3487,8 @@ func _create_label_stack() -> Control:
 #cell block is authoritative, so a row gutter is only ever as tall as its cell row really is and it
 #tracks an easing row. Column stacks stay levels-sized: a column's width never varies by data.
 
-#Row labels expand to fill the stack's already-authoritative height, never grow it, so their text
-#has real room to sit at the bottom, level with the pip row on a card's bottom edge.
+#Each label's box is one card wide and one depth pitch tall, and a row stack is held to its cell
+#row's height, so row numbers sit level with the pip row on a card's bottom edge.
 func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNumber],
 		gi: int, index: int, levels: int, is_row: bool) -> void:
 	if not stack: return

@@ -65,7 +65,7 @@ const int WEDGES = 32;
 const int WEDGE_CANDIDATES = 8;
 
 uniform vec2 u_extent = vec2(64.0);   // the quad's size in art units; UV maps across exactly this
-uniform vec2 u_body = vec2(40.0, 54.0);
+uniform vec2 u_body;
 uniform vec2 u_inner = vec2(0.0);     // the largest box that fits INSIDE the silhouette
 uniform float u_shape_rot = 0.0;
 uniform vec2 u_poly[POLY];
@@ -237,7 +237,7 @@ void fragment() {
 	//
 	// So the two sides use two spans. Outside, the layer's own radius (the multi-exposure).
 	// Inside, `sink` — which is also the INNER LIFT, a rim of light hugging the art's own
-	// edge rather than a wash filling the whole card. A card is 40x54 art units and sink ships at 4,
+	// edge rather than a wash filling the whole card. A card is CardVisual.CARD_SIZE art units and sink ships at 4,
 	// so the lift is a border, not a fill.
 	float inner_span = max(u_sink, 1e-4);
 
