@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P72, P74, P75, P58a and P58b done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
+**State:** P1-P72, P74, P75 and P58a-c done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
 by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P58b-7, 3eea92a6): `ALL 51 SUITES: 8100 CHECKS PASSED`, ~15 min with
 `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. P73 built and parked
-on the local branch p73-wip. Pending, in order: the square cards' tools (P58c), P76, P73, P64b part 3, P71, P66, the review
+on the local branch p73-wip. Pending, in order: P76, P73, P64b part 3, P71, P66, the review
 round (P58d), the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -514,8 +514,9 @@ Finished rows carry only their commits: each commit message holds that step's me
   files_touched: [solatro/Tools/fx_editor.gd, solatro/Tools/formation_editor.gd, solatro/Tools/outline_atlas.gd, solatro/Tools/spotlight_tool.gd, solatro/Shaders/fire.gdshader, solatro/Shaders/outline.gdshader, solatro/Shaders/glow.gdshader]
   verification_command: 'each tool shot by an in-repo shot scene; by eye; the owner''s visual review'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
+  status: done
+  commits: [0eae10c0, 500ec38b]
+  evidence: 'P58c-1 measured three of the four fixed by P58b (fx fire corner, atlas glare, spotlight bevel); P58c-2 the formation editor''s outline + the knife rescale.'
   notes: 'Owner: "common issue appears to be hardcoded card size across shaders with old size" - likely fixed by P58b''s one value; verify each tool afterwards and fix what remains (the spotlight glow must follow the card polygon''s bevel, not its bounding box). No mocks in tools (CLAUDE.md rule 9): the shots host the real scenes. Since P58b-2 the rig binds a type''s drawn extent once, in CardVisual._ready - a tool that swaps data on a live card (fx_editor, outline_atlas: check) keeps the old type''s extent (traced, not measured). outline_atlas._non_empty (~357) still reads alpha > 0.5 (no shipped result changes).'
 - id: P58d
   description: The owner''s visual review of the square-card pass - every in-game view the card shape touches AND the four tools, before/after pairs (owner: "a: yes, all of them").
@@ -606,10 +607,10 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - GRID VIEW "3 grids, grid 1 reached by a click on it: it is centred in the board's window" (block centre 970.72 vs window 971.87) and its "...Entrance is drawn under it" follow-on: 1 of 2 overseer gates on the P67 tree (P67 touches only the map picture). Measure before naming a cause.
 - FOR P64b-2b: Wall.initial_layout (wall.gd ~81-82) restates the map's square (design_size from the default's height, keep_aspect) beside layout_default.tres, and nothing compares them (Fable review of P67) - add the comparison to test_layout_is_loaded_from_disk_not_hardcoded or delete the two lines (only the editor reseed and that test reach initial_layout). And test_sidebar's _click_outside_the_map_viewer pushes into _map_viewport - it breaks when 2b moves the map viewers to the overlay.
 - Scripts/Map/world_map_controller.gd _unhandled_input carries a typed-in wheel zoom factor 1.15 (a tunable literal, found by P64b-2b round 3).
-- UI VIEWERS "a later arrow never drags the focus back to the first card": 1 of 1 implementer nine-suite runs on the P64b-2b tree (WALL FOCUS booting Main in the same window), 0 of 4 alone.
+- UI VIEWERS "a later arrow never drags the focus back to the first card": 1 of 1 overseer gates on the P58c-2 tree, 1 of 1 on P58b-B's; 1 of 1 implementer nine-suite runs on the P64b-2b tree (WALL FOCUS booting Main in the same window), 0 of 4 alone.
 - FOR /simplify AT THE CLOSE: solatro/UI/autosize_label.tscn, big_number_label.tscn and map_hover_panel.tscn are instantiated by no production scene (map_hover_panel only by test_leak_canary; map.gd calls its static get_info) - Fable reviews of P58b-5 and P58b-7's question.
 - sidebar_snapshot (not a suite) sometimes leaks at quit - "631 ObjectDB instances leaked, 27 resources still in use", --verbose: 398 Resource (CardData, game scripts), 184 WeakRef, 3 GDScriptFunctionState - it quit()s while the map token is still travelling (map_after_travel ... moving=true): 3 of 7 runs on the P72 round-2 tree, 0 of 3 with HEAD's DeckViewer, 0 of 2 on round 1. Same shape as the quit-mid-walk chooser leak above. Measure before naming a cause.
-- SIDEBAR test_the_wall_view_shows_one_surface_colour_behind_the_pictures "sanity: the move out to the wall showed the wall on enough frames" (3 of 7 / 4 of 9 frames); 1 of 1 overseer gates on the P58b-6 tree (4 of 11 at 600x1000): 2 implementer filtered runs (2b, P72); a wall-clock frame count on a slow box.
+- SIDEBAR test_the_wall_view_shows_one_surface_colour_behind_the_pictures "sanity: the move out to the wall showed the wall on enough frames" (3 of 7 / 4 of 9 frames); 1 of 1 overseer gates on the P58b-6 tree (4 of 11 at 600x1000), 1 of 1 on the P58c-2 tree (4 of 9 at 1280x720): 2 implementer filtered runs (2b, P72); a wall-clock frame count on a slow box.
 - Hang risk, traced by the P72 review: test_sidebar.gd has six bare `await RenderingServer.frame_post_draw` with no watchdog (~1475, ~1496 inside a bounded while whose bound cannot help, ~1512, ~4645, ~5770, ~5771); one bare await stalled a SIDEBAR run once on the P72 tree (1 of 4 implementer runs; that row now uses TestSuite.await_drawn_frames). Move them onto await_drawn_frames.
 - Latent, traced by the P72 review: WallOverlay._input (wall_overlay.gd ~84-89) treats every visible Control child under the pointer as a cancel target; the deck picker is now a full-window overlay child, so a right-click over its Dim is routed into the menu picture behind it (nothing on the menu reads the second button today).
 - SIDEBAR "the map shows on the window's bottom" (_check_the_map_shows_around_the_chooser, test_sidebar ~5858: (0.1294, 0.1059, 0.1216) at (800, 656)): 1 of 2 implementer filtered runs on the P73 tree (P73 touches only the menu). Measure before naming a cause.
@@ -633,7 +634,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 ## Next up
 (Thirty-sixth round: P74/P75, then the square cards; a NEW task goes to the END of this list.)
 1. (P75, P58a and P58b done.)
-2. P58c-1 then P58c's fixes: the four tool bugs - the brief measures each on HEAD with in-repo shot scenes of the real tools (several may already be fixed by P58b-2 / P58b-6) and reports FIXED / STILL THERE with the writer.
+2. (P58c done - the square-card group has landed; its broad Fable pass runs with P76.)
 3. P76 (the intermittents past their budget - thirty-seventh round), then a visual review round for the square-card group (a round per group of related steps).
 4. P73 from the local branch `p73-wip` (8a134394 on a8bd4f31; LOCAL ONLY - on another machine it does not exist unless pushed): `git checkout p73-wip -- solatro/Levels/menu.gd solatro/Levels/menu.tscn solatro/Tests/Wall/test_sidebar.gd solatro/design/sidebar/NAMES.md` then `git reset -q -- <the same paths>`; its two red gates are unexplained (the per-slide re-fit measured innocent; the window may have been minimized - fixed by P74) - gate it and commit on green.
 5. P64b part 3 (Tab and ui_cancel reach the wall while the chooser is up; the "FOR P64b part 3" Open-bugs line), P71 (possible cards as icons), P66 (re-check the 600x1000 Travel hang first).
