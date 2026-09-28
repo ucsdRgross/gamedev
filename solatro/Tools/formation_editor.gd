@@ -5,6 +5,8 @@ extends Node2D
 
 ## The unscaled card footprint the formation points live in.
 const CARD := CardVisual.CARD_SIZE
+## The stand-in card's real outline at rest, centred on the card, in the same space.
+static var _outline : PackedVector2Array = CardVisual.star_outline(CARD, 0.0)
 
 enum Kind { HOOP, KNIFE, BALL, FIRE, FIREWORK }
 enum Pattern { GRID, RING, SCATTER, LINE }
@@ -200,7 +202,8 @@ func _generate() -> void:
 		if gen_jitter > 0.0:
 			out[i] += Vector2(rng.randf_range(-gen_jitter, gen_jitter),
 					rng.randf_range(-gen_jitter, gen_jitter))
-		out[i] = out[i].clamp(-CARD * 0.5, Vector2(CARD.x * 0.5, y_max))
+		out[i] = _into_outline(out[i])
+		out[i].y = minf(out[i].y, y_max)
 	points = out
 
 ## Bottom of the valid editing area: the top-anchored visible strip for a spread formation, else the card.
@@ -208,6 +211,14 @@ func _edit_y_max() -> float:
 	if spread_by_separation:
 		return -CARD.y * 0.5 + minf(stack_separation, CARD.y)
 	return CARD.y * 0.5
+
+func _into_outline(p: Vector2) -> Vector2:
+	if Geometry2D.is_point_in_polygon(p, _outline): return p
+	var best := _outline[0]
+	for i : int in _outline.size():
+		var q := Geometry2D.get_closest_point_to_segment(p, _outline[i], _outline[(i + 1) % _outline.size()])
+		if q.distance_squared_to(p) < best.distance_squared_to(p): best = q
+	return best
 
 func _column_origin(col: int) -> Vector2:
 	return Vector2(float(col) * column_pitch * preview_scale, 0.0)
@@ -266,18 +277,19 @@ func _make_prop() -> PropVisual:
 # outside the valid edit area.
 func _draw() -> void:
 	if not Engine.is_editor_hint(): return
-	var half := CARD * 0.5 * preview_scale
+	var card := Transform2D.IDENTITY.scaled(Vector2.ONE * preview_scale)
 	for col : int in _preview_columns:
 		var origin := _column_origin(col)
 		for j : int in range(stack_cards - 1, -1, -1):
-			var top_left := origin - half + Vector2(0.0, float(j) * stack_separation * preview_scale)
+			card.origin = origin + Vector2(0.0, float(j) * stack_separation * preview_scale)
 			var alpha := 0.7 if j == 0 else 0.25
-			draw_rect(Rect2(top_left, CARD * preview_scale), Color(0.4, 0.8, 1.0, alpha), false, 1.0)
+			var ring := card * _outline
+			ring.append(ring[0])
+			draw_polyline(ring, Color(0.4, 0.8, 1.0, alpha), 1.0)
 	var font := ThemeDB.fallback_font
 	var y_max := _edit_y_max()
 	for i : int in points.size():
-		var inside : bool = absf(points[i].x) <= CARD.x * 0.5 \
-				and points[i].y >= -CARD.y * 0.5 and points[i].y <= y_max
+		var inside : bool = Geometry2D.is_point_in_polygon(points[i], _outline) and points[i].y <= y_max
 		var p := points[i] * preview_scale
 		draw_circle(p, 2.0 * preview_scale, Color(1.0, 0.6, 0.2) if inside else Color.RED)
 		draw_string(font, p + Vector2(3.0, -3.0) * preview_scale, str(i),

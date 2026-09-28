@@ -7,7 +7,7 @@
 script = ExtResource("1_53yk6")
 mode = 1
 spread_by_separation = true
-points = PackedVector2Array(-8.228269, 14.25768, 5.589, 19.49645, 9.12957, 62.398106, 7.2669373, 73.25368, -14.865576, 25.253075, -12.386, 70.78928)
+points = PackedVector2Array(-11.1082, 14.2577, 7.54515, 19.4964, 12.3249, 62.3981, 9.81036, 73.2537, -20.0685, 25.2531, -16.7211, 70.7893)
 
 [resource]
 script = ExtResource("2_bvvus")
