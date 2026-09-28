@@ -121,8 +121,9 @@ A green suite is the weakest evidence there is. Every test below passed review w
     there has proven the harness's geometry; the real window differs by its content scale. For a
     size, scale or layout claim, assert it at a real window size through the root viewport too, or
     state in the row that it is harness-scale only - and cover the real window with a shot.
-    ⚠ A suite cannot resize the OS window: the full gate did not grant `window_set_size`, and every
-    suite shares that window. Assert at the gate window's own size; other sizes are shots.
+    ⚠ A suite inside the gate's shared run cannot resize the OS window: the full gate did not grant
+    `window_set_size`, and every suite shares that window. Assert at the gate window's own size;
+    other sizes are shots (a standalone shot scene owns its window and may size it).
 
 **The rule that catches every one: prove every new test red-then-green** — neutralise the
 behaviour, watch the test fail, restore it, watch it pass, report both — and **compare PER-SUITE

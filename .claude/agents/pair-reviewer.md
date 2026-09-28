@@ -73,4 +73,5 @@ NOTHING FOUND IN: <what you read carefully and found clean>
 
 ## Before you report
 
-Run every command in the foreground and leave nothing running: no background shell, no Godot, no watcher. Measured: a reviewer's `cat > file` with no input waited 9 hours after it reported.
+Run every command in the foreground and leave no background shell or watcher running
+(Godot: CLAUDE.md's PID rule; why: /plan-run Interruptions).
