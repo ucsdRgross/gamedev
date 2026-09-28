@@ -8,7 +8,6 @@ const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const MAIN_SCENE := preload("res://Levels/main.tscn")
 const MAP_SCENE := preload("res://Levels/map.tscn")
-const MENU_SCENE := preload("res://Levels/menu.tscn")
 
 
 ## Higher than a real deck can score in a handful of placements, so a test about something else never trips the goal's own automatic end.
@@ -82,8 +81,9 @@ func _ready() -> void:
 	await test_a_zoom_stays_through_a_visit_without_a_travel()
 	await test_no_frame_is_blended_across_a_return_to_the_fit()
 	await test_menus_buttons_lie_outside_the_container_and_inside_the_window()
-	await test_menus_scale_is_uniform_and_keeps_each_buttons_authored_aspect()
 	await test_menus_title_and_button_row_centre_on_the_remaining_space()
+	await test_every_menu_control_draws_at_the_ui_size_inside_the_window_and_none_overlaps()
+	await test_the_menus_bottom_row_wraps_beside_the_slid_in_sidebar()
 	behavior_section("S5: A HIGHLIGHT PUBLISHES AND THE CONTAINER SHOWS")
 	await test_a_highlight_opens_the_description()
 	await test_the_description_titles_a_card_and_sizes_its_effect_names()
@@ -2119,8 +2119,9 @@ func _wheel_event(button: MouseButton) -> InputEventMouseButton:
 	event.pressed = true
 	return event
 
-const _MENU_BUTTON_NAMES : Array[StringName] = [
-	&"Profile", &"Play", &"Options", &"Quit", &"Collection", &"Language",
+const _MENU_BUTTON_PATHS : Array[NodePath] = [
+	^"Content/Main/Profile", ^"Content/Play", ^"Content/Main/Options", ^"Content/Main/Quit",
+	^"Content/Main/Collection", ^"Content/Main/Language",
 ]
 
 # Both a portrait (top-case) and an ultrawide (side-case) window, plus the project's own 16:9
@@ -2131,8 +2132,8 @@ const _MENU_TEST_WINDOW_SIZES : Array[Vector2i] = [
 
 func _menu_buttons(main_menu: Menu) -> Array[Button]:
 	var buttons : Array[Button] = []
-	for button_name : StringName in _MENU_BUTTON_NAMES:
-		buttons.append(main_menu.get_node(NodePath("Main/%s" % button_name)) as Button)
+	for path : NodePath in _MENU_BUTTON_PATHS:
+		buttons.append(main_menu.get_node(path) as Button)
 	return buttons
 
 # Boots a real `Main` inside a `SubViewport` sized to `size`; returns `[viewport, main]` so the
@@ -2175,34 +2176,6 @@ func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> voi
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
 
-# Any inset scale is UNIFORM (one factor on both axes): a button never stretches or squashes
-# relative to its own authored shape, so its lettering is never condensed.
-func test_menus_scale_is_uniform_and_keeps_each_buttons_authored_aspect() -> void:
-	backup_real_save(suite_tag())
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var booted := await _boot_main_at(Vector2i(1280, 720))
-	var viewport : SubViewport = booted[0]
-	var main : Main = booted[1]
-	var main_menu : Menu = main.menu_scene
-	var authored_menu : Menu = MENU_SCENE.instantiate()
-	for button_name : StringName in _MENU_BUTTON_NAMES:
-		var live := main_menu.get_node(NodePath("Main/%s" % button_name)) as Button
-		var authored := authored_menu.get_node(NodePath("Main/%s" % button_name)) as Button
-		var authored_aspect := authored.size.aspect()
-		var live_aspect := live.get_global_rect().size.aspect()
-		check(is_equal_approx(live_aspect, authored_aspect) \
-					or absf(live_aspect - authored_aspect) <= 0.01 * authored_aspect,
-				"%s keeps its authored aspect (uniform scale)" % button_name,
-				"authored %.4f live %.4f" % [authored_aspect, live_aspect])
-	authored_menu.free()
-	await _free_booted_main(viewport, main)
-	RunManager._shutdown_saver()
-	RunManager.clear_save()
-	restore_real_save(suite_tag())
-	RunManager.run = prev_run
-	Main.save_info = prev_save_info
-
 # Q27: the picture is centred in the space beside the container, not merely inset from one edge --
 # the title moves with the rest of the menu. The container narrows one axis (x on the side case, y
 # on the top case); that is the only axis its centring is testable on, so that is the one checked.
@@ -2222,7 +2195,7 @@ func test_menus_title_and_button_row_centre_on_the_remaining_space() -> void:
 		var remaining := wp.local_rect_beside(window, band, top)
 		var remaining_centre := remaining.get_center()
 		var main_menu : Menu = main.menu_scene
-		var title : Label = main_menu.get_node(^"Label")
+		var title : Label = main_menu.get_node(^"Content/Label")
 		var buttons := _menu_buttons(main_menu)
 		var content := title.get_global_rect()
 		for button : Button in buttons: content = content.merge(button.get_global_rect())
@@ -2238,6 +2211,83 @@ func test_menus_title_and_button_row_centre_on_the_remaining_space() -> void:
 	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
+
+## Every control in the menu's column draws at the window's UI scale, whatever the picture's cover scale, wholly on screen, and the Play submenu sits below Play, never over it; harness-scale only (the fixture's content scale is 1), the real window is shot.
+func test_every_menu_control_draws_at_the_ui_size_inside_the_window_and_none_overlaps() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	for size : Vector2i in [Vector2i(1280, 720), Vector2i(600, 1000), Vector2i(1920, 1080)] as Array[Vector2i]:
+		var booted := await _boot_main_at(size)
+		var viewport : SubViewport = booted[0]
+		var main : Main = booted[1]
+		(main.menu_scene.get_node(^"Content/Play") as Button).pressed.emit()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var ui := viewport.get_final_transform().get_scale().x
+		var drawn : Array[Rect2] = []
+		for node : Node in main.menu_scene.find_children("*", "Control", true, false):
+			var control := node as Control
+			if not (control is Button or control is Label) or not control.is_visible_in_tree():
+				continue
+			var rect := _menu_control_in_window(viewport, main._pictures[&"start_menu"], control)
+			var drawn_scale := rect.size / control.size
+			check(absf(drawn_scale.x - ui) <= 0.001 * ui and absf(drawn_scale.y - ui) <= 0.001 * ui,
+					"%s draws at the UI scale across and down at %s" % [control.name, size],
+					"%s px for %s at UI %.4f" % [rect.size, control.size, ui])
+			check(Rect2(Vector2.ZERO, Vector2(size)).grow(1.0).encloses(rect),
+					"%s lies inside the window at %s" % [control.name, size], str(rect))
+			for other : Rect2 in drawn:
+				check(not rect.grow(-0.5).intersects(other),
+						"%s overlaps no other menu control at %s" % [control.name, size], "%s vs %s" % [rect, other])
+			drawn.append(rect)
+		var run_row := main.menu_scene.play_row
+		var bottom_row : Container = main.menu_scene.get_node(^"Content/Main")
+		check(drawn.size() == 2 + run_row.get_child_count() + bottom_row.get_child_count(),
+				"sanity: the title, Play and both rows' buttons were all measured at %s" % size, str(drawn.size()))
+		var play := _menu_control_in_window(viewport, main._pictures[&"start_menu"],
+				main.menu_scene.get_node(^"Content/Play") as Control)
+		var submenu := _menu_control_in_window(viewport, main._pictures[&"start_menu"], run_row)
+		check(submenu.position.y >= play.end.y - 0.5, "the Play submenu draws below Play at %s" % size,
+				"submenu top %.1f, Play bottom %.1f" % [submenu.position.y, play.end.y])
+		await _free_booted_main(viewport, main)
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
+## The picker slides the sidebar in beside the menu (the side case), leaving less width than the bottom row needs on one line, so the row wraps and stays beside the sidebar; harness-scale only, like the row above.
+func test_the_menus_bottom_row_wraps_beside_the_slid_in_sidebar() -> void:
+	var opened := await _open_the_deck_picker(Vector2i(1280, 720))
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var window := Vector2(viewport.size)
+	check(not HudContainer.container_is_top(window, SettingsManager.settings),
+			"sanity: 1280x720 is the side case")
+	var row : Container = main.menu_scene.get_node(^"Content/Main")
+	var one_line := row.get_theme_constant(&"h_separation") * (row.get_child_count() - 1.0)
+	var rows_y : Dictionary[float, bool] = {}
+	for button : Button in row.get_children():
+		one_line += button.get_combined_minimum_size().x
+		rows_y[button.position.y] = true
+	check(one_line > row.size.x, "sanity: the row does not fit one line beside the sidebar",
+			"%.1f vs %.1f" % [one_line, row.size.x])
+	check(rows_y.size() > 1, "the bottom row wraps onto more than one line", str(rows_y.keys()))
+	var beside := viewport.get_final_transform() * main.hud_container.rect_beside(null)
+	for button : Button in row.get_children():
+		var rect := _menu_control_in_window(viewport, main._pictures[&"start_menu"], button)
+		check(beside.grow(1.0).encloses(rect),
+				"%s lies beside the slid-in sidebar, inside the window" % button.name, "%s in %s" % [rect, beside])
+	await _end_booted_fixture(viewport, main)
+
+## Where `control`, drawn in the menu picture's own canvas, lands in `viewport`'s window pixels.
+func _menu_control_in_window(viewport: SubViewport, picture: WallPicture, control: Control) -> Rect2:
+	var canvas := control.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, control.size)
+	var texels := Vector2(picture.viewport.size) / control.get_viewport_rect().size
+	var start := viewport.get_final_transform() * _picture_point_in_window(picture, canvas.position * texels)
+	var end := viewport.get_final_transform() * _picture_point_in_window(picture, canvas.end * texels)
+	return Rect2(start, end - start)
 
 
 # ------------------------------------------------------------------ S5: publish and show
@@ -7265,7 +7315,7 @@ func _the_deck_picker(main: Main) -> DeckPicker:
 # The player's route to the picker: Play unfolds the run row, New Run opens the picker. The row
 # must be showing, since closing the picker hands the focus back to New Run.
 func _press_new_run(main: Main) -> void:
-	(main.menu_scene.get_node(^"Main/Play") as Button).pressed.emit()
+	(main.menu_scene.get_node(^"Content/Play") as Button).pressed.emit()
 	main.menu_scene.new_run_button.pressed.emit()
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -7434,7 +7484,7 @@ func test_the_menu_behind_the_deck_picker_answers_no_pointer() -> void:
 	var picker : DeckPicker = opened[2]
 	check(picker != null, "sanity: New Run opened the deck picker")
 	if picker != null:
-		var profile := main.menu_scene.get_node(^"Main/Profile") as Button
+		var profile := main.menu_scene.get_node(^"Content/Main/Profile") as Button
 		var at := _picture_point_in_window(main._pictures[&"start_menu"],
 				profile.get_global_rect().get_center())
 		var presses : Array[int] = [0]

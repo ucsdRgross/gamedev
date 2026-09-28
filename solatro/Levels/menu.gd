@@ -10,11 +10,10 @@ signal continue_requested
 ## The card under the highlight in a viewer opened over this menu, relayed to the sidebar exactly as the game screen relays its board's.
 signal info_requested(entry: InfoEntry)
 
-@onready var play_row: HBoxContainer = $Play
-@onready var new_run_button: Button = get_node("Play/New Run") as Button
-@onready var continue_button: Button = $Play/Continue
-@onready var _main_control: Control = $Main
-@onready var _title: Label = $Label
+@onready var play_row: HFlowContainer = $Content/Run
+@onready var new_run_button: Button = get_node("Content/Run/New Run") as Button
+@onready var continue_button: Button = $Content/Run/Continue
+@onready var _content: VBoxContainer = $Content
 
 # Set by `Main` before this screen's picture is built, the same hand-over `Map.hud_container` gets.
 # A standalone fixture with no `Main` (`Tools/wall_editor.gd`'s preview) leaves it null and gets a
@@ -26,53 +25,24 @@ var hud_container : HudContainer = null
 # own space. Null only for `Tools/wall_editor.gd`'s preview, whose fallback `hud_container` already lives there.
 var wall_picture : WallPicture = null
 
-# Each content node's own place on the design canvas, captured once before any inset scale --
-# `_fit_beside_container()` re-derives every node's position from these, never from the node's
-# own (already-scaled) `.position`, or a second inset would compound onto the first.
-var _authored_positions : Dictionary[Control, Vector2] = {}
-
-# The menu's own authored content bounds -- title, buttons and the run row -- captured once, the
-# same way `_authored_positions` is: what actually has to fit beside the container, not the
-# window's own empty margin around it.
-var _design_rect : Rect2
-
 func _ready() -> void:
 	hud_container = HudContainer.ensure(hud_container, self)
 	new_run_button.pressed.connect(_on_new_run_pressed)
 	continue_button.pressed.connect(continue_requested.emit)
 	refresh_continue()
-	for content : Control in [_title, _main_control, play_row]:
-		_authored_positions[content] = content.position
-	_design_rect = _content_bounds()
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed,
 			_apply_container_inset)
 	_apply_container_inset()
 
-# The union of every button under `Main`, the title and the run row -- `_main_control` itself
-# fills the whole window (its authored anchors), so its own rect cannot stand in for it.
-func _content_bounds() -> Rect2:
-	var bounds := Rect2(_title.position, _title.size)
-	bounds = bounds.merge(Rect2(play_row.position, play_row.size))
-	for button : Button in _main_control.get_children():
-		bounds = bounds.merge(Rect2(button.position, button.size))
-	return bounds
-
-# The sidebar is always visible: the whole menu (title included) is centred in the space beside
-# `container_rect()`. Any scale is UNIFORM and only shrinks -- never distorts a glyph or a button --
-# so it only kicks in once the design content would not otherwise fit beside the container.
+# The column fills the space beside the sidebar as shown, at exactly the UI scale: the picture draws
+# this canvas at its cover scale, so the column undoes it, and a row too wide for the space wraps.
 func _apply_container_inset() -> void:
-	_fit_beside_container(hud_container.rect_beside(wall_picture))
-
-# Centres `_design_rect` inside `remaining` (already in this menu's own picture space), shrinking
-# -- never distorting -- only if it would not otherwise fit.
-func _fit_beside_container(remaining: Rect2) -> void:
-	var factor := minf(1.0, minf(remaining.size.x / _design_rect.size.x,
-			remaining.size.y / _design_rect.size.y))
-	var translation := remaining.position + (remaining.size - _design_rect.size * factor) / 2.0 \
-			- _design_rect.position * factor
-	for content : Control in [_title, _main_control, play_row]:
-		content.scale = Vector2.ONE * factor
-		content.position = _authored_positions[content] * factor + translation
+	var remaining := hud_container.rect_beside(wall_picture)
+	var ui_per_canvas := 1.0 / WallPicture.cover_scale(get_viewport_rect().size,
+			hud_container.get_viewport().get_visible_rect().size)
+	_content.scale = Vector2.ONE * ui_per_canvas
+	_content.position = remaining.position
+	_content.size = remaining.size / ui_per_canvas
 
 func _on_play_pressed() -> void:
 	play_row.visible = not play_row.visible
