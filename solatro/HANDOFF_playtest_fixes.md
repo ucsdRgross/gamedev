@@ -453,8 +453,8 @@ Finished rows carry only their commits: each commit message holds that step's me
 - id: P76
   description: The listed intermittents already past the three-failure budget become fixes (thirty-seventh round, queued right after the square cards) - PLAN VISUALS TP-92 (a wall-clock stagger row, ~1 gate in 3), SIDEBAR test_the_wall_view_shows_one_surface_colour_behind_the_pictures's frame-count sanity (a full-image readback per frame; ~4-5 informative frames against >4), UI VIEWERS "a later arrow never drags the focus back to the first card" (a focus race with another suite's Main in the same window). One fix at a time, each MEASURED first (the Open-bugs lines carry the counts and leads); a row that measures a wall-clock quantity is made robust to frame rate or re-pointed to what the player sees, never loosened.
   status: in_progress
-  commits: [2b6804de]
-  progress: 'P76a TP-92 DONE (the cascade dealt early - a product defect; the rows on the frame clock). Next P76b the wall-view frame-count sanity, then P76c the UI VIEWERS later-arrow.'
+  commits: [2b6804de, 763dac1f]
+  progress: 'P76a TP-92 DONE (the cascade dealt early - a product defect; the rows on the frame clock). P76b DONE (763dac1f, the sanity was starved by the test''s own per-pixel classification). Next P76c the UI VIEWERS later-arrow (and its sibling test_pack_click_selects).'
 - id: P58e
   description: The square-card group's broad Fable review, its findings (queued right after P76, ahead of P73 - the group's own follow-ups, and P73 touches the same test file).
   status: pending
