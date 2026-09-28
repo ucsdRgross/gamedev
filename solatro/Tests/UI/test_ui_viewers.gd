@@ -20,6 +20,7 @@ func suite_name() -> String:
 func _ready() -> void:
 	TestLog.line("============ UI VIEWERS TEST PASS ============")
 	check_all_tests_registered()
+	_focus_window = _open_focus_window()
 	behavior_section("VIEWER & CARD RENDERING REGRESSIONS")
 	await test_deck_viewer_singleton()
 	await test_control_card_focus()
@@ -51,7 +52,22 @@ func _ready() -> void:
 	behavior_section("A VIEWER SPACES ITS CARDS AS THE BOARD DOES, IN THE PLAYER'S WINDOW")
 	await test_the_viewers_gap_is_the_boards_at_their_card_scale()
 	await test_the_deck_viewers_list_is_whole_columns_centred()
+	_focus_window.queue_free()
 	finish()
+
+## The window the rows that read a focus across a frame host their cards in.
+var _focus_window : Window = null
+
+# GUI focus is one per WINDOW: a grab in any viewport of the root window, a SubViewport-booted Main
+# of a suite running alongside included, clears every other focus there. Outside the root's rect it
+# shows nothing and no pointer lands in it; unfocusable, it never takes the root's keys.
+func _open_focus_window() -> Window:
+	var window := Window.new()
+	window.unfocusable = true
+	window.size = get_tree().root.size
+	window.position = -window.size
+	add_child(window)
+	return window
 
 ## Every deck viewer carries its close tab; the pack chooser carries none, Take being its only way out.
 func test_a_deck_viewer_carries_a_close_tab_and_the_pack_chooser_none() -> void:
@@ -312,7 +328,7 @@ func _two_card_viewer(published: Array[String]) -> DeckViewer:
 	_test_opener = Button.new()
 	add_child(_test_opener)
 	var deck : Array[CardData] = [_card(), _card().with_type(TypeHeavy.new())]
-	var viewer := DeckViewer.show_deck(self, deck, _test_opener)
+	var viewer := DeckViewer.show_deck(_focus_window, deck, _test_opener)
 	viewer.info_requested.connect(func(entry: InfoEntry) -> void:
 		published.append(entry.title)
 		if entry.visual: entry.visual.queue_free())
@@ -547,7 +563,7 @@ func test_deck_viewer_singleton() -> void:
 
 func test_control_card_focus() -> void:
 	var control := ControlCard.add_child_control_card(
-		self, _card(), CardVisual.DisplayContext.DECK_VIEWER)
+		_focus_window, _card(), CardVisual.DisplayContext.DECK_VIEWER)
 	await get_tree().process_frame
 	check(control.focus_mode == Control.FOCUS_ALL, "preview cards are keyboard-focusable")
 	control.grab_focus()
@@ -671,7 +687,7 @@ func _click(control: ControlCard) -> void:
 
 ## Clicking a listed card picks it, in its own ink; one at a time; and the moving focus takes the rim back for as long as it is there.
 func test_pack_click_selects() -> void:
-	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0)
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(_focus_window, _card, 3, 0)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var first : ControlCard = viewer._cards.controls[0]
