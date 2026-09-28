@@ -72,6 +72,7 @@ func _ready() -> void:
 	await test_balls_alternate_directions()
 	await test_the_card_mask_is_the_card_the_player_sees()
 	await test_a_moved_card_re_masks_on_the_same_frame()
+	test_a_resolve_that_changes_nothing_still_moves_the_skip()
 	await test_a_translucent_face_draws_at_its_authored_alpha()
 	check_all_tests_registered()
 	finish()
@@ -562,7 +563,7 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 # `track_outline` skips the resolve while its INPUT is unmoved, so a posed rig must still reach
 # `_poly` on the very call that sees it - on an UNLIT card, whose `_poly` nothing else refreshes.
 func test_a_moved_card_re_masks_on_the_same_frame() -> void:
-	behavior_section("A MOVED CARD RE-MASKS ON THE SAME FRAME, LIT OR NOT")
+	behavior_section("A MOVED UNLIT CARD RE-MASKS ON THE SAME FRAME")
 	var card := await _real_card(0.0, TypePaper)
 	if not card: return
 	card._track_fx_outline()
@@ -586,6 +587,31 @@ func test_a_moved_card_re_masks_on_the_same_frame() -> void:
 			"%d of %d posed vertices missing from a %d-vertex mask (unchanged from rest: %s)"
 			% [missing, posed.size(), poly.size(), poly == rest])
 	card.queue_free()
+
+# A resampled outline can move while its resolved ring does not: the same polygon indexed one vertex
+# on. The skip must then compare against the new input, or the full resolve re-runs every frame.
+func test_a_resolve_that_changes_nothing_still_moves_the_skip() -> void:
+	implementation_section("A RESOLVE THAT CHANGES NOTHING STILL MOVES THE SKIP'S REFERENCE")
+	var n := FxAttachment.POLY + 24
+	var ring := PackedVector2Array()
+	for k : int in n:
+		var a := float(k) * TAU / float(n)
+		ring.append(Vector2(sin(a), -cos(a)) * CardVisual.CARD_SIZE.y * 0.5)
+	var shifted := ring.slice(1)
+	shifted.append(ring[0])
+	var att := FxAttachment.new()
+	att.configure(CardVisual.CARD_SIZE)
+	_stage.add_child(att)
+	att.measure_outline(ring)
+	var before := (att._poly as PackedVector2Array).duplicate()
+	att.track_outline(shifted)
+	check_impl(att._poly == before,
+			"the shifted outline resolves to the same %d-vertex mask" % before.size(),
+			"the mask changed, so this row never reached the resample case it is about")
+	check(att._poly_source == shifted,
+			"the skip now compares against the input the resolve just saw",
+			"it still holds the old outline, so every later frame re-runs the full resolve")
+	att.free()
 
 # A face texel with 0 < alpha < 1 is BODY drawn at that alpha, so what is under the card shows
 # through it, and it takes no rim: the ink it borders on the inside of a ring is the ring's own.

@@ -254,7 +254,7 @@ var _angles_src := PackedFloat32Array()
 ## `_poly` padded to POLY, reused per push for a host whose rig is shorter than POLY.
 var _poly_padded := PackedVector2Array()
 
-## The outline `_poly` was resolved from: `track_outline` compares against it before resolving.
+## The outline last resolved into `_poly`: `track_outline` compares against it before resolving.
 var _poly_source := PackedVector2Array()
 
 # ⚠ AN APPROXIMATION, THE FALLBACK FOR A HOST WITH NO RIG: unordered points are bucketed into POLY
@@ -311,7 +311,7 @@ func measure_outline(outline: PackedVector2Array) -> void:
 
 # ⚠ DO NOT SHORT-CIRCUIT THIS ON `_fx.is_empty()`: `_poly` is a published property test_pixels reads
 # off an UNLIT card. Only an unmoved INPUT skips the resolve, since `_poly` already is that input's
-# (78 resting cards: 4.7 -> 2.6 ms/frame, Box A). Instanced and shape-overriding quads: no upload.
+# (measured: VFX.md, "Cleanups left on the table"). Instanced and shape-overriding quads: no upload.
 
 ## Re-read the deformed outline and push it to the live quads; a no-op when nothing moved.
 func track_outline(outline: PackedVector2Array) -> void:
@@ -392,9 +392,9 @@ func _fill_poly_from_outline(outline: PackedVector2Array) -> bool:
 		_wedge[k] = float(m - 1) if a < _angles[0] else float(j)
 	var moved := not is_equal_approx(top, _poly_max) or not half.is_equal_approx(_poly_half) \
 			or _moved_from(_poly, _next)
+	_poly_source = outline.duplicate()
 	if not moved: return false
 	_poly = _next.duplicate()
-	_poly_source = outline.duplicate()
 	_poly_max = top
 	_poly_half = half
 	_poly_inner = _inner_box(_poly, half)

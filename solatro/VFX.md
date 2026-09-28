@@ -395,9 +395,6 @@ that instrument reported two rejected builds as successes.
 - **`Shaders/Styles/` is now a wrong name** (it holds a `ParticleSpec` too). Everything is in ONE
   place, which is what the ruling asked for; renaming the tree to `res://Fx/` is a separate
   mechanical change.
-- **`FxAttachment.measure_silhouette` samples a card's outline ONCE.** Live per-frame bone
-  deformation from the star rig is not tracked — re-call it if anything ever re-bakes a card shape
-  at runtime.
 
 ### 6.5 Cleanups left on the table by the `/simplify` pass
 
