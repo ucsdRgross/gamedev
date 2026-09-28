@@ -318,12 +318,11 @@ float mask_level(vec2 p, vec2 ball, float ball_level) {
 		// be solid; inside the largest box that fits in it everything is. Both are two comparisons and
 		// neither can change an answer, so the polygon runs only in the band between them.
 		//
-		// ⚠ IT IS AN OPTIMISATION FOR THE COMMON CASE AND THE COMMON CASE IS A CARD AT REST, where the
-		// rig IS the card's rectangle: the two boxes coincide, every tap is answered by four
-		// comparisons, and no wedge is ever built. Measured on the owner's Intel UHD, 78 burning cards:
-		// the retired 32-ray table cost 5.16 ms, the bare polygon 6.53, and these bring it to 5.46 — so
-		// an exact mask costs 6 % rather than 26 %. The band is only ever the corners of a card the rig
-		// has actually pulled out of shape.
+		// ⚠ IT IS AN OPTIMISATION FOR THE COMMON CASE, A CARD AT REST: most taps are answered by four
+		// comparisons, but a corner staircase's short step edges pull the inner box inside the outer
+		// one, so a resting card's corner bands still build wedges. Measured on the owner's Intel UHD,
+		// 78 burning cards: the retired 32-ray table cost 5.16 ms, the bare polygon 6.53, and these
+		// bring it to 5.46 — so an exact mask costs 6 % rather than 26 %.
 		//
 		// ⚠ AT REST THIS IS ALSO BIT-IDENTICAL TO THE OLD BOX TEST, which is not a coincidence and is
 		// worth keeping: it is the same `abs(q) <= h` comparison, so `fx_snapshot`'s rotation panels came

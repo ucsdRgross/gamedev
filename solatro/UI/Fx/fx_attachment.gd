@@ -401,8 +401,8 @@ func _fill_poly_from_outline(outline: PackedVector2Array) -> bool:
 	return true
 
 # Intersecting every edge's half-plane gives a convex region inside a star-shaped outline -
-# conservative where the shape is not convex, the safe direction. At rest it equals the outer bound,
-# so no fragment of an undeformed card ever builds a wedge.
+# conservative where the shape is not convex, the safe direction. A corner staircase's short step
+# edges pull it inside the outer bound even at rest, so a resting card's corner bands build wedges.
 
 ## The largest box of `half`'s aspect inside the silhouette - the shader's early ACCEPT.
 func _inner_box(poly: PackedVector2Array, half: Vector2) -> Vector2:

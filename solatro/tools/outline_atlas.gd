@@ -255,7 +255,7 @@ func _non_empty(sheet : Texture2D, h_frames : int, v_frames : int) -> Array[int]
 		var found := false
 		for y : int in int(r.size.y):
 			for x : int in int(r.size.x):
-				if img.get_pixel(int(r.position.x) + x, int(r.position.y) + y).a > 0.5:
+				if img.get_pixel(int(r.position.x) + x, int(r.position.y) + y).a > 0.0:
 					found = true
 					break
 			if found: break

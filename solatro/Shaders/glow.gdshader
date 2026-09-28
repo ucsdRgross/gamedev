@@ -144,7 +144,7 @@ float seg_dist(vec2 p, vec2 a, vec2 b) {
 // `p` arrives quantized in the quad's world-aligned frame; only the LOOKUP is rotated into the
 // art's frame, never the grid (the universal rule, fx_common's header).
 //
-// ⚠ **THE OUTLINE BRANCH IS THIS SHADER'S WHOLE COST**: `u_poly_count` segment distances, up to 24,
+// ⚠ **THE OUTLINE BRANCH IS THIS SHADER'S WHOLE COST**: `u_poly_count` segment distances, up to POLY,
 // every one of them unconditional because a distance is a MINIMUM and no early-out can be taken
 // without knowing the rest. That is a fixed price per lit fragment, unlike fire's, which is why
 // `body_near` below matters more here than it does there. The DISC branch is one subtraction, and
@@ -184,7 +184,7 @@ bool mask_inside(vec2 p) {
 }
 
 // THE EMPTY MAJORITY, REJECTED FIRST — the same lever fire's `body_near` is, and worth 2.1x
-// there. It matters MORE here: what it rejects is an unconditional 24-segment loop.
+// there. It matters MORE here: what it rejects is an unconditional POLY-segment loop.
 //
 // ⚠ It cannot change a pixel. The field is exactly zero beyond `reach` past the mask, and this
 // rejects only fragments further out than that — a quad is the host's circumscribed bound plus

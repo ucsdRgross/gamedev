@@ -249,8 +249,7 @@ func test_the_viewers_gap_is_the_boards_at_their_card_scale() -> void:
 	chooser.queue_free()
 	await get_tree().process_frame
 
-# Measured in the ROOT window at whatever size it has, after the re-fit its host makes once the list
-# is laid out; the 600x1000 top case is covered by the shots.
+# Measured in the ROOT window at whatever size it has; the 600x1000 top case is covered by the shots.
 ## The deck viewer's list is the widest whole number of columns its margins leave room for, centred where it rests: no strip narrower than a card is left on one side, beside a sidebar or over the whole picture.
 func test_the_deck_viewers_list_is_whole_columns_centred() -> void:
 	var size := get_tree().root.size
@@ -287,7 +286,7 @@ func _in_window(control: Control) -> Rect2:
 	return get_tree().root.get_final_transform() * control.get_global_transform_with_canvas() \
 			* Rect2(Vector2.ZERO, control.size)
 
-## A deck viewer of `count` cards opened through the product's entry and fitted as its host fits it: on open, then again once laid out, the catcher over the whole picture and the list resting in `remaining`.
+## A deck viewer of `count` cards opened through the product's entry, the catcher over the whole picture and the list in `remaining`, fitted twice: the host fits on open and again only on container_rect_changed.
 func _fitted_deck_viewer(count: int, remaining: Rect2) -> DeckViewer:
 	_test_opener = Button.new()
 	add_child(_test_opener)

@@ -221,13 +221,19 @@ func _same(a : Color, b : Color) -> bool:
 # ------------------------------------------------------------------ the mask seam
 
 # THE RIG'S OUTLINE IS THE DRAWN CARD: the silhouette the FX mask is built from, read off a REAL
-# CardVisual of each shipped type, is that type's art dilated by the rim - its extent (TypeInput draws
-# one texel inside its frame box) and every step of each corner's staircase.
+# CardVisual of every type script under the types folder, is that type's art dilated by the rim - its
+# extent (TypeInput draws one texel inside its frame box) and every step of each corner's staircase.
 func test_the_rig_outline_is_the_drawn_card() -> void:
 	var src := CardModifierType.TYPE_TEXTURE.get_image()
 	var w := int(CardVisual.ART_OUTLINE)
-	var checked := 0
-	for type_script : GDScript in [TypePaper, TypeInput, TypeHeavy, TypeBoosterBasic]:
+	var shipped := _shipped_type_scripts()
+	var shipped_frames : Dictionary[int, bool] = {}
+	for type_script : GDScript in shipped:
+		shipped_frames[(type_script.new() as CardModifierType).get_frame()] = true
+	check_impl(TypePaper in shipped, "the card types are discovered from their folder",
+			"%d scripts under %s" % [shipped.size(), TYPES_DIR])
+	var covered : Dictionary[int, bool] = {}
+	for type_script : GDScript in shipped:
 		var type_mod : CardModifierType = type_script.new()
 		var frame := CardModifier.frame_rect(CardModifierType.TYPE_TEXTURE,
 				CardModifierType.H_FRAMES, CardModifierType.V_FRAMES, type_mod.get_frame())
@@ -236,14 +242,84 @@ func test_the_rig_outline_is_the_drawn_card() -> void:
 		vis.data = CardData.new().with_type(type_mod)
 		add_child(vis)
 		var outline := (vis._rig_outline() as PackedVector2Array).duplicate()
-		vis.queue_free()
 		check(outline.size() <= FxAttachment.POLY,
 				"type frame %d's outline fits the FX mask unresampled" % type_mod.get_frame(),
 				"%d points, POLY %d" % [outline.size(), FxAttachment.POLY])
 		_check_the_rig_spans_the_drawn_box(type_mod.get_frame(), src, frame, w, outline)
 		_check_every_texel_agrees(type_mod.get_frame(), src, frame, w, outline)
-		checked += 1
-	check_impl(checked == 4, "every shipped card type was checked", str(checked))
+		if type_script == TypePaper: _check_the_hand_model_is_the_resting_card(outline)
+		_check_posed_rigs_fit_the_wedge_candidates(vis, type_script, outline)
+		vis.queue_free()
+		covered[type_mod.get_frame()] = true
+	var want := shipped_frames.keys()
+	var got := covered.keys()
+	want.sort()
+	got.sort()
+	check_impl(got == want, "every frame a shipped card type draws was checked",
+			"checked %s, the types use %s" % [got, want])
+
+## The folder whose scripts are the shipped card types.
+const TYPES_DIR := "res://Cards/Types"
+
+# Every CardModifierType a script under TYPES_DIR declares, so a new type is checked with no edit here.
+func _shipped_type_scripts() -> Array[GDScript]:
+	var out : Array[GDScript] = []
+	for file : String in DirAccess.get_files_at(TYPES_DIR):
+		if file.get_extension() != "gd": continue
+		var script := load(TYPES_DIR.path_join(file)) as GDScript
+		if script.new() is CardModifierType: out.append(script)
+	return out
+
+# Every harness and the formation editor stand a card up from star_outline instead of a rig, so the
+# hand model at rest must be the stand-in type's real resting rig, point for point.
+func _check_the_hand_model_is_the_resting_card(rig: PackedVector2Array) -> void:
+	var model := CardVisual.star_outline(CardVisual.CARD_SIZE, 0.0)
+	var first_bad := -1
+	for i : int in mini(model.size(), rig.size()):
+		if not model[i].is_equal_approx(rig[i]):
+			first_bad = i
+			break
+	check(model.size() == rig.size() and first_bad == -1,
+			"star_outline at rest is a real resting TypePaper card's rig, point for point",
+			"%d model points, %d rig points, first differing index %d (%s vs %s)" % [model.size(),
+			rig.size(), first_bad, model[maxi(first_bad, 0)], rig[maxi(first_bad, 0)]])
+
+## The idle animation's poses whose deformation test_pixels documents.
+const POSED_SECONDS : Array[float] = [0.15, 0.30]
+
+# The shader covers a wedge slot by testing WEDGE_CANDIDATES consecutive wedges, so a slot holding
+# that many vertices leaves its last sliver untested and the mask shows a hole there. A sheared
+# corner crowds its staircase into fewer slots, so the bound is asserted on the posed rig.
+func _check_posed_rigs_fit_the_wedge_candidates(vis: CardVisual, type_script: GDScript,
+		rest: PackedVector2Array) -> void:
+	var ap := vis.get_node("AnimationPlayer") as AnimationPlayer
+	check_impl(ap.has_animation(CardVisual.RIG_ANIM), "the card carries its idle animation",
+			str(CardVisual.RIG_ANIM))
+	var type_name := String(type_script.get_global_name())
+	for t : float in POSED_SECONDS:
+		ap.play(CardVisual.RIG_ANIM)
+		ap.seek(t, true)
+		ap.pause()
+		var posed := (vis._rig_outline() as PackedVector2Array).duplicate()
+		var busiest := _busiest_wedge_slot(posed)
+		TestLog.line("    [posed wedge slots] %s t=%.2f  busiest slot holds %d of %d vertices"
+				% [type_name, t, busiest, posed.size()])
+		check_impl(posed != rest, "%s t=%.2f: the rig is posed, not at rest" % [type_name, t])
+		check(busiest + 1 <= FxAttachment.WEDGE_CANDIDATES,
+				"%s t=%.2f: the posed rig's busiest wedge slot holds %d vertices, so %d candidates cover it"
+				% [type_name, t, busiest, busiest + 1],
+				"%d candidates are tested - the slot's last sliver reads as a HOLE in the mask"
+				% FxAttachment.WEDGE_CANDIDATES)
+
+func _busiest_wedge_slot(outline: PackedVector2Array) -> int:
+	var slots := PackedInt32Array()
+	slots.resize(FxAttachment.WEDGES)
+	for p : Vector2 in outline:
+		slots[int(floorf(fposmod(atan2(p.x, -p.y), TAU) / TAU * float(FxAttachment.WEDGES)))
+				% FxAttachment.WEDGES] += 1
+	var busiest := 0
+	for n : int in slots: busiest = maxi(busiest, n)
+	return busiest
 
 # Art that pulls IN from its frame edge draws a smaller card; a rig left on the frame box claims the
 # difference and roots every effect that far proud of the drawing on those sides.
