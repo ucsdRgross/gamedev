@@ -84,6 +84,7 @@ func _ready() -> void:
 	await test_menus_title_and_button_row_centre_on_the_remaining_space()
 	await test_every_menu_control_draws_at_the_ui_size_inside_the_window_and_none_overlaps()
 	await test_the_menus_bottom_row_wraps_beside_the_slid_in_sidebar()
+	await test_the_menus_column_only_shifts_while_the_sidebar_slides()
 	await test_keys_alone_start_a_run_from_the_start_menu_and_find_it_again()
 	await test_a_pad_alone_starts_a_run_from_the_start_menu()
 	await test_a_show_resumed_through_the_menu_rests_a_key_focus_on_its_board()
@@ -2278,12 +2279,91 @@ func test_the_menus_bottom_row_wraps_beside_the_slid_in_sidebar() -> void:
 	check(one_line > row.size.x, "sanity: the row does not fit one line beside the sidebar",
 			"%.1f vs %.1f" % [one_line, row.size.x])
 	check(rows_y.size() > 1, "the bottom row wraps onto more than one line", str(rows_y.keys()))
-	var beside := viewport.get_final_transform() * main.hud_container.rect_beside(null)
-	for button : Button in row.get_children():
-		var rect := _menu_control_in_window(viewport, main._pictures[&"start_menu"], button)
-		check(beside.grow(1.0).encloses(rect),
-				"%s lies beside the slid-in sidebar, inside the window" % button.name, "%s in %s" % [rect, beside])
+	_check_the_bottom_row_beside_the_sidebar(viewport, main, "slid in")
 	await _end_booted_fixture(viewport, main)
+
+## While the sidebar slides in or out beside the start menu (the picker opening and closing, and the landing back on the menu with the picker up), the column only shifts: one line layout the whole way through the slide, no button moving further in a frame than the sidebar does, and at rest it sits beside the sidebar; harness-scale only, the real window is shot.
+func test_the_menus_column_only_shifts_while_the_sidebar_slides() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		backup_real_save(suite_tag())
+		_prev_run = RunManager.run
+		_prev_save_info = Main.save_info
+		var booted := await _boot_main_at(size)
+		var viewport : SubViewport = booted[0]
+		var main : Main = booted[1]
+		var opening := await _sample_the_menus_slide(viewport, main, 1.0, _press_new_run.bind(main))
+		_check_the_column_only_shifts(opening, "the picker opening at %s" % size)
+		_check_the_bottom_row_beside_the_sidebar(viewport, main, "with the picker up at %s" % size)
+		await main._go_to_wall_view()
+		var landing := await _sample_the_menus_slide(viewport, main, 1.0,
+				main._focus_picture.bind(&"start_menu"))
+		_check_the_column_only_shifts(landing, "the landing on the menu with the picker up at %s" % size)
+		var closing := await _sample_the_menus_slide(viewport, main, 0.0,
+				(_the_deck_picker(main) as DeckPicker)._on_close_pressed)
+		_check_the_column_only_shifts(closing, "the picker closing at %s" % size)
+		_check_the_bottom_row_beside_the_sidebar(viewport, main, "with the picker closed at %s" % size)
+		await _end_booted_fixture(viewport, main)
+
+# One sample a frame from `start` until the sidebar rests at `aim` and no move is in flight: the
+# sidebar's drawn position and each bottom-row button's rect, both in the window's pixels.
+func _sample_the_menus_slide(viewport: SubViewport, main: Main, aim: float, start: Callable) -> Array[Dictionary]:
+	var container := main.hud_container
+	var row : Container = main.menu_scene.get_node(^"Content/Main")
+	var picture : WallPicture = main._pictures[&"start_menu"]
+	var samples : Array[Dictionary] = []
+	start.call()
+	for _frame : int in range(300):
+		var buttons : Array[Rect2] = []
+		for button : Node in row.get_children():
+			buttons.append(_menu_control_in_window(viewport, picture, button as Control))
+		samples.append({&"slid": container.slid_fraction(),
+				&"sidebar": viewport.get_final_transform() * container.position, &"buttons": buttons})
+		if is_equal_approx(container.slid_fraction(), aim) and not main._move_in_flight and _frame > 0: break
+		await get_tree().process_frame
+	return samples
+
+# Mid-slide (the sidebar neither in nor out) the bottom row keeps ONE line layout, and between two
+# mid-slide frames no button moves further than the sidebar itself did.
+func _check_the_column_only_shifts(samples: Array[Dictionary], what: String) -> void:
+	var mid : Array[Dictionary] = samples.filter(func(s: Dictionary) -> bool:
+			return s[&"slid"] > 0.001 and s[&"slid"] < 0.999)
+	check(mid.size() >= 3, "sanity: %s is sampled mid-slide" % what, "%d of %d" % [mid.size(), samples.size()])
+	var layouts : Dictionary[String, bool] = {}
+	var worst := 0.0
+	for i : int in mid.size():
+		layouts[_line_layout(mid[i][&"buttons"] as Array)] = true
+		if i == 0: continue
+		var sidebar_step := ((mid[i][&"sidebar"] as Vector2) - (mid[i - 1][&"sidebar"] as Vector2)).length()
+		for b : int in (mid[i][&"buttons"] as Array).size():
+			var step := ((mid[i][&"buttons"][b] as Rect2).position - (mid[i - 1][&"buttons"][b] as Rect2).position).length()
+			worst = maxf(worst, step - sidebar_step)
+	check(layouts.size() == 1, "the bottom row keeps one line layout through %s" % what, str(layouts.keys()))
+	check(worst <= 0.5, "...and no button moves further in a frame than the sidebar does, through %s" % what,
+			"%.2f px beyond the sidebar's step" % worst)
+
+## Which line each button sits on, as a key: two frames with the same key wrap the row the same way.
+func _line_layout(buttons: Array) -> String:
+	var tops : Array[float] = []
+	for rect : Rect2 in buttons:
+		if not tops.any(func(y: float) -> bool: return absf(y - rect.position.y) < 1.0): tops.append(rect.position.y)
+	tops.sort()
+	var key := ""
+	for rect : Rect2 in buttons:
+		key += str(tops.find_custom(func(y: float) -> bool: return absf(y - rect.position.y) < 1.0))
+	return key
+
+# At rest the bottom row flows across the whole width beside the sidebar as it rests, and every
+# button lies in that space.
+func _check_the_bottom_row_beside_the_sidebar(viewport: SubViewport, main: Main, what: String) -> void:
+	var beside := viewport.get_final_transform() * main.hud_container.rect_beside(null)
+	var row : Control = main.menu_scene.get_node(^"Content/Main")
+	var spans := _menu_control_in_window(viewport, main._pictures[&"start_menu"], row).size.x
+	check(absf(spans - beside.size.x) <= 1.0, "the bottom row spans the whole width beside the sidebar, %s" % what,
+			"%.1f of %.1f" % [spans, beside.size.x])
+	for button : Node in row.get_children():
+		var rect := _menu_control_in_window(viewport, main._pictures[&"start_menu"], button as Control)
+		check(beside.grow(1.0).encloses(rect), "%s rests beside the sidebar, inside the window, %s" % [button.name, what],
+				"%s in %s" % [rect, beside])
 
 ## Where `control`, drawn in the menu picture's own canvas, lands in `viewport`'s window pixels.
 func _menu_control_in_window(viewport: SubViewport, picture: WallPicture, control: Control) -> Rect2:

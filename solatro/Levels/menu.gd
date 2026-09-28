@@ -35,15 +35,18 @@ func _ready() -> void:
 			_apply_container_inset)
 	_apply_container_inset()
 
-# The column fills the space beside the sidebar as shown, at exactly the UI scale: the picture draws
-# this canvas at its cover scale, so the column undoes it, and a row too wide for the space wraps.
+# The column is laid out at exactly the UI scale (the picture draws this canvas at its cover scale,
+# so the column undoes it) in the space beside the RESTING sidebar whenever any of it is in, and only
+# shifts with the slide, centre to centre: a row too wide wraps once, as the slide starts or ends.
 func _apply_container_inset() -> void:
-	var remaining := hud_container.rect_beside(wall_picture)
+	var shown := hud_container.rect_beside(wall_picture)
+	var any_in := hud_container.slid_fraction() > 0.0
+	var fitted := hud_container.resting_rect_beside(wall_picture) if any_in else shown
 	var ui_per_canvas := 1.0 / WallPicture.cover_scale(get_viewport_rect().size,
 			hud_container.get_viewport().get_visible_rect().size)
 	_content.scale = Vector2.ONE * ui_per_canvas
-	_content.position = remaining.position
-	_content.size = remaining.size / ui_per_canvas
+	_content.position = fitted.position + shown.get_center() - fitted.get_center()
+	_content.size = fitted.size / ui_per_canvas
 
 # A KEY OR PAD PLAYER STARTS HERE: Play takes the focus each time the menu becomes the screen shown,
 # so one device alone reaches every button -- unless the picker or a viewer is up over it, which
