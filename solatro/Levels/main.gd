@@ -586,7 +586,6 @@ func game_ended() -> void:
 func _on_run_lost() -> void:
 	RunManager.clear_save()
 	save_info = RunState.new()
-	menu_scene.refresh_continue()
 # Quiescent moment: the lost run's board state just settled.
 	LeakSentinel.request_check()
 	_print_wall_debug_readout()

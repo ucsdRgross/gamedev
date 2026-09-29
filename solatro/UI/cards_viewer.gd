@@ -51,7 +51,7 @@ var sticky : CardData = null
 ## A card became the sticky one, or the sticky one was let go -- the sidebar pins and unpins on this.
 signal sticky_changed(stuck: bool)
 
-## A navigation key reached the LIST'S OWN EDGE while a card is stuck: the sidebar is the only place left to go, and it is in another viewport.
+## A navigation key reached the LIST'S OWN EDGE while a card is stuck: the sidebar is the only place left to go, a separate Control tree the neighbour search never crosses.
 signal sidebar_requested
 
 ## The pointer is on none of the listed cards any more -- the sidebar goes back to whatever is under this list's highlights.

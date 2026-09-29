@@ -30,6 +30,7 @@ func _ready() -> void:
 	new_run_button.pressed.connect(_on_new_run_pressed)
 	continue_button.pressed.connect(continue_requested.emit)
 	refresh_continue()
+	hud_container.connect_for_screen(self, hud_container.active_screen_changed, refresh_continue)
 	hud_container.connect_for_screen(self, hud_container.active_screen_changed, take_the_focus)
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed,
 			_apply_container_inset)
@@ -56,7 +57,6 @@ func take_the_focus() -> void:
 
 func _on_play_pressed() -> void:
 	play_row.visible = not play_row.visible
-	refresh_continue()
 
 # The picker is the only content on the menu that describes anything, so what it described goes
 # when the picker does.
@@ -76,6 +76,6 @@ func _open_deck_viewer(cards: Array[CardData], inspect: Button, picker: DeckPick
 	hud_container.host_viewer(viewer, info_requested, HudContainer.MENU_SCREEN)
 	picker.tree_exiting.connect(viewer.queue_free)
 
-## Continue is only clickable while a resumable run exists on disk.
+## Continue is only clickable while a resumable run exists on disk, re-read each time any screen becomes the one shown.
 func refresh_continue() -> void:
 	HudContainer.hold(continue_button, not RunManager.has_save())

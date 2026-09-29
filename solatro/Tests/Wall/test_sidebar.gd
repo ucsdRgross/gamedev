@@ -2325,7 +2325,6 @@ func test_the_menus_bottom_row_wraps_beside_the_slid_in_sidebar() -> void:
 	check(one_line > row.size.x, "sanity: the row does not fit one line beside the sidebar",
 			"%.1f vs %.1f" % [one_line, row.size.x])
 	check(rows_y.size() > 1, "the bottom row wraps onto more than one line", str(rows_y.keys()))
-	_check_the_bottom_row_beside_the_sidebar(viewport, main, "slid in")
 	await _end_booted_fixture(viewport, main)
 
 ## While the sidebar slides in or out beside the start menu (the picker opening and closing, and the landing back on the menu with the picker up), the column only shifts: one line layout the whole way through the slide, no button moving further in a frame than the sidebar does, and at rest it sits beside the sidebar; harness-scale only, the real window is shot.
@@ -2446,12 +2445,12 @@ func test_keys_alone_start_a_run_from_the_start_menu_and_find_it_again() -> void
 	check(menu_viewport.gui_get_focus_owner() == _main.menu_scene.get_node(^"Content/Play"),
 			"keys: the menu shown again rests the key focus on Play",
 			str(menu_viewport.gui_get_focus_owner()))
-	await _tap_key(KEY_ENTER)
-	check(not _main.menu_scene.play_row.visible, "keys: ...and Enter presses it there, folding the submenu away")
-	await _tap_key(KEY_ENTER)
 	var continue_button : Button = _main.menu_scene.continue_button
-	check(RunManager.has_save() and not continue_button.disabled,
-			"keys: sanity: the run started is saved, so the submenu opened again offers Continue")
+	check(RunManager.has_save() and _main.menu_scene.play_row.visible,
+			"keys: sanity: the run started is saved, and the submenu is still open on the return")
+	check(not continue_button.disabled and continue_button.focus_mode == Control.FOCUS_ALL,
+			"keys: ...where Continue is live on the return itself, the save made since it was held",
+			"disabled %s, focus_mode %d" % [continue_button.disabled, continue_button.focus_mode])
 	await _tap_key(KEY_DOWN)
 	var steps := 0
 	while menu_viewport.gui_get_focus_owner() != continue_button and steps < _main.menu_scene.play_row.get_child_count():
@@ -2466,6 +2465,33 @@ func test_a_pad_alone_starts_a_run_from_the_start_menu() -> void:
 	await _start_a_run_from_the_menu_with("pad", _tap_pad.bind(JOY_BUTTON_A),
 			_tap_pad.bind(JOY_BUTTON_DPAD_DOWN), _tap_pad.bind(JOY_BUTTON_DPAD_UP),
 			_tap_pad.bind(JOY_BUTTON_DPAD_LEFT))
+	var menu := _main.menu_scene
+	_main._focus_picture(&"start_menu")
+	await _wait_out_the_move()
+	check(not menu.continue_button.disabled, "pad: sanity: the menu shown during the run offers Continue")
+	_main._focus_picture(&"map")
+	await _wait_out_the_move()
+	await TestMainHost.await_world_settled(self, _main, "the run's loss")
+	var baked := RunManager.MAP_BAKE_DIR.path_join("composite.png")
+	var bake := FileAccess.get_file_as_bytes(baked)
+	_main._on_run_lost()
+	_main._focus_picture(&"start_menu")
+	await _wait_out_the_move()
+	var menu_viewport : SubViewport = _main._pictures[&"start_menu"].viewport
+	check(not RunManager.has_save() and menu.play_row.visible and _main._current_focus == &"start_menu",
+			"pad: sanity: the run is lost, and the menu shown again keeps the submenu open")
+	check(menu.continue_button.disabled and menu.continue_button.focus_mode == Control.FOCUS_NONE,
+			"pad: ...where Continue is held on the return itself, no save left to resume",
+			"disabled %s, focus_mode %d" % [menu.continue_button.disabled, menu.continue_button.focus_mode])
+	var reached : Array[Control] = []
+	for press : JoyButton in [JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_DPAD_LEFT]:
+		await _tap_pad(press)
+		reached.append(menu_viewport.gui_get_focus_owner())
+	check(not reached.has(menu.continue_button),
+			"pad: ...so the d-pad never lands on the held Continue, and accept can never resume the lost run",
+			str(reached))
+# The loss deletes the bake the teardown reads as "the world finished"; it had, before the loss.
+	FileAccess.open(baked, FileAccess.WRITE).store_buffer(bake)
 	await _end_main_fixture()
 
 # ONE DEVICE, each press a tap pushed into the window's viewport as the engine delivers it, the
