@@ -38,6 +38,7 @@ text = "X"
 [node name="SmoothScrollContainer" type="ScrollContainer" parent="MarginContainer" unique_id=1191871683]
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 follow_focus = true
 draw_focus_border = true
 script = ExtResource("1_8qp33")

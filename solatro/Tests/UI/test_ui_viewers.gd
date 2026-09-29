@@ -53,6 +53,7 @@ func _ready() -> void:
 	behavior_section("A VIEWER SPACES ITS CARDS AS THE BOARD DOES, IN THE PLAYER'S WINDOW")
 	await test_the_viewers_gap_is_the_boards_at_their_card_scale()
 	await test_the_deck_viewers_list_is_whole_columns_centred()
+	await test_a_deck_viewers_rows_stand_the_gap_inside_its_window()
 	_focus_window.queue_free()
 	finish()
 
@@ -316,6 +317,61 @@ func test_the_deck_viewers_list_is_whole_columns_centred() -> void:
 				"...the widest whole number of columns inside the authored margins (%s)" % where,
 				"%.2f shown of %.2f, a column %.2f" % [shown.size.x, room, column])
 		await _drop_viewer(viewer)
+
+## The watchdog on a smooth scroll that follows the focus coming to rest; the wait ends on arrival.
+const SCROLL_SETTLE_TIMEOUT_SEC := 5.0
+
+# Measured in the ROOT window, at content scale 1 like the rows above; other window sizes are shots.
+## A deck viewer's first row stands the board's gap below its window's top, and its last row, scrolled to by the keys, the same gap above the bottom; a short list sits at the top with that gap; each side is at least the gap; harness-scale only.
+func test_a_deck_viewers_rows_stand_the_gap_inside_its_window() -> void:
+	var visible := get_tree().root.get_visible_rect()
+	var strip := Vector2(visible.size.x / 3.0, 0.0)
+	var remaining := Rect2(visible.position + strip, visible.size - strip)
+	var scale := get_tree().root.get_final_transform().get_scale().x
+	var gap := PlayArea.viewer_separation_px() * scale
+	for count : int in [52, 3]:
+		var viewer := await _fitted_deck_viewer(count, remaining)
+		var cards := viewer.cards().controls
+		var window := _in_window(viewer.margin_container.get_node(^"ColorRect") as Control)
+		var first := _in_window(cards[0])
+		var columns := _cards_in_the_first_row_of(cards)
+		var row := first.merge(_in_window(cards[columns - 1]))
+		var bar := viewer._scroll.get_v_scroll_bar()
+		var right_end := _in_window(bar).end.x if bar.visible else row.end.x
+		var where := "%d cards" % count
+		check(absf(first.position.y - window.position.y - gap) <= GAP_TOLERANCE_PX,
+				"the first row stands the gap below the window's top (%s)" % where,
+				"%.2f vs %.2f window px" % [first.position.y - window.position.y, gap])
+		check(row.position.x - window.position.x >= gap - GAP_TOLERANCE_PX
+				and window.end.x - right_end >= gap - GAP_TOLERANCE_PX,
+				"...and at least the gap at each side (%s)" % where,
+				"left %.2f right %.2f vs %.2f" % [row.position.x - window.position.x,
+				window.end.x - right_end, gap])
+		(cards[cards.size() - 1] as Control).grab_focus()
+		check(await _scrolled_to_rest(cards[cards.size() - 1], window),
+				"sanity: the list came to rest with its last card in the window (%s)" % where)
+		var last := _in_window(cards[cards.size() - 1])
+		var below := window.end.y - last.end.y
+		if bar.visible:
+			check(absf(below - gap) <= GAP_TOLERANCE_PX,
+					"the last row, scrolled to by the keys, stands the gap above the window's bottom (%s)" % where,
+					"%.2f vs %.2f window px" % [below, gap])
+		else:
+			check(below >= gap - GAP_TOLERANCE_PX, "a short list leaves at least the gap below it (%s)" % where,
+					"%.2f vs %.2f window px" % [below, gap])
+		await _drop_viewer(viewer)
+
+## Waits until `card` lies inside `window` and a frame moves it no more; false when the watchdog ran out first.
+func _scrolled_to_rest(card: Control, window: Rect2) -> bool:
+	var waited := 0.0
+	var was := _in_window(card)
+	while waited < SCROLL_SETTLE_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		var now := _in_window(card)
+		if now.is_equal_approx(was) and window.encloses(now): return true
+		was = now
+	return false
 
 ## A control's rect in the OS window's own pixels, its canvas layer and the window's UI scale applied.
 func _in_window(control: Control) -> Rect2:

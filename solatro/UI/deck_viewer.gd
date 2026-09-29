@@ -35,7 +35,8 @@ var _return_focus : Control = null
 var fallback_focus : Control = null
 
 # ⚠ OPAQUE, in its own kind's colour: nothing behind a viewer shows between or under its cards, and
-# a viewer over another window reads as a separate one.
+# a viewer over another window reads as a separate one. The list's focus border keeps no content
+# margin: a still list would sit inside it and a scrolled one not, and the gap is fitted without it.
 func _ready() -> void:
 	(margin_container.get_node(^"ColorRect") as ColorRect).color = \
 			PaletteDB.color(PaletteDB.ROLES.index_of(backdrop_role))
@@ -43,6 +44,9 @@ func _ready() -> void:
 	tab.bg_color = PaletteDB.color(PaletteDB.ROLES.close_tab)
 	for state : StringName in [&"normal", &"hover", &"pressed", &"hover_pressed"]:
 		close_tab.add_theme_stylebox_override(state, tab)
+	var border := _scroll.get_theme_stylebox(&"focus").duplicate() as StyleBox
+	border.set_content_margin_all(0.0)
+	_scroll.add_theme_stylebox_override(&"focus", border)
 	var gap := PlayArea.viewer_separation_px()
 	flow_container.add_theme_constant_override(&"h_separation", gap)
 	flow_container.add_theme_constant_override(&"v_separation", gap)
@@ -119,11 +123,11 @@ func fit_catcher(shown: Rect2) -> void:
 	margin_container.offset_right = shown.end.x - picture.x
 	margin_container.offset_bottom = shown.end.y - picture.y
 
-# THE WINDOW RESTS BESIDE WHERE THE SIDEBAR RESTS, inset by the scene's own padding, and its opaque
-# backdrop fills all of it, so a viewer over another hides it whatever either lists. The list inside
-# is WHOLE COLUMNS ONLY, centred; a scrolling list gives up its bar's width first, as the chooser's does.
+# THE LIST IS WHOLE COLUMNS ONLY, centred, the board's gap clear of every edge of the opaque window;
+# a scrolling list gives up its bar's width first, as the chooser's does. The X tab tops level with
+# the first row, so Up off that row finds nothing above it.
 func fit_beside(remaining: Rect2) -> void:
-	_scroll.custom_minimum_size.x = 0.0
+	_scroll.custom_minimum_size = Vector2.ZERO
 	var catcher := margin_container.get_rect()
 	_inset_margin(&"margin_left", remaining.position.x - catcher.position.x)
 	_inset_margin(&"margin_top", remaining.position.y - catcher.position.y)
@@ -131,7 +135,9 @@ func fit_beside(remaining: Rect2) -> void:
 	_inset_margin(&"margin_bottom", catcher.end.y - remaining.end.y)
 	var left := margin_container.get_theme_constant(&"margin_left")
 	var right := margin_container.get_theme_constant(&"margin_right")
-	var inner := catcher.size - _scroll.get_combined_minimum_size() - Vector2(left + right,
+	var own := _scroll.get_combined_minimum_size()
+	var inset := 2.0 * Vector2.ONE * PlayArea.viewer_separation_px()
+	var inner := catcher.size - own - inset - Vector2(left + right,
 			margin_container.get_theme_constant(&"margin_top")
 			+ margin_container.get_theme_constant(&"margin_bottom"))
 	var columns := _whole_columns(inner.x)
@@ -139,7 +145,9 @@ func fit_beside(remaining: Rect2) -> void:
 		inner.x -= _scroll.get_v_scroll_bar().get_combined_minimum_size().x
 		columns = _whole_columns(inner.x)
 	var spare := inner.x - _cards.row_px(columns)
-	_scroll.custom_minimum_size.x = catcher.size.x - left - right - spare
+	_scroll.custom_minimum_size = Vector2(catcher.size.x - left - right - spare - inset.x, inner.y + own.y)
+	close_tab.offset_top = inset.y / 2.0
+	close_tab.offset_bottom = close_tab.offset_top
 
 func _whole_columns(width: float) -> int:
 	var gap := flow_container.get_theme_constant(&"h_separation")
