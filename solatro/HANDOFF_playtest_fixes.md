@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P76, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
 by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P71, 36c20f0b): `ALL 51 SUITES: 8869 CHECKS PASSED`, ~15 min with
-`-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order: P66, P77,
+`-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order: P77,
 P78 (review round 3's comments), P79 (the review tool), review round 4 (P58d), the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -490,7 +490,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [bd8c9f81]
 - id: P66
   description: At the 600x1000 top-band window sidebar_snapshot hung at map_after_travel - the Travel press left the token where it was (HEAD too, measured by P64b). P72's implementer saw the 600x1000 snapshot finish in under a minute with no hang - re-check before building anything; the hang may have been a minimized window (see Open bugs, the minimized-window row).
-  status: pending
+  status: closed
+  evidence: 'No code. 3 of 3 visible runs of sidebar_snapshot at 600x1000 (cc387049) finished in ~39 s; Travel moved the token every run (moving=true, token between nodes; the scene awaits node_entered before quit); exit profiles clean; the overseer read run1_map_after_travel (the token mid-route on the highlighted path). The P64b hang fits the minimized window.'
 - id: P67
   description: The map's wall picture is a 648x648 square (thirtieth round); focused it still fills the window and the map fit keeps the whole map in view.
   status: done
@@ -644,7 +645,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - Scripts/Map/world_map_controller.gd _unhandled_input carries a typed-in wheel zoom factor 1.15 (a tunable literal, found by P64b-2b round 3).
 - UI VIEWERS "a later arrow never drags the focus back to the first card": 1 of 1 overseer gates on the P58c-2 tree, 1 of 1 on P58b-B's; 1 of 1 implementer nine-suite runs on the P64b-2b tree (WALL FOCUS booting Main in the same window), 0 of 4 alone.
 - FOR /simplify AT THE CLOSE: solatro/UI/autosize_label.tscn, big_number_label.tscn and map_hover_panel.tscn are instantiated by no production scene (map_hover_panel only by test_leak_canary; map.gd calls its static get_info) - Fable reviews of P58b-5 and P58b-7's question.
-- sidebar_snapshot (not a suite) sometimes leaks at quit - "631 ObjectDB instances leaked, 27 resources still in use", --verbose: 398 Resource (CardData, game scripts), 184 WeakRef, 3 GDScriptFunctionState - it quit()s while the map token is still travelling (map_after_travel ... moving=true): 3 of 7 runs on the P72 round-2 tree, 0 of 3 with HEAD's DeckViewer, 0 of 2 on round 1. Same shape as the quit-mid-walk chooser leak above. Measure before naming a cause.
+- sidebar_snapshot (not a suite) sometimes leaks at quit - "631 ObjectDB instances leaked, 27 resources still in use", --verbose: 398 Resource (CardData, game scripts), 184 WeakRef, 3 GDScriptFunctionState - it quit()s while the map token is still travelling (map_after_travel ... moving=true): 3 of 7 runs on the P72 round-2 tree, 0 of 3 with HEAD's DeckViewer, 0 of 2 on round 1. 0 of 3 visible 600x1000 runs on cc387049 (P66). Same shape as the quit-mid-walk chooser leak above. Measure before naming a cause.
 - SIDEBAR test_the_wall_view_shows_one_surface_colour_behind_the_pictures "sanity: the move out to the wall showed the wall on enough frames" (3 of 7 / 4 of 9 frames); 1 of 1 overseer gates on the P58b-6 tree (4 of 11 at 600x1000), 1 of 1 on the P58c-2 tree (4 of 9 at 1280x720): 2 implementer filtered runs (2b, P72); a wall-clock frame count on a slow box.
 - Hang risk, measured by P64b-3a's guard mutant: test_sidebar test_the_chooser_and_its_deck_are_hidden_in_wall_view_and_back_on_return waits in an unbounded `while _main._move_in_flight or slid_fraction() < 1.0` (~6280), so a broken return stalls SIDEBAR instead of failing it - bound it (await_drawn_frames' watchdog). Its deck-over-chooser focus check (~6079) passes with no focus owner at all - it proves "not under the deck", not "somewhere useful".
 - SIDEBAR test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel "sanity: a reachable node lies on the map outside the window" (a random map, no input involved): 1 of 4 implementer Sidebar-filtered runs on the P64b-3f tree. COUNT 1. Measure before naming a cause.
@@ -677,10 +678,9 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
-1. P66 (re-check the 600x1000 Travel hang first).
-2. P77 (root-window rows at the gate window's own size - a suite cannot resize the OS window).
-3. P78 (visual review round 3's comments, one step each), then P79 (the review tool: stale comments, Done not landing, aliased images, the owner's command).
-4. Visual review round 4 = P58d for everything not yet reviewed (P64b-P73, P78), then the close per /plan-run.
+1. P77 (root-window rows at the gate window's own size - a suite cannot resize the OS window).
+2. P78 (visual review round 3's comments, one step each), then P79 (the review tool: stale comments, Done not landing, aliased images, the owner's command).
+3. Visual review round 4 = P58d for everything not yet reviewed (P64b-P73, P78), then the close per /plan-run.
 
 ### Opening prompt for the next session (paste as is)
 
