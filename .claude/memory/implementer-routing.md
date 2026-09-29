@@ -16,6 +16,15 @@ low), `plan-implementer-sonnet` (`sonnet`, high - deterministic grunt work only)
 the aliases so they follow each new version (owner); `sonnet` is Sonnet 5.5 on the Anthropic API
 from Claude Code v2.1.284 (code.claude.com/docs/en/model-config). The overseer writes no source.
 
+**The deciding question (Opus 5.5 low and Sonnet 5.5 high are close in capability, so the TASK
+decides): can this step end with "the premise was wrong, stop and ask"?** No -> Sonnet. Yes, the
+writer named -> Opus low. Yes, the cause open -> Opus medium. The implementers answer it again from
+what they measure and stop below the tier that owns the call; every report ends with a `ROUTING:`
+line (right tier / needs a higher tier / could go lower) - route the NEXT similar step by it.
+Cost check at the boundary: cache reads cost the same on both models ($0.20/MTok) and are most of a
+subagent's spend, so Sonnet is cheaper only while it needs no more turns than Opus low would; a
+"deterministic" step that runs long on Sonnet was not deterministic - route its kind one tier up.
+
 **Route by what the brief already knows, not by how big the step looks:**
 
 | The step | Dispatch | Measured on the playtest stream |

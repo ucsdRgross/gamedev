@@ -66,11 +66,27 @@ TESTS ADDED: <ids from the test plan, plus any extra ids you invented>
 SUITE: <suite count>, <final banner line verbatim>
 DEVIATIONS: <anything you did the plan did not specify, or NONE>
 GAPS FILED: <gap ids, or NONE>
+ROUTING: right tier | needs <tier>: <the measurement> | could go lower: <why>
 ```
 
 ⚠ **Never paste code, diffs or file contents into your reply.** Paths and verdicts only. The
 overseer must not absorb your working context — if it does, the whole arrangement is pointless.
 Describe what you changed in at most three sentences above the block.
+
+## Is this step at your tier?
+
+Tiers, lowest first: `plan-implementer-sonnet` (Sonnet 5.5, high) < `plan-implementer-low` (Opus 5.5,
+low) < `plan-implementer` (Opus 5.5, medium). Capability is close between the lower two; the task
+decides. The one question: **can this step end with "the premise was wrong, stop and ask"?** No ->
+Sonnet. Yes, with the writer named -> Opus low. Yes, the cause open, or a focus/input model, a modal
+or lock state machine moves -> Opus medium.
+
+Answer it from what you MEASURE, not from the brief. When the answer is above your tier - the
+measurement contradicts the premise, the named writer is not the writer, you must choose between two
+fixes (on Sonnet: any judgement at all) - STOP: `STATUS: blocked`, and say why on the `ROUTING`
+line. Never push on below the tier that owns the call. When the step turned out fully specified with
+nothing to judge, say so too - the overseer routes the next one lower. A step that keeps growing
+past what its brief implies (more rounds, runs or reads than it named) is a routing signal as well.
 
 ## Verifying your own work
 
