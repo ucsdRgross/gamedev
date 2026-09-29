@@ -122,9 +122,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cards.unstick()
 	get_viewport().set_input_as_handled()
 
-# THE WINDOW IS A SQUARE CENTRED IN THE SPACE BESIDE THE SIDEBAR, wide enough for a full row and
-# tall enough for ROWS_SHOWN rows over the Rerolls-and-Take foot, cut to the space with the rest
-# scrolling. It is UI, so its cards draw at the one UI size and no picture scale applies.
+# THE WINDOW FITS WHAT IT HOLDS, centred in the space beside the sidebar: a full row wide, and as tall
+# as its rows over the Rerolls-and-Take foot, growing a row at a time up to ROWS_SHOWN rows or the
+# space's height, whichever is less, with the rest scrolling. UI: no picture scale applies.
 func fit_beside(remaining: Rect2) -> void:
 	var rows := ceili(float(_cards.controls.size()) / ROW_CARDS)
 	var row_px := _cards.row_px(ROW_CARDS)
@@ -133,15 +133,14 @@ func fit_beside(remaining: Rect2) -> void:
 	flow_container.custom_minimum_size = Vector2(row_px, rows_px)
 	var pad := _bottom_row.offset_left
 	var foot := -_bottom_row.offset_top
-	var wanted := maxf(row_px + 2.0 * pad,
-			pad + _cards.column_px(mini(rows, ROWS_SHOWN)) + band + foot)
-	var side := minf(wanted, minf(remaining.size.x, remaining.size.y))
-	var shown := Vector2(row_px, minf(rows_px, side - pad - foot))
+	var tallest := minf(remaining.size.y, pad + _cards.column_px(ROWS_SHOWN) + band + foot)
+	var shown := Vector2(row_px, minf(rows_px, tallest - pad - foot))
 	if shown.y < rows_px:
 		shown.x += _scroll.get_v_scroll_bar().get_combined_minimum_size().x
-	_scroll.position = Vector2((side - shown.x) / 2.0, pad + (side - pad - foot - shown.y) / 2.0)
+	var fitted := Vector2(minf(shown.x + 2.0 * pad, remaining.size.x), pad + shown.y + foot)
+	_scroll.position = Vector2((fitted.x - shown.x) / 2.0, pad)
 	_scroll.size = shown
-	var window := Rect2(remaining.get_center() - Vector2.ONE * side / 2.0, Vector2.ONE * side)
+	var window := Rect2(remaining.get_center() - fitted / 2.0, fitted)
 	var picture := get_viewport_rect().size
 	_layout.offset_left = window.position.x
 	_layout.offset_top = window.position.y

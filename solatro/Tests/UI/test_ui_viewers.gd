@@ -44,10 +44,11 @@ func _ready() -> void:
 	await test_the_pack_chooser_passes_a_cancel_on_once_nothing_is_stuck()
 	await test_a_viewer_opens_with_nothing_focused_and_nothing_published()
 	await test_the_first_navigation_press_enters_the_list()
-	await test_the_pack_chooser_draws_only_a_square_window()
+	await test_the_pack_chooser_draws_only_its_window()
 	await test_a_sixth_card_wraps_to_a_centred_row_of_its_own()
 	await test_a_wrapped_row_lies_below_the_reroll_buttons_above()
 	await test_the_window_shows_five_rows_then_scrolls()
+	await test_the_chooser_window_is_as_tall_as_its_rows()
 	await test_each_reroll_text_centres_under_its_drawn_card()
 	await test_a_deck_viewer_carries_a_close_tab_and_the_pack_chooser_none()
 	behavior_section("A VIEWER SPACES ITS CARDS AS THE BOARD DOES, IN THE PLAYER'S WINDOW")
@@ -120,8 +121,8 @@ func test_the_first_navigation_press_enters_the_list() -> void:
 			"a later arrow never drags the focus back to the first card")
 	await _drop_viewer(viewer)
 
-## The pack chooser draws only its square window, so the picture around it shows through; harness-scale only.
-func test_the_pack_chooser_draws_only_a_square_window() -> void:
+## The pack chooser draws only its window, so the picture around it shows through (no longer a square: the window fits its rows, visual review round 3); harness-scale only.
+func test_the_pack_chooser_draws_only_its_window() -> void:
 	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -133,9 +134,8 @@ func test_the_pack_chooser_draws_only_a_square_window() -> void:
 	viewer.fit_beside(picture)
 	await get_tree().process_frame
 	var window := (viewer.get_node(^"Layout") as Control).get_global_rect()
-	check(is_equal_approx(window.size.x, window.size.y) and picture.encloses(window)
-			and window.size.x < picture.size.y,
-			"fitted to a picture with room, the window is a square smaller than it",
+	check(picture.encloses(window) and window.size.x < picture.size.x and window.size.y < picture.size.y,
+			"fitted to a picture with room, the window is smaller than it",
 			"%s in %s" % [window, picture])
 	var rerolls := viewer.rerolls_label.get_global_rect()
 	var take := viewer.confirm_button.get_global_rect()
@@ -220,6 +220,41 @@ func _button_text_in_window(button: Button) -> Rect2:
 			HORIZONTAL_ALIGNMENT_LEFT, -1, button.get_theme_font_size(&"font_size")).x
 	var local := Rect2(content.get_center().x - width / 2.0, 0.0, width, button.size.y)
 	return get_tree().root.get_final_transform() * button.get_global_transform_with_canvas() * local
+
+## The chooser's window is as tall as its rows, their Reroll band and the Rerolls-and-Take row, with the one padding its sides have above and below and no space left between: a row for five cards, two for six, three for eleven, none scrolling; centred where it rests (visual review round 3: "expand only when card count increases"); harness-scale only.
+func test_the_chooser_window_is_as_tall_as_its_rows() -> void:
+	var room := get_tree().root.get_visible_rect()
+	for count : int in [5, 6, 11]:
+		var viewer := await _fitted_chooser(count, room)
+		var where := "%d cards" % count
+		var window := _in_window(viewer._layout)
+		var cards := viewer._cards.controls
+		var first := _in_window(cards[0])
+		var last_band := _in_window(viewer._reroll_buttons[cards.size() - 1])
+		var foot := _in_window(viewer._bottom_row)
+		var side := first.position.x - window.position.x
+		var above := first.position.y - window.position.y
+		var below := window.end.y - foot.end.y
+		check(absf(above - side) <= GAP_TOLERANCE_PX and absf(below - side) <= GAP_TOLERANCE_PX,
+				"the window pads its rows above and its foot below as it pads its sides (%s)" % where,
+				"above %.2f below %.2f side %.2f" % [above, below, side])
+		check(absf(foot.position.y - last_band.end.y) <= GAP_TOLERANCE_PX,
+				"...its foot starting right under the last row's Reroll band, no space between (%s)" % where,
+				"%.2f vs %.2f" % [foot.position.y, last_band.end.y])
+		check(_cards_rows(cards) == ceili(count / float(ChoiceViewer.ROW_CARDS))
+				and not viewer._scroll.get_v_scroll_bar().visible,
+				"...showing every row, none scrolling (%s)" % where, str(_cards_rows(cards)))
+		var resting := get_tree().root.get_final_transform() * room
+		check(window.get_center().distance_to(resting.get_center()) <= CENTRED_TOLERANCE_PX,
+				"...centred where it rests (%s)" % where, "%s in %s" % [window, resting])
+		viewer.queue_free()
+		await get_tree().process_frame
+
+func _cards_rows(cards: Array[Control]) -> int:
+	var tops : Dictionary[float, bool] = {}
+	for card : Control in cards:
+		tops[card.get_global_rect().position.y] = true
+	return tops.size()
 
 ## With room, the window grows to show ROWS_SHOWN full rows; one more row scrolls inside the same window, and a space too short for them cuts the window to it with the rest scrolling -- five cards to a row throughout; harness-scale only.
 func test_the_window_shows_five_rows_then_scrolls() -> void:

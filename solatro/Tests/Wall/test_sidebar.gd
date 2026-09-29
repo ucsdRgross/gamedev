@@ -208,7 +208,7 @@ func _ready() -> void:
 	await test_left_off_the_possible_cards_lands_on_the_picks_x_first()
 	await test_a_left_before_the_sidebar_slides_in_asks_no_screen_for_it()
 	await test_tab_opens_the_wall_on_every_screen_as_the_pad_button_does()
-	await test_the_chooser_is_a_square_window_with_the_map_around_it()
+	await test_the_chooser_is_a_fitted_window_with_the_map_around_it()
 	await test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel()
 	await test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser()
 	await test_every_route_leaves_the_chooser_and_comes_back_to_it_in_progress()
@@ -351,7 +351,7 @@ func _ready() -> void:
 	await test_left_on_the_map_with_nothing_picked_reaches_its_deck_button()
 	behavior_section("THE PLAYER'S WINDOW: ITS OWN CONTENT SCALE")
 	await test_every_viewer_draws_at_the_ui_size_in_the_players_window()
-	await test_the_chooser_is_a_square_beside_the_sidebar_in_the_players_window()
+	await test_the_chooser_fits_its_rows_beside_the_sidebar_in_the_players_window()
 	await test_the_menus_column_draws_at_the_ui_scale_beside_the_sidebar_in_the_players_window()
 	await test_the_board_is_centred_beside_the_resting_sidebar_in_the_players_window()
 	await test_the_maps_sea_buffer_is_whole_on_screen_in_the_players_window()
@@ -6277,8 +6277,8 @@ func _await_the_rest() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-## The chooser is a square window sized to what it holds, centred beside the sidebar with the map showing on every side, and its sidebar offers a look at the deck the cards are joining; harness-scale only.
-func test_the_chooser_is_a_square_window_with_the_map_around_it() -> void:
+## The chooser is a window as tall as what it holds (no longer a square, visual review round 3), centred beside the sidebar with the map showing on every side, and its sidebar offers a look at the deck the cards are joining; harness-scale only.
+func test_the_chooser_is_a_fitted_window_with_the_map_around_it() -> void:
 	await _start_map_fixture()
 	var chooser := await _open_a_pack_chooser()
 	if chooser != null:
@@ -6291,8 +6291,7 @@ func test_the_chooser_is_a_square_window_with_the_map_around_it() -> void:
 		_check_the_offered_cards_lie_in_one_row(chooser, str(INSET_WINDOWS[0]))
 		var window := _chooser_window(chooser)
 		var space := _ui_space(_main)
-		check(is_equal_approx(window.size.x, window.size.y),
-				"the chooser draws as a square window", str(window.size))
+		_check_the_chooser_pads_its_rows_as_its_sides(chooser, str(INSET_WINDOWS[0]))
 		check(is_equal_approx(window.get_center().x, space.get_center().x)
 				and is_equal_approx(window.get_center().y, space.get_center().y),
 				"...centred in the space beside the sidebar", "%s in %s" % [window, space])
@@ -6928,8 +6927,8 @@ func test_every_viewer_draws_at_the_ui_size_in_the_players_window() -> void:
 					"the picker's viewer, %s" % where)
 		await _end_booted_fixture(menu_window, opened[1] as Main)
 
-## The chooser draws as a square window holding its parts, wholly on screen and centred in the space beside the sidebar, in the player's window's own pixels at both window shapes.
-func test_the_chooser_is_a_square_beside_the_sidebar_in_the_players_window() -> void:
+## The chooser draws as a window as tall as the parts it holds (no longer a square, visual review round 3), wholly on screen and centred in the space beside the sidebar, in the player's window's own pixels at both window shapes.
+func test_the_chooser_fits_its_rows_beside_the_sidebar_in_the_players_window() -> void:
 	for size : Vector2i in INSET_WINDOWS:
 		var where := "the player's window %s" % size
 		await _start_map_fixture(size, true)
@@ -6941,8 +6940,7 @@ func test_the_chooser_is_a_square_beside_the_sidebar_in_the_players_window() -> 
 			var drawn := window.get_final_transform() * _chooser_window(chooser)
 			var space := window.get_final_transform() * _ui_space(_main)
 			var tolerance := CENTRED_TOLERANCE_PX * window.get_final_transform().get_scale().x
-			check(absf(drawn.size.x - drawn.size.y) <= tolerance,
-					"the chooser draws as a square window in %s" % where, str(drawn.size))
+			_check_the_chooser_pads_its_rows_as_its_sides(chooser, where)
 			check(Rect2(Vector2.ZERO, Vector2(window.size)).grow(tolerance).encloses(drawn),
 					"...wholly on screen in %s" % where, "%s in %s" % [drawn, window.size])
 			check(drawn.get_center().distance_to(space.get_center()) <= tolerance,
@@ -7393,6 +7391,18 @@ func test_the_deck_over_the_possible_cards_hides_the_whole_list() -> void:
 	if is_instance_valid(list): list._close()
 	await get_tree().process_frame
 	await _end_main_fixture()
+
+## The chooser's window pads its first row above and its Rerolls-and-Take row below as it pads its sides, so it is exactly as tall as what it holds.
+func _check_the_chooser_pads_its_rows_as_its_sides(chooser: ChoiceViewer, where: String) -> void:
+	var window := chooser._layout.get_global_rect()
+	var first := chooser._cards.controls[0].get_global_rect()
+	var foot := chooser._bottom_row.get_global_rect()
+	var side := first.position.x - window.position.x
+	var above := first.position.y - window.position.y
+	var below := window.end.y - foot.end.y
+	check(absf(above - side) <= 1.0 and absf(below - side) <= 1.0,
+			"the chooser is as tall as what it holds, padded above and below as at its sides, in %s" % where,
+			"above %.2f below %.2f side %.2f" % [above, below, side])
 
 ## The opaque backdrop `viewer` draws its window in.
 func _backdrop_of(viewer: DeckViewer) -> ColorRect:

@@ -839,7 +839,7 @@ func _click_the_control(control: Control) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-# THE CHOOSER IS A SQUARE WINDOW beside the sidebar with the map around it, and a chosen card
+# THE CHOOSER IS A WINDOW FITTED TO ITS ROWS beside the sidebar with the map around it, and a chosen card
 # described there with a Deck button of its own -- whose viewer opens OVER it.
 func _shoot_the_chooser(main: Main) -> void:
 	var map := main.map_scene
