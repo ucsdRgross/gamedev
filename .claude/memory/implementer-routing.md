@@ -1,21 +1,26 @@
 ---
 name: implementer-routing
-description: "Which model implements a step: Opus medium or low, or Sonnet low for mechanical work, effort set in each agent's frontmatter; Fable only as the read-only reviewer"
+description: "Which model implements a step: Opus 5.5 medium, then Opus 5.5 low, then Sonnet 5.5 high for deterministic grunt work, effort set in each agent's frontmatter; Fable only as the read-only reviewer"
 metadata:
   type: feedback
 ---
 
-**Owner, verbatim: "implementers will be opus 5.5 medium or low or sonnet 5 low."** Three
-definitions, effort in each one's frontmatter (the only per-subagent effort control; the `Agent`
-call cannot pass effort): `plan-implementer` (`model: opus`, medium), `plan-implementer-low`
-(`opus`, low), `plan-implementer-sonnet` (`sonnet`, low - mechanical steps only). The presets use
-the aliases so they follow each new version (owner). The overseer writes no source.
+**Owner, verbatim: "opus 5.5 is still more trustable for general work. sonnet 5.5 should still do
+deterministic grunt work, looking at the stats though, sonnet 5.5 is much better to be run at high
+effort instead of low. cheaper and less likely to make mistakes. sonnet 5.5 high is tier below opus
+5.5 medium."** Then, placing it: **"lets put sonnet 5.5 high below opus 5.5 low."** (Supersedes
+"implementers will be opus 5.5 medium or low or sonnet 5 low.") Three definitions, highest tier
+first, effort in each one's frontmatter (the only per-subagent effort control; the `Agent` call
+cannot pass effort): `plan-implementer` (`model: opus`, medium), `plan-implementer-low` (`opus`,
+low), `plan-implementer-sonnet` (`sonnet`, high - deterministic grunt work only). The presets use
+the aliases so they follow each new version (owner); `sonnet` is Sonnet 5.5 on the Anthropic API
+from Claude Code v2.1.284 (code.claude.com/docs/en/model-config). The overseer writes no source.
 
 **Route by what the brief already knows, not by how big the step looks:**
 
 | The step | Dispatch | Measured on the playtest stream |
 |---|---|---|
-| mechanical: a comment sweep, a one-line inline, a doc correction, a re-point of named rows | `plan-implementer-sonnet` | 5 of 5 landed first round, 29k-54k tokens each |
+| mechanical: a comment sweep, a one-line inline, a doc correction, a re-point of named rows | `plan-implementer-sonnet` | Sonnet 5 at low: 5 of 5 landed first round, 29k-54k tokens each; Sonnet 5.5 at high not yet measured here |
 | the writer and row are named: a one-site fix with its `file:line`, a recon-backed bug | `plan-implementer-low` | 34k-69k tokens each; each one either landed or stopped with a measured owner question |
 | the cause is open, a focus/input model across viewports, a modal or lock state machine, a deletion that must prove every caller gone | `plan-implementer` (medium) | 100k-680k tokens per round; split the brief before dispatch - a smaller brief, not a bigger model, is the lever |
 | read-only recon ahead of a step | `Explore` on `sonnet` | grep-and-cite; the implementer measures anyway |
@@ -29,7 +34,7 @@ overseer decides the next run. The one Sonnet step ever given an open-cause bug 
 over 185 tool calls and failed where Opus steps spent 116k-238k and landed - so Sonnet only for
 work that cannot turn into a diagnosis.
 
-**Cost arithmetic (Anthropic's published prices, Sept 2026):** Sonnet 5 $2/$10 per MTok; Opus 5.5
+**Cost arithmetic (Anthropic's published prices, Sept 2026):** Sonnet 5 and 5.5 $2/$10 per MTok, Sonnet 5.5 cache reads $0.20; Opus 5.5
 $4/$20, cache reads $0.20; Opus 5 $5/$25, cache reads $0.50. A subagent's spend is mostly cache
 reads of its own growing context, so continuing a finished implementer with `SendMessage` for its
 next round is cheaper than a fresh one re-reading the tree - until its context is very large

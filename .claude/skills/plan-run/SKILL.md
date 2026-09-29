@@ -211,10 +211,11 @@ others (the once-per-session workflow-diff pass is `/handoff` Reflect step 3):
 frontmatter or a model override and is not visible at dispatch time, so nothing validates it. If it
 needs enforcing rather than instructing, that is a `PreToolUse` hook on `Agent`.
 
-⚠ **`model:` SELECTS A FAMILY, NOT A VERSION** — `opus`, `sonnet`, `haiku`, `fable`. It cannot pin a
-point release. When the distinction you need is between two versions of one family, the only
-reliable mechanism is a SEPARATE SESSION with that model chosen at startup, which is why the close
-hands over rather than dispatching.
+⚠ **An alias `model:` follows each release; a full ID pins one.** `model:` takes `opus`, `sonnet`,
+`haiku`, `fable` or a full model ID such as `claude-sonnet-5-5` (code.claude.com/docs/en/sub-agents).
+An alias in the SESSION's own family resolves to the session's exact model, so dispatching `opus` from
+an Opus session cannot pick another Opus version - pin a full ID for that. The close still hands
+over to a new session: the bias it defeats is the overseer's, not its model's.
 
 ⚠ **A usage limit on the higher tier mid-close:** continue on the next tier only if it still clears
 the floor, and write the switch into `IMPLEMENTED-BY` before the next dispatch.
