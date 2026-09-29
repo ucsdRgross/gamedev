@@ -25,6 +25,9 @@ Cost check at the boundary: cache reads cost the same on both models ($0.20/MTok
 subagent's spend, so Sonnet is cheaper only while it needs no more turns than Opus low would; a
 "deterministic" step that runs long on Sonnet was not deterministic - route its kind one tier up.
 
+Solatro's catalogue - every kind of step its streams have run, with its tier and evidence:
+`solatro/ROUTING.md`.
+
 **Route by what the brief already knows, not by how big the step looks:**
 
 | The step | Dispatch | Measured on the playtest stream |
