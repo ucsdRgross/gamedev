@@ -125,7 +125,7 @@ func log_str() -> String:
 # that it HAS one is what changes behaviour, and the verbose form is one call away when it does.
 	if skill: s += "*"
 	if stamp: s += "+"
-	if type and not type.get_str().is_empty(): s += "^"
+	if type and type.has_effect(): s += "^"
 	if not statuses.is_empty(): s += "#%d" % statuses.size()
 	if stage != Stage.PLAY: s += "/" + Stage.find_key(stage)
 	return s

@@ -158,7 +158,7 @@ func test_a_sixth_card_wraps_to_a_centred_row_of_its_own() -> void:
 	for control : ControlCard in viewer._cards.controls:
 		rects.append(control.get_global_rect())
 	var first_row := rects[0]
-	for i in range(1, 5):
+	for i : int in range(1, 5):
 		first_row = first_row.merge(rects[i])
 	check(rects.size() == 6 and is_equal_approx(first_row.size.y, rects[0].size.y)
 			and rects[5].position.y > first_row.end.y - 0.5,
@@ -301,9 +301,9 @@ func _fitted_deck_viewer(count: int, remaining: Rect2) -> DeckViewer:
 			await get_tree().process_frame
 	return viewer
 
-func _cards_in_the_first_row_of(cards: Array[ControlCard]) -> int:
+func _cards_in_the_first_row_of(cards: Array[Control]) -> int:
 	var top := cards[0].get_global_rect().position.y
-	return cards.filter(func(card: ControlCard) -> bool:
+	return cards.filter(func(card: Control) -> bool:
 			return is_equal_approx(card.get_global_rect().position.y, top)).size()
 
 ## A chooser of `count` cards opened through the product's entry and fitted to `remaining`.
@@ -356,7 +356,7 @@ func test_a_hover_describes_a_viewer_card_and_a_click_sticks_it() -> void:
 	check(not published.is_empty(), "a hover publishes the card it landed on", str(published))
 	check(viewer._cards.sticky == null, "...and sticks nothing")
 	_click(cards[0])
-	check(viewer._cards.sticky == cards[0].child.data, "a click sticks the sidebar to that card")
+	check(viewer._cards.sticky == (cards[0] as ControlCard).child.data, "a click sticks the sidebar to that card")
 	await _drop_viewer(viewer)
 
 ## A later hover BORROWS the description while it lasts; letting go gives it back to the stuck card, so a long one can be read in the sidebar.
@@ -373,7 +373,7 @@ func test_a_later_hover_borrows_the_description_and_gives_it_back() -> void:
 	check(published.size() > after_the_click,
 			"a hover over another card does show that card while it lasts",
 			"%d vs %d" % [published.size(), after_the_click])
-	check(viewer._cards.sticky == cards[0].child.data,
+	check(viewer._cards.sticky == (cards[0] as ControlCard).child.data,
 			"...and the clicked card is still the stuck one")
 	cards[1].mouse_exited.emit()
 	check(gave_back[0] == 1,
@@ -532,7 +532,7 @@ func _card() -> CardData:
 
 func _count_viewers() -> int:
 	var n := 0
-	for child in get_children():
+	for child : Node in get_children():
 		if child is DeckViewer and not child.is_queued_for_deletion():
 			n += 1
 	return n
@@ -578,8 +578,8 @@ func test_control_card_focus() -> void:
 	await get_tree().process_frame
 
 func test_describe_card() -> void:
-# Use TypeHeavy (a NAMED type) — TypePaper's get_str() is "" and describe_card skips
-# nameless modifiers, so it can't be asserted with contains().
+# Use TypeHeavy (a type WITH an effect): describe_card gives TypePaper no block, so it can't be
+# asserted with contains().
 	var data := _card().with_skill(SkillExtraPoint.new()).with_stamp(StampGlobal.new()) \
 			.with_type(TypeHeavy.new())
 	var text := ControlCard.describe_card(data)
@@ -589,11 +589,11 @@ func test_describe_card() -> void:
 			"describe_card names every modifier", text)
 	check(text.contains(SkillExtraPoint.new().get_description()),
 			"describe_card includes the modifier descriptions")
-# A nameless type must not add an empty block: a block is a NAME in the large font and a
-# description under it, and there is no name to write.
+# A type with no effect must not add a block: a card's description explains effects, and it has
+# none to explain.
 	var paper := CardData.new().with_type(TypePaper.new())
 	check(not ControlCard.describe_card(paper).contains("[font_size="),
-			"nameless type produces no effect block")
+			"a type with no effect produces no effect block")
 
 func test_choice_viewer_take_all() -> void:
 	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 5, 0)
@@ -601,7 +601,7 @@ func test_choice_viewer_take_all() -> void:
 # population is deferred one frame (fly-in fix)
 	await get_tree().process_frame
 	var cards := 0
-	for child in viewer.flow_container.get_children():
+	for child : Node in viewer.flow_container.get_children():
 		if child is ControlCard:
 			cards += 1
 	check(cards == 5, "viewer shows every generated card", "cards: %d" % cards)
@@ -683,7 +683,7 @@ func _rim_index(control: ControlCard) -> int:
 	return CardOutline.material_of(control.child.type).get_shader_parameter(&"u_outline_index")
 
 ## A real left press on the control, through the signal Godot's own GUI pass fires -- not the handler by name.
-func _click(control: ControlCard) -> void:
+func _click(control: Control) -> void:
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
 	press.pressed = true

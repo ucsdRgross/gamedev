@@ -224,6 +224,7 @@ func _ready() -> void:
 	await test_the_maps_viewer_stack_is_hidden_in_wall_view_and_back_on_return()
 	await test_a_card_stuck_in_the_possible_cards_carries_only_the_deck_row()
 	await test_deck_from_a_stuck_possible_card_opens_over_the_list()
+	await test_the_deck_over_the_possible_cards_hides_the_whole_list()
 	await test_closing_the_possible_cards_with_a_card_stuck_returns_to_the_pick()
 	await test_the_deck_over_the_possible_cards_by_keys_alone()
 	await test_a_click_on_the_viewers_close_tab_closes_it()
@@ -331,6 +332,8 @@ func _ready() -> void:
 	await test_a_dropped_pick_leaves_the_map_nothing_to_come_back_to()
 	await test_every_new_button_is_written_in_the_locale()
 	await test_a_pack_lists_its_possible_cards_on_the_first_pick_only()
+	await test_the_possible_cards_list_every_part_as_an_icon_and_no_card()
+	await test_a_possible_part_is_described_by_its_name_on_a_card_preview()
 	await test_travelling_lets_a_pack_list_itself_again()
 	await test_no_name_popup_shows_on_the_board()
 	behavior_section("THE NAME IS ANCHORED TO THE DOT IT NAMES")
@@ -6033,7 +6036,7 @@ func test_left_off_the_menus_viewer_stays_in_it_with_nothing_to_land_on() -> voi
 	if is_instance_valid(viewer):
 		var panel : DescriptionPanel = main.hud_container.get_node(^"%DescriptionPanel")
 		await _tap_key_in(viewport, KEY_DOWN)
-		var first := viewer.cards().controls[0]
+		var first : ControlCard = viewer.cards().controls[0]
 		check(first.has_focus(), "sanity: Down entered the viewer's first card",
 				str(viewport.gui_get_focus_owner()))
 		for device : String in ["keys", "d-pad"]:
@@ -6373,7 +6376,7 @@ func _check_the_offered_cards_lie_in_one_row(chooser: ChoiceViewer, where: Strin
 	for control : ControlCard in chooser._cards.controls:
 		rects.append(control.get_global_rect())
 	var one_row := rects.size() == 5
-	for i in range(1, rects.size()):
+	for i : int in range(1, rects.size()):
 		one_row = one_row and is_equal_approx(rects[i].position.y, rects[0].position.y) 				and rects[i].position.x >= rects[i - 1].end.x
 	check(one_row, "the five offered cards lie in one row at %s" % where, str(rects))
 	var row := rects[0]
@@ -6778,7 +6781,7 @@ func test_the_choosers_cards_draw_at_the_ui_size_whatever_the_map_zoom() -> void
 			await get_tree().process_frame
 		await _end_main_fixture()
 
-func _check_cards_at_the_ui_size(viewport: SubViewport, cards: Array[ControlCard], where: String) -> void:
+func _check_cards_at_the_ui_size(viewport: SubViewport, cards: Array, where: String) -> void:
 	var content_scale := viewport.get_final_transform().get_scale()
 	check(is_equal_approx(content_scale.x, content_scale.y),
 			"sanity: the window's UI scale is uniform (%s)" % where, str(content_scale))
@@ -6788,6 +6791,22 @@ func _check_cards_at_the_ui_size(viewport: SubViewport, cards: Array[ControlCard
 				* control.get_global_transform_with_canvas()).basis_xform(control.size)
 		check(drawn.is_equal_approx(ui),
 				"a listed card is drawn at the UI card size (%s)" % where, "%s vs %s" % [drawn, ui])
+
+## A possible-cards list's icons at the window's UI scale: each its list's one cell, and a part other than a type drawn one art unit per viewer card scale.
+func _check_icons_at_the_ui_size(viewport: SubViewport, list: DeckViewer, where: String) -> void:
+	var content_scale := viewport.get_final_transform().get_scale()
+	var cell := list.cards().item_px * content_scale
+	var art_unit := CardVisual.DECK_VIEWER_SCALE * content_scale
+	for icon : PartIcon in list.cards().controls:
+		var drawn := (viewport.get_final_transform()
+				* icon.get_global_transform_with_canvas()).basis_xform(icon.size)
+		check(drawn.is_equal_approx(cell),
+				"a listed icon is drawn at its list's cell at the UI scale (%s)" % where, "%s vs %s" % [drawn, cell])
+		if icon.data.type: continue
+		var unit := (viewport.get_final_transform()
+				* icon._art.get_global_transform_with_canvas()).get_scale()
+		check(unit.is_equal_approx(art_unit),
+				"a listed part is drawn one art unit per viewer card scale (%s)" % where, "%s vs %s" % [unit, art_unit])
 
 ## The chooser and the run deck open over it are UI on the sidebar's layer: in wall view neither is drawn nor hears input, and coming back fades both in with the sidebar exactly as they were left.
 func test_the_chooser_and_its_deck_are_hidden_in_wall_view_and_back_on_return() -> void:
@@ -6855,7 +6874,7 @@ func test_keys_stay_in_the_chooser_on_the_windows_own_viewport() -> void:
 				"a second arrow walks to its next card, nothing in the map picture focused",
 				"%s / map %s" % [_booted_viewport.gui_get_focus_owner(), _map_viewport.gui_get_focus_owner()])
 		await _tap_key(KEY_ENTER)
-		check(chooser.cards().sticky == cards[1].child.data and _map.selection_deck_button.is_visible_in_tree(),
+		check(chooser.cards().sticky == (cards[1] as ControlCard).child.data and _map.selection_deck_button.is_visible_in_tree(),
 				"sanity: accept stuck that card, its description offering the deck")
 		await _open_viewer_by_accept(_map.selection_deck_button)
 		var deck := DeckViewer._open
@@ -6902,11 +6921,11 @@ func test_the_maps_viewers_draw_at_the_ui_size_whatever_the_map_zoom() -> void:
 				str(list.get_viewport() if is_instance_valid(list) else null))
 		if is_instance_valid(list):
 			var zoom_before := _map.controller.camera.zoom
-			_check_cards_at_the_ui_size(_booted_viewport, list.cards().controls, "possible cards, %s at the fit" % size)
+			_check_icons_at_the_ui_size(_booted_viewport, list, "possible cards, %s at the fit" % size)
 			await _zoom_the_map_in(_main, 3)
 			check(not _map.controller.camera.zoom.is_equal_approx(zoom_before),
 					"sanity: the map zoomed in under the list at %s" % size)
-			_check_cards_at_the_ui_size(_booted_viewport, list.cards().controls, "possible cards, %s zoomed in" % size)
+			_check_icons_at_the_ui_size(_booted_viewport, list, "possible cards, %s zoomed in" % size)
 			list._close()
 			await get_tree().process_frame
 		_container.map_deck_button.pressed.emit()
@@ -7149,6 +7168,34 @@ func test_the_deck_over_the_possible_cards_by_keys_alone() -> void:
 	check(presses[0] == 1, "...and accept on it travels")
 	await _see_the_travel_through()
 	await _end_main_fixture()
+
+## The run deck opened over a pack's possible cards hides the whole list under it: every viewer's opaque backdrop fills its whole window, whatever each one lists.
+func test_the_deck_over_the_possible_cards_hides_the_whole_list() -> void:
+	var list := await _stick_a_possible_card()
+	check(await _click_button(_map.selection_deck_button, _booted_viewport),
+			"sanity: a real click on the stuck part's Deck pressed it")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var deck := DeckViewer._open
+	check(is_instance_valid(deck) and deck != list, "sanity: the run deck opened over the list")
+	if is_instance_valid(deck) and deck != list:
+		var over := _backdrop_of(deck).get_global_rect()
+		var under := _backdrop_of(list).get_global_rect()
+		var shown := (list.flow_container.get_parent() as Control).get_global_rect()
+		check(over.is_equal_approx(under) and over.encloses(shown),
+				"the run deck's opaque backdrop is the same whole window as the possible-cards list's under it",
+				"%s over %s" % [over, under])
+		print("P71 TABS deck=%s list=%s" % [_close_tab_of(deck).get_global_rect(),
+				_close_tab_of(list).get_global_rect()])
+		deck._close()
+		await get_tree().process_frame
+	if is_instance_valid(list): list._close()
+	await get_tree().process_frame
+	await _end_main_fixture()
+
+## The opaque backdrop `viewer` draws its window in.
+func _backdrop_of(viewer: DeckViewer) -> ColorRect:
+	return viewer.margin_container.get_node(^"ColorRect") as ColorRect
 
 ## A pack node picked and its first possible card clicked stuck, through the product's own routes.
 func _stick_a_possible_card() -> DeckViewer:
@@ -7681,7 +7728,7 @@ func _jump_key_off_the_map() -> Key:
 	return (KEY_1 + off_the_map) as Key
 
 ## A real left press on a listed control, through the signal Godot's own GUI pass fires.
-func _click_a_listed_card(control: ControlCard) -> void:
+func _click_a_listed_card(control: Control) -> void:
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
 	press.pressed = true
@@ -10264,6 +10311,105 @@ func test_every_new_button_is_written_in_the_locale() -> void:
 func _card_for_a_pack() -> CardData:
 	return CardData.new().with_rank(PipRankNumeral.new().with_value(5)).with_suit(PipSuitKnife.new())
 
+## A pack's possible cards list each part it could roll as a labelled icon, every icon in one shared cell, a type's face shrunk into it -- and no card body is drawn anywhere in the list.
+func test_the_possible_cards_list_every_part_as_an_icon_and_no_card() -> void:
+	await _start_map_fixture()
+	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	await _select_map_node_and_settle(pack)
+	var list := DeckViewer._open
+	check(is_instance_valid(list), "sanity: the first pick of a pack listed its possible cards")
+	if is_instance_valid(list):
+		var parts := await _booster_of(pack).get_possible_preview_cards()
+		var icons : Array[PartIcon] = []
+		for control : Control in list.cards().controls:
+			if control is PartIcon: icons.append(control)
+		check(icons.size() == parts.size() and icons.size() == list.cards().controls.size(),
+				"every possible part is listed as one icon, and nothing else is listed",
+				"%d icons, %d listed, %d parts" % [icons.size(), list.cards().controls.size(), parts.size()])
+		var bodies := list.flow_container.find_children("*", "", true, false).filter(
+				func(node: Node) -> bool: return node is CardVisual)
+		check(bodies.is_empty(), "no card body is drawn in the possible-cards list", str(bodies.size()))
+		var cell := icons[0].size
+		check(icons.all(func(icon: PartIcon) -> bool: return icon.size == cell),
+				"every icon shares its list's one cell", str(cell))
+		for icon : PartIcon in icons:
+			var named : String = PartIcon.part_of(icon.data).call(&"get_str")
+			check(icon._label.text == named,
+					"an icon is labelled with its part's own name", icon._label.text)
+			if icon.data.type == null: continue
+			var drawn := icon._window * icon._art.scale
+			check(drawn.x <= icon._art_box.size.x and drawn.y <= icon._art_box.size.y
+					and icon._art.scale.x < CardVisual.DECK_VIEWER_SCALE,
+					"a type's face is shrunk into the cell, not drawn as a card",
+					"%s in %s" % [drawn, icon._art_box.size])
+		await _close_the_open_viewer()
+	await _end_main_fixture()
+
+## Hovered, focused by keys or by the d-pad, or stuck by a click or an accept, a listed part is described in the sidebar by its own name and a description that is never empty, previewed on a card with a body -- and so is every other part in the list.
+func test_a_possible_part_is_described_by_its_name_on_a_card_preview() -> void:
+	for route : String in ["mouse", "keys", "d-pad"]:
+		await _start_map_fixture()
+		await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+		var list := DeckViewer._open
+		check(is_instance_valid(list) and list.cards().controls.size() > 1,
+				"sanity: the first pick of a pack listed its possible cards (%s)" % route)
+		if is_instance_valid(list) and list.cards().controls.size() > 1:
+			var icons := list.cards().controls
+			var target : PartIcon = icons[1]
+			if route == "mouse":
+				target = icons[icons.find_custom(func(icon: PartIcon) -> bool: return icon.data.stamp != null)]
+				_hover_in(_booted_viewport, target.get_global_rect().get_center())
+				await get_tree().process_frame
+				await get_tree().process_frame
+			else:
+				var right : Callable = _tap_key.bind(KEY_RIGHT) if route == "keys" \
+						else _tap_pad.bind(JOY_BUTTON_DPAD_RIGHT)
+				await _walk_by([right, right] as Array[Callable], [icons[0], target] as Array[Control],
+						"into the possible cards and on to the next part (%s)" % route)
+			_check_the_part_described(target, "highlighted by %s" % route)
+			if route == "mouse": await _click(target.get_global_rect().get_center(), _booted_viewport)
+			elif route == "keys": await _tap_key(KEY_ENTER)
+			else: await _tap_pad(JOY_BUTTON_A)
+			check(list.cards().sticky == target.data,
+					"the part's click or accept sticks it (%s)" % route, str(list.cards().sticky))
+			_check_the_part_described(target, "stuck by %s" % route)
+			if route == "keys":
+				for icon : PartIcon in icons:
+					icon.grab_focus()
+					await get_tree().process_frame
+					_check_the_part_described(icon, "every part, focused")
+			await _close_the_open_viewer()
+		await _end_main_fixture()
+
+## The sidebar describes `icon`'s part: its name as the title, its own non-empty description, and a card preview carrying that part on a body.
+func _check_the_part_described(icon: PartIcon, how: String) -> void:
+	var part := PartIcon.part_of(icon.data)
+	var entry := _panel.current_entry
+	var described : String = part.call(&"get_description")
+	var named : String = part.call(&"get_str")
+	check(_container.showing_description() and entry != null
+			and entry.title == named and entry.body == described
+			and not described.is_empty(),
+			"a listed part is described by its own name and a description that is never empty (%s)" % how,
+			"%s: '%s' / '%s'" % [(part.get_script() as Script).get_global_name(),
+			entry.title if entry else "none", entry.body if entry else "none"])
+	var previews : Array = []
+	if entry and entry.visual:
+		previews = entry.visual.find_children("*", "", true, false).filter(
+				func(node: Node) -> bool: return node is CardVisual)
+	var preview : CardData = (previews[0] as CardVisual).data if previews.size() == 1 else null
+	check(preview != null and preview.type != null and _carries(preview, part),
+			"...previewed on one card with a body, the part in its own place (%s)" % how,
+			"%d previews" % previews.size())
+
+## Whether `card` carries a part of the same kind and value as `part`.
+func _carries(card: CardData, part: Resource) -> bool:
+	for own : Resource in [card.type, card.stamp, card.skill, card.suit, card.rank]:
+		if own and own.get_script() == part.get_script() \
+				and (not part is PipRank or (own as PipRank).value == (part as PipRank).value):
+			return true
+	return false
+
 # THE SIDEBAR IS TOO NARROW TO READ A PACK IN, so the pack lists itself in a viewer on the first
 # pick -- and only the first: a later pick of the same node leaves the player where they are, and
 # the button is how they ask again.
@@ -10275,8 +10421,12 @@ func test_a_pack_lists_its_possible_cards_on_the_first_pick_only() -> void:
 	check(is_instance_valid(DeckViewer._open),
 			"the first pick of a talent pack lists its possible cards")
 	var listed : int = DeckViewer._open.deck.size()
-	check(listed == (await _booster_of(pack).get_possible_preview_cards()).size() and listed > 0,
-			"...every card the pack could roll, and nothing else", str(listed))
+	var icons : int = DeckViewer._open.cards().controls.filter(
+			func(control: Control) -> bool: return control is PartIcon).size()
+	check(listed == (await _booster_of(pack).get_possible_preview_cards()).size() and listed > 0
+			and icons == listed,
+			"...every part the pack could roll as one icon each, and nothing else",
+			"%d parts, %d icons" % [listed, icons])
 	await _close_the_open_viewer()
 	await _select_map_node_and_settle(other)
 	await _select_map_node_and_settle(pack)

@@ -51,6 +51,7 @@ This block, unchanged, goes into every document derived from this one.
 | `UI/description_panel.tscn` | — | Its scene. Owns `%Back`, the way back out of a preview card picked from a pack's grid, at the head of the name's row and up only while such a card shows (K9, `GAP-010`=c) |
 | `UI/map_name_popup.gd` | `MapNamePopup` | The small name-only popup above a map node (K2) |
 | `UI/map_name_popup.tscn` | — | Its scene |
+| `UI/part_icon.gd` | `PartIcon` | (added during execution) One part of a pack's possible cards -- a type, stamp, skill, suit or rank -- as a small labelled icon instead of a card (thirty-second round, "c: icons, not cards"); built in code, no scene |
 | `Scripts/gesture_metrics.gd` | `GestureMetrics` | The units model: `drag_threshold_px()` and `touch_target_px()` (M3, M7) |
 
 ## 2. Deleted files
@@ -100,7 +101,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `DescriptionPanel` | `func mount_buttons(row: Control) -> void` | The `%ButtonRow` slot: the panel never learns what the buttons do |
 | `DescriptionPanel` | `func show_buttons(shown: bool) -> void` | (added during execution) Whether the mounted row may show at all: `HudContainer.set_active_screen` shows it on the map screen only, so no other screen's card description carries the map's buttons |
 | `DeckViewer` | `static func read_close_while_open(opener: Button, close_key: StringName, viewer: DeckViewer) -> void` | (added during execution) The opener reads its Close label while its own viewer is up and gets its own text back when the viewer leaves the tree; `Map` and `GameView` call it for every opener |
-| `DeckViewer` | `static func show_deck(parent: Node, new_deck: Array[CardData], opener: Control, over := false) -> DeckViewer` | (`over` added during execution) `over` opens the new viewer OVER the open one, which stays open underneath and is on top again when the new one closes; `Map` passes it while a card is stuck in a pack's possible cards, so the run deck opens over that list |
+| `DeckViewer` | `static func show_deck(parent: Node, new_deck: Array[CardData], opener: Control, over := false, parts := false) -> DeckViewer`, `var lists_parts`, `func _publish_part_info(data)` | (`over` and `parts` added during execution) `parts` lists the deck as `PartIcon`s and describes each through `PartIcon.part_info`; `Map._show_possible_cards` passes it. `over` `over` opens the new viewer OVER the open one, which stays open underneath and is on top again when the new one closes; `Map` passes it while a card is stuck in a pack's possible cards, so the run deck opens over that list |
 | `DeckViewer` | `var close_tab : Button`, node `CloseTab` | (added during execution) The X tab sticking out of the top of the viewer window's right side, closing that viewer alone (a stack's lower viewer keeps its own); `HudContainer._fit_viewer` sizes it to the X's touch target. The pack chooser carries none |
 | `CardsViewer` | `var close_tab : Control` | (added during execution) The viewer's close tab, or null: its focus counts as inside the list, so an arrow from it walks the viewer's own grid instead of being handed back to the first card |
 | `WorldMapController` | `func select_node(node: WorldGraphNode) -> void` | A pointer, finger or pad PICKS a reachable node; travelling is the map screen's Travel button |
@@ -210,6 +211,13 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `static func hold(button: Button, held: bool) -> void` | (moved during execution, from `ChoiceViewer._hold`) THE ONE RULE for a disabled button: disabled and out of the focus chain together, so arrows pass over it. Called by the chooser's Take/Reroll, the menu's Continue and the game's Submit |
 | `TestSidebar` | `func test_a_keyed_end_leaves_no_focus_on_the_disabled_button()`, `func _holds_a_live_focus(viewport)` | Test support (added during execution): Enter on End moves the focus off the disabled button onto a live control in the show, and End is a focus target again once Undo resumes play |
 
+| `CardsViewer` | `var controls : Array[Control]` (was `Array[ControlCard]`), `var _data_of : Dictionary[Control, CardData]`, `var item_px : Vector2`, `func populate_parts(cards, on_inspect) -> void`, `func _list(control, data)` | (added during execution) One list for cards and part icons alike: a key's stick reads the card a control stands for, and every row, column and whole-column fit is measured in the listed control's own size (the card preview size unless the list is of parts) |
+| `PartIcon` | `var data`, `static func add_child_part_icon(parent, part_data) -> PartIcon`, `static func part_of(card) -> Resource`, `static func cell_of(icons) -> Vector2`, `func fit(cell)`, `static func part_info(part_data, card_px) -> InfoEntry` | (added during execution) The cell is the largest non-type part's framed window at `CardVisual.DECK_VIEWER_SCALE`, as wide as the widest label; a part draws one art unit per that scale, a type shrunk into the cell (forty-second round, "b: shrunk to the cell"). The sidebar gets the part's own `get_str`/`get_description` over a card preview carrying it; a part other than a type previews on `TypePaper`, whose frame is `CardVisual.BLANK_CARD_FRAME` |
+| `CardModifierType` | `func has_effect() -> bool` | (added during execution) THE ONE RULE for naming a type on a card: `ControlCard.describe_card` gives a type a block, and `CardData.log_str` its `^`, only when it has an effect; `TypePaper` answers false, so its name and description show only on its own icon in a pack's possible cards (forty-third round, "b: only in the list") |
+| `DeckViewer` | `SmoothScrollContainer.size_flags_horizontal = SHRINK_CENTER` (scene), `fit_beside` sizing the scroll to whole columns | (changed during execution) The opaque backdrop fills the viewer's whole window beside the sidebar; only the list inside is whole columns, centred, so a viewer over another hides it whatever either lists |
+| `TestSidebar` | `func test_the_deck_over_the_possible_cards_hides_the_whole_list()`, `func _backdrop_of(viewer) -> ColorRect` | (added during execution) The run deck's backdrop encloses the possible-cards list under it |
+| `PipRank` | `func get_description() -> String` | (added during execution) One line every rank shares, so a listed rank is never described empty |
+
 ## 4. Deleted methods and properties
 
 | Where | What | Node |
@@ -287,6 +295,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | Path | Class | Covers |
 |---|---|---|
 | `Tests/Wall/test_sidebar.gd` / `.tscn` | `TestSidebar` | Charts B, C — open, swap, lock, dismiss, processing |
+| `Tests/Wall/test_sidebar.gd` | `func test_the_possible_cards_list_every_part_as_an_icon_and_no_card()`, `func test_a_possible_part_is_described_by_its_name_on_a_card_preview()`, `func _check_the_part_described(icon, how)`, `func _carries(card, part) -> bool`, `func _check_icons_at_the_ui_size(viewport, list, where)` | (added during execution) The possible cards as icons: one per part, no card body, one cell, a type shrunk; each described by name over a card preview by mouse, keys and d-pad |
 | `Tests/Engine/test_gesture_metrics.gd` / `.tscn` | `TestGestureMetrics` | Chart M — both bases, no DPI anywhere |
 | `Tests/Engine/test_entrance_stocks.gd` / `.tscn` | `TestEntranceStocks` | Chart H — deal, rebalance, exhaustion, determinism |
 | `Tests/Interaction/test_drag_place.gd` / `.tscn` | `TestDragPlace` | Chart E — click vs drag, release targets |
@@ -302,6 +311,8 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `MAP_CLOSE_DECK` | (added during execution) The map's Deck opener while the run deck it opened is up |
 | `GAME_CLOSE_DECK` / `GAME_CLOSE_DISCARD` / `GAME_CLOSE_RULES` | (added during execution) The game's pile openers while their own viewer is up |
 | `GAME_UNDO` | The outcome screen's own Undo, beside Continue (J13, `GAP-009`=b) |
+| `TYPE_PAPER` / `TYPE_PAPER_DESCRIPTION` | (added during execution) `TypePaper`'s name and description: PLACEHOLDERS, read only by its possible-cards icon (see `RANK_DESCRIPTION`) |
+| `RANK_DESCRIPTION` | (added during execution) `PipRank.get_description`: a PLACEHOLDER line (owner: "you can write them with placeholders"); the CSV has no placeholder marker and its third column must stay empty, so this row is the record |
 
 ⚠ **Leave a new row's third column EMPTY.** Godot's CSV importer reads it as the message CONTEXT, so
 a row that fills it is unreachable through `TRANSLATION.find` and the label renders as its own key.

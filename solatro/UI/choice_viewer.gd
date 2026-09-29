@@ -52,7 +52,7 @@ static func add_to_scene(parent:Node, create_one:Callable, choices:int, choose:i
 	data.create_one_choice = create_one
 	data.choose = choose
 	data.rerolls = rerolls
-	for i in choices:
+	for i : int in choices:
 # awaited: generators may be coroutines (BoosterTemplate awaits its pool
 # broadcasts); a plain sync callable resumes immediately
 		var card_data : CardData = await create_one.call()
@@ -81,7 +81,7 @@ func _populate() -> void:
 	_cards = CardsViewer.new(flow_container)
 	_cards.populate(data.current_choices, _publish_info)
 	_cards.sticky_changed.connect(_follow_the_pick.unbind(1))
-	for i in _cards.controls.size():
+	for i : int in _cards.controls.size():
 		_reroll_buttons.append(_add_reroll_button(_cards.controls[i], i))
 	_refresh_rerolls()
 
@@ -153,7 +153,7 @@ func republish_highlight() -> void:
 	_cards.republish_highlight()
 
 ## One slot's Reroll button, parented to its card and hanging just below it (the flow container lays out the cards only). A focus stop like the card itself — keyboard/controller reach it.
-func _add_reroll_button(control: ControlCard, index: int) -> Button:
+func _add_reroll_button(control: Control, index: int) -> Button:
 	var button := Button.new()
 	button.text = TRANSLATION.find('CHOICE_REROLL')
 	control.add_child(button)
@@ -180,7 +180,7 @@ func reroll(index: int) -> bool:
 ## Replace only slot `index`'s ControlCard with one showing `card`, keeping its position in the container, its inspector wiring, its Reroll button — and the focus, if it was there.
 func _swap_card_control(index: int, card: CardData) -> void:
 	if not is_node_ready() or index >= _cards.controls.size(): return
-	var old := _cards.controls[index]
+	var old : ControlCard = _cards.controls[index]
 	var replaced : CardData = old.child.data
 	var had_focus : bool = _reroll_buttons[index].has_focus()
 	flow_container.remove_child(old)

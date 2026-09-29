@@ -1,12 +1,16 @@
 class_name CardsViewer
 extends RefCounted
 
-## Owns the card-list contents of ONE container Control: instantiates a ControlCard per CardData and (optionally) wires an inspector callback fired on hover AND keyboard/controller focus, plus the one MODAL model every viewer shares: a click sticks the sidebar to a card, a later hover borrows the description only while it lasts, keys never reach the screen beneath, and one cancel unsticks and closes together. Composed into each viewer (DeckViewer / ChoiceViewer / MapHoverPanel) — they differ only in their container and whether they inspect, so the listing logic lives here once, rather than copied per viewer. Composition (not a shared base class): the viewers' scene roots differ (CanvasLayer / Control / PanelContainer), and ControlCard stays singular (one card, not a list).
+## Owns the card-list contents of ONE container Control: instantiates a ControlCard, or a PartIcon for a pack's partial cards, per CardData and (optionally) wires an inspector callback fired on hover AND keyboard/controller focus, plus the one MODAL model every viewer shares: a click sticks the sidebar to a card, a later hover borrows the description only while it lasts, keys never reach the screen beneath, and one cancel unsticks and closes together. Composed into each viewer (DeckViewer / ChoiceViewer / MapHoverPanel) — they differ only in their container and whether they inspect, so the listing logic lives here once, rather than copied per viewer. Composition (not a shared base class): the viewers' scene roots differ (CanvasLayer / Control / PanelContainer), and ControlCard stays singular (one card, not a list).
 
 var _container: Node
 var _context: CardVisual.DisplayContext
-## The ControlCards currently listed, in order; controls[0] is the natural initial-focus target.
-var controls: Array[ControlCard] = []
+## The controls currently listed, in order; controls[0] is the natural initial-focus target.
+var controls: Array[Control] = []
+## The card each listed control stands for, which a key press sticks.
+var _data_of : Dictionary[Control, CardData] = {}
+## The size of one listed control, which every row and column is measured in.
+var item_px : Vector2 = CardVisual.preview_window_px()
 
 func _init(container: Node, context := CardVisual.DisplayContext.DECK_VIEWER) -> void:
 	_container = container
@@ -15,22 +19,37 @@ func _init(container: Node, context := CardVisual.DisplayContext.DECK_VIEWER) ->
 ## Fill the container with one ControlCard per card. `on_inspect(card)` (optional) fires on hover AND focus. Returns the first card (for initial focus), or null when empty. Call clear() first if repopulating.
 func populate(cards: Array[CardData], on_inspect := Callable()) -> ControlCard:
 	_on_inspect = on_inspect
-	for data in cards:
-		var control := ControlCard.add_child_control_card(_container, data, _context)
-		controls.append(control)
-		if on_inspect.is_valid():
-			inspect_on_highlight(control, data)
+	for data : CardData in cards:
+		_list(ControlCard.add_child_control_card(_container, data, _context), data)
 	return controls[0] if controls else null
+
+## Fill the container with one PartIcon per partial card, every icon in the one cell the list's parts and labels need; `on_inspect(card)` fires on hover AND focus.
+func populate_parts(cards: Array[CardData], on_inspect: Callable) -> void:
+	_on_inspect = on_inspect
+	var icons : Array[PartIcon] = []
+	for data : CardData in cards:
+		var icon := PartIcon.add_child_part_icon(_container, data)
+		icons.append(icon)
+		_list(icon, data)
+	var cell := PartIcon.cell_of(icons)
+	for icon : PartIcon in icons:
+		icon.fit(cell)
+	item_px = icons[0].get_combined_minimum_size()
+
+func _list(control: Control, data: CardData) -> void:
+	controls.append(control)
+	if _on_inspect.is_valid():
+		inspect_on_highlight(control, data)
 
 ## The width `columns` listed cards take side by side with the list's own gap between them: every viewer sizes a row by it.
 func row_px(columns: int) -> float:
 	var gap := (_container as Control).get_theme_constant(&"h_separation")
-	return columns * CardVisual.preview_window_px().x + (columns - 1) * gap
+	return columns * item_px.x + (columns - 1) * gap
 
 ## The height `rows` listed cards take stacked with the list's own gap between them: every viewer sizes its rows by it.
 func column_px(rows: int) -> float:
 	var gap := (_container as Control).get_theme_constant(&"v_separation")
-	return rows * CardVisual.preview_window_px().y + (rows - 1) * gap
+	return rows * item_px.y + (rows - 1) * gap
 
 ## The callback `populate()` wired, kept so a list that has been re-sized can publish through it again.
 var _on_inspect : Callable = Callable()
@@ -39,7 +58,8 @@ var _on_inspect : Callable = Callable()
 var _highlighted : CardData = null
 
 ## Wires one listed control's hover, focus AND click -- also the way a control REPLACING one keeps its place in the list wired.
-func inspect_on_highlight(control: ControlCard, data: CardData) -> void:
+func inspect_on_highlight(control: Control, data: CardData) -> void:
+	_data_of[control] = data
 	control.mouse_entered.connect(_enter_highlight.bind(data))
 	control.mouse_exited.connect(_leave_highlight)
 	control.focus_entered.connect(_publish_highlight.bind(data))
@@ -72,7 +92,7 @@ func _leave_highlight() -> void:
 
 # A CLICK IS WHAT MAKES A DESCRIPTION STAY, and it is taken here so it never reaches the catcher
 # behind the list, which reads a click anywhere else as "close".
-func _on_card_gui_input(event: InputEvent, data: CardData, control: ControlCard) -> void:
+func _on_card_gui_input(event: InputEvent, data: CardData, control: Control) -> void:
 	var button := event as InputEventMouseButton
 	if button == null or button.button_index != MOUSE_BUTTON_LEFT or not button.pressed: return
 	control.accept_event()
@@ -104,8 +124,8 @@ func modal_verdict(event: InputEvent) -> Modal:
 # ACCEPT IS THE CLICK'S OWN KEY: it sticks the card the focus is on. Reaching here at all means no
 # button took it, so it is swallowed either way rather than reaching the map beneath.
 	if event.is_action_pressed(&"ui_accept"):
-		for control : ControlCard in controls:
-			if control.has_focus(): stick_to(control.child.data)
+		for control : Control in controls:
+			if control.has_focus(): stick_to(_data_of[control])
 		return Modal.KEEP
 	for action : StringName in NAVIGATION:
 		if not event.is_action_pressed(action, true): continue
@@ -139,7 +159,7 @@ var close_tab : Control = null
 ## Whether a listed card, or the viewer's close tab, holds the keyboard/pad focus: the one test for "the player is navigating inside this list".
 func focus_is_inside() -> bool:
 	if close_tab and close_tab.has_focus(): return true
-	for control : ControlCard in controls:
+	for control : Control in controls:
 		if control.has_focus(): return true
 	return false
 
@@ -153,11 +173,12 @@ func rehighlight(replaced: CardData, data: CardData) -> void:
 	if sticky == replaced: stick_to(data)
 	elif _highlighted == replaced: _publish_highlight(data)
 
-## Remove every listed ControlCard (before repopulating, or when the viewer hides). Detaches immediately (not just queue_free) so a same-frame repopulate never shows stale cards.
+## Remove every listed control (before repopulating, or when the viewer hides). Detaches immediately (not just queue_free) so a same-frame repopulate never shows stale cards.
 func clear() -> void:
-	for control in controls:
+	for control : Control in controls:
 		if is_instance_valid(control):
 			if control.get_parent():
 				control.get_parent().remove_child(control)
 			control.queue_free()
 	controls.clear()
+	_data_of.clear()

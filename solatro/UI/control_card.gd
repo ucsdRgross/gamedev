@@ -53,7 +53,7 @@ static func card_title(data: CardData) -> String:
 static func _effect_block(name_text: String, description: String) -> String:
 	return "[font_size=%d]%s[/font_size]\n%s" % [NAME_FONT_SIZE, name_text, description]
 
-## The one human-readable summary of a card, shared by every surface that describes one: the title on the first line, then one block per suit, NAMED skill, stamp, status and type.
+## The one human-readable summary of a card, shared by every surface that describes one: the title on the first line, then one block per suit, NAMED skill and stamp, status, and type with an effect.
 
 # The SUIT keeps a block although the ruling's list of blocks does not name it: the title carries
 # its NAME only, and its description is where a card's own prop effect is written down.
@@ -68,6 +68,6 @@ static func describe_card(data: CardData) -> String:
 	for status : CardModifierStatus in data.statuses:
 		lines.append(_effect_block("%s ×%d" % [status.get_str(), status.stacks],
 				status.get_description()))
-	if data.type and not data.type.get_str().is_empty():
+	if data.type and data.type.has_effect():
 		lines.append(_effect_block(data.type.get_str(), data.type.get_description()))
 	return "\n".join(lines)

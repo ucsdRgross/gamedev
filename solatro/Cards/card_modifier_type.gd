@@ -11,6 +11,9 @@ const V_FRAMES: int = 8
 func set_texture(polygon2d: Polygon2D) -> void:
 	CardOutline.frame_polygon(polygon2d, TYPE_TEXTURE, H_FRAMES, V_FRAMES, get_frame())
 
+## Whether a card names this type at all: false for a type with no effect to explain, which only its own part in a pack's list describes.
+func has_effect() -> bool: return true
+
 # ONE ink rims the face and every element on it, so the card reads as one object. The type
 # owns the override because it decides the face the ink must read against. AUTHORED, NOT DERIVED
 # (owner: *"allow authoring with default to same one colour if no authoring, I don't trust derived"*).

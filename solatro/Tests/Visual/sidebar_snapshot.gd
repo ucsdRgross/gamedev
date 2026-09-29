@@ -793,8 +793,9 @@ func _shoot_the_deck_over_the_possible_cards(main: Main) -> void:
 	if not is_instance_valid(DeckViewer._open): await _click_the_control(map.possible_cards_button)
 	await _await_a_viewer()
 	var list := DeckViewer._open
-	var first := _listed_cards(list.flow_container)[0]
-	await _click_the_control(first)
+	var stamp : Control = list.cards().controls.filter(
+			func(icon: PartIcon) -> bool: return icon.data.stamp != null)[0]
+	await _click_the_control(stamp)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(POSSIBLE_CARDS_OUT_PATH)

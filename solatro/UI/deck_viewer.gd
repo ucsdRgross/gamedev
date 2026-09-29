@@ -16,6 +16,8 @@ signal highlight_cleared
 @onready var close_tab: Button = %CloseTab
 
 var deck : Array[CardData]
+## Whether `deck` is a pack's partial cards, listed as labelled icons rather than as cards.
+var lists_parts := false
 ## Owns this viewer's listed cards (the shared listing logic; see CardsViewer).
 var _cards : CardsViewer
 
@@ -43,7 +45,7 @@ func _ready() -> void:
 # SECOND PRESS OF THAT SAME opener is a close and returns null; any other replaces the viewer, as
 # swapping piles does, or opens `over` it, which stays open underneath.
 static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control,
-		over := false) -> DeckViewer:
+		over := false, parts := false) -> DeckViewer:
 	var top : DeckViewer = _open if is_instance_valid(_open) and not _open.is_queued_for_deletion() \
 			else null
 	if top and (top._return_focus == opener or not over):
@@ -53,6 +55,7 @@ static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control,
 		top = null
 	var viewer :DeckViewer= DECK_VIEWER.instantiate()
 	viewer.deck = new_deck
+	viewer.lists_parts = parts
 	viewer._return_focus = opener
 	viewer._under = top
 	parent.add_child(viewer)
@@ -89,11 +92,15 @@ func _hand_the_focus_back() -> void:
 func update_viewer() -> void:
 	_cards = CardsViewer.new(flow_container)
 	_cards.close_tab = close_tab
-	_cards.populate(deck, _publish_info)
+	if lists_parts: _cards.populate_parts(deck, _publish_part_info)
+	else: _cards.populate(deck, _publish_info)
 
 # The card the highlight reached, drawn at this viewer's own card size.
 func _publish_info(data: CardData) -> void:
 	PlayArea.highlight_info(data, CardVisual.preview_window_px()).relay_to(info_requested)
+
+func _publish_part_info(data: CardData) -> void:
+	PartIcon.part_info(data, CardVisual.preview_window_px()).relay_to(info_requested)
 
 # ⚠ THE CLICK-TO-CLOSE CATCHER IS EVERYTHING BESIDE THE SIDEBAR AS IT IS SHOWN, following its
 # slide: on the sidebar's own layer this viewer draws above it, whose X, rows and Back must still
@@ -105,10 +112,11 @@ func fit_catcher(shown: Rect2) -> void:
 	margin_container.offset_right = shown.end.x - picture.x
 	margin_container.offset_bottom = shown.end.y - picture.y
 
-# THE LIST RESTS BESIDE WHERE THE SIDEBAR RESTS, inset by the scene's own padding, then WHOLE COLUMNS
-# ONLY, centred: the width no column fits in goes to the side margins in halves. A scrolling list
-# gives up its bar's width first, as the chooser's does; the scroll's own minimum is its focus border.
+# THE WINDOW RESTS BESIDE WHERE THE SIDEBAR RESTS, inset by the scene's own padding, and its opaque
+# backdrop fills all of it, so a viewer over another hides it whatever either lists. The list inside
+# is WHOLE COLUMNS ONLY, centred; a scrolling list gives up its bar's width first, as the chooser's does.
 func fit_beside(remaining: Rect2) -> void:
+	_scroll.custom_minimum_size.x = 0.0
 	var catcher := margin_container.get_rect()
 	_inset_margin(&"margin_left", remaining.position.x - catcher.position.x)
 	_inset_margin(&"margin_top", remaining.position.y - catcher.position.y)
@@ -124,13 +132,11 @@ func fit_beside(remaining: Rect2) -> void:
 		inner.x -= _scroll.get_v_scroll_bar().get_combined_minimum_size().x
 		columns = _whole_columns(inner.x)
 	var spare := inner.x - _cards.row_px(columns)
-	margin_container.add_theme_constant_override(&"margin_left", left + floori(spare / 2.0))
-	margin_container.add_theme_constant_override(&"margin_right",
-			right + floori(spare - floori(spare / 2.0)))
+	_scroll.custom_minimum_size.x = catcher.size.x - left - right - spare
 
 func _whole_columns(width: float) -> int:
 	var gap := flow_container.get_theme_constant(&"h_separation")
-	return floori((width + gap) / (CardVisual.preview_window_px().x + gap))
+	return floori((width + gap) / (_cards.item_px.x + gap))
 
 ## Publishes the card its highlight is on again -- asked by the opener only while a description is UP, so one the player dismissed stays dismissed across a re-fit.
 func republish_highlight() -> void:

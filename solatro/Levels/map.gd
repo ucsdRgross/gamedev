@@ -193,7 +193,7 @@ func _show_only_the_deck_button(deck_only: bool) -> void:
 
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
 	_chooser = null
-	for card in cards:
+	for card : CardData in cards:
 		Main.save_info.card_datas.append(card)
 	RunManager.mark_deck_dirty()
 	RunManager.save_run()
@@ -266,12 +266,13 @@ func _open_possible_cards_once(node: WorldGraphNode) -> void:
 	_packs_shown[node.id] = true
 	await _show_possible_cards(node)
 
-# Every card this pack could roll, in the SAME viewer the run deck opens in and hosted the same way,
-# so its cards publish to the sidebar as any viewer's do. Closing it comes back to the node; a card
-# stuck in it carries the Deck row, a hovered one none.
+# Every part this pack could roll, as labelled icons in the SAME viewer the run deck opens in, hosted
+# the same way, so they publish to the sidebar as any viewer's cards do. Closing it comes back to the
+# node; a card stuck in it carries the Deck row, a hovered one none.
 func _show_possible_cards(node: WorldGraphNode) -> void:
 	var cards := await _booster_of(node).get_possible_preview_cards()
-	_possible_cards = DeckViewer.show_deck(hud_container.get_parent(), cards, possible_cards_button)
+	_possible_cards = DeckViewer.show_deck(hud_container.get_parent(), cards, possible_cards_button,
+			false, true)
 	_host_map_viewer(_possible_cards)
 	if _possible_cards: _possible_cards.cards().sticky_changed.connect(_show_only_the_deck_button)
 
