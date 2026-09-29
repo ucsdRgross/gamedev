@@ -48,12 +48,9 @@
   in `game_view.gd`) already read `PlayArea.settings()`, which honours `WallPicture.editor_settings`
   -- so `Tools/wall_editor.gd`'s override reached the container's size but not which band it sat on.
   All three now pass `PlayArea.settings()`, matching the source `container_rect()` already uses.
-- `board_inset_left`/`board_inset_top` divide by the UNMARGINED `picture_scale` (`max(window/1576,
-  window/887)`), not `WallPicture.focused_scale()` (which adds `wall_overfill_margin` when the two
-  axis ratios differ). Measured at 1280x720 (side case, container 320 window px wide):
-  `picture_scale` 0.812183 gives `board_inset_left` 394.0 picture px (the gate); the live camera's
-  `focused_scale` 0.828427 puts the rendered board edge 6.4 window px right of the container's own
-  edge -- a gap, never an overlap, so the 394/262.7 gates stay on `picture_scale`.
+- `board_inset_left`/`board_inset_top` divide by the COVERING scale, not the drawn one the map, the menu
+  and `pile_center` read: grid isolation leans on the overfill (GAP-039), so the board keeps its fit
+  ~2 px off the visible centre at 1280x720 (owner, forty-fourth round).
 - S5: `DescriptionPanel.show_entry(entry, panel_size)` and `detach_entry()` are new methods NAMES.md
   does not list. The panel is HANDED the container's own `container_rect()` size rather than reading
   a width knob, because `InfoCard`'s `wall_info_card_*` knobs are S9's to delete (C5, B2).
@@ -72,10 +69,10 @@
   `PlayArea.picture_to_window_scale` (pushed by `GameView._publish_board_inset()`, the same seam
   `board_inset_*` crosses the other way), `PlayArea.board_card_window_px()`, the `card_px` parameter
   on `PlayArea.card_info()`, and `CardVisual.preview_size`.
-- S5: `picture_to_window_scale` is `WallPicture.focused_scale()`, NOT the unmargined ratio
+- S5: `picture_to_window_scale` is `WallPicture.focused_scale()`, NOT the covering ratio
   `board_inset_*` divides by. Measured at 1280x720: the picture's live screen sprite draws at
   0.828426 and `focused_scale` returns 0.828427, while the unmargined 0.812183 would miss a board
-  card's drawn width by 1.1 px. The inset reserves board SPACE; the preview matches drawn PIXELS.
+  card's drawn width by 1.1 px.
 - S5: the preview's size is carried by `CardVisual.preview_size`, applied inside
   `recalculate_size()`. Measured, by eye, after both shortcuts failed: a `Container` resets its
   children's `scale` on every layout pass, and `CardVisual._ready()` re-runs `recalculate_size()`,
@@ -856,7 +853,7 @@
   `_leave_the_game_and_return_by_the_wall()`.
 - Close fix 5: `GameView.pile_center(pile)` is where a card leaving the board aims -- the pile's
   window centre carried once through `WallPicture.local_rect_beside(window, Rect2(), false)` (the
-  unmargined resting map, within ~6 px of the drawn point at `wall_overfill_margin` 1.02). With no
+  picture's drawn scale, overfill included, so exactly the drawn point). With no
   `wall_picture` (a GameView hosted without `Main`) it returns the window point, as
   `HudContainer.rect_beside` does. `CardVisual.get_control_center` is deleted. New `TestSidebar` row
   `test_a_card_leaving_the_board_flies_to_its_pile`, helper `_check_flight_lands_on()`.

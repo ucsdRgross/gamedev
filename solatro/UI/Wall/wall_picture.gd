@@ -270,14 +270,21 @@ func update_wall_view_size(footprint_px: Vector2) -> void:
 	mark_for_rerender()
 
 # The space LEFT beside `rect` (the shared `HudContainer`'s rect, against this viewport's own
-# `window` size) once both convert into THIS picture's own space -- the unmargined cover scale and
-# inset `GameView._publish_board_inset()` uses, extended to a rect a focused screen can centre in.
+# `window` size) once both convert into THIS picture's own space at the scale it is DRAWN at: the
+# part actually visible, which the map's fit, the menu and a card's aim at a pile read.
 func local_rect_beside(window: Vector2, rect: Rect2, top: bool) -> Rect2:
-	return visible_rect_beside(Vector2(_design_size), window, rect, top)
+	return visible_rect_beside(Vector2(_design_size), window, rect, top, _drawn_scale(window))
 
-## The part of `design` a covering `window` SHOWS beside `rect`: what is left once the crop and `rect`'s own axis are taken off.
-static func visible_rect_beside(design: Vector2, window: Vector2, rect: Rect2, top: bool) -> Rect2:
-	var scale := cover_scale(design, window)
+# Canvas px to window px at rest: the canvas cropped into `rect` (a window-stretched picture's own
+# aspect differs from its canvas's), then the camera's resting zoom, whose overfill applies only
+# when `rect`'s aspect is not the window's.
+func _drawn_scale(window: Vector2) -> float:
+	return cover_scale(Vector2(_design_size), rect.size) * focused_scale(rect.size, window,
+			settings().wall_overfill_margin)
+
+## The part of `design` a `window` shows beside `rect` at `scale` canvas-to-window: the drawn scale gives the visible space, the covering scale the board's reserve.
+static func visible_rect_beside(design: Vector2, window: Vector2, rect: Rect2, top: bool,
+		scale: float) -> Rect2:
 	var visible := Rect2((design - window / scale) / 2.0, window / scale)
 	var inset := inset_beside(rect, top, scale)
 	return Rect2(visible.position + inset, visible.size - inset)
@@ -299,7 +306,7 @@ func _rescale_screen() -> void:
 	_shadow.scale = view_scale
 
 # ⚠ A SCREEN IS NEVER STRETCHED to its rect's shape: %Screen and %Shadow show the canvas's centred
-# part at the rect's aspect -- what `visible_rect_beside()` reports as visible -- cut on whole texels,
+# part at the rect's aspect, cut on whole texels,
 # as `Sprite2D.get_rect()` reads a region, and the returned scale draws that part at `rect.size`.
 func _crop_to_rect() -> Vector2:
 	var texture := Vector2(viewport.size)

@@ -263,10 +263,6 @@ func _on_board_changed() -> void:
 	play_area.queue_rebuild()
 	_refresh_end_reveal()
 
-# ⚠ TWO SCALES OUT OF ONE WINDOW, AND BOTH ARE RIGHT. `board_inset_*` reserves BOARD SPACE, so it
-# divides by the unmargined ratio; `picture_to_window_scale` is DRAWN PIXELS, the camera's resting
-# zoom, the size a board card is seen at.
-
 # ⚠ THE RESERVE IS THE SIDEBAR'S RESTING RECT, NEVER THE SLIDING ONE: the board is fitted there and
 # `board_slide_offset` only shifts it, CENTRE TO CENTRE, so with no sidebar (wall view, the landing)
 # the board sits centred in the whole picture. A shift, not a re-scale.
@@ -276,14 +272,20 @@ func _publish_board_inset() -> void:
 	var top := HudContainer.container_is_top(window, PlayArea.settings())
 	play_area.picture_to_window_scale = WallPicture.focused_scale(design, window,
 			PlayArea.settings().wall_overfill_margin)
-	var region := WallPicture.visible_rect_beside(design, window,
-			hud_container.container_rect(), top)
-	var slid := WallPicture.visible_rect_beside(design, window,
-			hud_container.published_rect(), top)
+	var region := board_space_beside(window, hud_container.container_rect(), top)
+	var slid := board_space_beside(window, hud_container.published_rect(), top)
 	play_area.board_inset_left = region.position.x
 	play_area.board_inset_top = region.position.y
 	play_area.board_visible_crop = design - region.end
 	play_area.board_slide_offset = slid.get_center() - region.get_center()
+
+# ⚠ THE BOARD'S RESERVE, NOT THE VISIBLE SPACE the map, the menu and a pile's aim read: it stays at
+# the COVERING scale because grid isolation leans on the overfill's slack, so the board sits ~2 px
+# off the visible centre at 1280x720.
+static func board_space_beside(window: Vector2, rect: Rect2, top: bool) -> Rect2:
+	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
+	return WallPicture.visible_rect_beside(design, window, rect, top,
+			WallPicture.cover_scale(design, window))
 
 # Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this
 # picture. `Tests/Engine/test_leak_canary.gd` discards through a view with no `Main`, hence no picture.

@@ -354,6 +354,7 @@ func _ready() -> void:
 	await test_the_chooser_is_a_square_beside_the_sidebar_in_the_players_window()
 	await test_the_menus_column_draws_at_the_ui_scale_beside_the_sidebar_in_the_players_window()
 	await test_the_board_is_centred_beside_the_resting_sidebar_in_the_players_window()
+	await test_the_maps_sea_buffer_is_whole_on_screen_in_the_players_window()
 	finish()
 
 
@@ -1091,8 +1092,7 @@ func test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_
 	var window := Vector2(600.0, 1000.0)
 	check(HudContainer.container_is_top(window, settings),
 			"a portrait window puts the container on the top band")
-	var crop : Vector2 = (_main._pictures[&"game"] as WallPicture) \
-			.local_rect_beside(window, Rect2(), true).position
+	var crop : Vector2 = GameView.board_space_beside(window, Rect2(), true).position
 	check(_play_area.board_inset_top > crop.y
 				and is_equal_approx(_play_area.board_inset_left, crop.x),
 			"...and the container's own reserve goes on the top, the left being the crop alone (3.3)",
@@ -1112,11 +1112,11 @@ func test_the_boards_region_clears_the_container_on_a_cropped_window() -> void:
 		await _resize_viewport(_booted_viewport, size)
 		_play_area.flush_rebuild()
 		await _settle_scroll_x(_play_area)
-		var picture : WallPicture = _main._pictures[&"game"]
 		var window := Vector2(size)
 		var top := HudContainer.container_is_top(window, PlayArea.settings())
-		var visible := picture.local_rect_beside(window, Rect2(), top)
-		var band := _band_rect_in_picture(picture, window, _container.container_rect(), top)
+		var visible := GameView.board_space_beside(window, Rect2(), top)
+		var remaining := GameView.board_space_beside(window, _container.container_rect(), top)
+		var band := _band_rect_in_picture(visible, remaining, top)
 		var board := _sidebar_screen_rect(_play_area.scroll_container)
 		check(not band.grow(-1.0).intersects(board),
 				"no part of the board's region sits under the container at %s (3.5)" % size,
@@ -1124,7 +1124,6 @@ func test_the_boards_region_clears_the_container_on_a_cropped_window() -> void:
 		check(visible.grow(1.0).encloses(board),
 				"the board's region stays inside the visible picture at %s (3.5)" % size,
 				"board %s vs visible %s" % [board, visible])
-		var remaining := picture.local_rect_beside(window, _container.container_rect(), top)
 		check(absf(board.position.x - remaining.position.x) <= 1.0
 					and absf(board.end.x - remaining.end.x) <= 1.0,
 				"the board's region FILLS the width left beside the container at %s (3.5)" % size,
@@ -1298,7 +1297,7 @@ func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 	check(is_equal_approx(pa.board_inset_top, band.size.y / picture_scale),
 			"board_inset_top equals the band's height converted to picture px",
 			"%.3f vs %.3f" % [pa.board_inset_top, band.size.y / picture_scale])
-	var crop := game_wp.local_rect_beside(window, Rect2(), true).position
+	var crop := GameView.board_space_beside(window, Rect2(), true).position
 	check(is_equal_approx(pa.board_inset_left, crop.x),
 			"board_inset_left is the covering picture's own crop in the top case",
 			"%.3f vs %.3f" % [pa.board_inset_left, crop.x])
@@ -1335,10 +1334,8 @@ func _sidebar_screen_rect(c: Control) -> Rect2:
 	var t := c.get_global_transform()
 	return Rect2(t.origin, t.get_scale() * c.size)
 
-## The part of `picture` the container covers, in that picture's own space: the visible rect less the space left beside it.
-func _band_rect_in_picture(picture: WallPicture, window: Vector2, band: Rect2, top: bool) -> Rect2:
-	var visible := picture.local_rect_beside(window, Rect2(), top)
-	var remaining := picture.local_rect_beside(window, band, top)
+## The part of a picture the container covers, in that picture's own space: `visible` less `remaining`, the space left beside it.
+func _band_rect_in_picture(visible: Rect2, remaining: Rect2, top: bool) -> Rect2:
 	if top: return Rect2(visible.position, Vector2(visible.size.x, visible.size.y - remaining.size.y))
 	return Rect2(visible.position, Vector2(visible.size.x - remaining.size.x, visible.size.y))
 
@@ -1813,10 +1810,10 @@ func test_the_slide_shifts_the_board_without_re_scaling_it() -> void:
 # PICTURE's own space; `container_rect()` is ROOT WINDOW px, converted through the one owned
 # conversion before the two are compared.
 func _check_the_slide_only_shifts(label: String) -> void:
-	var picture : WallPicture = _main._pictures[&"game"]
 	var window : Vector2 = _container.get_viewport().get_visible_rect().size
 	var top := HudContainer.container_is_top(window, SettingsManager.settings)
-	var band := _band_rect_in_picture(picture, window, _container.container_rect(), top)
+	var band := _band_rect_in_picture(GameView.board_space_beside(window, Rect2(), top),
+			GameView.board_space_beside(window, _container.container_rect(), top), top)
 	var pa := _play_area
 	var rest_zoom := pa.board_zoom
 	var rest_x := _board_content_x(pa)
@@ -1913,11 +1910,10 @@ func test_before_the_slide_each_screen_has_the_whole_picture() -> void:
 func test_wall_view_keeps_the_board_centred_in_its_picture() -> void:
 	for size : Vector2i in ([Vector2i(1280, 720), Vector2i(600, 1000)] as Array[Vector2i]):
 		await _start_game_fixture(size)
-		var picture : WallPicture = _main._pictures[&"game"]
 		var window : Vector2 = _container.get_viewport().get_visible_rect().size
 		var top := HudContainer.container_is_top(window, SettingsManager.settings)
-		var resting := picture.local_rect_beside(window, _container.container_rect(), top)
-		var whole := picture.local_rect_beside(window, Rect2(), top)
+		var resting := GameView.board_space_beside(window, _container.container_rect(), top)
+		var whole := GameView.board_space_beside(window, Rect2(), top)
 		var parts_at_rest := _board_set_parts(_play_area)
 		await _click_overlay(&"WallButton")
 		for _i : int in range(900):
@@ -2222,7 +2218,8 @@ func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> voi
 		var band_screen : Rect2 = container.published_rect()
 		var top := HudContainer.container_is_top(window, SettingsManager.settings)
 		var window_local := wp.local_rect_beside(window, Rect2(), top)
-		var band_local := _band_rect_in_picture(wp, window, band_screen, top)
+		var band_local := _band_rect_in_picture(window_local,
+				wp.local_rect_beside(window, band_screen, top), top)
 		for button : Button in _menu_buttons(main.menu_scene):
 			var button_rect := button.get_global_rect()
 			check(not button_rect.intersects(band_local),
@@ -5046,7 +5043,7 @@ func test_a_zoom_stays_through_a_visit_without_a_travel() -> void:
 			"%.4f vs %.4f" % [camera.zoom.x, zoomed])
 	await _end_main_fixture()
 
-## The map picture's background is the map's own sea, so the letterbox and the buffer read as open water.
+## The map picture's background is the map's own sea, so the letterbox and the buffer read as open water, and in the window's own pixels the buffer is whole on screen on all four sides at both window shapes.
 func test_the_maps_background_is_its_sea() -> void:
 	await _start_map_fixture()
 	await RenderingServer.frame_post_draw
@@ -5060,6 +5057,53 @@ func test_the_maps_background_is_its_sea() -> void:
 		check(Vector3(seen.r - sea.r, seen.g - sea.g, seen.b - sea.b).length() < 0.02,
 				"the map picture shows the sea at %s" % at, "%s vs %s" % [seen, sea])
 	await _end_main_fixture()
+	for size : Vector2i in INSET_WINDOWS:
+		var where := "the harness window %s" % size
+		await _start_map_fixture(size)
+		_booted_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		await await_drawn_frames(2)
+		var window := _booted_viewport.get_texture().get_image()
+		for corner : Vector2 in _check_the_sea_buffer_beside_the_sidebar(_booted_viewport, where):
+			var seen := window.get_pixelv(Vector2i(corner))
+			check(_colour_distance(seen, sea) < OPAQUE_COLOUR_TOLERANCE,
+					"...and the window shows the sea there in %s" % where, "%s at %s vs %s" % [seen, corner, sea])
+		await _end_main_fixture()
+
+# Measured, not sampled: an embedded Window's own texture holds its canvas at scale 1, cut to the
+# window's pixel size, so the stretched pixels the player sees cannot be read back here.
+## The map's sea buffer is whole on screen on all four sides beside the sidebar, at the player's content scale at both window shapes.
+func test_the_maps_sea_buffer_is_whole_on_screen_in_the_players_window() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		var where := "the player's window %s" % size
+		await _start_map_fixture(size, true)
+		var window := _main.get_viewport() as Window
+		_check_the_players_scale(window, where)
+		_check_the_sea_buffer_beside_the_sidebar(window, where)
+		await _end_main_fixture()
+
+## How far inside the framed map's edge its outermost buffer pixel is taken, in canvas px: past a whole-pixel rounding, well inside the buffer.
+const SEA_EDGE_INSET_PX := 1.5
+
+# At the CORNERS, each on two edges: a map node may sit over the buffer at an edge's middle (the
+# buffer exists for exactly that), and a corner is the point furthest from every node.
+## The framed map's outermost buffer pixel at each corner, in `viewport`'s canvas px, lies in the space beside the resting sidebar; returns the corners that do.
+func _check_the_sea_buffer_beside_the_sidebar(viewport: Viewport, where: String) -> Array[Vector2]:
+	check(is_equal_approx(_container.slid_fraction(), 1.0),
+			"sanity: the sidebar rests beside the map in %s" % where)
+	var framed := viewport.get_final_transform().affine_inverse() * _picture_rect_in_window(viewport,
+			_main._pictures[&"map"], _framed_map_rect(_main))
+	var space := _ui_space(_main)
+	var inside := framed.grow(-SEA_EDGE_INSET_PX)
+	var corners : Dictionary[String, Vector2] = {"top left": inside.position,
+			"top right": Vector2(inside.end.x, inside.position.y),
+			"bottom left": Vector2(inside.position.x, inside.end.y), "bottom right": inside.end}
+	var on_screen : Array[Vector2] = []
+	for corner : String in corners:
+		check(space.has_point(corners[corner]),
+				"the map's %s sea buffer is on screen beside the sidebar in %s" % [corner, where],
+				"%s at %s, the framed map %s in %s" % [corner, corners[corner], framed, space])
+		if space.has_point(corners[corner]): on_screen.append(corners[corner])
+	return on_screen
 
 ## A show tears down ITS OWN wiring and nobody else's: the map it hands back to keeps its Deck button and its inset.
 func test_a_finished_show_leaves_the_maps_own_wiring_alive() -> void:
