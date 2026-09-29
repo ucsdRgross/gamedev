@@ -243,7 +243,7 @@ func host_viewer(viewer: Node, relay: Signal, screen: StringName) -> void:
 	else: (viewer as ChoiceViewer).visibility_changed.connect(_refocus_the_chooser.bind(viewer))
 	var cards : CardsViewer = viewer.call(&"cards")
 	cards.sticky_changed.connect(_follow_the_viewers_sticky)
-	cards.sidebar_requested.connect(_exit_button.grab_focus)
+	cards.sidebar_requested.connect(focus_sidebar)
 	cards.highlight_left.connect(highlight_gone)
 	var hosted := _HostedViewer.new()
 	hosted.viewer = viewer
@@ -288,15 +288,21 @@ func highlight_gone() -> void:
 # A TEARDOWN IS NOT A POINTER MOVE: Godot fires `mouse_exited` on the hovered card as the tree
 # comes apart, and this container is already out of it by then -- measured, one SCRIPT ERROR a run.
 	if not is_inside_tree(): return
-	var hosted := _shown_hosted_viewer()
+	var back := _what_a_lost_highlight_shows()
 	if is_locked(): return_to_lock()
-	elif hosted and hosted.covered: show_description(hosted.covered)
+	elif back: show_description(back)
 	else:
 		_release_shown_entry()
 		_release_remembered_entry(_active_screen, null)
 		_swap_to_hud()
 		_follow_the_menus_own_content()
 	_refresh_exit_button()
+
+## What a lost highlight leaves on the panel: the stuck entry, else what the viewer covered, else nothing (the HUD).
+func _what_a_lost_highlight_shows() -> InfoEntry:
+	if is_locked(): return _locked_entry_by_screen[_active_screen]
+	var hosted := _shown_hosted_viewer()
+	return hosted.covered if hosted else null
 
 # ⚠ A FROZEN SHOW'S BOARD STILL LOSES ITS FOCUS: a press on the map's Travel, or a viewer closing
 # there, takes it -- measured -- so only the screen being shown may hand the sidebar back.
@@ -393,10 +399,12 @@ static func _hosts(hosted: _HostedViewer, viewer: Node) -> bool:
 # THE X PROMISES THE DESCRIPTION WILL STAY: a highlight nothing has clicked will not, and neither
 # will one shown over a lock, which gives way to the stuck entry -- only that entry carries the X.
 func _refresh_exit_button() -> void:
-	var shown : InfoEntry = _description_panel.current_entry
-	var lock : InfoEntry = _locked_entry_by_screen.get(_active_screen)
 	_join_focus_while_shown(_exit_button, showing_description()
-			and (shown == lock if lock else not shown.transient))
+			and _offers_the_x(_description_panel.current_entry))
+
+func _offers_the_x(shown: InfoEntry) -> bool:
+	var lock : InfoEntry = _locked_entry_by_screen.get(_active_screen)
+	return shown == lock if lock else not shown.transient
 
 # A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD, re-fitted after its screen's own inset. Only the
 # newest viewer shown republishes, and only while a description is UP: one under it would re-stick
@@ -725,6 +733,9 @@ func _input(event: InputEvent) -> void:
 	if _enters_the_hosted_viewer(event):
 		get_viewport().set_input_as_handled()
 		return
+	if _leaves_the_viewer_for_the_sidebar(event) and focus_sidebar():
+		get_viewport().set_input_as_handled()
+		return
 	if _the_arrows_belong_to_the_hosted_viewer(event): return
 	if _leaves_the_sidebar_for_the_picture(event):
 		get_viewport().gui_get_focus_owner().release_focus()
@@ -752,28 +763,51 @@ func _input(event: InputEvent) -> void:
 	_description_panel.scroll_by_pages(pages)
 	get_viewport().set_input_as_handled()
 
-# ⚠ THE VIEWER OPENS WITH NOTHING FOCUSED so the HUD stays reachable, and it is in another
-# viewport, where the overlay's own focus search would never look: the first navigation press is
-# handed to it here, ahead of the GUI pass that would walk the HUD buttons instead.
+# ⚠ THE VIEWER OPENS WITH NOTHING FOCUSED so the sidebar stays reachable: its own arrows walk it,
+# and an arrow off its edge is left over for the viewer. A focus anywhere else -- or none -- is
+# handed into the viewer here, ahead of the GUI pass, so no key reaches the screen beneath.
 func _enters_the_hosted_viewer(event: InputEvent) -> bool:
 	var hosted := _shown_hosted_viewer()
 	if hosted == null: return false
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused != null and is_ancestor_of(focused): return false
 	for action : StringName in CardsViewer.NAVIGATION:
 		if event.is_action_pressed(action, true):
 			return (hosted.viewer.call(&"cards") as CardsViewer).focus_first()
 	return false
 
-# A HIGHLIGHT IS ALREADY ON ITS WAY OUT, the focus having left the card it describes, so the stuck
-# entry and its X come back first -- or, with nothing stuck, the HUD whose controls the press lands on.
-## The sidebar takes the focus: the X while a stuck description holds the panel, else the HUD's first control.
-func focus_sidebar() -> void:
+# A HIGHLIGHT IS ALREADY ON ITS WAY OUT once the target is known: with nothing to land on (the menu
+# shows no HUD, a covered highlight carries neither row nor X) the press changes nothing at all.
+## The sidebar takes the focus: its X whenever it shows, else the description's own row, else the HUD's first control. Answers whether it took it.
+func focus_sidebar() -> bool:
+	var target := _sidebar_focus_target()
+	if target == null: return false
 	if showing_description(): highlight_gone()
-	var target := _exit_button if showing_description() else _hud_stack.find_next_valid_focus()
-# ⚠ THE ONE PRODUCER OF AN OFF-SCREEN TARGET is the board asking while a viewer is hosted, which
-# hides the HUD stack the search just walked. The board should not be asking at all from under a
-# viewer; until it stops, the press is dropped rather than parked on a control nobody can see.
-	if not target.is_visible_in_tree(): return
+	assert(target.is_visible_in_tree(), "the sidebar's focus target is on screen once the highlight goes")
 	target.grab_focus()
+	return true
+
+# READ OFF THE SIDEBAR AS IT WILL STAND once a highlight has gone, before anything is changed, so a
+# refusal leaves the description as it was: the stack about to be shown answers from its flags.
+func _sidebar_focus_target() -> Control:
+	var back : InfoEntry = _what_a_lost_highlight_shows() if showing_description() else null
+	if back == null: return _first_focus_in(_hud_stack)
+	if _offers_the_x(back): return _exit_button
+	var row := _description_panel.get_node(^"%ButtonRow") as Control
+	return _first_focus_in(row) if row.visible else null
+
+## The first control under `root`, in tree order, that takes key focus and shows whenever `root` does.
+static func _first_focus_in(root: Control) -> Control:
+	for control : Control in root.find_children("*", "Control", true, false):
+		if control.focus_mode == Control.FOCUS_ALL and _shown_under(control, root): return control
+	return null
+
+static func _shown_under(control: Control, root: Control) -> bool:
+	var node : Node = control
+	while node != root:
+		if node is CanvasItem and not (node as CanvasItem).visible: return false
+		node = node.get_parent()
+	return true
 
 # ⚠ THE PICTURE IS IN ANOTHER VIEWPORT, so the engine's neighbour search can never step back into
 # it and the last control in the row would strand a pad player. Which control is last is asked of
@@ -787,6 +821,15 @@ func _leaves_the_sidebar_for_the_picture(event: InputEvent) -> bool:
 	var owner := get_viewport().gui_get_focus_owner()
 	if owner == null or not is_ancestor_of(owner): return false
 	return owner.find_valid_focus_neighbor(SIDE_RIGHT) == null
+
+# THE MIRROR OF THE DOOR ABOVE: Left off a listed card with no neighbour to its left enters the
+# sidebar wherever `focus_sidebar()` finds a control to land on -- the viewer and the sidebar are
+# separate Control trees, and the engine's neighbour search never crosses one.
+func _leaves_the_viewer_for_the_sidebar(event: InputEvent) -> bool:
+	var hosted := _shown_hosted_viewer()
+	if hosted == null or not event.is_action_pressed(&"ui_left", true): return false
+	if not (hosted.viewer.call(&"cards") as CardsViewer).focus_is_inside(): return false
+	return get_viewport().gui_get_focus_owner().find_valid_focus_neighbor(SIDE_LEFT) == null
 
 # ⚠ A FOCUSED VIEWER OWNS THE ARROWS. Read before the GUI pass, the page scroll and the up-to-the-X
 # would answer a grid key the viewer's own neighbour search can use, and a stuck card could never

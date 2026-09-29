@@ -202,6 +202,11 @@ func _ready() -> void:
 	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_mouse()
 	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys()
 	await test_right_off_the_sidebar_never_reaches_the_board_behind_an_empty_viewer()
+	await test_the_sidebar_and_an_open_viewer_are_one_walk_with_nothing_stuck()
+	await test_left_off_the_menus_viewer_stays_in_it_with_nothing_to_land_on()
+	await test_left_off_the_deck_over_a_stuck_chooser_card_lands_on_close_deck()
+	await test_left_off_the_possible_cards_lands_on_the_picks_x_first()
+	await test_a_left_before_the_sidebar_slides_in_asks_no_screen_for_it()
 	await test_the_chooser_is_a_square_window_with_the_map_around_it()
 	await test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel()
 	await test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser()
@@ -5096,7 +5101,7 @@ func _open_viewer_by_accept(button: Button) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-## The pad's open is NOT a highlight -- the sidebar stays on the HUD, and the FIRST ARROW is what enters the list and shows its first card.
+## The pad's open is NOT a highlight -- the sidebar stays on the HUD, its arrows walk it, and the arrow off its inner edge is what enters the list and shows its first card.
 func test_the_first_arrow_enters_a_viewer_and_shows_its_first_card() -> void:
 	await _start_game_fixture()
 	var title : Label = _panel.get_node(^"%Title")
@@ -5110,9 +5115,9 @@ func test_the_first_arrow_enters_a_viewer_and_shows_its_first_card() -> void:
 				"the opened viewer focuses nothing, so no card holds the sidebar (S12.8)")
 		check(_hud_is_up() and deck.is_visible_in_tree(),
 				"...the HUD is what shows, with its Deck button still there to press (S12.8)")
-		await _push_arrow(_booted_viewport, KEY_RIGHT)
-		check(first != null and first.has_focus(),
-				"the first arrow lands on the viewer's first card (S12.8, B1)",
+		var walked := await _walk_right_off_the_sidebar(_push_arrow.bind(_booted_viewport, KEY_RIGHT))
+		check(walked and first != null and first.has_focus(),
+				"the arrow off the sidebar's inner edge lands on the viewer's first card (S12.8, B1)",
 				str(_booted_viewport.gui_get_focus_owner()))
 		check(_container.showing_description(),
 				"...and THAT highlight is what opens the description (S12.8, B1)")
@@ -5899,7 +5904,7 @@ func test_an_undo_under_an_open_viewer_rests_no_board_card_by_mouse() -> void:
 			str(_booted_viewport.gui_get_focus_owner()))
 	await _end_main_fixture()
 
-## The keyboard route, no pointer anywhere, the placement that gives Undo its rewind included: an Undo accepted under the open viewer leaves the board unfocused, so the first arrow into the viewer describes its first card, and cancel hands the focus back to the opener.
+## The keyboard and d-pad route, no pointer anywhere, the placement that gives Undo its rewind included: arrows walk the HUD to Undo under the open viewer, an Undo accepted there leaves the board unfocused, the arrow off the sidebar into the viewer describes its first card, and cancel hands the focus back to the opener.
 func test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys() -> void:
 	await _start_game_fixture()
 	var placed := await _lift_and_place_a_card_by_keys()
@@ -5911,9 +5916,10 @@ func test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys() -> void:
 			str(_booted_viewport.gui_get_focus_owner()))
 	await _tap_key(KEY_ENTER)
 	check(is_instance_valid(DeckViewer._open), "accept on Deck opened its viewer")
-	await _tap_until(KEY_TAB, _container.undo_button.has_focus, 12)
-	check(_container.undo_button.has_focus(), "sanity: the keys reached Undo under the viewer",
-			str(_booted_viewport.gui_get_focus_owner()))
+	var undo := _container.undo_button
+	await _walk_by([_tap_key.bind(KEY_DOWN), _tap_pad.bind(JOY_BUTTON_DPAD_UP),
+			_tap_pad.bind(JOY_BUTTON_DPAD_DOWN)] as Array[Callable],
+			[undo, deck, undo] as Array[Control], "the HUD under the open viewer")
 	await _tap_key(KEY_ENTER)
 	await _await_the_board_idle()
 	await _await_the_rest()
@@ -5922,8 +5928,8 @@ func test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys() -> void:
 	check(not cards.is_empty(), "sanity: the deck viewer lists cards", str(cards.size()))
 	if not cards.is_empty():
 		var title : Label = _panel.get_node(^"%Title")
-		await _tap_key(KEY_RIGHT)
-		check(cards[0].has_focus(), "the first arrow enters the viewer's first card",
+		var walked := await _walk_right_off_the_sidebar(_tap_key.bind(KEY_RIGHT))
+		check(walked and cards[0].has_focus(), "Right off the sidebar's inner edge enters the viewer's first card",
 				str(_booted_viewport.gui_get_focus_owner()))
 		check(_container.showing_description()
 				and title.text == _expected_text(cards[0].child.data)[0],
@@ -5959,6 +5965,153 @@ func test_right_off_the_sidebar_never_reaches_the_board_behind_an_empty_viewer()
 			"...and the focus stays in the sidebar", str(owner))
 	check(is_instance_valid(DeckViewer._open), "...with the viewer still open")
 	await _end_main_fixture()
+
+## With nothing stuck an open viewer and the sidebar are one walk, by arrows or by the d-pad alone: Right off the sidebar's inner edge enters the list, Left off the list's left edge comes back to the HUD, and no press reaches the board beneath.
+func test_the_sidebar_and_an_open_viewer_are_one_walk_with_nothing_stuck() -> void:
+	for device : String in ["arrows", "d-pad"]:
+		var left : Callable = _tap_key.bind(KEY_LEFT) if device == "arrows" \
+				else _tap_pad.bind(JOY_BUTTON_DPAD_LEFT)
+		var right : Callable = _tap_key.bind(KEY_RIGHT) if device == "arrows" \
+				else _tap_pad.bind(JOY_BUTTON_DPAD_RIGHT)
+		await _start_game_fixture()
+		_container.show_hud()
+		await _open_viewer_by_accept(_first_hud_control() as Button)
+		var cards := _listed_viewer_cards()
+		check(cards.size() >= 2, "sanity: the deck viewer lists two cards to walk (%s)" % device,
+				str(cards.size()))
+		if cards.size() >= 2:
+			var walked := await _walk_right_off_the_sidebar(right)
+			check(walked and cards[0].has_focus(),
+					"Right off the sidebar's inner edge enters the list's first card (%s)" % device,
+					_control_label(_booted_viewport.gui_get_focus_owner()))
+			await _walk_by([right, left, left] as Array[Callable],
+					[cards[1], cards[0], _first_hud_control()] as Array[Control],
+					"inside the list, then Left off its left edge back to the HUD (%s)" % device)
+			check(_hud_is_up() and not _container.is_locked(),
+					"...the sidebar back on its HUD with nothing stuck (%s)" % device)
+			var board_owner := _game_viewport.gui_get_focus_owner()
+			check(board_owner == null or not _play_area.ui_data.has(board_owner),
+					"...and no press of the walk focused a board card beneath the viewer (%s)" % device,
+					str(board_owner))
+			check(is_instance_valid(DeckViewer._open), "...the viewer still open (%s)" % device)
+		await _end_main_fixture()
+
+## The menu shows no HUD, so Left off the Inspect viewer's left edge has nothing in the sidebar to land on: the press stays in the list and the card it was on is still the one described, by keys and by the d-pad.
+func test_left_off_the_menus_viewer_stays_in_it_with_nothing_to_land_on() -> void:
+	var opened := await _open_the_pickers_inspect_viewer()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var viewer := DeckViewer._open
+	check(is_instance_valid(viewer), "sanity: the picker's Inspect viewer is open")
+	if is_instance_valid(viewer):
+		var panel : DescriptionPanel = main.hud_container.get_node(^"%DescriptionPanel")
+		await _tap_key_in(viewport, KEY_DOWN)
+		var first := viewer.cards().controls[0]
+		check(first.has_focus(), "sanity: Down entered the viewer's first card",
+				str(viewport.gui_get_focus_owner()))
+		for device : String in ["keys", "d-pad"]:
+			if device == "keys": await _tap_key_in(viewport, KEY_LEFT)
+			else: await _tap_pad_in(viewport, JOY_BUTTON_DPAD_LEFT)
+			check(viewport.gui_get_focus_owner() == first,
+					"Left off the list's left edge stays on its card, the menu's sidebar having nothing to land on (%s)" % device,
+					str(viewport.gui_get_focus_owner()))
+			check(main.hud_container.showing_description() and panel.current_entry != null
+					and panel.current_entry.title == _expected_text(first.child.data)[0],
+					"...and that card is still the one described (%s)" % device,
+					panel.current_entry.title if panel.current_entry else "none")
+	await _end_booted_fixture(viewport, main)
+
+func _tap_pad_in(viewport: SubViewport, button: JoyButton) -> void:
+	for pressed : bool in [true, false]:
+		var event := InputEventJoypadButton.new()
+		event.button_index = button
+		event.pressed = pressed
+		viewport.push_input(event)
+		await get_tree().process_frame
+
+## The run deck opened over a chooser card stuck to the sidebar: Left off the deck's left edge lands on the row that opened it, reading Close deck, with the chooser's stuck card described again -- and Right off that row goes back into the deck, by keys and by the d-pad.
+func test_left_off_the_deck_over_a_stuck_chooser_card_lands_on_close_deck() -> void:
+	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
+	check(chooser != null, "sanity: arriving on a pack opened its chooser")
+	if chooser != null:
+		await _tap_key(KEY_RIGHT)
+		await _tap_key(KEY_ENTER)
+		var stuck := chooser.cards().sticky
+		check(stuck != null and _map.selection_deck_button.is_visible_in_tree(),
+				"sanity: accept stuck a chooser card, its description offering the deck")
+		await _open_viewer_by_accept(_map.selection_deck_button)
+		var deck := DeckViewer._open
+		check(is_instance_valid(deck) and deck.cards().controls.size() > 0,
+				"sanity: the run deck opened over the chooser")
+		if is_instance_valid(deck) and deck.cards().controls.size() > 0:
+			var first := deck.cards().controls[0]
+			var row := _map.selection_deck_button
+			await _walk_by([_tap_key.bind(KEY_DOWN), _tap_key.bind(KEY_LEFT),
+					_tap_pad.bind(JOY_BUTTON_DPAD_RIGHT), _tap_pad.bind(JOY_BUTTON_DPAD_LEFT)]
+					as Array[Callable], [first, row, first, row] as Array[Control],
+					"between the deck over a stuck chooser card and its Close deck row")
+			check(row.text == TRANSLATION.find(&"MAP_CLOSE_DECK")
+					and _described_title() == _expected_text(stuck)[0],
+					"...the row reading Close deck, the chooser's stuck card described again",
+					"%s / %s" % [row.text, _described_title()])
+			deck._close()
+		chooser.queue_free()
+		await get_tree().process_frame
+	await _end_main_fixture()
+
+## A pack node's possible cards open over its own description, X and all, its row put away while they are listed: with nothing stuck, Left off the list lands on that X, the pick described again, and Left once more -- no row beside the X -- goes back into the list, by keys and by the d-pad.
+func test_left_off_the_possible_cards_lands_on_the_picks_x_first() -> void:
+	for device : String in ["keys", "d-pad"]:
+		var left : Callable = _tap_key.bind(KEY_LEFT) if device == "keys" \
+				else _tap_pad.bind(JOY_BUTTON_DPAD_LEFT)
+		var right : Callable = _tap_key.bind(KEY_RIGHT) if device == "keys" \
+				else _tap_pad.bind(JOY_BUTTON_DPAD_RIGHT)
+		await _start_map_fixture()
+		await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+		var pack := _map.controller.selected()
+		var list := DeckViewer._open
+		check(pack != null and is_instance_valid(list) and list.cards().controls.size() > 0,
+				"sanity: the pick listed its pack's possible cards (%s)" % device)
+		if pack != null and is_instance_valid(list) and list.cards().controls.size() > 0:
+			await _walk_by([right, left] as Array[Callable],
+					[list.cards().controls[0], _exit_button()] as Array[Control],
+					"into the possible cards and Left to the pick's X (%s)" % device)
+			check(_described_title() == _map._info_for(pack).title and list.cards().sticky == null
+					and not _map.selection_buttons.is_visible_in_tree(),
+					"...the pick described again, nothing stuck, its row put away under the list (%s)" % device,
+					_described_title())
+			await _walk_by([left] as Array[Callable], [list.cards().controls[0]] as Array[Control],
+					"Left off the X, with nothing beside it, goes back into the list (%s)" % device)
+			await _close_the_open_viewer()
+		await _end_main_fixture()
+
+## The wall answers input frames before the sidebar slides in after a landing, but while it is out the wall's focus is still the frozen screen being left: a Left then asks no screen for the sidebar, and no hidden sidebar control takes the key focus -- both ways, into the game and back to the map.
+func test_a_left_before_the_sidebar_slides_in_asks_no_screen_for_it() -> void:
+	for route : StringName in [&"ForwardButton", &"BackButton"] as Array[StringName]:
+		await _start_game_fixture()
+		await _back_to_the_map_with_the_show_frozen()
+		if route == &"BackButton":
+			await _click_overlay(&"ForwardButton")
+			await _wait_out_the_return()
+		var asked : Array[int] = [0]
+		_map.controller.sidebar_requested.connect(func() -> void: asked[0] += 1)
+		_play_area.sidebar_requested.connect(func() -> void: asked[0] += 1)
+		await _click_overlay(route)
+		var waited := 0.0
+		while waited < CARD_CONTROL_TIMEOUT_SEC and _main.wall.input_locked:
+			await get_tree().process_frame
+			waited += get_process_delta_time()
+		var in_window := not _main.wall.input_locked and not _container.is_visible_in_tree()
+		check(in_window, "sanity: the wall answers input while the sidebar is still out (%s)" % route,
+				"locked=%s container shown=%s" % [_main.wall.input_locked, _container.is_visible_in_tree()])
+		_push_key(_booted_viewport, KEY_LEFT, true)
+		_push_key(_booted_viewport, KEY_LEFT, false)
+		var focused := _booted_viewport.gui_get_focus_owner()
+		check(asked[0] == 0 and (focused == null or focused.is_visible_in_tree()),
+				"a Left then asks no screen for the sidebar and focuses no hidden control (%s)" % route,
+				"asked=%d focus=%s" % [asked[0], focused])
+		await _wait_out_the_return()
+		await _end_main_fixture()
 
 # The board rests its focus once its visuals are ready, which can be frames after the rebuild.
 func _await_the_rest() -> void:
@@ -6623,9 +6776,10 @@ func test_keys_stay_in_the_chooser_on_the_windows_own_viewport() -> void:
 		check(_booted_viewport.gui_get_focus_owner() == _map.selection_deck_button,
 				"closing the deck hands the focus back to the Deck button that opened it",
 				str(_booted_viewport.gui_get_focus_owner()))
-		await _tap_key(KEY_RIGHT)
-		check(chooser.cards().focus_is_inside(),
-				"...and the next arrow is the chooser's again", str(_booted_viewport.gui_get_focus_owner()))
+		var walked := await _walk_right_off_the_sidebar(_tap_key.bind(KEY_RIGHT))
+		check(walked and chooser.cards().focus_is_inside(),
+				"...and Right off the sidebar's inner edge is the chooser's again",
+				str(_booted_viewport.gui_get_focus_owner()))
 		await _tap_key(KEY_BRACKETLEFT)
 		await _wait_out_the_move()
 		await _tap_key(KEY_BRACKETRIGHT)
@@ -6830,9 +6984,9 @@ func test_closing_the_possible_cards_with_a_card_stuck_returns_to_the_pick() -> 
 		await _see_the_travel_through()
 		await _end_main_fixture()
 
-# The same by keys alone: Right enters the list, accept sticks, Tab reaches the row's Deck, accept
-# opens the deck over the list and again closes it, a cancel closes the deck only, and the next
-# cancel closes the list back to the pick with Travel in reach.
+# The same by keys alone: Right enters the list, accept sticks, Left off it reaches the X and Left
+# again the row's Deck, accept opens the deck over the list, Left off the deck comes back to Close deck, accept again closes
+# it, a cancel closes the deck only, and the next cancel closes the list back to the pick.
 func test_the_deck_over_the_possible_cards_by_keys_alone() -> void:
 	await _start_map_fixture()
 	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
@@ -6845,15 +6999,21 @@ func test_the_deck_over_the_possible_cards_by_keys_alone() -> void:
 	await _tap_key(KEY_ENTER)
 	var stuck := list.cards().sticky
 	check(stuck != null and _container.is_locked(), "sanity: accept stuck the focused card")
-	await _tap_key(KEY_LEFT)
-	check(_exit_button().has_focus(), "Left off the list's edge reaches the stuck card's X",
-			str(_booted_viewport.gui_get_focus_owner()))
 	var deck_row := _map.selection_deck_button
+	await _walk_by([_tap_key.bind(KEY_LEFT)] as Array[Callable], [_exit_button()] as Array[Control],
+			"Left off the list's edge reaches the stuck card's X")
 	for close : Key in [KEY_ENTER, KEY_ESCAPE] as Array[Key]:
 		var route := "accept on Close deck" if close == KEY_ENTER else "a cancel"
-		await _tap_until(KEY_TAB, deck_row.has_focus, 8)
-		check(deck_row.has_focus(), "Tab reaches the stuck card's Deck (%s)" % route,
-				str(_booted_viewport.gui_get_focus_owner()))
+		var by_keys := close == KEY_ENTER
+		var left : Callable = _tap_key.bind(KEY_LEFT) if by_keys else _tap_pad.bind(JOY_BUTTON_DPAD_LEFT)
+		var right : Callable = _tap_key.bind(KEY_RIGHT) if by_keys else _tap_pad.bind(JOY_BUTTON_DPAD_RIGHT)
+		var down : Callable = _tap_key.bind(KEY_DOWN) if by_keys else _tap_pad.bind(JOY_BUTTON_DPAD_DOWN)
+		if by_keys:
+			await _walk_by([left] as Array[Callable], [deck_row] as Array[Control],
+					"Left from the X reaches the stuck card's Deck row (%s)" % route)
+		else:
+			await _walk_by([right, left] as Array[Callable], [_exit_button(), deck_row] as Array[Control],
+					"from the Deck row to the X and back (%s)" % route)
 		await _tap_key(KEY_ENTER)
 		var deck := DeckViewer._open
 		check(is_instance_valid(deck) and deck != list and is_instance_valid(list)
@@ -6861,11 +7021,17 @@ func test_the_deck_over_the_possible_cards_by_keys_alone() -> void:
 				"accept on Deck opens the run deck over the list, its card still stuck (%s)" % route)
 		check(deck_row.text == TRANSLATION.find(&"MAP_CLOSE_DECK"),
 				"...the row reading Close deck (%s)" % route, deck_row.text)
+		if is_instance_valid(deck) and deck != list and deck.cards().controls.size() > 0:
+			await _walk_by([down, left] as Array[Callable],
+					[deck.cards().controls[0], deck_row] as Array[Control],
+					"into the deck over the stuck possible card and Left back to Close deck (%s)" % route)
+			check(_previewed_card() == stuck,
+					"...the stuck possible card described again (%s)" % route, _described_title())
 		await _tap_key(close)
 		check(not is_instance_valid(deck) or deck.is_queued_for_deletion(),
 				"%s closes the run deck" % route)
-		check(DeckViewer._open == list and list.cards().sticky == stuck and _container.is_locked()
-				and _previewed_card() == stuck and _exit_button().visible,
+		check(is_instance_valid(list) and DeckViewer._open == list and list.cards().sticky == stuck
+				and _container.is_locked() and _previewed_card() == stuck and _exit_button().visible,
 				"...and only the deck: the list's stuck card is back, described, with its X (%s)" % route,
 				"open=%s shown=%s x=%s" % [DeckViewer._open, _described_title(), _exit_button().visible])
 	await _tap_key(KEY_ESCAPE)
@@ -6874,11 +7040,14 @@ func test_the_deck_over_the_possible_cards_by_keys_alone() -> void:
 	check(_described_title() == _map._info_for(pack).title,
 			"...back to the pack node's description", _described_title())
 	var travel := _map.travel_button
-	var landed := _booted_viewport.gui_get_focus_owner()
-	await _tap_until(KEY_TAB, travel.has_focus, 12)
-	check(travel.has_focus(), "...with Travel in the keys' reach",
-			"landed on %s, now %s" % [(landed as Button).text if landed is Button else str(landed),
-			_booted_viewport.gui_get_focus_owner()])
+	var possible := _map.possible_cards_button
+	check(possible.has_focus() and possible.get_global_rect().position.y
+			> travel.get_global_rect().end.y,
+			"sanity: the list's close rests on Possible cards, wrapped under Travel and Deck at %s -- the walk below leans on that wrap" % _booted_viewport.size,
+			"%s at %s, Travel at %s" % [_booted_viewport.gui_get_focus_owner(),
+			possible.get_global_rect(), travel.get_global_rect()])
+	await _walk_by([_tap_key.bind(KEY_RIGHT), _tap_key.bind(KEY_LEFT)] as Array[Callable],
+			[deck_row, travel] as Array[Control], "...with Travel in the keys' reach")
 	var presses : Array[int] = [0]
 	travel.pressed.connect(func() -> void: presses[0] += 1, CONNECT_ONE_SHOT)
 	await _tap_key(KEY_ENTER)
@@ -6938,7 +7107,7 @@ func test_a_click_on_the_viewers_close_tab_closes_it() -> void:
 			"hud=%s focus=%s" % [_hud_is_up(), _booted_viewport.gui_get_focus_owner()])
 	await _end_main_fixture()
 
-# ONE DEVICE REACHES AND PRESSES THE TAB: the first Right enters the list, Right on along the row
+# ONE DEVICE REACHES AND PRESSES THE TAB: Right off the sidebar enters the list, Right on along the row
 # lands on the tab sticking out of that side, Left goes back into the list, and accept on the tab
 # closes the viewer -- the keyboard's arrows and Enter, and the pad's d-pad and A.
 func test_the_viewers_close_tab_by_keys_or_pad_alone() -> void:
@@ -6961,8 +7130,9 @@ func test_the_viewers_close_tab_by_keys_or_pad_alone() -> void:
 			await _close_the_open_viewer()
 			continue
 		var cards := viewer.cards().controls
-		await right.call()
-		check(cards[0].has_focus(), "sanity: the first Right enters the list (%s)" % by,
+		var walked := await _walk_right_off_the_sidebar(right)
+		check(walked and cards[0].has_focus(),
+				"sanity: Right off the sidebar's inner edge enters the list (%s)" % by,
 				str(_booted_viewport.gui_get_focus_owner()))
 		for step : int in cards.size():
 			if tab.has_focus(): break
@@ -9802,6 +9972,31 @@ func test_up_inside_a_hosted_viewer_walks_the_viewer_not_the_x() -> void:
 
 # Real key presses one at a time, each read back through the focus owner, so the walk proves the
 # neighbour chain and not a `grab_focus()`. Stops at `arrived` or after `steps` presses.
+## Each press through the window in turn, the key focus asserted to land on the matching control after every one.
+func _walk_by(presses: Array[Callable], landings: Array[Control], route: String) -> void:
+	for index : int in presses.size():
+		await presses[index].call()
+		var landed := _booted_viewport.gui_get_focus_owner()
+		check(landed == landings[index], "%s: press %d lands on %s" % [route, index + 1,
+				_control_label(landings[index])], "on %s" % _control_label(landed))
+
+func _control_label(control: Control) -> String:
+	return "%s '%s'" % [control, (control as Button).text] if control is Button else str(control)
+
+## Presses `press` until the key focus leaves the sidebar, each press inside it walking on to another of its controls; whether the focus left for the open viewer.
+func _walk_right_off_the_sidebar(press: Callable) -> bool:
+	for step : int in SIDEBAR_WALK_STEPS:
+		var from := _booted_viewport.gui_get_focus_owner()
+		await press.call()
+		var landed := _booted_viewport.gui_get_focus_owner()
+		if landed != null and not _container.is_ancestor_of(landed): return true
+		check(landed != null and landed != from, "a Right inside the sidebar walks on to its next control",
+				"%s -> %s" % [_control_label(from), _control_label(landed)])
+	return false
+
+## More presses than the sidebar has controls in a row, so a walk that never leaves it fails instead of hanging.
+const SIDEBAR_WALK_STEPS := 8
+
 func _tap_until(keycode: Key, arrived: Callable, steps: int) -> Control:
 	for step : int in steps:
 		if arrived.call(): break

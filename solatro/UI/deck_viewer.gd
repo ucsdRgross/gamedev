@@ -84,8 +84,8 @@ func _hand_the_focus_back() -> void:
 	elif fallback_focus.is_visible_in_tree(): fallback_focus.grab_focus()
 
 # ⚠ NOTHING IS FOCUSED ON OPEN: a focus here is a highlight, and a highlight holds the sidebar
-# against the HUD the player still has to reach. The first arrow enters the list instead
-# (`HudContainer` hands it over, the two being in different viewports).
+# against the HUD the player still has to reach. An arrow off the sidebar's inner edge enters the
+# list instead (`HudContainer` hands it over, the two being separate Control trees).
 func update_viewer() -> void:
 	_cards = CardsViewer.new(flow_container)
 	_cards.close_tab = close_tab
