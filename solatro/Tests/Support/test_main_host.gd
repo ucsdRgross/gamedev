@@ -1,5 +1,5 @@
 class_name TestMainHost
-## Hosts a real `Main` the way the OS window does: inside a SubViewport of the window's size.
+## Hosts a real `Main` inside a SubViewport of the window's size at content scale 1, or in a Window stretched as the player's.
 
 const MAIN_SCENE := preload("res://Levels/main.tscn")
 
@@ -11,6 +11,22 @@ const PAUSED_BEFORE_BOOT := &"paused_before_boot"
 static func boot(parent: TestSuite, size: Vector2i, scene: PackedScene = MAIN_SCENE) -> Array:
 	var viewport := SubViewport.new()
 	viewport.size = size
+	return await _boot_in(parent, viewport, scene)
+
+# The shared run's OS window stays at the project's base size, where the root's content scale is 1
+# like the SubViewport's; a Window stretched as the root is draws at the player's scale at any size.
+# Unfocusable and off the root's rect, it takes none of the root's input from the suites beside it.
+static func boot_in_players_window(parent: TestSuite, size: Vector2i) -> Array:
+	var window := Window.new()
+	for property : StringName in [&"content_scale_size", &"content_scale_mode", &"content_scale_aspect",
+			&"content_scale_stretch", &"content_scale_factor"]:
+		window.set(property, parent.get_tree().root.get(property))
+	window.unfocusable = true
+	window.size = size
+	window.position = -size
+	return await _boot_in(parent, window, MAIN_SCENE)
+
+static func _boot_in(parent: TestSuite, viewport: Viewport, scene: PackedScene) -> Array:
 	parent.add_child(viewport)
 	var node := mount(parent, viewport, scene)
 	await parent.get_tree().process_frame
@@ -42,7 +58,7 @@ static func unmount(parent: TestSuite, node: Node) -> void:
 
 # The node goes first, so its screens tear down inside a live viewport rather than under one
 # already freed.
-static func free_booted(parent: TestSuite, viewport: SubViewport, node: Node) -> void:
+static func free_booted(parent: TestSuite, viewport: Viewport, node: Node) -> void:
 	await unmount(parent, node)
 	viewport.queue_free()
 

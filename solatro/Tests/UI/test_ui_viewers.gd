@@ -118,7 +118,7 @@ func test_the_first_navigation_press_enters_the_list() -> void:
 			"a later arrow never drags the focus back to the first card")
 	await _drop_viewer(viewer)
 
-## The pack chooser draws only its square window, so the picture around it shows through.
+## The pack chooser draws only its square window, so the picture around it shows through; harness-scale only.
 func test_the_pack_chooser_draws_only_a_square_window() -> void:
 	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 3, 0)
 	await get_tree().process_frame
@@ -146,7 +146,7 @@ func test_the_pack_chooser_draws_only_a_square_window() -> void:
 ## Half a pixel either side: a container places its children on whole pixels.
 const CENTRED_TOLERANCE_PX := 1.0
 
-## The chooser's window holds one full row of cards; a sixth wraps to a row of its own, centred like the rest, and Rerolls and Take centre as a pair.
+## The chooser's window holds one full row of cards; a sixth wraps to a row of its own, centred like the rest, and Rerolls and Take centre as a pair; harness-scale only.
 func test_a_sixth_card_wraps_to_a_centred_row_of_its_own() -> void:
 	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 6, 0)
 	await get_tree().process_frame
@@ -172,7 +172,7 @@ func test_a_sixth_card_wraps_to_a_centred_row_of_its_own() -> void:
 	viewer.queue_free()
 	await get_tree().process_frame
 
-## A wrapped row starts below the Reroll buttons hanging under the row above, never over them.
+## A wrapped row starts below the Reroll buttons hanging under the row above, never over them; harness-scale only.
 func test_a_wrapped_row_lies_below_the_reroll_buttons_above() -> void:
 	var viewer := await _fitted_chooser(ChoiceViewer.ROW_CARDS + 1, Rect2(Vector2.ZERO, Vector2.ONE * 4000.0))
 	var wrapped := viewer._cards.controls[ChoiceViewer.ROW_CARDS].get_global_rect()
@@ -184,7 +184,7 @@ func test_a_wrapped_row_lies_below_the_reroll_buttons_above() -> void:
 	viewer.queue_free()
 	await get_tree().process_frame
 
-## With room, the window grows to show ROWS_SHOWN full rows; one more row scrolls inside the same window, and a space too short for them cuts the window to it with the rest scrolling -- five cards to a row throughout.
+## With room, the window grows to show ROWS_SHOWN full rows; one more row scrolls inside the same window, and a space too short for them cuts the window to it with the rest scrolling -- five cards to a row throughout; harness-scale only.
 func test_the_window_shows_five_rows_then_scrolls() -> void:
 	var room := Rect2(Vector2.ZERO, Vector2.ONE * 4000.0)
 	var full := ChoiceViewer.ROW_CARDS * ChoiceViewer.ROWS_SHOWN
@@ -219,9 +219,9 @@ func test_the_window_shows_five_rows_then_scrolls() -> void:
 ## A container places its children on whole canvas pixels, which the window's UI scale can carry a fraction of a window pixel off.
 const GAP_TOLERANCE_PX := 0.5
 
-# Measured in the ROOT window at whatever size it has, so at its real UI scale: no suite resizes the
-# OS window the others share. The 600x1000 top case is covered by the shots.
-## The gap between two listed cards, a row's and a column's, is the board's gap in art units at the card's own drawn scale -- in the deck viewer and in the pack chooser, where it sits below each row's Reroll band.
+# Measured in the ROOT window: no suite resizes the OS window the others share, and the run keeps it at
+# the project's base size, content scale 1 as in a SubViewport. Other window sizes are shots.
+## The gap between two listed cards, a row's and a column's, is the board's gap in art units at the card's own drawn scale -- in the deck viewer and in the pack chooser, where it sits below each row's Reroll band; harness-scale only.
 func test_the_viewers_gap_is_the_boards_at_their_card_scale() -> void:
 	var size := get_tree().root.size
 	var visible := get_tree().root.get_visible_rect()
@@ -249,8 +249,8 @@ func test_the_viewers_gap_is_the_boards_at_their_card_scale() -> void:
 	chooser.queue_free()
 	await get_tree().process_frame
 
-# Measured in the ROOT window at whatever size it has; the 600x1000 top case is covered by the shots.
-## The deck viewer's list is the widest whole number of columns its margins leave room for, centred where it rests: no strip narrower than a card is left on one side, beside a sidebar or over the whole picture.
+# Measured in the ROOT window, at content scale 1 like the rows above; other window sizes are shots.
+## The deck viewer's list is the widest whole number of columns its margins leave room for, centred where it rests: no strip narrower than a card is left on one side, beside a sidebar or over the whole picture; harness-scale only.
 func test_the_deck_viewers_list_is_whole_columns_centred() -> void:
 	var size := get_tree().root.size
 	var visible := get_tree().root.get_visible_rect()

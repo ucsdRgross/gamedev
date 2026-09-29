@@ -348,6 +348,11 @@ func _ready() -> void:
 	await test_left_with_a_stuck_description_lands_on_the_x()
 	await test_a_pad_accept_on_the_landed_hud_button_presses_it()
 	await test_left_on_the_map_with_nothing_picked_reaches_its_deck_button()
+	behavior_section("THE PLAYER'S WINDOW: ITS OWN CONTENT SCALE")
+	await test_every_viewer_draws_at_the_ui_size_in_the_players_window()
+	await test_the_chooser_is_a_square_beside_the_sidebar_in_the_players_window()
+	await test_the_menus_column_draws_at_the_ui_scale_beside_the_sidebar_in_the_players_window()
+	await test_the_board_is_centred_beside_the_resting_sidebar_in_the_players_window()
 	finish()
 
 
@@ -875,6 +880,7 @@ func _check_the_hud_reads(state: GameData, moment: String) -> void:
 
 # S2d/Q46: the HUD's CONTENT must start below the overlay's Back/Forward/Wall row -- the panel
 # itself may still draw under it (draw order is `test_overlay_buttons_draw_above_the_hud_container`).
+## Harness-scale only: the fixture draws at content scale 1, where the player's window does not.
 func test_game_hud_members_start_below_the_overlay_button_band() -> void:
 	var booted := await TestMainHost.boot(self, Vector2i(1280, 720), WALL_SCENE)
 	var viewport : SubViewport = booted[0]
@@ -892,9 +898,9 @@ func test_game_hud_members_start_below_the_overlay_button_band() -> void:
 				"%s starts below the overlay button band" % member_name, str(control.get_global_rect()))
 	await _free_booted_main(viewport, wall)
 
-# The container's contents are laid out to fit whatever it is set to, so no member may reach past
-# its own container's rect at a real 1280x720 window. A same-aspect window reports the project's
-# own base resolution as its logical size under `canvas_items`/`expand` stretch.
+# A same-aspect window reports the project's own base resolution as its logical size under
+# `canvas_items`/`expand` stretch.
+## No HUD member reaches past its own container's rect at a 1280x720 window, whatever the container is set to; harness-scale only.
 func test_game_hud_members_stay_inside_the_container_at_a_side_window() -> void:
 	var booted := await TestMainHost.boot(self, Vector2i(PlayArea.reference_window_size()),
 			WALL_SCENE)
@@ -1047,7 +1053,7 @@ func _sidebar_share_of_the_picture() -> float:
 	var settings := SettingsManager.settings
 	return settings.container_size_fraction * float(PlayArea.game_picture_design_size(settings).x)
 
-## At the picture's own aspect the window cancels and the cap never bites -- the board is inset the sidebar's share of the picture at any 16:9 window size, 4K included.
+## At the picture's own aspect the window cancels and the cap never bites -- the board is inset the sidebar's share of the picture at any 16:9 window size, 4K included; harness-scale only.
 func test_the_inset_is_the_sidebars_share_at_the_pictures_own_aspect() -> void:
 	await _start_game_fixture()
 	for window : Vector2i in [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440),
@@ -1059,7 +1065,7 @@ func test_the_inset_is_the_sidebars_share_at_the_pictures_own_aspect() -> void:
 				_sidebar_share_of_the_picture()])
 	await _end_main_fixture()
 
-## An ultrawide window clamps the container, flush against the band's inner edge, empty space outboard.
+## An ultrawide window clamps the container, flush against the band's inner edge, empty space outboard; harness-scale only.
 func test_an_ultrawide_window_clamps_and_narrows() -> void:
 	await _start_game_fixture(Vector2i(3840, 1080))
 	var settings := PlayerSettings.new()
@@ -1077,7 +1083,7 @@ func test_an_ultrawide_window_clamps_and_narrows() -> void:
 			"the empty space from the clamp sits outboard of the container")
 	await _end_main_fixture()
 
-## The container moves to the top band once the leftover play area would be taller than wide.
+## The container moves to the top band once the leftover play area would be taller than wide; harness-scale only.
 func test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide() -> void:
 	await _start_game_fixture(Vector2i(600, 1000))
 	var settings := PlayerSettings.new()
@@ -1098,7 +1104,7 @@ func test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_
 			"the top container's height is the fractional/clamped container_px", "%.3f" % rect.size.y)
 	await _end_main_fixture()
 
-## A covering picture is cropped on every window narrower than its own aspect: the board's region must still clear the container and stay on screen there (3.5).
+## A covering picture is cropped on every window narrower than its own aspect: the board's region must still clear the container and stay on screen there (3.5); harness-scale only.
 func test_the_boards_region_clears_the_container_on_a_cropped_window() -> void:
 	await _start_game_fixture()
 	for size : Vector2i in [Vector2i(1920, 1200), Vector2i(1600, 1200), Vector2i(600, 1000)]:
@@ -1161,9 +1167,9 @@ func _settle_scroll_x(pa: PlayArea) -> void:
 		if is_equal_approx(pa.scroll_container.position.x, last): return
 		last = pa.scroll_container.position.x
 
-#The retired controls no longer shape the board: its window is centred on the picture space the
-#RESTING sidebar leaves, derived from the sidebar's own rect and the covering scale, never from the
-#reserve the product computed. The set's centring inside that window is GRID VIEW's row.
+#Derived from the sidebar's own rect and the covering scale, never from the reserve the product
+#computed. The set's centring inside that window is GRID VIEW's row.
+## The board's window centres on the picture space the RESTING sidebar leaves, the retired controls gone; harness-scale only.
 func test_board_centre_after_hud_migration_is_the_space_beside_the_resting_sidebar() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -1208,7 +1214,7 @@ func test_board_centre_after_hud_migration_is_the_space_beside_the_resting_sideb
 
 # ------------------------------------------------------------------ the geometry's own wiring
 
-## A real resize (private `SubViewport`) moves the container and re-publishes `board_inset_left`.
+## A real resize (private `SubViewport`) moves the container and re-publishes `board_inset_left`; harness-scale only.
 func test_a_real_resize_moves_the_container_and_republishes_the_inset() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -1261,9 +1267,8 @@ func _check_board_inset_left_on_ultrawide_resize(viewport : SubViewport, view : 
 			"board_inset_left uses the covering picture_scale off an ultrawide resize",
 			"%.3f vs %.3f" % [view.play_area.board_inset_left, ultrawide_rect.size.x / ultrawide_scale])
 
-# The top case fits the board to the height LEFT UNDER the band, the same way the side case fits
-# it to the width left beside the container -- a board sized off the whole height spills up under
-# the band instead.
+# A board sized off the whole height spills up under the band.
+## The top case fits the board to the height LEFT UNDER the band, as the side case fits it to the width beside the container; harness-scale only.
 func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -1452,6 +1457,7 @@ func test_the_sidebar_is_hidden_on_the_menu_until_the_picker_shows_something() -
 
 # R1's first half, and it is about the PICTURE, not the sidebar: whatever the sidebar is doing, the
 # focused picture reaches every window edge, so no bar of bare wall ever shows beside it.
+## Harness-scale only: the fixture draws at content scale 1, where the player's window does not.
 func test_every_focused_picture_covers_the_window_edge_to_edge() -> void:
 	await _start_map_fixture()
 	var window : Vector2 = _container.get_viewport().get_visible_rect().size
@@ -1482,7 +1488,7 @@ func test_every_focused_picture_covers_the_window_edge_to_edge() -> void:
 			"the game covers the window edge to edge once landed")
 	await _end_main_fixture()
 
-## A focused picture draws its screen at one scale on both axes, whatever the window's shape: the map at a tall window is not squashed, and neither is the game.
+## A focused picture draws its screen at one scale on both axes, whatever the window's shape: the map at a tall window is not squashed, and neither is the game; harness-scale only.
 func test_a_focused_picture_is_drawn_unstretched_at_every_window_shape() -> void:
 	for size : Vector2i in INSET_WINDOWS:
 		await _start_map_fixture(size)
@@ -1901,9 +1907,8 @@ func test_before_the_slide_each_screen_has_the_whole_picture() -> void:
 			str(_map.controller.camera.offset))
 	await _end_main_fixture()
 
-# The game's half of the row above: with no sidebar the board set -- the grid AND its Entrance row
-# -- sits in the whole picture exactly as it sits beside the resting sidebar, centre to centre.
 # Left by the real Wall click, so the wall-view thumbnail is the frame the player sees.
+## With no sidebar the board set -- the grid AND its Entrance row -- sits in the whole picture exactly as it sits beside the resting sidebar, centre to centre; harness-scale only.
 func test_wall_view_keeps_the_board_centred_in_its_picture() -> void:
 	for size : Vector2i in ([Vector2i(1280, 720), Vector2i(600, 1000)] as Array[Vector2i]):
 		await _start_game_fixture(size)
@@ -2024,9 +2029,9 @@ func _await_camera_transform_settled() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-# (d) The map fits the space left over beside `container_rect()`, converted through the map's own
-# `WallPicture` cover scale and `Camera2D` zoom, never window px unconverted. Boots the real
-# `Main`: a side window, a top window, then a zoom in, whose view must stay on the map.
+# Converted through the map's own `WallPicture` cover scale and `Camera2D` zoom, never window px
+# unconverted. Boots the real `Main`: a side window, a top window, then a zoom in.
+## The map fits the space left beside `container_rect()`, and a zoom in keeps its view on the map; harness-scale only.
 func test_maps_camera_offset_moves_beside_the_container_not_under_it() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -2190,17 +2195,18 @@ func _menu_buttons(main_menu: Menu) -> Array[Button]:
 		buttons.append(main_menu.get_node(path) as Button)
 	return buttons
 
-# Boots a real `Main` inside a `SubViewport` sized to `size`; returns `[viewport, main]` so the
-# caller can free both once its own checks are done.
-func _boot_main_at(size: Vector2i) -> Array:
+# Boots a real `Main` inside a `SubViewport` sized to `size`, or in the player's window; returns
+# `[host, main]` so the caller can free both once its own checks are done.
+func _boot_main_at(size: Vector2i, in_players_window := false) -> Array:
+	if in_players_window: return await TestMainHost.boot_in_players_window(self, size)
 	return await TestMainHost.boot(self, size)
 
-func _free_booted_main(viewport: SubViewport, node: Node) -> void:
+func _free_booted_main(viewport: Viewport, node: Node) -> void:
 	await TestMainHost.free_booted(self, viewport, node)
 
-# (e) The start menu's buttons lie outside whatever band the container has actually SLID IN -- at
-# rest that band is empty and the whole picture is the menu's -- and inside the window, at every
-# window shape, compared in ONE space via `WallPicture.local_rect_beside()`.
+# At rest the slid-in band is empty and the whole picture is the menu's. Compared in ONE space via
+# `WallPicture.local_rect_beside()`.
+## The start menu's buttons lie outside the band the container has actually slid in, and inside the window, at every window shape; harness-scale only.
 func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -2230,9 +2236,9 @@ func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> voi
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
 
-# Q27: the picture is centred in the space beside the container, not merely inset from one edge --
-# the title moves with the rest of the menu. The container narrows one axis (x on the side case, y
-# on the top case); that is the only axis its centring is testable on, so that is the one checked.
+# The container narrows one axis (x on the side case, y on the top case); that is the only axis its
+# centring is testable on, so that is the one checked.
+## The menu's title and buttons centre on the space beside the container, not merely inset from one edge; harness-scale only.
 func test_menus_title_and_button_row_centre_on_the_remaining_space() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -2256,7 +2262,7 @@ func test_menus_title_and_button_row_centre_on_the_remaining_space() -> void:
 		var content_centre := content.get_center()
 		var axis := content_centre.y if top else content_centre.x
 		var expected := remaining_centre.y if top else remaining_centre.x
-		check(absf(axis - expected) <= 2.0,
+		check(absf(axis - expected) <= MENU_CENTRED_TOLERANCE_PX,
 				"the menu's content centres on the remaining space at %s" % size,
 				"%.2f vs %.2f" % [axis, expected])
 		await _free_booted_main(viewport, main)
@@ -2278,17 +2284,13 @@ func test_every_menu_control_draws_at_the_ui_size_inside_the_window_and_none_ove
 		(main.menu_scene.get_node(^"Content/Play") as Button).pressed.emit()
 		await get_tree().process_frame
 		await get_tree().process_frame
-		var ui := viewport.get_final_transform().get_scale().x
 		var drawn : Array[Rect2] = []
 		for node : Node in main.menu_scene.find_children("*", "Control", true, false):
 			var control := node as Control
 			if not (control is Button or control is Label) or not control.is_visible_in_tree():
 				continue
 			var rect := _menu_control_in_window(viewport, main._pictures[&"start_menu"], control)
-			var drawn_scale := rect.size / control.size
-			check(absf(drawn_scale.x - ui) <= 0.001 * ui and absf(drawn_scale.y - ui) <= 0.001 * ui,
-					"%s draws at the UI scale across and down at %s" % [control.name, size],
-					"%s px for %s at UI %.4f" % [rect.size, control.size, ui])
+			_check_drawn_at_the_ui_scale(viewport, rect, control, str(size))
 			check(Rect2(Vector2.ZERO, Vector2(size)).grow(1.0).encloses(rect),
 					"%s lies inside the window at %s" % [control.name, size], str(rect))
 			for other : Rect2 in drawn:
@@ -2428,10 +2430,21 @@ func _check_the_bottom_row_beside_the_sidebar(viewport: SubViewport, main: Main,
 		check(beside.grow(1.0).encloses(rect), "%s rests beside the sidebar, inside the window, %s" % [button.name, what],
 				"%s in %s" % [rect, beside])
 
+func _check_drawn_at_the_ui_scale(viewport: Viewport, rect: Rect2, control: Control, where: String) -> void:
+	var ui := viewport.get_final_transform().get_scale()
+	var drawn_scale := rect.size / control.size
+	check(absf(drawn_scale.x - ui.x) <= 0.001 * ui.x and absf(drawn_scale.y - ui.y) <= 0.001 * ui.y,
+			"%s draws at the UI scale across and down at %s" % [control.name, where],
+			"%s px for %s at UI %s" % [rect.size, control.size, ui])
+
 ## Where `control`, drawn in the menu picture's own canvas, lands in `viewport`'s window pixels.
-func _menu_control_in_window(viewport: SubViewport, picture: WallPicture, control: Control) -> Rect2:
-	var canvas := control.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, control.size)
-	var texels := Vector2(picture.viewport.size) / control.get_viewport_rect().size
+func _menu_control_in_window(viewport: Viewport, picture: WallPicture, control: Control) -> Rect2:
+	return _picture_rect_in_window(viewport, picture,
+			control.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, control.size))
+
+## Where `canvas`, a rect in `picture`'s own canvas, lands in `viewport`'s window pixels.
+func _picture_rect_in_window(viewport: Viewport, picture: WallPicture, canvas: Rect2) -> Rect2:
+	var texels := Vector2(picture.viewport.size) / picture.viewport.get_visible_rect().size
 	var start := viewport.get_final_transform() * _picture_point_in_window(picture, canvas.position * texels)
 	var end := viewport.get_final_transform() * _picture_point_in_window(picture, canvas.end * texels)
 	return Rect2(start, end - start)
@@ -2638,14 +2651,14 @@ var _booted_viewport : SubViewport = null
 
 # A real `Main` resting on its generated map screen: the fixture every whole-route test starts
 # from, with nothing stubbed. Torn down by `_end_main_fixture()`.
-func _start_map_fixture(size := Vector2i(1280, 720)) -> void:
+func _start_map_fixture(size := Vector2i(1280, 720), in_players_window := false) -> void:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
 	_prev_save_info = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	var booted := await _boot_main_at(size)
-	_booted_viewport = booted[0]
+	var booted := await _boot_main_at(size, in_players_window)
+	_booted_viewport = booted[0] as SubViewport
 	_main = booted[1]
 	_map = _main.map_scene
 	_map_viewport = _main._pictures[&"map"].viewport
@@ -2663,8 +2676,8 @@ func _clear_any_auto_pick() -> void:
 
 # The same fixture carried on into a dealt game screen: the only one that proves the WHOLE board
 # route -- the board's focus, `GameView`'s relay, `Main`'s handler and the container's swap.
-func _start_game_fixture(size := Vector2i(1280, 720)) -> void:
-	await _start_map_fixture(size)
+func _start_game_fixture(size := Vector2i(1280, 720), in_players_window := false) -> void:
+	await _start_map_fixture(size, in_players_window)
 	await _enter_game_fixture()
 
 # The map fixture carried on into the game screen, split out so a test can do something on the map
@@ -2678,7 +2691,7 @@ func _enter_game_fixture() -> void:
 	await _await_the_opening_ease(_play_area)
 
 func _end_main_fixture() -> void:
-	await _free_booted_main(_booted_viewport, _main)
+	await _free_booted_main(_main.get_viewport(), _main)
 	_booted_viewport = null
 	_main = null
 	_map = null
@@ -2785,7 +2798,7 @@ func _preview_card(node: Node) -> ControlCard:
 		if found: return found
 	return null
 
-## The title is the card's own name, "<Rank> of <Suits>", and every effect is a block whose NAME is written larger than the description under it.
+## The title is the card's own name, "<Rank> of <Suits>", and every effect is a block whose NAME is written larger than the description under it; harness-scale only.
 func test_the_description_titles_a_card_and_sizes_its_effect_names() -> void:
 	await _start_game_fixture()
 	var title : Label = _panel.get_node(^"%Title")
@@ -2953,7 +2966,7 @@ func _check_description_draws_inside_the_container(window: Vector2i) -> void:
 ## The windows the content inset is measured at: the shipped side case and the top case every top-band row uses.
 const INSET_WINDOWS : Array[Vector2i] = [Vector2i(1280, 720), Vector2i(600, 1000)]
 
-## A letter drawn at the container's very edge loses its first column, so the description and the HUD both start one overlay inset inside it.
+## A letter drawn at the container's very edge loses its first column, so the description and the HUD both start one overlay inset inside it; harness-scale only.
 func test_the_containers_content_starts_one_inset_inside_its_left_edge() -> void:
 	await _start_game_fixture()
 	var data := await _hover_a_card_with_a_visual()
@@ -2987,7 +3000,7 @@ func _check_parts_start_one_inset_inside(parts: Array[Control], owner_label: Str
 						% [owner_label, part.name, window],
 				"%.1f vs %.1f" % [left, edge])
 
-## The X sits over the description's top-right corner, so the wrapped name must leave that column free or a word draws beneath it.
+## The X sits over the description's top-right corner, so the wrapped name must leave that column free or a word draws beneath it; harness-scale only.
 func test_the_title_leaves_the_exit_xs_column() -> void:
 	await _start_game_fixture()
 	var entrance := await _entrance_card_controls()
@@ -3010,7 +3023,7 @@ func test_the_title_leaves_the_exit_xs_column() -> void:
 ## A 1280x1000 window's logical canvas: the tallest band where the HUD is taller than the room below the buttons.
 const SHORT_TOP_BAND_WINDOW := Vector2i(1152, 900)
 
-## The overlay's buttons draw above the container, so a top band's HUD starts below their row at the shipped size, whatever the band's height.
+## The overlay's buttons draw above the container, so a top band's HUD starts below their row at the shipped size, whatever the band's height; harness-scale only.
 func test_the_top_bands_hud_starts_below_the_overlay_buttons() -> void:
 	for window : Vector2i in [INSET_WINDOWS[-1], SHORT_TOP_BAND_WINDOW] as Array[Vector2i]:
 		await _start_game_fixture(window)
@@ -3062,7 +3075,7 @@ func _hover_a_card_with_a_visual() -> CardData:
 	var data : CardData = _play_area.ui_data[hovered]
 	return data if _play_area.data_card.has(data) else null
 
-## R9/Q33=c: every description draws its card at the ONE preview size, the deck viewer's, with the name beside it.
+## R9/Q33=c: every description draws its card at the ONE preview size, the deck viewer's, with the name beside it; harness-scale only.
 func test_the_preview_is_drawn_at_the_one_preview_size() -> void:
 	await _start_game_fixture()
 	var data := await _hover_a_card_with_a_visual()
@@ -3096,7 +3109,7 @@ func test_the_preview_is_drawn_at_the_one_preview_size() -> void:
 					"name %s vs visual %s" % [title_rect, preview_rect])
 	await _end_main_fixture()
 
-## R9 through a resize: the preview is re-drawn at the one preview size at the NEW window, not the one it was published at.
+## R9 through a resize: the preview is re-drawn at the one preview size at the NEW window, not the one it was published at; harness-scale only.
 func test_the_preview_follows_a_resize_to_the_new_preview_size() -> void:
 	await _start_game_fixture()
 	var data := await _hover_a_card_with_a_visual()
@@ -3702,7 +3715,7 @@ func test_the_exit_x_is_a_touch_target_below_the_button_band() -> void:
 				"the HUD hides it again: it belongs to the description")
 	await _end_main_fixture()
 
-## The touch target is a share of the window's short side, so a resize that changes that side re-grows every overlay control and the exit X, and the X stays below the re-grown band.
+## The touch target is a share of the window's short side, so a resize that changes that side re-grows every overlay control and the exit X, and the X stays below the re-grown band; harness-scale only.
 func test_a_resize_re_applies_every_overlay_touch_target() -> void:
 	await _start_game_fixture()
 	var controls := await _hoverable_card_controls()
@@ -3732,7 +3745,7 @@ func test_a_resize_re_applies_every_overlay_touch_target() -> void:
 				"%.1f vs %.1f" % [exit.offset_top, overlay.button_band_bottom()])
 	await _end_main_fixture()
 
-## A resize re-lays the description that is already up, so its content follows the container's new width rather than keeping the old one.
+## A resize re-lays the description that is already up, so its content follows the container's new width rather than keeping the old one; harness-scale only.
 func test_a_resize_relays_the_description_to_the_new_width() -> void:
 	await _start_game_fixture()
 	var controls := await _hoverable_card_controls()
@@ -4888,7 +4901,7 @@ func _pointer_leaves_every_card(on_a_card: Vector2) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-## At rest the map and its sea buffer fill the space beside the resting sidebar on the binding axis, centred, at any window shape.
+## At rest the map and its sea buffer fill the space beside the resting sidebar on the binding axis, centred, at any window shape; harness-scale only.
 func test_the_map_at_rest_fits_the_space_beside_the_sidebar() -> void:
 	for size : Vector2i in ([Vector2i(1280, 720), Vector2i(600, 1000)] as Array[Vector2i]):
 		await _start_map_fixture(size)
@@ -4917,7 +4930,7 @@ func _wheel_the_map_out(notches: int) -> void:
 		_main.wall._unhandled_input(_wheel_event(MOUSE_BUTTON_WHEEL_DOWN))
 	await _await_map_framing_settled(_main)
 
-## At the fit the whole map is on screen, so there is nothing to pan: a drag moves nothing, and neither does the token walking.
+## At the fit the whole map is on screen, so there is nothing to pan: a drag moves nothing, and neither does the token walking; harness-scale only.
 func test_at_the_fit_nothing_pans() -> void:
 	await _start_map_fixture()
 	var before := _framed_map_rect(_main)
@@ -5294,7 +5307,7 @@ func _check_every_card_inside(cards: Array[ControlCard], bounds: Rect2, label: S
 			"%d of %d cards outside %s, e.g. %s"
 			% [outside.size(), cards.size(), bounds, outside[0] if outside else Rect2()])
 
-## The viewer sits INSIDE the sidebar's screen: its cards start beside the container, never under it.
+## The viewer sits INSIDE the sidebar's screen: its cards start beside the container, never under it; harness-scale only.
 func test_the_deck_viewers_cards_start_beside_the_container() -> void:
 	await _start_game_fixture()
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
@@ -5317,7 +5330,7 @@ func _resize_viewport(viewport: SubViewport, size: Vector2i) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-## An open viewer follows the container the board does: the window moving under it re-fits it, and re-fitting twice lands it in the same place rather than insetting it twice.
+## An open viewer follows the container the board does: the window moving under it re-fits it, and re-fitting twice lands it in the same place rather than insetting it twice; harness-scale only.
 func test_a_resize_re_fits_the_open_viewer() -> void:
 	await _start_game_fixture()
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
@@ -5352,7 +5365,7 @@ func test_a_resize_does_not_re_open_a_dismissed_description() -> void:
 				"a resize after the exit X leaves the dismissal standing (B9-B11)")
 	await _end_main_fixture()
 
-## A rect change re-draws an open viewer's entry, and it comes back at the one preview size the deck viewer already draws at.
+## A rect change re-draws an open viewer's entry, and it comes back at the one preview size the deck viewer already draws at; harness-scale only.
 func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> void:
 	await _start_game_fixture()
 	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
@@ -5377,7 +5390,7 @@ func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> voi
 					% [_card_drawn_width(preview.child), viewer_px, board_px])
 	await _end_main_fixture()
 
-## The same claim at a TOP window: the listed cards clear the band and stay inside the visible picture.
+## The same claim at a TOP window: the listed cards clear the band and stay inside the visible picture; harness-scale only.
 func test_the_deck_viewers_cards_lie_below_the_band_at_a_top_window() -> void:
 	await _start_game_fixture(Vector2i(600, 1000))
 	var window : Vector2 = _container.get_viewport().get_visible_rect().size
@@ -6219,7 +6232,7 @@ func _await_the_rest() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-## The chooser is a square window sized to what it holds, centred beside the sidebar with the map showing on every side, and its sidebar offers a look at the deck the cards are joining.
+## The chooser is a square window sized to what it holds, centred beside the sidebar with the map showing on every side, and its sidebar offers a look at the deck the cards are joining; harness-scale only.
 func test_the_chooser_is_a_square_window_with_the_map_around_it() -> void:
 	await _start_map_fixture()
 	var chooser := await _open_a_pack_chooser()
@@ -6357,6 +6370,9 @@ func _check_the_chooser_holds_its_parts_beside_the_sidebar(chooser: ChoiceViewer
 
 ## Half a pixel either side: a container places its children on whole pixels.
 const CENTRED_TOLERANCE_PX := 1.0
+
+## How far off the space's centre the menu's content may rest, in UI pixels.
+const MENU_CENTRED_TOLERANCE_PX := 2.0
 
 # Rerolls and Take share the window's foot row: the same vertical band, Rerolls to Take's left.
 func _check_rerolls_sits_beside_take(chooser: ChoiceViewer, where: String) -> void:
@@ -6764,7 +6780,7 @@ func test_the_choosers_deck_button_reads_close_deck_while_its_deck_is_open() -> 
 		chooser.queue_free()
 	await _end_main_fixture()
 
-## The chooser is UI: its cards are drawn at the deck viewer's own size at the window's UI scale, the same on both axes, at both window shapes and whatever the map picture's zoom.
+## The chooser is UI: its cards are drawn at the deck viewer's own size at the window's UI scale, the same on both axes, at both window shapes and whatever the map picture's zoom; harness-scale only.
 func test_the_choosers_cards_draw_at_the_ui_size_whatever_the_map_zoom() -> void:
 	for size : Vector2i in INSET_WINDOWS:
 		await _start_map_fixture(size)
@@ -6781,10 +6797,11 @@ func test_the_choosers_cards_draw_at_the_ui_size_whatever_the_map_zoom() -> void
 			await get_tree().process_frame
 		await _end_main_fixture()
 
-func _check_cards_at_the_ui_size(viewport: SubViewport, cards: Array, where: String) -> void:
+func _check_cards_at_the_ui_size(viewport: Viewport, cards: Array, where: String) -> void:
 	var content_scale := viewport.get_final_transform().get_scale()
-	check(is_equal_approx(content_scale.x, content_scale.y),
-			"sanity: the window's UI scale is uniform (%s)" % where, str(content_scale))
+	var visible := viewport.get_visible_rect().size
+	check(absf(content_scale.x - content_scale.y) * maxf(visible.x, visible.y) <= 1.0,
+			"sanity: the window's UI scale is uniform to a pixel across the window (%s)" % where, str(content_scale))
 	var ui := CardVisual.CARD_SIZE * CardVisual.DECK_VIEWER_SCALE * content_scale
 	for control : ControlCard in cards:
 		var drawn := (viewport.get_final_transform()
@@ -6793,7 +6810,7 @@ func _check_cards_at_the_ui_size(viewport: SubViewport, cards: Array, where: Str
 				"a listed card is drawn at the UI card size (%s)" % where, "%s vs %s" % [drawn, ui])
 
 ## A possible-cards list's icons at the window's UI scale: each its list's one cell, and a part other than a type drawn one art unit per viewer card scale.
-func _check_icons_at_the_ui_size(viewport: SubViewport, list: DeckViewer, where: String) -> void:
+func _check_icons_at_the_ui_size(viewport: Viewport, list: DeckViewer, where: String) -> void:
 	var content_scale := viewport.get_final_transform().get_scale()
 	var cell := list.cards().item_px * content_scale
 	var art_unit := CardVisual.DECK_VIEWER_SCALE * content_scale
@@ -6809,6 +6826,146 @@ func _check_icons_at_the_ui_size(viewport: SubViewport, list: DeckViewer, where:
 				* icon._art.get_global_transform_with_canvas()).get_scale()
 		check(unit.is_equal_approx(art_unit),
 				"a listed part is drawn one art unit per viewer card scale (%s)" % where, "%s vs %s" % [unit, art_unit])
+
+# ------------------------------------------------------------------ the player's window
+
+# The run's window stays at the project's base size, where the root's content scale is 1 like the
+# harness's SubViewport. These rows boot `Main` in a Window stretched as the root is, at the two
+# shapes the harness rows use, so each claim is measured at the scale the player actually sees.
+func _check_the_players_scale(window: Window, where: String) -> void:
+	var scale := window.get_final_transform().get_scale()
+	TestLog.line("  %s: content %s drawn at scale %s; the run's own window %s at scale %s" % [where,
+			window.get_visible_rect().size, scale, get_tree().root.size,
+			get_tree().root.get_final_transform().get_scale()])
+	check(not scale.is_equal_approx(Vector2.ONE),
+			"sanity: %s draws at a content scale the harness never does" % where, str(scale))
+
+## Every viewer -- possible cards, the run deck, the chooser, the game's Deck, Discard and Rules, the menu picker's Inspect -- draws its cards at the UI size in the player's window's own pixels, at both window shapes.
+func test_every_viewer_draws_at_the_ui_size_in_the_players_window() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		var where := "the player's window %s" % size
+		await _start_map_fixture(size, true)
+		var window := _main.get_viewport() as Window
+		_check_the_players_scale(window, where)
+		await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+		var list := DeckViewer._open
+		check(is_instance_valid(list) and list.get_viewport() == window,
+				"sanity: the possible-cards list opens in %s" % where)
+		if is_instance_valid(list):
+			_check_icons_at_the_ui_size(window, list, "possible cards, %s" % where)
+			list._close()
+			await get_tree().process_frame
+		_container.map_deck_button.pressed.emit()
+		await get_tree().process_frame
+		var deck := DeckViewer._open
+		check(is_instance_valid(deck) and deck.get_viewport() == window,
+				"sanity: the map's run deck opens in %s" % where)
+		if is_instance_valid(deck):
+			_check_cards_at_the_ui_size(window, deck.cards().controls.slice(0, 8), "the run deck, %s" % where)
+			deck._close()
+			await get_tree().process_frame
+		var chooser := await _open_a_pack_chooser()
+		if chooser != null:
+			_check_cards_at_the_ui_size(window, chooser.cards().controls, "the chooser, %s" % where)
+			chooser.queue_free()
+			await get_tree().process_frame
+		await _end_main_fixture()
+		await _start_game_fixture(size, true)
+		await _check_the_games_viewers_at_the_ui_size(where)
+		await _end_main_fixture()
+		var opened := await _open_the_pickers_inspect_viewer(size, true)
+		var menu_window := opened[0] as Window
+		var viewer := DeckViewer._open
+		check(is_instance_valid(viewer) and viewer.get_viewport() == menu_window,
+				"sanity: the picker's viewer opens in %s" % where)
+		if is_instance_valid(viewer):
+			_check_cards_at_the_ui_size(menu_window, viewer.cards().controls.slice(0, 8),
+					"the picker's viewer, %s" % where)
+		await _end_booted_fixture(menu_window, opened[1] as Main)
+
+## The chooser draws as a square window holding its parts, wholly on screen and centred in the space beside the sidebar, in the player's window's own pixels at both window shapes.
+func test_the_chooser_is_a_square_beside_the_sidebar_in_the_players_window() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		var where := "the player's window %s" % size
+		await _start_map_fixture(size, true)
+		var window := _main.get_viewport() as Window
+		_check_the_players_scale(window, where)
+		var chooser := await _open_a_pack_chooser()
+		if chooser != null:
+			_check_the_chooser_holds_its_parts_beside_the_sidebar(chooser, where)
+			var drawn := window.get_final_transform() * _chooser_window(chooser)
+			var space := window.get_final_transform() * _ui_space(_main)
+			var tolerance := CENTRED_TOLERANCE_PX * window.get_final_transform().get_scale().x
+			check(absf(drawn.size.x - drawn.size.y) <= tolerance,
+					"the chooser draws as a square window in %s" % where, str(drawn.size))
+			check(Rect2(Vector2.ZERO, Vector2(window.size)).grow(tolerance).encloses(drawn),
+					"...wholly on screen in %s" % where, "%s in %s" % [drawn, window.size])
+			check(drawn.get_center().distance_to(space.get_center()) <= tolerance,
+					"...centred in the space beside the sidebar in %s" % where, "%s in %s" % [drawn, space])
+			chooser.queue_free()
+			await get_tree().process_frame
+		await _end_main_fixture()
+
+## The start menu's column draws at exactly the UI scale, centred in the space beside the sidebar the picker slid in to rest, in the player's window's own pixels at both window shapes.
+func test_the_menus_column_draws_at_the_ui_scale_beside_the_sidebar_in_the_players_window() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		var where := "the player's window %s" % size
+		var opened := await _open_the_deck_picker(size, true)
+		var window := opened[0] as Window
+		var main : Main = opened[1]
+		_check_the_players_scale(window, where)
+		check(is_equal_approx(main.hud_container.slid_fraction(), 1.0),
+				"sanity: the picker's sidebar rests beside the menu in %s" % where)
+		var column := Rect2()
+		for node : Node in main.menu_scene.get_node(^"Content").find_children("*", "Control", true, false):
+			var control := node as Control
+			if not (control is Button or control is Label) or not control.is_visible_in_tree():
+				continue
+			var rect := _menu_control_in_window(window, main._pictures[&"start_menu"], control)
+			_check_drawn_at_the_ui_scale(window, rect, control, where)
+			column = rect if column.size == Vector2.ZERO else column.merge(rect)
+		var space := window.get_final_transform() * _ui_space(main)
+		var axis := Vector2.AXIS_Y if HudContainer.container_is_top(window.get_visible_rect().size,
+				SettingsManager.settings) else Vector2.AXIS_X
+		check(absf(column.get_center()[axis] - space.get_center()[axis])
+				<= MENU_CENTRED_TOLERANCE_PX * window.get_final_transform().get_scale()[axis],
+				"the menu's column centres in the space beside the resting sidebar in %s" % where,
+				"%s in %s" % [column, space])
+		await _end_booted_fixture(window, main)
+
+# The space is derived as the harness row derives it: the picture's beside the resting sidebar at the
+# COVERING scale, which the picture then overfills. Tolerance: GRID VIEW's `_check_the_set_centred`.
+## The board's set of grids is centred across the picture space beside the resting sidebar, as drawn in the player's window's own pixels at both window shapes.
+func test_the_board_is_centred_beside_the_resting_sidebar_in_the_players_window() -> void:
+	for size : Vector2i in INSET_WINDOWS:
+		var where := "the player's window %s" % size
+		await _start_game_fixture(size, true)
+		var window := _main.get_viewport() as Window
+		_check_the_players_scale(window, where)
+		_play_area.flush_rebuild()
+		await _settle_scroll_x(_play_area)
+		check(is_equal_approx(_container.slid_fraction(), 1.0),
+				"sanity: the sidebar rests beside the board in %s" % where)
+		var game : WallPicture = _main._pictures[&"game"]
+		var first := _play_area._cells_root(_play_area.grid_container.get_child(0) as Control)
+		var last := _play_area._cells_root(_play_area.grid_container.get_child(-1) as Control)
+		var first_drawn := _menu_control_in_window(window, game, first)
+		var grids := first_drawn.merge(_menu_control_in_window(window, game, last))
+		var authored_px := first_drawn.size.x / first.size.x
+		var visible := window.get_visible_rect().size
+		var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
+		var picture_scale := maxf(visible.x / design.x, visible.y / design.y)
+		var shown := visible / picture_scale
+		var left := (design.x - shown.x) / 2.0
+		if not HudContainer.container_is_top(visible, PlayArea.settings()):
+			left += _container.container_rect().end.x / picture_scale
+		var space := _picture_rect_in_window(window, game,
+				Rect2(left, 0.0, (design.x + shown.x) / 2.0 - left, design.y))
+		check(absf(grids.get_center().x - space.get_center().x) < authored_px,
+				"the board's grids centre across the picture space beside the resting sidebar in %s" % where,
+				"%s in %s, one authored px %.3f window px; the window's own space beside it %s" % [grids,
+				space, authored_px, window.get_final_transform() * _ui_space(_main)])
+		await _end_main_fixture()
 
 ## The chooser and the run deck open over it are UI on the sidebar's layer: in wall view neither is drawn nor hears input, and coming back fades both in with the sidebar exactly as they were left.
 func test_the_chooser_and_its_deck_are_hidden_in_wall_view_and_back_on_return() -> void:
@@ -6912,7 +7069,7 @@ func test_keys_stay_in_the_chooser_on_the_windows_own_viewport() -> void:
 		await get_tree().process_frame
 	await _end_main_fixture()
 
-## The map's possible-cards list and its run deck are UI: their cards draw at the deck viewer's own size at the window's UI scale, at both window shapes and whatever the map picture's zoom.
+## The map's possible-cards list and its run deck are UI: their cards draw at the deck viewer's own size at the window's UI scale, at both window shapes and whatever the map picture's zoom; harness-scale only.
 func test_the_maps_viewers_draw_at_the_ui_size_whatever_the_map_zoom() -> void:
 	for size : Vector2i in INSET_WINDOWS:
 		await _start_map_fixture(size)
@@ -7447,22 +7604,26 @@ func test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map() -> vo
 					"%s -> %s" % [rested, moved])
 		await _end_main_fixture()
 
-## Deck, Discard and Rules are UI: each opens in the window's own viewport and draws its cards at the deck viewer's own size at the window's UI scale, at both window shapes.
+## Deck, Discard and Rules are UI: each opens in the window's own viewport and draws its cards at the deck viewer's own size at the window's UI scale, at both window shapes; harness-scale only.
 func test_the_games_viewers_draw_at_the_ui_size_at_both_window_shapes() -> void:
 	for size : Vector2i in INSET_WINDOWS:
 		await _start_game_fixture(size)
-		var state := _fixture_game().state
-		state.discard_deck.append_array(state.all_stock_cards().slice(0, 2))
-		for pile : Control in [_container.deck_ui, _container.discard_ui, _container.rules_ui] as Array[Control]:
-			var cards := await _open_viewer_cards(pile.get_node(^"Button") as Button)
-			var viewer := DeckViewer._open
-			check(is_instance_valid(viewer) and viewer.get_viewport() == _booted_viewport
-					and not cards.is_empty(),
-					"the %s viewer opens in the window's own viewport at %s" % [pile.name, size],
-					str(viewer.get_viewport() if is_instance_valid(viewer) else null))
-			_check_cards_at_the_ui_size(_booted_viewport, cards.slice(0, 8), "the %s viewer, %s" % [pile.name, size])
-			await _close_the_open_viewer()
+		await _check_the_games_viewers_at_the_ui_size(str(size))
 		await _end_main_fixture()
+
+# Deck, Discard and Rules opened on the game fixture, each in the fixture's own window.
+func _check_the_games_viewers_at_the_ui_size(where: String) -> void:
+	var state := _fixture_game().state
+	state.discard_deck.append_array(state.all_stock_cards().slice(0, 2))
+	for pile : Control in [_container.deck_ui, _container.discard_ui, _container.rules_ui] as Array[Control]:
+		var cards := await _open_viewer_cards(pile.get_node(^"Button") as Button)
+		var viewer := DeckViewer._open
+		check(is_instance_valid(viewer) and viewer.get_viewport() == _main.get_viewport()
+				and not cards.is_empty(),
+				"the %s viewer opens in the window's own viewport at %s" % [pile.name, where],
+				str(viewer.get_viewport() if is_instance_valid(viewer) else null))
+		_check_cards_at_the_ui_size(_main.get_viewport(), cards.slice(0, 8), "the %s viewer, %s" % [pile.name, where])
+		await _close_the_open_viewer()
 
 ## A game viewer with a card stuck is UI on the sidebar's layer: in wall view it is neither drawn nor hears input, and coming back fades it in with the sidebar as it was left -- its card stuck, described, with its X -- and a cancel closes it back to its opener.
 func test_a_game_viewer_is_hidden_in_wall_view_and_back_on_return() -> void:
@@ -7743,8 +7904,8 @@ func _await_the_menus_slide(container: HudContainer, aim: float) -> void:
 # The start menu's own Inspect viewer, reached the way a player reaches it: New Run opens the deck
 # picker, the first deck's Inspect button opens a viewer over the menu. Returns
 # `[viewport, main, inspect_button]`.
-func _open_the_pickers_inspect_viewer(size := Vector2i(1280, 720)) -> Array:
-	var opened := await _open_the_deck_picker(size)
+func _open_the_pickers_inspect_viewer(size := Vector2i(1280, 720), in_players_window := false) -> Array:
+	var opened := await _open_the_deck_picker(size, in_players_window)
 	var main : Main = opened[1]
 	var picker : DeckPicker = opened[2]
 	var inspect : Button = null
@@ -7756,7 +7917,7 @@ func _open_the_pickers_inspect_viewer(size := Vector2i(1280, 720)) -> Array:
 	await _await_the_menus_slide(container, 1.0)
 	return [opened[0], main, inspect]
 
-## The start menu is a screen like the others: the picker's viewer lists its cards beside the container, never under it.
+## The start menu is a screen like the others: the picker's viewer lists its cards beside the container, never under it; harness-scale only.
 func test_the_start_menus_inspect_viewer_lists_beside_the_container() -> void:
 	var opened := await _open_the_pickers_inspect_viewer()
 	var viewport : SubViewport = opened[0]
@@ -7847,7 +8008,7 @@ func test_the_start_menus_inspect_viewer_publishes_on_hover() -> void:
 				"...and the title reads that card's own name", title.text)
 	await _end_booted_fixture(viewport, main)
 
-## The picker's viewer is UI like every other: it opens in the window's own viewport, beside the sidebar it slid in, its cards at the deck viewer's size at the window's UI scale, at both window shapes.
+## The picker's viewer is UI like every other: it opens in the window's own viewport, beside the sidebar it slid in, its cards at the deck viewer's size at the window's UI scale, at both window shapes; harness-scale only.
 func test_the_menus_viewer_draws_at_the_ui_size_at_both_window_shapes() -> void:
 	for size : Vector2i in INSET_WINDOWS:
 		var opened := await _open_the_pickers_inspect_viewer(size)
@@ -7954,11 +8115,11 @@ func _press_new_run(main: Main) -> void:
 	await get_tree().process_frame
 
 ## The deck picker open on a booted menu at `size`. Returns `[viewport, main, picker]`.
-func _open_the_deck_picker(size := Vector2i(1280, 720)) -> Array:
+func _open_the_deck_picker(size := Vector2i(1280, 720), in_players_window := false) -> Array:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
 	_prev_save_info = Main.save_info
-	var booted := await _boot_main_at(size)
+	var booted := await _boot_main_at(size, in_players_window)
 	var main : Main = booted[1]
 	await _press_new_run(main)
 	await _await_the_menus_slide(main.hud_container, 1.0)
@@ -7975,7 +8136,7 @@ func _tap_key_in(viewport: SubViewport, keycode: Key) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-## The deck picker is UI like its viewer: in the window's own viewport, drawn at its own size whatever the menu picture's zoom, wholly on screen and centred where the menu centres its own content, at both window shapes.
+## The deck picker is UI like its viewer: in the window's own viewport, drawn at its own size whatever the menu picture's zoom, wholly on screen and centred where the menu centres its own content, at both window shapes; harness-scale only.
 func test_the_deck_picker_draws_at_the_ui_size_on_screen_at_both_window_shapes() -> void:
 	for size : Vector2i in INSET_WINDOWS:
 		var opened := await _open_the_deck_picker(size)
@@ -8226,7 +8387,7 @@ func _boot_map_with_a_booster(size: Vector2i) -> Array:
 
 # The teardown every fixture that boots a real `Main` shares: free the boot, drop the run this test
 # made and put the owner's own save back.
-func _end_booted_fixture(viewport: SubViewport, main: Main) -> void:
+func _end_booted_fixture(viewport: Viewport, main: Main) -> void:
 	await _free_booted_main(viewport, main)
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
@@ -8327,7 +8488,7 @@ func test_a_reroll_moves_the_sidebar_onto_the_replacement() -> void:
 					"...reading the replacement's own name, not the rerolled card's", title.text)
 	await _end_booted_fixture(viewport, main)
 
-## The same claim at a TOP window: a pack inset only on its left and top edges centres past the visible right edge.
+## The same claim at a TOP window: a pack inset only on its left and top edges centres past the visible right edge; harness-scale only.
 func test_the_choice_viewers_pack_lies_below_the_band_at_a_top_window() -> void:
 	var booted := await _boot_map_with_a_booster(Vector2i(600, 1000))
 	var viewport : SubViewport = booted[0]
@@ -8347,7 +8508,7 @@ func test_the_choice_viewers_pack_lies_below_the_band_at_a_top_window() -> void:
 				"the space below the band holds the whole viewer (S12.11)")
 	await _end_booted_fixture(viewport, main)
 
-## The map's own pack follows the container as well: a resize re-fits it into the space beside it.
+## The map's own pack follows the container as well: a resize re-fits it into the space beside it; harness-scale only.
 func test_a_resize_re_fits_the_open_choice_viewer() -> void:
 	var booted := await _boot_map_with_a_booster(Vector2i(1280, 720))
 	var viewport : SubViewport = booted[0]

@@ -119,11 +119,16 @@ A green suite is the weakest evidence there is. Every test below passed review w
     inside a test SubViewport whose content scale is 1, while the shipped window's scale varies
     (0.52 at 600x1000 under canvas_items/expand). A "draws at the UI size" or layout row that passes
     there has proven the harness's geometry; the real window differs by its content scale. For a
-    size, scale or layout claim, assert it at a real window size through the root viewport too, or
-    state in the row that it is harness-scale only - and cover the real window with a shot.
+    size, scale or layout claim, assert it at a real window size in an embedded `Window` stretched as
+    the root is (below), or state in the row that it is harness-scale only - and cover the real
+    window with a shot.
     ⚠ A suite inside the gate's shared run cannot resize the OS window: the full gate did not grant
-    `window_set_size`, and every suite shares that window. Assert at the gate window's own size;
-    other sizes are shots (a standalone shot scene owns its window and may size it).
+    `window_set_size`, and every suite shares that window - which stays at the project's base size,
+    so the ROOT's content scale there is 1, the harness's own. Host the row in an embedded `Window`
+    carrying the root's `content_scale_*` (Solatro: `TestMainHost.boot_in_players_window`): measured
+    1.111 at 1280x720 and 0.521 at 600x1000. Make it `unfocusable` and place it off the root's rect,
+    or it takes the root's input while it lives. A mutant that only multiplies by the content scale
+    must turn such a row red while every harness row stays green.
 
 **The rule that catches every one: prove every new test red-then-green** — neutralise the
 behaviour, watch the test fail, restore it, watch it pass, report both — and **compare PER-SUITE

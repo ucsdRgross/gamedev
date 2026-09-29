@@ -3271,9 +3271,9 @@ func run_a_show_attached_to_the_live_picture_starts_test() -> void:
 			% [view.scene_root.process_mode, view.play_area._opening_ease_owed])
 	await _tear_down_main(main)
 
-#THE BOARD RESTS IN THE WINDOW THE SIDEBAR LEAVES, the set centred there (R8), and the sidebar's
-#slide only SHIFTS it (R1): the resting reserve reaches the fit before the picture goes live, so no
-#slide re-fits the board, and no slide starts more than one ease of it.
+#The resting reserve reaches the fit before the picture goes live, so no slide re-fits the board,
+#and no slide starts more than one ease of it.
+## The board rests in the window the sidebar leaves, the set centred there, and the sidebar's slide only shifts it; harness-scale only.
 func run_the_board_rests_in_the_window_beside_the_sidebar_test() -> void:
 	behavior_section("THE BOARD RESTS IN THE WINDOW BESIDE THE SIDEBAR")
 	for deck : Array[CardData] in [TestDecks.deck_standard_52(), TestDecks.deck_53(),

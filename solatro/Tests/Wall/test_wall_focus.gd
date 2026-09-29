@@ -451,16 +451,16 @@ func test_focus_and_transition_signals_fire_during_real_navigation() -> void:
 # `get_viewport().size_changed.connect(_on_window_resized)` is removed.
 
 # A REAL `Main` inside its OWN `SubViewport`, because `main._window_size` is read straight off
-# `get_viewport()` -- a SubViewport is the only window a test can actually resize without
-# disturbing the ~38 suites sharing the real one.
+# `get_viewport()` -- a SubViewport, like an embedded Window, resizes without disturbing the ~38
+# suites sharing the real one.
 
 # ⚠ ONE `Main`, held for as few frames as possible, and the mid-flight half runs at a deliberately
 # tiny `wall_transition_delay`. A live `Main` puts a real `Map` in the tree, so
 # `CardEnvironment.CURRENT` is non-null for as long as it lives, where another suite can see it.
 
-# Held across a full-length transition, that window was wide enough for `TestOutline` to build a
-# PREVIEW `CardVisual` inside it and take `CardVisual._ready()`'s no-anchor branch, failing a
-# DIFFERENT suite with a Nil `global_position` ([[tests-that-prove-nothing]] trap 8).
+# Held across a full-length transition, that window let `TestOutline` build a PREVIEW `CardVisual`
+# in it and fail a DIFFERENT suite with a Nil `global_position` ([[tests-that-prove-nothing]] trap 8).
+## A real resize of the window `Main` is booted in reaches the wall; harness-scale only.
 func test_a_real_resize_reaches_the_wall() -> void:
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(1280, 720)
@@ -1042,6 +1042,7 @@ func test_a_re_entered_picture_is_never_resized_on_the_frame_it_lands() -> void:
 
 # A focused picture overfills its window on every axis, so no frame band can reach the window at
 # rest whatever shape the window is. The frames being undrawn is the other half of the same answer.
+## Harness-scale only: the fixture draws at content scale 1, where the player's window does not.
 func test_a_focused_picture_covers_the_window_at_every_aspect() -> void:
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(1152, 648)
