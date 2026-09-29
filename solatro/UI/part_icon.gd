@@ -43,7 +43,12 @@ func _ready() -> void:
 	part.call(&"set_texture", _art)
 	CardOutline.fill_texture(_art)
 	CardOutline.set_rim(_art, CardOutline.STYLE, CardVisual.CARD_SIZE)
-	_window = _uv_extent(_art.uv)
+# THE PART'S OWN FRAMING SAYS HOW BIG IT IS: every sheet frames through CardOutline.frame_polygon,
+# whose UVs span the frame plus its rim in source texels, which are art units.
+	var framed := Rect2(_art.uv[0], Vector2.ZERO)
+	for point : Vector2 in _art.uv:
+		framed = framed.expand(point)
+	_window = framed.size
 	_art.polygon = PackedVector2Array([Vector2.ZERO, Vector2(_window.x, 0.0), _window,
 			Vector2(0.0, _window.y)])
 	_art_box.add_child(_art)
@@ -60,16 +65,6 @@ var _hovered := false
 func _set_hovered(value: bool) -> void:
 	_hovered = value
 	queue_redraw()
-
-# THE PART'S OWN FRAMING SAYS HOW BIG IT IS: every sheet frames through CardOutline.frame_polygon,
-# whose UVs span the frame plus its rim in source texels, which are art units.
-static func _uv_extent(uv: PackedVector2Array) -> Vector2:
-	var low := uv[0]
-	var high := uv[0]
-	for point : Vector2 in uv:
-		low = low.min(point)
-		high = high.max(point)
-	return high - low
 
 ## The cell every icon of one list shares: the largest non-type part at the viewer's card scale, as wide as the widest label.
 static func cell_of(icons: Array[PartIcon]) -> Vector2:
@@ -89,20 +84,19 @@ func fit(cell: Vector2) -> void:
 	_art.position = ((cell - _window * _art.scale) / 2.0).floor()
 
 ## The part described in the sidebar: its own name and description, previewed in its place on a blank card.
-static func part_info(part_data: CardData, card_px: Vector2) -> InfoEntry:
-	var entry := PlayArea.highlight_info(part_data if part_data.type else _on_a_blank_card(part_data),
-			card_px)
+static func part_info(part_data: CardData) -> InfoEntry:
+	var previewed := part_data
+# A COPY, so the listed card keeps its own part: TypePaper's face is CardVisual.BLANK_CARD_FRAME,
+# the body a card with no printed type shows.
+	if not part_data.type:
+		previewed = part_data.duplicate_deep()
+		GameData.relink_card_backrefs(previewed)
+		previewed.with_type(TypePaper.new())
+	var entry := PlayArea.highlight_info(previewed, CardVisual.preview_window_px())
 	var part := part_of(part_data)
 	entry.title = part.call(&"get_str")
 	entry.body = part.call(&"get_description")
 	return entry
-
-# A COPY, so the listed card keeps its own part: TypePaper's face is CardVisual.BLANK_CARD_FRAME,
-# the body a card with no printed type shows.
-static func _on_a_blank_card(part_data: CardData) -> CardData:
-	var preview : CardData = part_data.duplicate_deep()
-	GameData.relink_card_backrefs(preview)
-	return preview.with_type(TypePaper.new())
 
 # The theme's own Button marks, so an icon reads as hovered or focused the way every control does.
 func _draw() -> void:

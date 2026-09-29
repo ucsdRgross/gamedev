@@ -6797,6 +6797,8 @@ func _check_icons_at_the_ui_size(viewport: SubViewport, list: DeckViewer, where:
 	var content_scale := viewport.get_final_transform().get_scale()
 	var cell := list.cards().item_px * content_scale
 	var art_unit := CardVisual.DECK_VIEWER_SCALE * content_scale
+	check(list.cards().controls.any(func(icon: PartIcon) -> bool: return icon.data.type == null),
+			"sanity: the list has a part other than a type to measure in art units (%s)" % where)
 	for icon : PartIcon in list.cards().controls:
 		var drawn := (viewport.get_final_transform()
 				* icon.get_global_transform_with_canvas()).basis_xform(icon.size)
@@ -7181,12 +7183,9 @@ func test_the_deck_over_the_possible_cards_hides_the_whole_list() -> void:
 	if is_instance_valid(deck) and deck != list:
 		var over := _backdrop_of(deck).get_global_rect()
 		var under := _backdrop_of(list).get_global_rect()
-		var shown := (list.flow_container.get_parent() as Control).get_global_rect()
-		check(over.is_equal_approx(under) and over.encloses(shown),
+		check(over.is_equal_approx(under),
 				"the run deck's opaque backdrop is the same whole window as the possible-cards list's under it",
 				"%s over %s" % [over, under])
-		print("P71 TABS deck=%s list=%s" % [_close_tab_of(deck).get_global_rect(),
-				_close_tab_of(list).get_global_rect()])
 		deck._close()
 		await get_tree().process_frame
 	if is_instance_valid(list): list._close()

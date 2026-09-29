@@ -100,7 +100,7 @@ func _publish_info(data: CardData) -> void:
 	PlayArea.highlight_info(data, CardVisual.preview_window_px()).relay_to(info_requested)
 
 func _publish_part_info(data: CardData) -> void:
-	PartIcon.part_info(data, CardVisual.preview_window_px()).relay_to(info_requested)
+	PartIcon.part_info(data).relay_to(info_requested)
 
 # ⚠ THE CLICK-TO-CLOSE CATCHER IS EVERYTHING BESIDE THE SIDEBAR AS IT IS SHOWN, following its
 # slide: on the sidebar's own layer this viewer draws above it, whose X, rows and Back must still
