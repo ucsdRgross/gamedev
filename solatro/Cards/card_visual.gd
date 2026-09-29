@@ -819,11 +819,15 @@ var y_delta : float
 
 # Tilt and bob juice react to `move`, and only PLAY_AREA cards actually travel: a viewer card's
 # one-frame settle would otherwise read as a big move.x and spin it into place.
+
+#⚠ A BOARD CARD ASKS THE BOARD IT HANGS IN whether it still holds its card, never the board behind
+#`CardEnvironment.CURRENT`: any Game entering the tree takes that global, and read here it freed
+#every card of a board still dealing. No board above it (fx_snapshot's cards, the editor's scene): it stays.
 func delta_self_moving_logic(delta:float) -> void:
 	match current_context:
 		DisplayContext.PLAY_AREA:
-			var gv := _game_view()
-			if gv and data not in gv.play_area.data_ui: queue_free()
+			var board := get_parent().owner as PlayArea
+			if board and data not in board.data_ui: queue_free()
 		_:
 			if not Engine.is_editor_hint() and (not control_anchor or not is_instance_valid(control_anchor)): queue_free()
 	if (not (move_tween and move_tween.is_running())) and control_anchor:

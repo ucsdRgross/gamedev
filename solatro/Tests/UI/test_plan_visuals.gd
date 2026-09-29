@@ -39,6 +39,7 @@ func _ready() -> void:
 	await test_the_reveal_deals_the_marks_in_the_deals_own_order()
 	await test_a_show_with_no_view_deals_its_board_and_reveals_nothing()
 	await test_a_reveal_outlives_the_screen_that_holds_the_environment()
+	await test_a_board_dealing_beside_another_show_keeps_every_card()
 	behavior_section("THE OPENING REVEAL IS A CASCADE OVER ONE TUNABLE DURATION")
 	await test_the_reveal_cascades_over_one_tunable_duration()
 	behavior_section("A CARD PUT DOWN MID-DEAL IS STILL AN UNDO STEP")
@@ -70,6 +71,7 @@ func _ready() -> void:
 	behavior_section("THE GAME-OVER LOCK OUTLIVES A VISUALS REFRESH")
 	await test_the_game_over_lock_survives_a_visuals_refresh()
 	await teardown_view()
+	check_all_tests_registered()
 	finish()
 
 # ==============================================================================
@@ -337,6 +339,22 @@ func _reveal(pa: PlayArea, running: Array[bool]) -> void:
 	await pa.reveal_plan()
 	running[0] = false
 
+# A board dealing its every mark in the order they were marked, returned once the deal is UNDER WAY:
+# the cascade deals its first cell on the frame after it is scheduled, so a row stages what happens
+# mid-deal from here. The caller snapshots the plan knobs first; this stretches the deal.
+func _deal_until_under_way(g: Game, marked: Array[CardData], running: Array[bool]) -> PlayArea:
+	var order : Array[BoardCoord] = []
+	for mark : CardData in marked:
+		order.append(g.state.cell_type_coord(mark))
+	g.state.plan_reveal_order = order
+	var pa := make_play_area()
+	await settle(pa)
+	SettingsManager.settings.plan_reveal_multiplier = OBSERVABLE_REVEAL_MULTIPLIER
+	_reveal(pa, running)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	return pa
+
 # Every effect in this project runs headless. A show with no view deals its board and animates
 # nothing, and the bounded wait is what catches a reveal that awaited a timer anyway.
 func test_a_show_with_no_view_deals_its_board_and_reveals_nothing() -> void:
@@ -353,13 +371,9 @@ func test_a_show_with_no_view_deals_its_board_and_reveals_nothing() -> void:
 
 	var running : Array[bool] = [true]
 	_start_show(g, running)
-	var waited := 0.0
-	while running[0] and waited < WATCHDOG_SECS:
-		await get_tree().process_frame
-		waited += get_process_delta_time()
+	var finished := await wait_for(func() -> bool: return not running[0])
 
-	check(not running[0], "TP-70: a show start with no view returns rather than awaiting a reveal",
-			"waited %.1fs" % waited)
+	check(finished, "TP-70: a show start with no view returns rather than awaiting a reveal")
 	check(g.view == null, "TP-70: precondition: this show has no view")
 	var marks := 0
 	for type_card : CardData in g.state.grids[0].cell_types:
@@ -388,21 +402,9 @@ func _start_show(g: Game, running: Array[bool]) -> void:
 func test_a_reveal_outlives_the_screen_that_holds_the_environment() -> void:
 	var g := make_grid_game()
 	var marked := mark_every_cell(g.state)
-	var order : Array[BoardCoord] = []
-	for mark : CardData in marked:
-		order.append(g.state.cell_type_coord(mark))
-	g.state.plan_reveal_order = order
-	var pa := make_play_area()
-	await settle(pa)
-
 	var snapshot := snapshot_settings("plan_")
-	SettingsManager.settings.plan_reveal_multiplier = OBSERVABLE_REVEAL_MULTIPLIER
 	var running : Array[bool] = [false]
-	_reveal(pa, running)
-#The cascade deals its first cell on the frame after it is scheduled, so the loss is staged once the
-#deal is under way -- which is the case this is about.
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var pa := await _deal_until_under_way(g, marked, running)
 	var dealt : int = marked.size() - pa._plan_reveal_pending.size()
 	var passing := FakeEnvironment.new()
 	add_child(passing)
@@ -414,18 +416,52 @@ func test_a_reveal_outlives_the_screen_that_holds_the_environment() -> void:
 	check(dealt > 0 and not pa._plan_reveal_pending.is_empty(),
 			"TP-76: precondition: the reveal lost it mid-deal, with cells still to come",
 			"%d dealt, %d pending" % [dealt, pa._plan_reveal_pending.size()])
-	var waited := 0.0
-	while running[0] and waited < WATCHDOG_SECS:
-		await get_tree().process_frame
-		waited += get_process_delta_time()
+	var finished := await wait_for(func() -> bool: return not running[0])
 
-	check(not running[0],
-			"TP-76: the reveal finishes on the board it started on, with no environment to read",
-			"waited %.1fs" % waited)
+	check(finished,
+			"TP-76: the reveal finishes on the board it started on, with no environment to read")
 	var all_drawn := true
 	for mark : CardData in marked:
 		if not pa.data_card[mark].mark_drawn: all_drawn = false
 	check(all_drawn, "TP-76: every mark is printed, the cells after the loss included")
+	restore_settings_snapshot(snapshot)
+	CardEnvironment.CURRENT = g
+	await cleanup(g, pa)
+
+# A SECOND SHOW ENTERING THE TREE TAKES `CardEnvironment.CURRENT`, as Main's shader warm-up does, and
+# a board still dealing beside it keeps every card and deals every mark. Driven by a real GameView
+# entering: a Main booted under its own pause freezes this board, so it cannot race it.
+func test_a_board_dealing_beside_another_show_keeps_every_card() -> void:
+	var g := make_grid_game()
+	var marked := mark_every_cell(g.state)
+	var snapshot := snapshot_settings("plan_")
+	var running : Array[bool] = [false]
+	var pa := await _deal_until_under_way(g, marked, running)
+	var outer_save_info : RunState = Main.save_info
+	Main.save_info = RunState.new()
+	var other : GameView = GAME_VIEW_SCENE.instantiate()
+	var other_vp := TestGameViewHost.host(self, other)
+
+	check(CardEnvironment.get_current_game() == other.game and other.game != g,
+			"TP-76b: precondition: the other show's game took the environment")
+	check(not pa._plan_reveal_pending.is_empty(),
+			"TP-76b: precondition: it took it mid-deal, with cells still to come",
+			"%d pending" % pa._plan_reveal_pending.size())
+	var finished := await wait_for(func() -> bool: return not running[0])
+
+	check(finished, "TP-76b: the deal finished beside the other show")
+	var freed := 0
+	var undrawn := 0
+	for mark : CardData in marked:
+		var visual : Variant = pa.data_card.get(mark)
+		if not is_instance_valid(visual): freed += 1
+		elif not (visual as CardVisual).mark_drawn: undrawn += 1
+	check(freed == 0, "TP-76b: every card of the dealing board survives the other show",
+			"%d of %d freed" % [freed, marked.size()])
+	check(undrawn == 0, "TP-76b: and every mark is dealt", "%d undrawn" % undrawn)
+	other_vp.queue_free()
+	await get_tree().process_frame
+	Main.save_info = outer_save_info
 	restore_settings_snapshot(snapshot)
 	CardEnvironment.CURRENT = g
 	await cleanup(g, pa)
