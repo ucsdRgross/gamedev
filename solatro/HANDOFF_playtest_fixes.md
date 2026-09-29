@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P80 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
-by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P78 h, d9b0fe5c): `ALL 51 SUITES: 9355 CHECKS PASSED`, ~15 min with
+**State:** P1-P81 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
+by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P81, 5280f299): `ALL 51 SUITES: 9527 CHECKS PASSED`, ~15 min with
 `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order:
-P79 (the review tool), P81 (the clipped score line), review round 4 (P58d), the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
+review round 4 (P58d), the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
@@ -478,7 +478,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   notes: 'Recon (traced, not measured): (a) choice_viewer.gd ~156-164 _add_reroll_button, PRESET_BOTTOM_WIDE on the ControlCard (width = child.card_size) - the miscentre not located by reading; (b) world_map_controller.gd ~98-102 _framed_map grows the drawn rect equally on all sides (player_settings map_edge_buffer_fraction 0.03) - symmetric by construction, so MEASURE what the owner saw; test_the_maps_background_is_its_sea samples only the top buffer; (c) every backdrop is PaletteDB hud_background (choice_viewer ~71, deck_viewer ~38, hud_container ~82); the CloseTab (deck_viewer.tscn ~31-36) has no authored style; (d) DeckViewer top-aligns its rows, slack below the last row; (e) ChoiceViewer.fit_beside ~128-149 sizes for ROW_CARDS=5 always and forces a square - the round-3 comment ("expand only when card count increases. at max limit it becomes scrolling") is the owner''s latest word and supersedes round 2''s "square window" for the height (width stays five cards, twenty-sixth round); (f) DONE by P71 (36c20f0b: Paper named with a placeholder description in the list) - shown in review round 4; (g) the offset is in the DATA: Cards/Props/Formations/hoop.tres points y -2.25..2.94, the editor only draws them; (h) game_view.gd ~351-365 centres the outcome on the whole picture (Win/LoseScreen full rect), not the board''s space beside the sidebar. One measured step each, one gate each.'
 - id: P79
   description: The visual-review tool - (a) a new round shows the previous round's comments as if new (owner: "bug with new visual reviews leaving behind comments from previous reviews"; grid1_focused's round-3 approve carried round 2's text); (b) the page's Done never reaches solatro/visual-review/status.owner.json (still round 1, 2026-09-24 - rounds 2 and 3 both) so the watch never wakes (designloop/src/visualreview.mjs writeOwnerStatus keeps the old round; markDone passes none - read by the P58d-shots implementer); (c) the review images alias heavily (owner, grid1_overview and pip_row: "resolution looks off ... heavy aliasing", "screwing with outline shader results") - the grid shots are 1625x914 captures shown scaled with no smoothing; measure whether the capture or the page's scaling aliases; (d) the npm command given in chat failed for the owner ("auth issues") - give the owner the exact command they can run.
-  status: pending
+  status: done
+  commits: [497b3a1a]
   notes: 'Fix before the next review round. designloop is its own project (designloop/README.md). Recon (traced, not measured): (a) solatro/visual-review/index.html ~103 fills the comment box from review.json''s last verdict BEFORE computing stale (~104) - only the label honours it; review.log shows grid1_focused''s round-2 text resubmitted on round 3; fix: no pre-fill when the AFTER is newer. (b) premise likely wrong: Done -> server.mjs ~753 -> visualreview.mjs markDone -> registry.mjs ~84 always stamps a fresh at; status.owner.json''s round-1 record is simply the last Done pressed (round 3''s Done never pressed?) - measure by pressing it on a scratch copy, then fix nothing if it lands. (c) index.html ~12 downscales the pair with image-rendering: pixelated (nearest neighbour) - aliasing on a DOWNscale; crops (~17, upscale) are right as pixelated; measure whether the capture itself aliases (the outline shader at the shot''s scale) before changing the page. (d) npm --prefix designloop start runs node src/server.mjs - no registry, install or git: the failing chat command was something else; give the owner that exact line (and Box B''s Node PATH note from machine-profiles).'
 - id: P64b-4
   description: The P64b part 3 group's broad Fable review, its findings (queued right after P80 - the group's own follow-ups, as P58e was). (1) Menu.refresh_continue (menu.gd ~80) runs only in _ready and on a Play press, never when the menu is shown again: a save made during a run leaves Continue held on return, and a lost run (main.gd ~587 clear_save) leaves Continue LIVE with no file - Enter reaches main.gd ~536 _on_continue -> RunManager.load_run() unguarded (read, not measured); refresh on every show (Menu.take_the_focus already fires on active_screen_changed), and drop the fold/reopen of Play from test_keys_alone_start_a_run_from_the_start_menu_and_find_it_again (~2449-2454) so the row can fail. (2) test_sidebar ~2328 and ~2342 pin _check_the_bottom_row_beside_the_sidebar for the same state (picker up, at rest, 1280x720) - drop the older row's call, keep its wrap check. (3) CardsViewer.sidebar_requested's doc (NAMES.md ~141, cards_viewer.gd ~54) says "another viewport"; every hosted viewer is in the sidebar's root viewport - "a separate Control tree the neighbour search never crosses".
@@ -486,7 +487,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [bfd3c0c0]
 - id: P81
   description: The game sidebar's score line (board_total x combo, P60) is drawn starting left of the window's edge - its first characters are cut off ("26 x 14.0" at x < 0 in P78 (h)'s 1280x720 win_overlay shot). Measure the writer (the label's container/alignment in the HUD) and keep every score line inside the sidebar.
-  status: pending
+  status: done
+  commits: [5280f299]
 - id: P80
   description: The listed PlayArea._deal_next_mark freed-instance SCRIPT ERROR (x20-x25 per run, play_area.gd ~2409, during the WALL FOCUS / WALL TRANSITION soaks) is past its three-failure budget - find the writer that frees the board (or its Main) while the plan-mark deal is still stepping, and make the deal end with its owner; measure first (the deal is released at go-live; P64b-3b round 2 rests the board focus on every game went_live - check whether it moved the frequency).
   status: done
@@ -690,8 +692,8 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
-1. P79 (the review tool: stale comments, aliased images, the owner's command; "Done not landing" likely no bug - see the row), then P81 (the clipped score line).
-2. Visual review round 4 = P58d for everything not yet reviewed (P64b-P73, P77, P78, P80, P81 and the looks listed in P71's row and Open bugs), then the close per /plan-run.
+1. Visual review round 4 = P58d: register shots for everything since round 3 (P64b part 3 and -4, P71, P73, P77's board, P78 (a)-(h), P81) and the looks listed in P71's row and Open bugs ("For review round 4"); BEFORE on 9d7d1f2f (round 3's tree) via `shoot --base`; read every AFTER and BEFORE yourself, write each `seen` with its crops; park on the watch; every reject/comment becomes a step.
+2. The close per /plan-run, in a NEW session at or above the reviewer floor.
 
 ### Opening prompt for the next session (paste as is)
 
