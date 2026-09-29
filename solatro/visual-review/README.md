@@ -59,12 +59,12 @@ the scenes take their knobs. Shots with the same `scene` and `env` share one God
    waits.
 5. Every **reject** and every **comment** becomes the next implementer step, with the owner's
    comment, verbatim, as its brief. Verdicts stay in `review.json` across rounds; the page marks
-   one given on an older AFTER.
+   one given on an older AFTER and shows its comment beside it, leaving the comment box empty.
 
 ## The owner
 
 `npm --prefix designloop start`, then `http://localhost:5273/visual-review/solatro/`.
-One pair per screen, BEFORE left and AFTER right, each scaled down to fit with no smoothing (click
-an image for its native pixels). Keys: `a` approve, `r` reject, `c` type a comment, `Enter` saves
+One pair per screen, BEFORE left and AFTER right, each scaled down to fit with smoothing, since a
+nearest-neighbour downscale drops one-pixel outlines (click an image for its native pixels). Keys: `a` approve, `r` reject, `c` type a comment, `Enter` saves
 the comment, `Esc` leaves the box, `←` `→` move. A verdict carries whatever is in the comment box.
 **Done** hands the review back to the worker.

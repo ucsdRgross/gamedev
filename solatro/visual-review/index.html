@@ -9,7 +9,7 @@
   .side { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .side h2 { margin: 0 0 2px; font-size: 12px; color: #999; }
   .frame { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #111; }
-  .frame img { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+  .frame img { max-width: 100%; max-height: 100%; image-rendering: auto; }
   .none { color: #777; }
   #crops { display: flex; gap: 12px; padding: 4px; overflow-x: auto; }
   #crops:empty { display: none; }
@@ -100,10 +100,10 @@ function show() {
   $('title').textContent = shot.title;
   $('row').textContent = shot.row;
   $('seen').textContent = `Worker saw: ${shot.seen}`;
-  $('comment').value = given ? given.comment : '';
   const stale = given && data.files[shot.id].after > given.at;
+  $('comment').value = given && !stale ? given.comment : '';
   $('verdict').className = given ? (stale ? 'stale' : given.verdict) : '';
-  $('verdict').textContent = given ? `${given.verdict}${stale ? ' (given on an older after)' : ''}` : '';
+  $('verdict').textContent = given ? `${given.verdict}${stale ? ` (given on an older after): ${given.comment}` : ''}` : '';
 }
 
 async function load() {

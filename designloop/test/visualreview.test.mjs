@@ -154,4 +154,30 @@ test('the index lists each review with its current-shoot verdicts and whether it
   }
 });
 
+/** Run the real review page's script against a stub DOM and the given API payload. */
+async function openPage(data) {
+  const html = await readFile(join(import.meta.dirname, '..', '..', 'solatro', 'visual-review', 'index.html'), 'utf8');
+  const script = html.match(/<script>([\s\S]*)<\/script>/)[1];
+  const elements = {};
+  const element = () => ({ value: '', textContent: '', className: '', innerHTML: '', replaceChildren() {}, append() {}, blur() {}, focus() {} });
+  const document = {
+    getElementById: (id) => (elements[id] ||= element()),
+    addEventListener() {},
+  };
+  const fetch = async () => ({ ok: true, json: async () => data });
+  new Function('document', 'fetch', 'location', script)(document, fetch, { pathname: '/visual-review/demoproject/' });
+  await new Promise((r) => setTimeout(r, 0));
+  return elements;
+}
+
+test('the page pre-fills a current verdict\'s comment and leaves the box empty for one given on an older after', async () => {
+  const manifest = { shots: [{ id: 'one', title: 'The first', row: 'P1', seen: 'a board' }] };
+  const review = { shots: { one: { verdict: 'comment', comment: 'darker', at: '2026-01-02T00:00:00Z' } } };
+  const current = await openPage({ manifest, review, files: { one: { after: '2026-01-01T00:00:00Z' } } });
+  assert.equal(current.comment.value, 'darker');
+  const stale = await openPage({ manifest, review, files: { one: { after: '2026-01-03T00:00:00Z' } } });
+  assert.equal(stale.comment.value, '', 'a new after starts with an empty comment');
+  assert.match(stale.verdict.textContent, /older after.*darker/, 'the old comment is still shown, read-only');
+});
+
 test.after(() => rm(ROOT, { recursive: true, force: true }));
