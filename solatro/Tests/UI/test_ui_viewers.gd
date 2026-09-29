@@ -48,6 +48,7 @@ func _ready() -> void:
 	await test_a_sixth_card_wraps_to_a_centred_row_of_its_own()
 	await test_a_wrapped_row_lies_below_the_reroll_buttons_above()
 	await test_the_window_shows_five_rows_then_scrolls()
+	await test_each_reroll_text_centres_under_its_drawn_card()
 	await test_a_deck_viewer_carries_a_close_tab_and_the_pack_chooser_none()
 	behavior_section("A VIEWER SPACES ITS CARDS AS THE BOARD DOES, IN THE PLAYER'S WINDOW")
 	await test_the_viewers_gap_is_the_boards_at_their_card_scale()
@@ -183,6 +184,41 @@ func test_a_wrapped_row_lies_below_the_reroll_buttons_above() -> void:
 				"%s vs %s" % [wrapped, reroll])
 	viewer.queue_free()
 	await get_tree().process_frame
+
+## Half a window pixel either side: at content scale 1 a UI pixel is one window pixel.
+const REROLL_CENTRED_TOLERANCE_PX := 0.5
+
+## Each slot's Reroll text sits centred under its card as the card is DRAWN, its art, not its slot; harness-scale only.
+func test_each_reroll_text_centres_under_its_drawn_card() -> void:
+	var viewer := await _fitted_chooser(ChoiceViewer.ROW_CARDS + 1, get_tree().root.get_visible_rect())
+	for index : int in viewer._cards.controls.size():
+		var drawn := _drawn_card_in_window((viewer._cards.controls[index] as ControlCard).child)
+		var text := _button_text_in_window(viewer._reroll_buttons[index])
+		check(absf(text.get_center().x - drawn.get_center().x) <= REROLL_CENTRED_TOLERANCE_PX,
+				"slot %d's Reroll text centres under its drawn card" % index,
+				"text %s vs drawn card %s" % [text, drawn])
+	viewer.queue_free()
+	await get_tree().process_frame
+
+## A card's drawn box in window pixels: its type polygon's own points through its canvas transform.
+func _drawn_card_in_window(card: CardVisual) -> Rect2:
+	var to_window := get_tree().root.get_final_transform() * card.type.get_global_transform_with_canvas()
+	var points := to_window * card.type.polygon
+	var box := Rect2(points[0], Vector2.ZERO)
+	for point : Vector2 in points:
+		box = box.expand(point)
+	return box
+
+## A button's text as the engine lays it out, in window pixels: the font's string width, centred in the content box its stylebox leaves.
+func _button_text_in_window(button: Button) -> Rect2:
+	assert(button.alignment == HORIZONTAL_ALIGNMENT_CENTER)
+	var style := button.get_theme_stylebox(&"normal")
+	var content := Rect2(Vector2(style.get_margin(SIDE_LEFT), 0.0),
+			button.size - Vector2(style.get_margin(SIDE_LEFT) + style.get_margin(SIDE_RIGHT), 0.0))
+	var width := button.get_theme_font(&"font").get_string_size(button.text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, button.get_theme_font_size(&"font_size")).x
+	var local := Rect2(content.get_center().x - width / 2.0, 0.0, width, button.size.y)
+	return get_tree().root.get_final_transform() * button.get_global_transform_with_canvas() * local
 
 ## With room, the window grows to show ROWS_SHOWN full rows; one more row scrolls inside the same window, and a space too short for them cuts the window to it with the rest scrolling -- five cards to a row throughout; harness-scale only.
 func test_the_window_shows_five_rows_then_scrolls() -> void:

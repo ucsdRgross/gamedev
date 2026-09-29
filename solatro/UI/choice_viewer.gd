@@ -157,7 +157,7 @@ func _add_reroll_button(control: Control, index: int) -> Button:
 	var button := Button.new()
 	button.text = TRANSLATION.find('CHOICE_REROLL')
 	control.add_child(button)
-	button.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	button.offset_top = REROLL_BUTTON_GAP
 	button.offset_bottom = REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT
 	button.pressed.connect(func() -> void: await reroll(index))
