@@ -1,7 +1,7 @@
 class_name ChoiceViewer
 extends Control
 
-## Modal viewer for pack-opening: shows the generated cards in a square window on the sidebar's layer, keeping the map around it inert. choose == 0 is the wired take-all mode ("Take all" force-adds every card via the `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers. Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
+## Modal viewer for pack-opening: shows the generated cards in a window as tall as its rows, scrolling past the max, on the sidebar's layer, keeping the map around it inert. choose == 0 is the wired take-all mode ("Take all" force-adds every card via the `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers. Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
 
 ## Fired when the player accepts the shown cards; the viewer frees itself afterwards.
 signal confirmed(cards: Array[CardData])

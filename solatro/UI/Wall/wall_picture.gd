@@ -273,14 +273,10 @@ func update_wall_view_size(footprint_px: Vector2) -> void:
 # `window` size) once both convert into THIS picture's own space at the scale it is DRAWN at: the
 # part actually visible, which the map's fit, the menu and a card's aim at a pile read.
 func local_rect_beside(window: Vector2, rect: Rect2, top: bool) -> Rect2:
-	return visible_rect_beside(Vector2(_design_size), window, rect, top, _drawn_scale(window))
-
-# Canvas px to window px at rest: the canvas cropped into `rect` (a window-stretched picture's own
-# aspect differs from its canvas's), then the camera's resting zoom, whose overfill applies only
-# when `rect`'s aspect is not the window's.
-func _drawn_scale(window: Vector2) -> float:
-	return cover_scale(Vector2(_design_size), rect.size) * focused_scale(rect.size, window,
-			settings().wall_overfill_margin)
+#The drawn scale: the canvas cropped into the picture's rect, then the camera's resting zoom.
+	var drawn_scale := cover_scale(Vector2(_design_size), self.rect.size) * focused_scale(
+			self.rect.size, window, settings().wall_overfill_margin)
+	return visible_rect_beside(Vector2(_design_size), window, rect, top, drawn_scale)
 
 ## The part of `design` a `window` shows beside `rect` at `scale` canvas-to-window: the drawn scale gives the visible space, the covering scale the board's reserve.
 static func visible_rect_beside(design: Vector2, window: Vector2, rect: Rect2, top: bool,
