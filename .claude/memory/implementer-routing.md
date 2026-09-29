@@ -18,9 +18,9 @@ from Claude Code v2.1.284 (code.claude.com/docs/en/model-config). The overseer w
 
 **The deciding question (Opus 5.5 low and Sonnet 5.5 high are close in capability, so the TASK
 decides): can this step end with "the premise was wrong, stop and ask"?** No -> Sonnet. Yes, the
-writer named -> Opus low. Yes, the cause open -> Opus medium. The implementers answer it again from
-what they measure and stop below the tier that owns the call; every report ends with a `ROUTING:`
-line (right tier / needs a higher tier / could go lower) - route the NEXT similar step by it.
+writer named -> Opus low. Yes, the cause open -> Opus medium. The implementers re-answer it from what
+they measure (their definitions, § "Is this step at your tier?"); route the NEXT similar step by
+their report's `ROUTING:` line.
 Cost check at the boundary: cache reads cost the same on both models ($0.20/MTok) and are most of a
 subagent's spend, so Sonnet is cheaper only while it needs no more turns than Opus low would; a
 "deterministic" step that runs long on Sonnet was not deterministic - route its kind one tier up.
