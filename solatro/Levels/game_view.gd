@@ -246,14 +246,14 @@ func _refresh_end_reveal() -> void:
 #re-run _refresh_hud after apply_act_score clears the set.
 var _combo_tween : Tween = null
 
-# A new combo class registered this act: the label pulses in the same shape as `BigNumberLabel.anim_pop`.
+# A new combo class registered this act: the label pulses in the same shape as `BigNumberLabel.anim_pop`,
+# grown from its left edge because the label spans the sidebar and a centre pivot pushes its text out.
 func _on_combo_changed(_count: int) -> void:
 	_refresh_hud()
-#The pulse has the same shape as BigNumberLabel.anim_pop.
 	var delay := game.get_delay()
 	if _combo_tween and _combo_tween.is_running():
 		_combo_tween.custom_step(INF)
-	combo_label.pivot_offset = combo_label.size / 2.0
+	combo_label.pivot_offset = Vector2(0.0, combo_label.size.y / 2.0)
 	_combo_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	_combo_tween.tween_property(combo_label, "scale", Vector2.ONE * 1.15, delay * .3)
 	_combo_tween.tween_property(combo_label, "scale", Vector2.ONE, delay * .2)

@@ -355,6 +355,7 @@ func _ready() -> void:
 	await test_the_menus_column_draws_at_the_ui_scale_beside_the_sidebar_in_the_players_window()
 	await test_the_board_is_centred_beside_the_resting_sidebar_in_the_players_window()
 	await test_the_outcome_centres_over_the_board_resting_and_slid()
+	await test_the_score_lines_draw_inside_the_sidebar_at_a_won_show()
 	await test_the_maps_sea_buffer_is_whole_on_screen_in_the_players_window()
 	finish()
 
@@ -7056,6 +7057,62 @@ func test_the_outcome_centres_over_the_board_resting_and_slid() -> void:
 					str(apart))
 			await _container.slide_to(1.0)
 			await _end_main_fixture()
+
+## Goal, Total and the board-total-times-combo line are drawn wholly inside the sidebar at a won show's end after a combo pulse, at the show's own values and at long ones, in the harness and in the player's window at both window shapes.
+func test_the_score_lines_draw_inside_the_sidebar_at_a_won_show() -> void:
+	for in_players_window : bool in [false, true]:
+		for size : Vector2i in INSET_WINDOWS:
+			var where := "%s %s" % ["the player's window" if in_players_window else "the harness", size]
+			await _start_game_fixture(size, in_players_window)
+			var view := _main._pictures[&"game"].screen_root as GameView
+			await _end_the_show_by_pressing_end(view, in_players_window)
+			check(view.win_screen.visible, "sanity: the show is won in %s" % where)
+			await get_tree().process_frame
+			_check_the_score_lines_through_a_combo_pulse(view, "%s, won" % where)
+			_container.goal_label.text = str(LONG_SCORE_TOTAL)
+			_container.total_label.text = str(LONG_SCORE_TOTAL)
+			await get_tree().process_frame
+			_check_the_score_lines_inside_the_sidebar("%s, won at a long Goal and Total" % where)
+			view.game.state.goal = LONG_SCORE_TOTAL
+			view._refresh_hud()
+			_container.combo_label.text = TRANSLATION.find('GAME_SCORE_LINE') % [LONG_SCORE_TOTAL, LONG_SCORE_COMBO]
+			await get_tree().process_frame
+			_check_the_score_lines_inside_the_sidebar("%s, won at a long score line" % where)
+			await _end_main_fixture()
+
+const LONG_SCORE_TOTAL := 9999
+const LONG_SCORE_COMBO := 99.99
+
+# A new combo class pulses the score line; the pulse is stepped by hand so its peak is sampled at
+# any base_delay, the suite's near-zero one included.
+func _check_the_score_lines_through_a_combo_pulse(view: GameView, moment: String) -> void:
+	view.game.combo_changed.emit(1)
+	var step := view.game.get_delay() / COMBO_PULSE_SAMPLES
+	var peak := 1.0
+	while view._combo_tween.is_running():
+		view._combo_tween.custom_step(step)
+		peak = maxf(peak, _container.combo_label.scale.x)
+		_check_the_score_lines_inside_the_sidebar("%s, the combo pulse at scale %.3f" % [moment,
+				_container.combo_label.scale.x])
+	check(peak > 1.0, "sanity: the combo pulse grew the score line in %s" % moment, str(peak))
+
+const COMBO_PULSE_SAMPLES := 20.0
+
+# The drawn text, not the label's box: a Label draws its text from its box's left edge, scaled by
+# its own transform, so the box can be wider than the sidebar while its text is not.
+func _check_the_score_lines_inside_the_sidebar(moment: String) -> void:
+	var sidebar := _container.get_global_rect()
+	var inner_left := (_container.goal_label.get_parent().get_node(^"Caption") as Control).get_global_rect().position.x
+	var lines : Array[Label] = [_container.goal_label, _container.total_label, _container.combo_label]
+	for line : Label in lines:
+		var box := line.get_global_rect()
+		var text_width := line.get_theme_font(&"font").get_string_size(line.text, HORIZONTAL_ALIGNMENT_LEFT,
+				-1, line.get_theme_font_size(&"font_size")).x * line.get_global_transform().get_scale().x
+		var drawn := Rect2(box.position, Vector2(text_width, box.size.y))
+		check(drawn.position.x >= inner_left - 0.5 and drawn.end.x <= sidebar.end.x + 0.5,
+				"%s: the score line '%s' is drawn inside the sidebar from its inner margin" % [moment, line.text],
+				"drawn %s inner left %.1f sidebar %s scale %s pivot %s" % [drawn, inner_left, sidebar,
+				line.scale, line.pivot_offset])
 
 ## The chooser and the run deck open over it are UI on the sidebar's layer: in wall view neither is drawn nor hears input, and coming back fades both in with the sidebar exactly as they were left.
 func test_the_chooser_and_its_deck_are_hidden_in_wall_view_and_back_on_return() -> void:
