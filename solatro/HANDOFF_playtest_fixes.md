@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1-P76, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
 by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P64b-3c, fb244268): `ALL 51 SUITES: 8646 CHECKS PASSED`, ~15 min with
-`-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order: P80, P71, P66, P77,
+`-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order: P80, P64b-4, P71, P66, P77,
 P78 (review round 3's comments), P79 (the review tool), review round 4 (P58d), the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -474,6 +474,9 @@ Finished rows carry only their commits: each commit message holds that step's me
   description: The visual-review tool - (a) a new round shows the previous round's comments as if new (owner: "bug with new visual reviews leaving behind comments from previous reviews"; grid1_focused's round-3 approve carried round 2's text); (b) the page's Done never reaches solatro/visual-review/status.owner.json (still round 1, 2026-09-24 - rounds 2 and 3 both) so the watch never wakes (designloop/src/visualreview.mjs writeOwnerStatus keeps the old round; markDone passes none - read by the P58d-shots implementer); (c) the review images alias heavily (owner, grid1_overview and pip_row: "resolution looks off ... heavy aliasing", "screwing with outline shader results") - the grid shots are 1625x914 captures shown scaled with no smoothing; measure whether the capture or the page's scaling aliases; (d) the npm command given in chat failed for the owner ("auth issues") - give the owner the exact command they can run.
   status: pending
   notes: 'Fix before the next review round. designloop is its own project (designloop/README.md).'
+- id: P64b-4
+  description: The P64b part 3 group's broad Fable review, its findings (queued right after P80 - the group's own follow-ups, as P58e was). (1) Menu.refresh_continue (menu.gd ~80) runs only in _ready and on a Play press, never when the menu is shown again: a save made during a run leaves Continue held on return, and a lost run (main.gd ~587 clear_save) leaves Continue LIVE with no file - Enter reaches main.gd ~536 _on_continue -> RunManager.load_run() unguarded (read, not measured); refresh on every show (Menu.take_the_focus already fires on active_screen_changed), and drop the fold/reopen of Play from test_keys_alone_start_a_run_from_the_start_menu_and_find_it_again (~2449-2454) so the row can fail. (2) test_sidebar ~2328 and ~2342 pin _check_the_bottom_row_beside_the_sidebar for the same state (picker up, at rest, 1280x720) - drop the older row's call, keep its wrap check. (3) CardsViewer.sidebar_requested's doc (NAMES.md ~141, cards_viewer.gd ~54) says "another viewport"; every hosted viewer is in the sidebar's root viewport - "a separate Control tree the neighbour search never crosses".
+  status: pending
 - id: P80
   description: The listed PlayArea._deal_next_mark freed-instance SCRIPT ERROR (x20-x25 per run, play_area.gd ~2409, during the WALL FOCUS / WALL TRANSITION soaks) is past its three-failure budget - find the writer that frees the board (or its Main) while the plan-mark deal is still stepping, and make the deal end with its owner; measure first (the deal is released at go-live; P64b-3b round 2 rests the board focus on every game went_live - check whether it moved the frequency).
   status: pending
@@ -664,7 +667,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
-1. P80 (an intermittent past budget - ahead of P71 by the budget rule), P71 (possible cards as icons), P66 (re-check the 600x1000 Travel hang first).
+1. P80 (an intermittent past budget - ahead of P71 by the budget rule), P64b-4 (the P64b-3 group review's findings), P71 (possible cards as icons), P66 (re-check the 600x1000 Travel hang first).
 2. P77 (root-window rows at the gate window's own size - a suite cannot resize the OS window).
 3. P78 (visual review round 3's comments, one step each), then P79 (the review tool: stale comments, Done not landing, aliased images, the owner's command).
 4. Visual review round 4 = P58d for everything not yet reviewed (P64b-P73, P78), then the close per /plan-run.
