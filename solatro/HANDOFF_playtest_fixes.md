@@ -489,6 +489,9 @@ Finished rows carry only their commits: each commit message holds that step's me
   description: The game sidebar's score line (board_total x combo, P60) is drawn starting left of the window's edge - its first characters are cut off ("26 x 14.0" at x < 0 in P78 (h)'s 1280x720 win_overlay shot). Measure the writer (the label's container/alignment in the HUD) and keep every score line inside the sidebar.
   status: done
   commits: [5280f299]
+- id: P82
+  description: After a window resize the start menu keeps a stale layout - seen in review round 4's menu_focused_by_keys (1280x720 right after the 600x1000 still): no sidebar drawn, yet the column laid out as beside one (shifted right, pushed down) and its bottom row's third line cut off at the window's bottom edge. Inserted AHEAD of review round 4 (a known-broken shot would cost an owner verdict). Measure the writer (menu.gd _apply_container_inset's resting/slid inputs across a resize) first; stop if only the snapshot's staging reaches it.
+  status: pending
 - id: P80
   description: The listed PlayArea._deal_next_mark freed-instance SCRIPT ERROR (x20-x25 per run, play_area.gd ~2409, during the WALL FOCUS / WALL TRANSITION soaks) is past its three-failure budget - find the writer that frees the board (or its Main) while the plan-mark deal is still stepping, and make the deal end with its owner; measure first (the deal is released at go-live; P64b-3b round 2 rests the board focus on every game went_live - check whether it moved the frequency).
   status: done
@@ -667,6 +670,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - Latent, traced by the P78 group review: a DeckViewer's window is the space beside the sidebar less the scene's authored margins, while the chooser may grow to the space's full height - a chooser of 3+ rows (11+ cards) would show above/below the run deck opened over it. No pack offers 11+ cards today.
 - Measured by P81 (not fixed): a Container resets its child's scale to 1 on every re-layout, so a score-line text change during the combo pulse (game_view.gd _on_combo_changed) cuts the pulse short.
 - NEW, 1 of 2 implementer Sidebar runs on the P78-review-cleanup tree (after 5280f299): SIDEBAR "the container's own rect follows a real resize -- [P: (-0.00384, 0.0) ...] vs [P: (0.0, 0.0) ...]" - a float-sized x on HudContainer (its slide writes the position, _write_slide); same shape as the camera-shift line above (an exact compare against a derived quantity, item 19). COUNT 1. Measure before naming a cause.
+- sidebar_snapshot (not a suite) hung after its chooser_window capture in 1 of 3 standalone runs on the round-4 tree (killed at 240 s; HEAD's version then ran clean) - lead, unmeasured: _leave_the_map_and_come_back awaits slide_settled with no timeout. COUNT 1.
 - For review round 4 (measured by P78 h, a look not asked): at 600x1000 with the sidebar slid out the board's centre y is 383 against the picture's centre 457 - the portrait board is not vertically centred in its space; and the formation editor's hoop group sits left of the stand-in card's centre (P78 g's shot).
 - Test helper, traced by the P64b-3b review: test_sidebar _await_the_menus_slide (~7274, 9 callers, now also behind _wait_out_the_return) carries NO check although its docstring says it must fail one - a landing where the container is not wanted (wall view, the bare menu) silently burns CARD_CONTROL_TIMEOUT_SEC. Make it check, or fix the docstring.
 - Hang risk, traced by the P72 review: test_sidebar.gd has six bare `await RenderingServer.frame_post_draw` with no watchdog (~1475, ~1496 inside a bounded while whose bound cannot help, ~1512, ~4645, ~5770, ~5771); one bare await stalled a SIDEBAR run once on the P72 tree (1 of 4 implementer runs; that row now uses TestSuite.await_drawn_frames). Move them onto await_drawn_frames.
@@ -693,7 +697,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
-1. Visual review round 4 = P58d: register shots for everything since round 3 (P64b part 3 and -4, P71, P73, P77's board, P78 (a)-(h), P81) and the looks listed in P71's row and Open bugs ("For review round 4"); BEFORE on 9d7d1f2f (round 3's tree) via `shoot --base`; read every AFTER and BEFORE yourself, write each `seen` with its crops; park on the watch; every reject/comment becomes a step.
+1. P82 (the menu's stale layout after a resize - ahead of the round), then visual review round 4 = P58d: register shots for everything since round 3 (P64b part 3 and -4, P71, P73, P77's board, P78 (a)-(h), P81) and the looks listed in P71's row and Open bugs ("For review round 4"); BEFORE on 9d7d1f2f (round 3's tree) via `shoot --base`; read every AFTER and BEFORE yourself, write each `seen` with its crops; park on the watch; every reject/comment becomes a step.
 2. The close per /plan-run, in a NEW session at or above the reviewer floor.
 
 ### Opening prompt for the next session (paste as is)
