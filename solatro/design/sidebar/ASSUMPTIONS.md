@@ -25,8 +25,8 @@
   not the window's empty margin around them -- would not otherwise fit there.
 - `Menu.hud_container` falls back to a private instance when null, the same shape `GameView`/`Map`
   already use -- `Tools/wall_editor.gd`'s preview hosts a real `menu.tscn` with no `Main` in the tree.
-- The menu's inset conversion (review finding 2) reuses `GameView`'s own UNMARGINED `picture_scale`
-  shape rather than the live camera transform: `Menu._apply_container_inset()` runs mid-`WallPicture.
+- The menu's inset conversion (review finding 2) reads the picture's drawn scale rather than the
+  live camera transform (the menu picture is window-aspect, so its drawn scale IS the cover scale): `Menu._apply_container_inset()` runs mid-`WallPicture.
   build()`, before `Main` positions the focused camera, so a transform read off the screen sprite at
   that point is still the unfocused identity. `WallPicture.local_rect_beside()` is the one owned
   conversion (window px beside `container_rect()` -> this picture's own space), called by `Menu` and
@@ -369,7 +369,7 @@
   relay `Main` connects.
 - `ChoiceViewer`'s pack, Rerolls counter and Take share one `Layout` window (`mouse_filter`
   IGNORE; nothing is drawn outside it) on the sidebar's own layer at the UI scale, and
-  `fit_beside()` places THAT, a square centred in the space beside the resting sidebar: the card
+  `fit_beside()` places THAT, a window as tall as its rows, centred in the space beside the resting sidebar: the card
   rows centred in a scrolling area, Rerolls beside Take in one centred row along the window's foot.
   `Q141`=b's "the viewer owns its own layout" is about the whole layout, not only the cards.
 - S12: `UI/deck_builder.tscn` lost its broken `Cards/card.tscn` `ext_resource`, the `Card` node it
