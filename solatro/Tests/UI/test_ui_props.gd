@@ -30,6 +30,7 @@ func _ready() -> void:
 	await await_siblings_except(["VISUAL LAYERS", "GRID LAYOUT", "GRID VIEW", "SIDEBAR",
 			"DRAG PLACE", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ UI PROPS TEST PASS ============")
+	check_all_tests_registered()
 	backup_real_settings()
 	implementation_section("SLOT GEOMETRY")
 	await test_slot_geometry()
@@ -45,6 +46,7 @@ func _ready() -> void:
 	await test_batch_props_stagger()
 	await test_formation_separation_agnostic()
 	await test_formation_live_rescale()
+	test_the_hoop_formation_is_one_horizontal_row()
 	await test_reactions_drive_card_pose()
 	behavior_section("STATUS + CARD TEXT SURFACES")
 	await test_status_and_description_surface()
@@ -207,7 +209,7 @@ func _await_cards_at_rest(pa: PlayArea, detail: Array[String]) -> bool:
 
 # Start one visual tick and await its tick_done under a watchdog, so a sync bug fails the check
 # instead of hanging the whole test run. Returns whether it completed.
-func run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
+func _run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
 		relocated: Array) -> bool:
 	var sig := pl.begin_prop_tick(live, spawned, movers, relocated)
 	var fired : Array[bool] = [false]
@@ -224,18 +226,18 @@ func run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
 # awaited visual tick per data tick. Flips flag[0] true once the whole flight, including its final
 # despawn tick, completed. Call WITHOUT await to run it concurrently with a sampler.
 func _drive_route_flight(pl: PropLayer, p: PropData, flag: Array[bool]) -> void:
-	var ok := await run_tick(pl, [p], [p], [], [])
+	var ok := await _run_tick(pl, [p], [p], [], [])
 	while ok and not p.done:
 		p.countdown -= 1
 		if p.countdown > 0:
-			ok = await run_tick(pl, [p], [], [], [])
+			ok = await _run_tick(pl, [p], [], [], [])
 		elif p.route.is_empty():
 			p.done = true
-			ok = await run_tick(pl, [p], [], [], [])
+			ok = await _run_tick(pl, [p], [], [], [])
 		else:
 			p.at = p.route.pop_front()
 			p.countdown = p.ticks_per_slot
-			ok = await run_tick(pl, [p], [], [p], [])
+			ok = await _run_tick(pl, [p], [], [p], [])
 	flag[0] = ok
 
 # Per-frame RAW position sampler: captures the prop visual's GLOBAL position EVERY frame from the
@@ -431,7 +433,7 @@ func test_prop_visual_lifecycle() -> void:
 	p.kind = 0
 	p.route = [slot_coord(0), slot_coord(1), slot_coord(2)] as Array[BoardCoord]
 # tick 0: spawn, and the visual pops at the route head
-	var ok := await run_tick(pl, [p], [p], [], [])
+	var ok := await _run_tick(pl, [p], [p], [], [])
 	check(ok, "the spawn tick's animation completes and tick_done fires")
 	check(prop_visual_count(pl) == 1, "a spawned prop gets exactly one visual",
 			str(prop_visual_count(pl)))
@@ -442,7 +444,7 @@ func test_prop_visual_lifecycle() -> void:
 # ticks 1 to 3: walk the route exactly like run_props, data one step ahead of the view
 	while not p.route.is_empty():
 		p.at = p.route.pop_front()
-		ok = await run_tick(pl, [p], [], [p], [])
+		ok = await _run_tick(pl, [p], [], [p], [])
 		check(ok, "a mover tick completes (slot %s)" % str(p.at))
 	var vis : PropVisual = pl._visuals.get(p)
 	if vis:
@@ -469,7 +471,7 @@ func test_prop_visual_lifecycle() -> void:
 	var fast := SettingsManager.settings.base_delay
 	SettingsManager.settings.base_delay = 0.4
 	p.done = true
-	ok = await run_tick(pl, [p], [], [], [])
+	ok = await _run_tick(pl, [p], [], [], [])
 	check(ok, "the despawn tick completes")
 # The exit fade must run WHILE the prop is still crossing, not after it lands: its void point is a
 # card-width past the last slot and the play-area rect clips there, so a fade that only started on
@@ -508,24 +510,24 @@ func test_slow_props_move_continuously() -> void:
 	p.kind = 1
 	p.ticks_per_slot = 2
 	p.route = [slot_coord(0), slot_coord(1), slot_coord(2)] as Array[BoardCoord]
-	var ok := await run_tick(pl, [p], [p], [], [])
+	var ok := await _run_tick(pl, [p], [p], [], [])
 	check(ok, "spawn tick completes")
 # enter slot 0
 	p.at = p.route.pop_front()
-	ok = await run_tick(pl, [p], [], [p], [])
+	ok = await _run_tick(pl, [p], [], [p], [])
 	check(ok, "entry tick into slot 0 completes")
 # Assert mid-flight on a FULL-length leg, slot 0 to slot 1. The staged-to-entry leg can be
 # arbitrarily short, so it cannot distinguish a sprint from smooth motion.
 # enter slot 1
 	p.at = p.route.pop_front()
-	ok = await run_tick(pl, [p], [], [p], [])
+	ok = await _run_tick(pl, [p], [], [p], [])
 	check(ok, "a 2-ticks-per-slot mover's entry tick completes at its half-way share")
 	var vis : PropVisual = pl._visuals.get(p)
 	var target := pl.to_local(pa.slot_center_global(p.at))
 	check(vis != null and (vis.position - target).length() > 1.0,
 			"the slow prop is still mid-flight after its entry tick (no one-tick sprint)")
 # the in-between tick, with no new slot, carries it the rest of the way and is never frozen
-	ok = await run_tick(pl, [p], [], [], [])
+	ok = await _run_tick(pl, [p], [], [], [])
 	check(ok, "the mid-slot tick completes")
 # Settle a few frames, for the timing reason given in test_prop_visual_lifecycle, and re-derive the
 # target live each frame since _repin chases the settling board. Dump the leg state on failure.
@@ -552,7 +554,7 @@ func test_teleport_blinks() -> void:
 	var p := PropData.new()
 	p.kind = 2
 	p.route = [slot_coord(0)] as Array[BoardCoord]
-	var ok := await run_tick(pl, [p], [p], [], [])
+	var ok := await _run_tick(pl, [p], [p], [], [])
 	check(ok, "spawn tick before the teleport completes")
 # a hook teleported the prop: the view must BLINK it to the destination, never lerp
 	p.at = slot_coord(2)
@@ -595,7 +597,7 @@ func test_reactions_drive_card_pose() -> void:
 	p.mods = [JumpHintMod.new()] as Array[PropModifier]
 	p.at = slot_coord(0)
 	p.route = [slot_coord(1)] as Array[BoardCoord]
-	var ok := await run_tick(pl, [p], [], [p], [])
+	var ok := await _run_tick(pl, [p], [], [p], [])
 	check(ok, "the reaction tick completes")
 # anim_jump tweens the card's offset up, so poll for the raised pose
 	var raised := false
@@ -622,7 +624,7 @@ func test_reactions_drive_card_pose() -> void:
 	p2.mods = [JumpHintMod.new()] as Array[PropModifier]
 	p2.at = slot_coord(0)
 	p2.route = [slot_coord(1)] as Array[BoardCoord]
-	ok = await run_tick(pl, [p, p2], [], [p2], [])
+	ok = await _run_tick(pl, [p, p2], [], [p2], [])
 	check(ok, "the second-arrival tick completes")
 	var pulsed := false
 	waited = 0.0
@@ -634,7 +636,7 @@ func test_reactions_drive_card_pose() -> void:
 # both props move on, so the card returns to rest
 	p.at = slot_coord(1)
 	p2.at = slot_coord(1)
-	ok = await run_tick(pl, [p, p2], [], [p, p2], [])
+	ok = await _run_tick(pl, [p, p2], [], [p, p2], [])
 	check(ok, "the follow-up tick completes")
 	var rested := false
 	waited = 0.0
@@ -806,13 +808,13 @@ func test_ballistic_despawn_poofs_in_place() -> void:
 # Spawns at its card and arcs to the target.
 	p.source = g.state.upper_zone[0].datas[0]
 	p.route = [slot_coord(2)] as Array[BoardCoord]
-	var ok := await run_tick(pl, [p], [p], [], [])
+	var ok := await _run_tick(pl, [p], [p], [], [])
 	check(ok, "ballistic spawn tick completes")
 	p.at = p.route.pop_front()
-	ok = await run_tick(pl, [p], [], [p], [])
+	ok = await _run_tick(pl, [p], [], [p], [])
 	check(ok, "ballistic flight tick completes")
 	p.done = true
-	ok = await run_tick(pl, [p], [], [], [])
+	ok = await _run_tick(pl, [p], [], [], [])
 	check(ok, "ballistic despawn tick completes")
 	var target := pa.slot_center_global(slot_coord(2))
 	var strayed := ""
@@ -860,7 +862,7 @@ func test_batch_props_stagger() -> void:
 	b.route = route.duplicate()
 # run_props stages the i-th of a batch one tick back
 	b.countdown = b.ticks_per_slot + 1
-	var ok := await run_tick(pl, [a, b], [a, b], [], [])
+	var ok := await _run_tick(pl, [a, b], [a, b], [], [])
 	check(ok, "the batch spawn tick completes")
 	var va : PropVisual = pl._visuals.get(a)
 	var vb : PropVisual = pl._visuals.get(b)
@@ -868,6 +870,18 @@ func test_batch_props_stagger() -> void:
 			"batch mates spread off the single-file line (staggered volley)",
 			"%s vs %s" % [va.position if va else Vector2.INF, vb.position if vb else Vector2.INF])
 	await cleanup(g, pa)
+
+## Every hoop formation stands its rings on one horizontal line: each point stores the same y, so the editor and the game draw them level.
+func test_the_hoop_formation_is_one_horizontal_row() -> void:
+	var hoops := PropFormationSet.load_for_kind(PropFormationSet.KIND_NAMES.find("hoop"))
+	check(hoops != null and not hoops.formations.is_empty(), "sanity: the hoop set has a formation")
+	if hoops == null: return
+	for formation : PropFormationData in hoops.formations:
+		var ys : Array[float] = []
+		for point : Vector2 in formation.points:
+			ys.append(point.y)
+		check(ys.size() > 1 and ys.all(func(y: float) -> bool: return is_equal_approx(y, ys[0])),
+				"a hoop formation's rings share one y", str(ys))
 
 # spread_by_separation points are STORED separation-agnostically, in FULL-CARD normalized space,
 # with ratio 1 when the separation equals the card height.
@@ -955,7 +969,7 @@ func test_formation_live_rescale() -> void:
 	p.kind = 1
 	p.route = g.row_slot_path(slot_coord(0), true)
 	p.countdown = p.ticks_per_slot
-	var ok := await run_tick(pl, [p], [p], [], [])
+	var ok := await _run_tick(pl, [p], [p], [], [])
 	check(ok, "the spread-formation spawn tick completes")
 	var vis : PropVisual = pl._visuals.get(p)
 	check(vis != null and vis.has_formation_point, "the knife carries its stored formation point")

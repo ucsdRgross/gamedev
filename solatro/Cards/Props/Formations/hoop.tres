@@ -5,7 +5,7 @@
 
 [sub_resource type="Resource" id="Resource_qqmbo"]
 script = ExtResource("1_b3pf0")
-points = PackedVector2Array(-27, -2.2478437, -20.39, -1.986803, -3.33136, -0.16768622, 8.1744, 0.11011982, 15.601, -1.6087593, 27, 2.942974)
+points = PackedVector2Array(-27, -0.4929997, -20.39, -0.4929997, -3.33136, -0.4929997, 8.1744, -0.4929997, 15.601, -0.4929997, 27, -0.4929997)
 
 [resource]
 script = ExtResource("2_kas2t")
