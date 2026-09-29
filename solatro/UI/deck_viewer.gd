@@ -16,6 +16,8 @@ signal highlight_cleared
 @onready var close_tab: Button = %CloseTab
 
 var deck : Array[CardData]
+## The palette role this viewer's kind paints its window in.
+var backdrop_role : StringName
 ## Whether `deck` is a pack's partial cards, listed as labelled icons rather than as cards.
 var lists_parts := false
 ## Owns this viewer's listed cards (the shared listing logic; see CardsViewer).
@@ -32,11 +34,15 @@ var _return_focus : Control = null
 ## Where the focus goes on close when the opener is hidden; set by the `HudContainer` hosting this viewer.
 var fallback_focus : Control = null
 
-# ⚠ OPAQUE, in the sidebar's and the chooser's one background: nothing behind a viewer shows
-# between or under its cards -- the menu's deck picker it opens over least of all.
+# ⚠ OPAQUE, in its own kind's colour: nothing behind a viewer shows between or under its cards, and
+# a viewer over another window reads as a separate one.
 func _ready() -> void:
 	(margin_container.get_node(^"ColorRect") as ColorRect).color = \
-			PaletteDB.color(PaletteDB.ROLES.hud_background)
+			PaletteDB.color(PaletteDB.ROLES.index_of(backdrop_role))
+	var tab := StyleBoxFlat.new()
+	tab.bg_color = PaletteDB.color(PaletteDB.ROLES.close_tab)
+	for state : StringName in [&"normal", &"hover", &"pressed", &"hover_pressed"]:
+		close_tab.add_theme_stylebox_override(state, tab)
 	var gap := PlayArea.viewer_separation_px()
 	flow_container.add_theme_constant_override(&"h_separation", gap)
 	flow_container.add_theme_constant_override(&"v_separation", gap)
@@ -44,7 +50,7 @@ func _ready() -> void:
 # ⚠ THE OPENER HANDS ITS OWN CONTROL IN: focus is cleared across every viewport of one window. A
 # SECOND PRESS OF THAT SAME opener is a close and returns null; any other replaces the viewer, as
 # swapping piles does, or opens `over` it, which stays open underneath.
-static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control,
+static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control, role: StringName,
 		over := false, parts := false) -> DeckViewer:
 	var top : DeckViewer = _open if is_instance_valid(_open) and not _open.is_queued_for_deletion() \
 			else null
@@ -55,6 +61,7 @@ static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control,
 		top = null
 	var viewer :DeckViewer= DECK_VIEWER.instantiate()
 	viewer.deck = new_deck
+	viewer.backdrop_role = role
 	viewer.lists_parts = parts
 	viewer._return_focus = opener
 	viewer._under = top

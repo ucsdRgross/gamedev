@@ -453,7 +453,7 @@ func _session_cycle() -> void:
 	await _settle()
 	var first_deck : Array[CardData] = picker._deck.get_deck_list()[0]["cards"]
 	var inspect := picker.rows.get_child(0).get_child(1) as Button
-	var deck_viewer := DeckViewer.show_deck(picker, first_deck, inspect)
+	var deck_viewer := DeckViewer.show_deck(picker, first_deck, inspect, &"viewer_inspect")
 	await _settle()
 	deck_viewer._close()
 	await _settle()

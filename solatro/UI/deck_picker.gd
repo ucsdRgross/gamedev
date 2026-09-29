@@ -30,6 +30,9 @@ static func add_to_scene(parent: Node, opener: Control) -> DeckPicker:
 	return picker
 
 func _ready() -> void:
+	var backdrop := _panel.get_theme_stylebox(&"panel").duplicate() as StyleBoxFlat
+	backdrop.bg_color = PaletteDB.color(PaletteDB.ROLES.deck_picker)
+	_panel.add_theme_stylebox_override(&"panel", backdrop)
 	for entry in _deck.get_deck_list():
 		var cards : Array[CardData] = entry["cards"]
 		var row := HBoxContainer.new()

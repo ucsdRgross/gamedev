@@ -69,7 +69,7 @@ func _ready() -> void:
 # ui_accept confirms immediately; arrow keys walk the (focusable) cards.
 	confirm_button.text = TRANSLATION.find('CHOICE_TAKE')
 	(_layout.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = \
-			PaletteDB.color(PaletteDB.ROLES.hud_background)
+			PaletteDB.color(PaletteDB.ROLES.viewer_pack)
 	var gap := PlayArea.viewer_separation_px()
 	flow_container.add_theme_constant_override(&"h_separation", gap)
 	flow_container.add_theme_constant_override(&"v_separation",

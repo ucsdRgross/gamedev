@@ -329,7 +329,7 @@ func _fitted_deck_viewer(count: int, remaining: Rect2) -> DeckViewer:
 	var deck : Array[CardData] = []
 	for index : int in count:
 		deck.append(_card())
-	var viewer := DeckViewer.show_deck(self, deck, _test_opener)
+	var viewer := DeckViewer.show_deck(self, deck, _test_opener, &"viewer_deck")
 	for fit : int in 2:
 		viewer.fit_catcher(get_tree().root.get_visible_rect())
 		viewer.fit_beside(remaining)
@@ -363,7 +363,7 @@ func _two_card_viewer(published: Array[String]) -> DeckViewer:
 	_test_opener = Button.new()
 	add_child(_test_opener)
 	var deck : Array[CardData] = [_card(), _card().with_type(TypeHeavy.new())]
-	var viewer := DeckViewer.show_deck(_focus_window, deck, _test_opener)
+	var viewer := DeckViewer.show_deck(_focus_window, deck, _test_opener, &"viewer_deck")
 	viewer.info_requested.connect(func(entry: InfoEntry) -> void:
 		published.append(entry.title)
 		if entry.visual: entry.visual.queue_free())
@@ -498,7 +498,7 @@ func test_the_same_opener_pressed_again_closes_the_viewer() -> void:
 	await get_tree().process_frame
 	check(is_instance_valid(viewer) and not viewer.is_queued_for_deletion(),
 			"sanity: the first press opened a viewer")
-	var again := DeckViewer.show_deck(self, [_card()] as Array[CardData], _test_opener)
+	var again := DeckViewer.show_deck(self, [_card()] as Array[CardData], _test_opener, &"viewer_deck")
 	check(again == null, "the same opener pressed again opens nothing", str(again))
 	check(viewer.is_queued_for_deletion(), "...and closes the viewer it had opened")
 	await _drop_viewer(viewer)
@@ -506,7 +506,7 @@ func test_the_same_opener_pressed_again_closes_the_viewer() -> void:
 	add_child(other)
 	var first := _two_card_viewer(published)
 	await get_tree().process_frame
-	var swapped := DeckViewer.show_deck(self, [_card()] as Array[CardData], other)
+	var swapped := DeckViewer.show_deck(self, [_card()] as Array[CardData], other, &"viewer_deck")
 	check(swapped != null and swapped != first,
 			"a DIFFERENT opener still replaces the open viewer rather than closing it")
 	if swapped: swapped.queue_free()
@@ -519,12 +519,12 @@ func test_a_viewer_opened_over_another_leaves_it_open_beneath() -> void:
 	var under := _two_card_viewer(published)
 	var other := Button.new()
 	add_child(other)
-	var over := DeckViewer.show_deck(self, [_card()] as Array[CardData], other, true)
+	var over := DeckViewer.show_deck(self, [_card()] as Array[CardData], other, &"viewer_deck", true)
 	await get_tree().process_frame
 	check(over != null and over != under and not under.is_queued_for_deletion(),
 			"a viewer opened over another leaves it open beneath")
 	check(DeckViewer._open == over, "...and is the one on top", str(DeckViewer._open))
-	var again := DeckViewer.show_deck(self, [_card()] as Array[CardData], other, true)
+	var again := DeckViewer.show_deck(self, [_card()] as Array[CardData], other, &"viewer_deck", true)
 	check(again == null and over.is_queued_for_deletion() and not under.is_queued_for_deletion(),
 			"its own opener pressed again closes it alone")
 	check(DeckViewer._open == under, "...and the one beneath is on top again", str(DeckViewer._open))
@@ -590,9 +590,9 @@ func test_deck_viewer_singleton() -> void:
 	var deck: Array[CardData] = [_card()]
 	var opener := Button.new()
 	add_child(opener)
-	DeckViewer.show_deck(self, deck, opener)
-	DeckViewer.show_deck(self, deck, opener)
-	DeckViewer.show_deck(self, deck, opener)
+	DeckViewer.show_deck(self, deck, opener, &"viewer_deck")
+	DeckViewer.show_deck(self, deck, opener, &"viewer_deck")
+	DeckViewer.show_deck(self, deck, opener, &"viewer_deck")
 	await get_tree().process_frame
 	check(_count_viewers() == 1, "repeated show_deck replaces instead of stacking",
 			_viewer_detail())

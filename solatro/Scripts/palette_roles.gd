@@ -38,6 +38,22 @@ extends Resource
 @export_group("UI Chrome")
 ## The sidebar container's flat panel background (`HudContainer`).
 @export_range(0, 255, 1) var hud_background : int = 17
+## The run deck's viewer window, on the map and in a show: a placeholder, told apart from every other window.
+@export_range(0, 255, 1) var viewer_deck : int = 1
+## A show's Discard viewer window: a placeholder.
+@export_range(0, 255, 1) var viewer_discard : int = 4
+## A show's Rules viewer window: a placeholder.
+@export_range(0, 255, 1) var viewer_rules : int = 7
+## A pack's possible-cards list window: a placeholder.
+@export_range(0, 255, 1) var viewer_possible_cards : int = 10
+## The pack chooser's window: a placeholder.
+@export_range(0, 255, 1) var viewer_pack : int = 13
+## The menu's Inspect viewer window: a placeholder.
+@export_range(0, 255, 1) var viewer_inspect : int = 29
+## The menu's deck picker panel: a placeholder.
+@export_range(0, 255, 1) var deck_picker : int = 27
+## A viewer's X tab, solid so nothing behind it shows through.
+@export_range(0, 255, 1) var close_tab : int = 23
 
 @export_group("The board plan")
 ## The outline a focused card and an element matching the mark under a held card both wear.
@@ -65,7 +81,9 @@ const ROLE_NAMES : Array[StringName] = [
 	&"suit_hoop", &"suit_knife", &"suit_ball", &"suit_fire", &"suit_firework",
 	&"status_flame", &"status_ball",
 	&"ball_gloss",
-	&"hud_background", &"goal_met",
+	&"hud_background", &"viewer_deck", &"viewer_discard", &"viewer_rules",
+	&"viewer_possible_cards", &"viewer_pack", &"viewer_inspect", &"deck_picker", &"close_tab",
+	&"goal_met",
 	&"match_rim", &"match_rim_active",
 	&"selected_rim",
 ]

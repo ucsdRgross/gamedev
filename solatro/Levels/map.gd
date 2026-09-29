@@ -272,7 +272,7 @@ func _open_possible_cards_once(node: WorldGraphNode) -> void:
 func _show_possible_cards(node: WorldGraphNode) -> void:
 	var cards := await _booster_of(node).get_possible_preview_cards()
 	_possible_cards = DeckViewer.show_deck(hud_container.get_parent(), cards, possible_cards_button,
-			false, true)
+			&"viewer_possible_cards", false, true)
 	_host_map_viewer(_possible_cards)
 	if _possible_cards: _possible_cards.cards().sticky_changed.connect(_show_only_the_deck_button)
 
@@ -329,6 +329,6 @@ func _on_deck_clicked() -> void:
 	var opener : Button = selection_deck_button if selection_buttons.visible \
 			else hud_container.map_deck_button
 	var viewer := DeckViewer.show_deck(hud_container.get_parent(), Main.save_info.card_datas,
-			opener, _a_possible_card_is_stuck())
+			opener, &"viewer_deck", _a_possible_card_is_stuck())
 	_host_map_viewer(viewer)
 	DeckViewer.read_close_while_open(opener, &"MAP_CLOSE_DECK", viewer)

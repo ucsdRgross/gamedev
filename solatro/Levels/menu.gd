@@ -71,7 +71,8 @@ func _on_new_run_pressed() -> void:
 # ⚠ THE VIEWER IS UI ON THE SIDEBAR'S LAYER, so it outlives the picker unless the picker takes it
 # with it: a Pick that starts a new run, or the picker's own close.
 func _open_deck_viewer(cards: Array[CardData], inspect: Button, picker: DeckPicker) -> void:
-	var viewer := DeckViewer.show_deck(hud_container.get_parent(), cards, inspect)
+	var viewer := DeckViewer.show_deck(hud_container.get_parent(), cards, inspect,
+			&"viewer_inspect")
 	if viewer == null: return
 	hud_container.host_viewer(viewer, info_requested, HudContainer.MENU_SCREEN)
 	picker.tree_exiting.connect(viewer.queue_free)

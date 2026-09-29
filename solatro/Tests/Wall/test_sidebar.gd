@@ -230,6 +230,7 @@ func _ready() -> void:
 	await test_a_click_on_the_viewers_close_tab_closes_it()
 	await test_the_viewers_close_tab_by_keys_or_pad_alone()
 	await test_the_viewers_close_tab_sticks_out_clear_of_the_sidebar_and_its_cards()
+	await test_every_window_kind_draws_its_own_opaque_colour()
 	await test_every_pile_opener_reads_close_while_its_viewer_is_open()
 	await test_a_keyboard_reaches_every_row_button_from_the_x()
 	await test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map()
@@ -6408,11 +6409,11 @@ func _check_the_map_shows_around_the_chooser(window: Rect2, space: Rect2) -> voi
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	var image := _booted_viewport.get_texture().get_image()
-	var hud := PaletteDB.color(PaletteDB.ROLES.hud_background)
+	var hud := PaletteDB.color(PaletteDB.ROLES.viewer_pack)
 	var centre := window.get_center()
 	var inside := window.position + Vector2.ONE * 4.0
 	check(_colour_distance(image.get_pixelv(Vector2i(inside)), hud) < 0.05,
-			"the chooser's window is drawn in the HUD background", "%s at %s of %s, hud %s, sidebar %s" % [
+			"the chooser's window is drawn in its own colour", "%s at %s of %s, hud %s, sidebar %s" % [
 			image.get_pixelv(Vector2i(inside)), inside, image.get_size(), hud,
 			image.get_pixelv(Vector2i(_container.get_global_rect().get_center()))])
 	var beside : Dictionary[String, Vector2] = {
@@ -7488,6 +7489,64 @@ func test_the_viewers_close_tab_sticks_out_clear_of_the_sidebar_and_its_cards() 
 					"%.1f vs %.1f" % [across, target])
 		await _end_main_fixture()
 
+## A drawn pixel within this of its role's colour IS that colour: a translucent fill blends with what is under it and lands farther off.
+const OPAQUE_COLOUR_TOLERANCE := 0.02
+
+## Read off the booted window's own pixels, each kind opened by its product route: every overlay window kind draws its own opaque colour, told apart from each other and the sidebar, and a viewer's X tab is solid.
+func test_every_window_kind_draws_its_own_opaque_colour() -> void:
+	var kinds : Array[StringName] = [&"hud_background", &"viewer_deck", &"viewer_discard",
+			&"viewer_rules", &"viewer_possible_cards", &"viewer_pack", &"viewer_inspect",
+			&"deck_picker", &"close_tab"]
+	for i : int in kinds.size():
+		for j : int in range(i + 1, kinds.size()):
+			var a := PaletteDB.ROLES.color_of(kinds[i])
+			var b := PaletteDB.ROLES.color_of(kinds[j])
+			check(_colour_distance(a, b) > 0.1, "%s and %s are told apart" % [kinds[i], kinds[j]],
+					"%s vs %s" % [a, b])
+	await _start_game_fixture()
+	var piles : Dictionary[StringName, Button] = {
+		&"viewer_deck": _container.deck_ui.get_node(^"Button") as Button,
+		&"viewer_discard": _container.discard_ui.get_node(^"Button") as Button,
+		&"viewer_rules": _container.rules_ui.get_node(^"Button") as Button,
+	}
+	for role : StringName in piles:
+		_container.show_hud()
+		await _open_viewer_by_accept(piles[role])
+		await _check_the_open_viewer_draws(role)
+		await _close_the_open_viewer()
+	var sidebar := _drawn_in_window(_booted_viewport, _container)
+	await _check_drawn_in(sidebar.position + Vector2(4.0, sidebar.size.y - 4.0), &"hud_background",
+			"the sidebar")
+	await _end_main_fixture()
+	var list := await _stick_a_possible_card()
+	await _check_the_open_viewer_draws(&"viewer_possible_cards")
+	check(await _click_button(_map.selection_deck_button, _booted_viewport),
+			"sanity: a real click on the stuck part's Deck pressed it")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(DeckViewer._open != list, "sanity: the run deck opened over the list")
+	await _check_the_open_viewer_draws(&"viewer_deck")
+	await _end_main_fixture()
+
+## The viewer on top draws its window in `role` and its X tab solid in the tab's role.
+func _check_the_open_viewer_draws(role: StringName) -> void:
+	var viewer := DeckViewer._open
+	check(is_instance_valid(viewer), "sanity: a viewer is open for %s" % role)
+	if not is_instance_valid(viewer): return
+	var window := _drawn_in_window(_booted_viewport, _backdrop_of(viewer))
+	await _check_drawn_in(window.position + Vector2.ONE * 4.0, role, "the %s window" % role)
+	var tab := _drawn_in_window(_booted_viewport, viewer.close_tab)
+	await _check_drawn_in(tab.position + Vector2.ONE * 2.0, &"close_tab", "the %s window's X tab" % role)
+
+func _check_drawn_in(at: Vector2, role: StringName, what: String) -> void:
+	_booted_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var seen := _booted_viewport.get_texture().get_image().get_pixelv(Vector2i(at))
+	var wanted := PaletteDB.ROLES.color_of(role)
+	check(_colour_distance(seen, wanted) < OPAQUE_COLOUR_TOLERANCE,
+			"%s draws solid %s" % [what, role], "%s at %s vs %s" % [seen, at, wanted])
+
 # EVERY OPENER IS ALSO ITS VIEWER'S CLOSER and says so while it is open, on either screen.
 func test_every_pile_opener_reads_close_while_its_viewer_is_open() -> void:
 	await _start_map_fixture()
@@ -8165,6 +8224,14 @@ func test_the_deck_picker_draws_at_the_ui_size_on_screen_at_both_window_shapes()
 			check(drawn.get_center().distance_to(beside.get_center()) <= 1.0,
 					"...centred where the menu centres its own content, beside the sidebar as shown, at %s"
 					% size, "%s vs %s" % [drawn.get_center(), beside.get_center()])
+			viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+			await await_drawn_frames(2)
+			var corner := drawn.position + Vector2.ONE * 6.0
+			var seen := viewport.get_texture().get_image().get_pixelv(Vector2i(corner))
+			var own := PaletteDB.ROLES.color_of(&"deck_picker")
+			check(_colour_distance(seen, own) < OPAQUE_COLOUR_TOLERANCE,
+					"...its panel drawn solid in its own colour at %s" % size,
+					"%s at %s vs %s" % [seen, corner, own])
 		await _end_booted_fixture(viewport, main)
 
 ## Inspect opens its viewer OVER the picker, on the layer above it, and opaque: the pointer over the picker's list is the viewer's, and no picker row shows through between the viewer's cards.
@@ -8192,13 +8259,13 @@ func test_the_deck_pickers_viewer_draws_over_the_picker() -> void:
 			viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 			await await_drawn_frames(2)
 			var image := viewport.get_texture().get_image()
-			var hud := PaletteDB.color(PaletteDB.ROLES.hud_background)
+			var hud := PaletteDB.color(PaletteDB.ROLES.viewer_inspect)
 			var through := 0
 			for y : int in range(int(label.position.y), int(label.end.y)):
 				for x : int in range(int(label.position.x), int(label.end.x)):
 					if _colour_distance(image.get_pixel(x, y), hud) > 0.05: through += 1
 			check(through == 0,
-					"...and the picker's row does not show through the viewer: its label's pixels are all the HUD background",
+					"...and the picker's row does not show through the viewer: its label's pixels are all the viewer's own colour",
 					"%d of %s differ" % [through, label])
 	await _end_booted_fixture(viewport, main)
 
