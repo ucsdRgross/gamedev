@@ -207,6 +207,7 @@ func _ready() -> void:
 	await test_left_off_the_deck_over_a_stuck_chooser_card_lands_on_close_deck()
 	await test_left_off_the_possible_cards_lands_on_the_picks_x_first()
 	await test_a_left_before_the_sidebar_slides_in_asks_no_screen_for_it()
+	await test_tab_opens_the_wall_on_every_screen_as_the_pad_button_does()
 	await test_the_chooser_is_a_square_window_with_the_map_around_it()
 	await test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel()
 	await test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser()
@@ -6113,6 +6114,76 @@ func test_a_left_before_the_sidebar_slides_in_asks_no_screen_for_it() -> void:
 		await _wait_out_the_return()
 		await _end_main_fixture()
 
+## Every screen a player can stand on, as `_stand_on()` reaches it.
+const TAB_SCREENS : Array[String] = ["the start menu", "the bare map", "the map with a node described",
+		"the game board", "the game with its deck viewer open", "the pack chooser"]
+
+## Tab is wall_overview's key on every screen and Shift+Tab with it: each does what the pad's View button does there -- opens the wall -- and moves no GUI focus on the way, the arrows alone moving it.
+func test_tab_opens_the_wall_on_every_screen_as_the_pad_button_does() -> void:
+	check(InputMap.action_get_events(&"ui_focus_next").is_empty()
+			and InputMap.action_get_events(&"ui_focus_prev").is_empty(),
+			"no key is bound to the GUI's next or previous focus: the arrows alone move it")
+	for screen : String in TAB_SCREENS:
+		for press : String in ["Tab", "Shift+Tab", "the pad's View button"]:
+			var chooser := await _stand_on(screen)
+			var before := _focus_owners()
+			_push_wall_overview_press(press, true)
+			var after := _focus_owners()
+			check(after == before or after == [null, null],
+					"%s on %s moves the GUI focus to no other control" % [press, screen],
+					"%s -> %s" % [before, after])
+			_push_wall_overview_press(press, false)
+			await get_tree().process_frame
+			await _wait_out_the_move()
+			check(_main._current_focus == &"", "%s on %s opens the wall" % [press, screen],
+					str(_main._current_focus))
+			if chooser: chooser.queue_free()
+			await get_tree().process_frame
+			await _end_main_fixture()
+
+## Boots Main onto `screen` through the product's own routes; the pack chooser it opened, on that one screen.
+func _stand_on(screen: String) -> ChoiceViewer:
+	match screen:
+		"the start menu":
+			await _start_map_fixture()
+			await _main._focus_picture(&"start_menu")
+			await _wait_out_the_move()
+		"the bare map":
+			await _start_map_fixture()
+		"the map with a node described":
+			await _start_map_fixture()
+			await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+			await _close_the_open_viewer()
+		"the game board":
+			await _start_game_fixture()
+			await _hoverable_card_controls()
+		"the game with its deck viewer open":
+			await _start_game_fixture()
+			await _open_viewer_by_accept(_first_hud_control() as Button)
+		"the pack chooser":
+			return await _open_the_chooser_with_pictures_behind_and_ahead()
+	return null
+
+## The key focus in the window's own viewport and in the focused picture's, which is where a board or menu keeps its own.
+func _focus_owners() -> Array:
+	var picture : WallPicture = _main._pictures.get(_main._current_focus)
+	return [_booted_viewport.gui_get_focus_owner(),
+			picture.viewport.gui_get_focus_owner() if picture and picture.viewport else null]
+
+func _push_wall_overview_press(press: String, pressed: bool) -> void:
+	if press == "the pad's View button":
+		var button := InputEventJoypadButton.new()
+		button.button_index = JOY_BUTTON_BACK
+		button.pressed = pressed
+		_booted_viewport.push_input(button)
+		return
+	var key := InputEventKey.new()
+	key.keycode = KEY_TAB
+	key.physical_keycode = KEY_TAB
+	key.shift_pressed = press == "Shift+Tab"
+	key.pressed = pressed
+	_booted_viewport.push_input(key)
+
 # The board rests its focus once its visuals are ready, which can be frames after the rebuild.
 func _await_the_rest() -> void:
 	if not _play_area.visuals_ready(): await _play_area.board_visuals_ready
@@ -6369,15 +6440,13 @@ func test_every_route_leaves_the_chooser_and_comes_back_to_it_in_progress() -> v
 		check(chooser.data.rerolls < SettingsManager.settings.booster_reroll_pool
 				and chooser.cards().sticky != null and _container.is_locked() and _exit_button().visible,
 				"sanity: a card was rerolled and another stuck, described with its X", str(left_as))
-# TAB IS FOCUS-NEXT while a chooser control holds the key focus, which one does from the moment it
-# opens, so wall_overview's key never reaches the wall. A pinch over the window lands on its cards.
+# A pinch over the window lands on its cards, so the pinch route pinches beside it.
 		var routes := _routes_off_the_map()
 		for index : int in routes.size():
 			if routes[index][0] == "a pinch in":
 				routes[index] = ["a pinch in beside the window",
 						_pinch_in_at.bind(_beside_the_chooser(chooser)), routes[index][2]]
 		for route : Array in routes:
-			if route[0] == "wall_overview's key": continue
 			await (route[1] as Callable).call()
 			await _wait_out_the_move()
 			check(_main._current_focus != &"map" and _chooser_is_up(chooser),
