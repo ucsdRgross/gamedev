@@ -354,6 +354,7 @@ func _ready() -> void:
 	await test_the_chooser_fits_its_rows_beside_the_sidebar_in_the_players_window()
 	await test_the_menus_column_draws_at_the_ui_scale_beside_the_sidebar_in_the_players_window()
 	await test_the_board_is_centred_beside_the_resting_sidebar_in_the_players_window()
+	await test_the_outcome_centres_over_the_board_resting_and_slid()
 	await test_the_maps_sea_buffer_is_whole_on_screen_in_the_players_window()
 	finish()
 
@@ -3453,6 +3454,19 @@ func _end_the_show_by_its_button(view: GameView) -> void:
 	state.revision += 1
 	await get_tree().process_frame
 	check(await _click_button(view.submit_button, _booted_viewport), "a real click on End pressed it")
+
+# The player's-window fixture boots no harness SubViewport for the click helper to push into, so
+# there End is pressed through its own signal: the layout is what is measured.
+func _end_the_show_by_pressing_end(view: GameView, in_players_window: bool) -> void:
+	if not in_players_window:
+		await _end_the_show_by_its_button(view)
+		return
+	_drain_the_stocks(view.game.state)
+	view.game.state.goal = 0
+	view.game.state.revision += 1
+	await get_tree().process_frame
+	view.submit_button.pressed.emit()
+	await get_tree().process_frame
 
 ## Every stock goes to the discard pile the show sweeps home, which is what an exhausted deck leaves.
 func _drain_the_stocks(state: GameData) -> void:
@@ -7009,6 +7023,39 @@ func test_the_board_is_centred_beside_the_resting_sidebar_in_the_players_window(
 				"%s in %s, one authored px %.3f window px; the window's own space beside it %s" % [grids,
 				space, authored_px, window.get_final_transform() * _ui_space(_main)])
 		await _end_main_fixture()
+
+## The win or lose result centres over the board across the picture, its label and its buttons, and moves with the board as the sidebar slides, centre to centre, in the harness and in the player's window at both window shapes.
+func test_the_outcome_centres_over_the_board_resting_and_slid() -> void:
+	for in_players_window : bool in [false, true]:
+		for size : Vector2i in INSET_WINDOWS:
+			var where := "%s %s" % ["the player's window" if in_players_window else "the harness", size]
+			await _start_game_fixture(size, in_players_window)
+			var view := _main._pictures[&"game"].screen_root as GameView
+			await _end_the_show_by_pressing_end(view, in_players_window)
+			var screen : Label = view.win_screen if view.win_screen.visible else view.lose_screen
+			check(screen.visible and view._outcome_buttons != null, "sanity: the outcome is up in %s" % where)
+			var apart : Array[Vector2] = []
+			for slide : float in [1.0, 0.0]:
+				await _container.slide_to(slide)
+				_play_area.flush_rebuild()
+				await _settle_scroll_x(_play_area)
+				var first := _play_area._cells_root(_play_area.grid_container.get_child(0) as Control)
+				var last := _play_area._cells_root(_play_area.grid_container.get_child(-1) as Control)
+				var board := first.get_global_rect().merge(last.get_global_rect())
+				var authored_px := first.get_global_transform().get_scale().x
+				var label := view._outcome_title.get_global_rect()
+				var row := view._outcome_buttons.get_global_rect()
+				var at := "%s, the sidebar slid to %.0f" % [where, slide]
+				check(absf(label.get_center().x - board.get_center().x) < authored_px
+						and absf(row.get_center().x - board.get_center().x) < authored_px,
+						"the outcome's label and buttons centre across the board in %s" % at,
+						"label %s row %s board %s" % [label, row, board])
+				apart.append(label.get_center() - board.get_center())
+			check(apart[0].distance_to(apart[1]) < 1.0,
+					"...and the slide moves the outcome as it moves the board, centre to centre, in %s" % where,
+					str(apart))
+			await _container.slide_to(1.0)
+			await _end_main_fixture()
 
 ## The chooser and the run deck open over it are UI on the sidebar's layer: in wall view neither is drawn nor hears input, and coming back fades both in with the sidebar exactly as they were left.
 func test_the_chooser_and_its_deck_are_hidden_in_wall_view_and_back_on_return() -> void:

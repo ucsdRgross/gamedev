@@ -49,9 +49,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
 theme_override_font_sizes/font_size = 100
-text = "You win!"
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="Dim" type="ColorRect" parent="SceneRoot/PlayContainer/WinScreen" unique_id=1522090341]
 show_behind_parent = true
@@ -75,9 +72,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
 theme_override_font_sizes/font_size = 100
-text = "You lose!"
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="Dim" type="ColorRect" parent="SceneRoot/PlayContainer/LoseScreen" unique_id=1522090342]
 show_behind_parent = true

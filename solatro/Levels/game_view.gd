@@ -265,7 +265,7 @@ func _on_board_changed() -> void:
 
 # ⚠ THE RESERVE IS THE SIDEBAR'S RESTING RECT, NEVER THE SLIDING ONE: the board is fitted there and
 # `board_slide_offset` only shifts it, CENTRE TO CENTRE, so with no sidebar (wall view, the landing)
-# the board sits centred in the whole picture. A shift, not a re-scale.
+# the board sits centred in the whole picture. A shift, not a re-scale; the outcome follows it.
 func _publish_board_inset() -> void:
 	var window := hud_container.get_viewport().get_visible_rect().size
 	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
@@ -278,6 +278,21 @@ func _publish_board_inset() -> void:
 	play_area.board_inset_top = region.position.y
 	play_area.board_visible_crop = design - region.end
 	play_area.board_slide_offset = slid.get_center() - region.get_center()
+	_outcome_shift = slid.get_center() - design / 2.0
+	_place_the_outcome()
+
+## How far the board's slid space sits from the picture's centre, which the outcome is centred on.
+var _outcome_shift : Vector2 = Vector2.ZERO
+
+# THE OUTCOME STILL COVERS THE WHOLE PLAY AREA, so no board click gets through: only its title and
+# buttons move to the board's centre (a Label ignores its style's margins when it centres text, so
+# the title is a child). ⚠ Each is centred on its OWN MINIMUM SIZE: anchoring alone leaves it top-left.
+func _place_the_outcome() -> void:
+	if _outcome_buttons == null: return
+	for part : Control in [_outcome_title, _outcome_buttons] as Array[Control]:
+		part.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
+		part.position += _outcome_shift
+	_outcome_buttons.position.y += CONTINUE_OFFSET_Y
 
 # ⚠ THE BOARD'S RESERVE, NOT THE VISIBLE SPACE the map, the menu and a pile's aim read: it stays at
 # the COVERING scale because grid isolation leans on the overfill's slack, so the board sits ~2 px
@@ -347,24 +362,27 @@ var _continue_button : Button = null
 
 ## The row those two buttons sit in, kept so the outcome's own controls are freed as one.
 var _outcome_buttons : HBoxContainer = null
+## The outcome's title, the won Fame or the loss, over the board's centre.
+var _outcome_title : Label = null
 
 # REACHING THE GOAL ENDS THE SHOW, FULL STOP: the hand is let go so the held card stops following
 # the cursor. Undo sits BESIDE Continue because focus navigation never leaves the picture's
-# SubViewport. ⚠ The row is centred on its OWN MINIMUM SIZE: anchoring alone leaves it top-left.
+# SubViewport.
 func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	var screen : Label = win_screen if won else lose_screen
-	screen.text = TRANSLATION.find('GAME_WIN_FAME') % score if won \
-			else TRANSLATION.find('GAME_LOSE')
 	screen.show()
 	play_area.ungrab_cards()
 	play_area.disable_board_focus()
+	_outcome_title = Label.new()
+	_outcome_title.text = TRANSLATION.find('GAME_WIN_FAME') % score if won \
+			else TRANSLATION.find('GAME_LOSE')
+	_outcome_title.add_theme_font_size_override(&"font_size", screen.get_theme_font_size(&"font_size"))
+	screen.add_child(_outcome_title)
 	_outcome_buttons = HBoxContainer.new()
 	screen.add_child(_outcome_buttons)
 	_continue_button = _add_outcome_button(_outcome_buttons, &'GAME_CONTINUE', game.exit_show)
 	_add_outcome_button(_outcome_buttons, &'GAME_UNDO', _on_outcome_undo_pressed)
-	_outcome_buttons.set_anchors_and_offsets_preset(Control.PRESET_CENTER,
-			Control.PRESET_MODE_MINSIZE)
-	_outcome_buttons.position.y += CONTINUE_OFFSET_Y
+	_place_the_outcome()
 	_continue_button.grab_focus()
 
 func _add_outcome_button(row: HBoxContainer, key: StringName, handler: Callable) -> Button:
@@ -390,6 +408,8 @@ func _on_show_unresolved() -> void:
 	assert(_outcome_buttons)
 	_outcome_buttons.queue_free()
 	_outcome_buttons = null
+	_outcome_title.queue_free()
+	_outcome_title = null
 	_continue_button = null
 	undo_button.grab_focus()
 
