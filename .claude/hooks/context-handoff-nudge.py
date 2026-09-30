@@ -6,9 +6,9 @@ import os
 import sys
 import tempfile
 
-# The Opus 5 system card (sec. 8.10.2) compacts its long-horizon eval at 200k; a measured long session
-# here cost least closing at 200-250k (~$54 vs $79 unclosed), since every turn re-reads the context.
-CLOSE_AT_TOKENS = 200_000
+# Owner's pick: one measured long session cost least closing at 200-250k (~$54, ~$62 at 500k, $79
+# unclosed; the Opus 5 card compacts at 200k) - 500k trades that for fewer restarts.
+CLOSE_AT_TOKENS = 500_000
 TAIL_BYTES = 262_144
 
 
@@ -48,7 +48,7 @@ def main():
     if used < CLOSE_AT_TOKENS:
         return
     open(marker, "w").close()
-    text = (f"Context at {used} tokens (the 200k close): run /handoff now - update the handoff, Reflect and record, "
+    text = (f"Context at {used} tokens (the 500k close): run /handoff now - update the handoff, Reflect and record, "
             "commit, and end your message with a progress update and the copy-paste opening prompt for the next session.")
     print(json.dumps({"decision": "block", "reason": text}))
 
