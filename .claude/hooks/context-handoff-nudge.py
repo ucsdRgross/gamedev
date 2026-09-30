@@ -6,9 +6,9 @@ import os
 import sys
 import tempfile
 
-THRESHOLD_PERCENT = 80
-# Claude Code 2.1.175 sends no contextWindowSize in hook input; opus-5-5 was measured at 825k in use.
-FALLBACK_WINDOW_TOKENS = 1_000_000
+# The Opus 5 system card (sec. 8.10.2) compacts its long-horizon eval at 200k; a measured long session
+# here cost least closing at 200-250k (~$54 vs $79 unclosed), since every turn re-reads the context.
+CLOSE_AT_TOKENS = 200_000
 TAIL_BYTES = 262_144
 
 
@@ -44,13 +44,11 @@ def main():
     marker = os.path.join(tempfile.gettempdir(), f"claude-handoff-nudge-{session}")
     if os.path.exists(marker):
         return
-    window = payload.get("contextWindowSize") or FALLBACK_WINDOW_TOKENS
     used = sum(usage.get(k, 0) for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
-    percent = used * 100 // window
-    if percent < THRESHOLD_PERCENT:
+    if used < CLOSE_AT_TOKENS:
         return
     open(marker, "w").close()
-    text = (f"Context at {percent}% of the window: run /handoff now - update the handoff, Reflect and record, "
+    text = (f"Context at {used} tokens (the 200k close): run /handoff now - update the handoff, Reflect and record, "
             "commit, and end your message with a progress update and the copy-paste opening prompt for the next session.")
     print(json.dumps({"decision": "block", "reason": text}))
 

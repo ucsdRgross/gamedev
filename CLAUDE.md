@@ -148,8 +148,8 @@ most of them test-to-test setup. About ten touch production code.
 - **Execution.** Never stop early citing context — compaction exists. One blocked scenario: finish
   the rest and report the blocker. Commit only the current step's files, staged by path. Subagent
   presets: model aliases and explicit effort in frontmatter ([[implementer-routing]]).
-- **Context at 80% triggers the session close.** `.claude/hooks/context-handoff-nudge.py` (main-thread Stop,
-  once per session, ~0.3 s) tells the session to run `/handoff` and end with the next opening prompt.
+- **Context at 200k tokens triggers the session close** (cheapest measured close; each turn
+  re-reads it all). `.claude/hooks/context-handoff-nudge.py` (main-thread Stop, once per session, ~0.3 s) tells the session to run `/handoff` and end with the next opening prompt.
 - **Reflect at every gate, unprompted.** Every session end, plan finish and `/plan-run` close runs
   `/handoff`'s "Reflect and record": what cost time, whether it will recur, the rule written where
   it is read next time, and the last message says what was recorded. Do not wait to be asked.
