@@ -7549,8 +7549,8 @@ func test_the_deck_over_the_possible_cards_by_keys_alone() -> void:
 	await _see_the_travel_through()
 	await _end_main_fixture()
 
-## A window where labelled cells wider than a card's (the 119 the longest part name once gave, against 108) fitted the possible cards a different whole-column width from the run deck's: measured, 667 against 612.
-const WIDER_CELLS_WINDOW := Vector2i(1360, 720)
+## A third window width, its whole-column count differing from both inset windows'.
+const OTHER_COLUMNS_WINDOW := Vector2i(1360, 720)
 
 ## The run deck opened over a pack's possible cards hides the whole list under it: every viewer lays out the card's one column width, so the deck's opaque window is the list's exactly -- in the harness by real clicks, and in the player's window at both shapes and where wider cells once differed.
 func test_the_deck_over_the_possible_cards_hides_the_whole_list() -> void:
@@ -7558,7 +7558,7 @@ func test_the_deck_over_the_possible_cards_hides_the_whole_list() -> void:
 	check(await _click_button(_map.selection_deck_button, _booted_viewport),
 			"sanity: a real click on the stuck part's Deck pressed it")
 	await _check_the_deck_covers(list, "the harness")
-	for size : Vector2i in INSET_WINDOWS + ([WIDER_CELLS_WINDOW] as Array[Vector2i]):
+	for size : Vector2i in INSET_WINDOWS + ([OTHER_COLUMNS_WINDOW] as Array[Vector2i]):
 		await _start_map_fixture(size, true)
 		await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
 		var listed := DeckViewer._open

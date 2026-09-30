@@ -407,7 +407,7 @@ func test_every_viewer_window_is_a_picture_frame() -> void:
 		var window := _in_window(viewer.margin_container.get_node(^"ColorRect") as Control)
 		deck_windows.append(window)
 		await _check_the_frame(window, viewer._scroll, _in_window(viewer._scroll),
-				viewer.cards().controls, false, "deck viewer, %d cards" % count)
+				viewer.cards().controls, false, count == 52, "deck viewer, %d cards" % count)
 		await _drop_viewer(viewer)
 	check(deck_windows[0].is_equal_approx(deck_windows[1]),
 			"a scrolling and a still deck viewer of the same columns have the same window",
@@ -419,7 +419,7 @@ func test_every_viewer_window_is_a_picture_frame() -> void:
 		await get_tree().process_frame
 	var slid_window := _in_window(slid.margin_container.get_node(^"ColorRect") as Control)
 	await _check_the_frame(slid_window, slid._scroll, _in_window(slid._scroll), slid.cards().controls,
-			false, "deck viewer, its catcher shrunk as a slide does")
+			false, true, "deck viewer, its catcher shrunk as a slide does")
 	await _drop_viewer(slid)
 	var chooser_widths : Array[float] = []
 	for count : int in [ChoiceViewer.ROW_CARDS + 1, ChoiceViewer.ROW_CARDS * (ChoiceViewer.ROWS_SHOWN + 1)]:
@@ -430,6 +430,7 @@ func test_every_viewer_window_is_a_picture_frame() -> void:
 		var foot := _in_window(chooser._bottom_row).grow_side(SIDE_BOTTOM, gap)
 		var framed := _in_window(chooser._scroll).merge(foot)
 		await _check_the_frame(window, chooser._scroll, framed, chooser._cards.controls, true,
+				count > ChoiceViewer.ROW_CARDS * ChoiceViewer.ROWS_SHOWN,
 				"pack chooser, %d cards" % count)
 		chooser.queue_free()
 		await get_tree().process_frame
@@ -440,7 +441,7 @@ func test_every_viewer_window_is_a_picture_frame() -> void:
 # short one ends at least the gap above its container's bottom, not exactly.
 ## Checks `framed` stands the card gap inside `window` at its left, top and bottom and reaches its right edge; the outer listed cards the gap inside it and the frame and the gap from the window's right; a bar only in that frame band.
 func _check_the_frame(window: Rect2, scroll: ScrollContainer, framed: Rect2, cards: Array[Control],
-		fits_its_rows: bool, where: String) -> void:
+		fits_its_rows: bool, scrolls: bool, where: String) -> void:
 	var gap := PlayArea.viewer_separation_px() * get_tree().root.get_final_transform().get_scale().x
 	var sides : Array[float] = [framed.position.x - window.position.x - gap,
 			framed.position.y - window.position.y - gap, window.end.x - framed.end.x,
@@ -460,7 +461,9 @@ func _check_the_frame(window: Rect2, scroll: ScrollContainer, framed: Rect2, car
 			"left %.2f top %.2f right %.2f vs %.2f window px, full row %s" % [row.position.x - container.position.x,
 			row.position.y - container.position.y, right, gap, full])
 	var bar := scroll.get_v_scroll_bar()
-	if bar.visible:
+	check(bar.visible == scrolls, "the scrollbar shows exactly while the list scrolls (%s)" % where,
+			"visible %s, scrolls %s" % [bar.visible, scrolls])
+	if scrolls:
 		var drawn := _in_window(bar)
 		check(drawn.position.x >= window.end.x - gap - GAP_TOLERANCE_PX
 				and drawn.end.x <= window.end.x + GAP_TOLERANCE_PX
@@ -476,7 +479,7 @@ func _check_the_frame(window: Rect2, scroll: ScrollContainer, framed: Rect2, car
 	for child : Node in last.get_children():
 		if child is Button: lowest = lowest.merge(_in_window(child as Button))
 	var below := container.end.y - lowest.end.y
-	var exact := fits_its_rows or bar.visible
+	var exact := fits_its_rows or scrolls
 	check(absf(below - gap) <= GAP_TOLERANCE_PX if exact else below >= gap - GAP_TOLERANCE_PX,
 			"...the last row, scrolled to, the card gap above the container's bottom (%s)" % where,
 			"%.2f vs %.2f window px, exact %s" % [below, gap, exact])
