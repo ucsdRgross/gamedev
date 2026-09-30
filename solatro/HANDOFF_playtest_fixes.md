@@ -342,7 +342,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [8a4284d3]
 - id: P85
   description: 'Every viewer window is a picture frame (review round 4, deck_over_chooser + deck_viewer). Owner, verbatim: "appears to be wider than before. scrollbar too close to the card. separation between cards should also exist on edges from the window. window''s own buffer separate from card container should be a same value border along entire window, not just the left and right sides, since right now there is extra space on left and right that top and bottom doesnt have. think picture frame." and "as mentioned in previous comment, if adding a border it should be along all 4 sides. otherwise all good." And (pack_chooser): "assume same separation as card separation if there is ever separation being used." So: the card separation also between the outer cards and the card container''s edges, and one border of that same value on all four sides of each viewer window (deck, discard, rules, possible cards, the chooser, the picker''s Inspect); the scrollbar kept clear of the cards. Measure first what makes the deck over the chooser wider than before and where each margin comes from (P58b-7 made the deck viewer whole columns centred).'
-  status: pending
+  status: done
+  commits: [39241dc3]
 - id: P86
   description: 'The pack chooser''s foot row (review round 4, pack_chooser). Owner, verbatim: "there should probably be separation buffer between rerolls: 5 take row and the choosing cards. take button should not be touching the reroll buttons. use same separation as card separation. assume same separation as card separation if there is ever separation being used." The Rerolls/Take row and the Reroll buttons get the card separation between them and the cards; Take never touches a Reroll button.'
   status: pending
