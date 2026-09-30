@@ -46,6 +46,7 @@ func _ready() -> void:
 	await test_the_inset_is_the_sidebars_share_at_the_pictures_own_aspect()
 	await test_an_ultrawide_window_clamps_and_narrows()
 	await test_a_resize_re_applies_every_overlay_touch_target()
+	await test_a_resize_round_trip_shrinks_the_overlay_row_back()
 	await test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide()
 	await test_the_boards_region_clears_the_container_on_a_cropped_window()
 	await test_board_centre_after_hud_migration_is_the_space_beside_the_resting_sidebar()
@@ -3794,6 +3795,42 @@ func test_a_resize_re_applies_every_overlay_touch_target() -> void:
 				"...and the exit X is parked at that bottom, not the band from before the resize",
 				"%.1f vs %.1f" % [exit.offset_top, overlay.button_band_bottom()])
 	await _end_main_fixture()
+
+## The overlay row grows from its AUTHORED size, so a visit to a larger touch target and back returns every button, the band and the container's top margin to their fresh values, in the player's window.
+func test_a_resize_round_trip_shrinks_the_overlay_row_back() -> void:
+	backup_real_save(suite_tag())
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	var booted := await _boot_main_at(INSET_WINDOWS[0], true)
+	var window : Window = booted[0]
+	var main : Main = booted[1]
+	var overlay : WallOverlay = main.wall.get_node(^"%Overlay")
+	var row : Array[Button] = [overlay._back_button, overlay._forward_button, overlay._wall_button]
+	var margin : MarginContainer = main.hud_container._game_hud_margin
+	var fresh : Array[Rect2] = []
+	for button : Button in row:
+		fresh.append(button.get_rect())
+	var fresh_band := overlay.button_band_bottom()
+	var fresh_margin := margin.get_theme_constant(&"margin_top")
+	window.size = INSET_WINDOWS[1]
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(overlay.button_band_bottom() > fresh_band + 0.5,
+			"sanity: the tall window grows the band",
+			"%.2f vs %.2f, %s" % [overlay.button_band_bottom(), fresh_band, row[0].get_rect()])
+	window.size = INSET_WINDOWS[0]
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for i : int in row.size():
+		check(row[i].get_rect().is_equal_approx(fresh[i]),
+				"%s returns to its fresh rect after the round trip" % row[i].name,
+				"%s vs %s" % [row[i].get_rect(), fresh[i]])
+	check(absf(overlay.button_band_bottom() - fresh_band) <= 0.5,
+			"...so does the band's bottom", "%.2f vs %.2f" % [overlay.button_band_bottom(), fresh_band])
+	check(margin.get_theme_constant(&"margin_top") == fresh_margin,
+			"...and the container's top margin follows it back",
+			"%d vs %d" % [margin.get_theme_constant(&"margin_top"), fresh_margin])
+	await _end_booted_fixture(window, main)
 
 ## A resize re-lays the description that is already up, so its content follows the container's new width rather than keeping the old one; harness-scale only.
 func test_a_resize_relays_the_description_to_the_new_width() -> void:

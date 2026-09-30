@@ -16,6 +16,7 @@ signal second_button_pressed(event: InputEventMouseButton)
 @onready var _back_button : Button = %BackButton
 @onready var _forward_button : Button = %ForwardButton
 @onready var _wall_button : Button = %WallButton
+@onready var _authored_size : Vector2 = _back_button.size
 
 ## Localises every label (never a literal string), wires each control to its signal, and re-grows the row on every resize.
 func _ready() -> void:
@@ -28,9 +29,9 @@ func _ready() -> void:
 	_apply_touch_targets()
 	get_viewport().size_changed.connect(_apply_touch_targets)
 
-# GROWS the authored row to the touch target, keeping each button's authored top-left and gap.
-# ⚠ `custom_minimum_size` alone does not resize a manually positioned Control until the deferred
-# layout pass, so `size` is set too and a caller reading it straight after `_ready()` sees the real one.
+# GROWS the AUTHORED row to the touch target, keeping each button's authored top-left and gap; the
+# minimum goes first, as `size` is clamped to the last one. ⚠ The minimum alone resizes a manually
+# placed Control only at the deferred layout pass, so `size` is set too for a read after `_ready()`.
 func _apply_touch_targets() -> void:
 	var target := WallInput.touch_target_px(get_viewport().get_visible_rect().size,
 			WallPicture.settings())
@@ -43,8 +44,8 @@ func _apply_touch_targets() -> void:
 		x += button.size.x + gap
 
 func _grow_to(button: Button, target: float) -> void:
-	button.size = Vector2(maxf(button.size.x, target), maxf(button.size.y, target))
-	button.custom_minimum_size = button.size
+	button.custom_minimum_size = Vector2(maxf(_authored_size.x, target), maxf(_authored_size.y, target))
+	button.size = button.custom_minimum_size
 
 # Back and Forward VISIBLY disable rather than doing nothing; Wall hides with one picture or fewer.
 # ⚠ In wall view Back returns to the stack's top, so it is live while the stack has ANY entry --
