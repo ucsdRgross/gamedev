@@ -39,13 +39,10 @@ func _apply_touch_targets() -> void:
 	var gap := row[1].position.x - (row[0].position.x + row[0].size.x)
 	var x := row[0].position.x
 	for button : Button in row:
-		_grow_to(button, target)
+		button.custom_minimum_size = Vector2(maxf(_authored_size.x, target), maxf(_authored_size.y, target))
+		button.size = button.custom_minimum_size
 		button.position.x = x
 		x += button.size.x + gap
-
-func _grow_to(button: Button, target: float) -> void:
-	button.custom_minimum_size = Vector2(maxf(_authored_size.x, target), maxf(_authored_size.y, target))
-	button.size = button.custom_minimum_size
 
 # Back and Forward VISIBLY disable rather than doing nothing; Wall hides with one picture or fewer.
 # ⚠ In wall view Back returns to the stack's top, so it is live while the stack has ANY entry --
