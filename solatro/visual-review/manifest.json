@@ -90,20 +90,20 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/lifted_focus_elsewhere.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: with the Entrance's 8 of Hoops lifted (raised, a red/yellow base under it) every legal cell is lit with a yellow rim; the sidebar describes a grid cell (6 of Knives) - its preview is now a square pale-filled cell, not a hollow ring - with no Deck row and no X.",
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. With the Entrance's 3 of Balls lifted (raised on a red/yellow base) every legal cell is lit with a yellow rim and the focus sits on the cell at row 5, col 1 (cream rim); the sidebar describes that grid cell (7 of Fires: Fire, Grid Cell) with no Deck row and no X. A different deal from round 3's.",
       "crops": [
         {
           "label": "sidebar: no Deck row under the title",
           "x": 0,
-          "y": 90,
+          "y": 50,
           "w": 320,
           "h": 320
         },
         {
-          "label": "lifted Jack of Fires and the focused cell",
-          "x": 636,
-          "y": 404,
-          "w": 80,
+          "label": "lifted 3 of Balls and the focused cell",
+          "x": 590,
+          "y": 405,
+          "w": 90,
           "h": 210
         }
       ]
@@ -115,14 +115,14 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/description.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the Entrance's first card (8 of Hoops) wears the cream focus rim outside its gold band; its neighbour has the plain dark outline; the sidebar describes it.",
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The Entrance's first card (3 of Balls) wears the cream focus rim outside its gold band, raised on its red base as in BEFORE; its neighbour has the plain dark outline; the sidebar describes it (Ball).",
       "crops": [
         {
-          "label": "focused Jack of Fires: cream outline vs the dark one beside it",
-          "x": 636,
-          "y": 514,
-          "w": 140,
-          "h": 100
+          "label": "focused 3 of Balls: cream outline vs the dark one beside it",
+          "x": 590,
+          "y": 510,
+          "w": 180,
+          "h": 105
         }
       ]
     },
@@ -133,7 +133,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/chooser_window.png",
-      "seen": "The chooser with a card stuck (its description and X in the sidebar): Reroll and Take held, drawn grey, each Reroll centred under its card; the window sized to its row. BEFORE: the full-height dark square."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The chooser with Queen of Balls stuck (its description and X in the sidebar): Reroll and Take held, drawn grey, each Reroll centred under its card; the purple window sized to its one row, the map around it. BEFORE: the full-height dark square."
     },
     {
       "id": "map_fit",
@@ -142,7 +142,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/map_hud.png",
-      "seen": "The map fits beside the sidebar with sea on every side (the topmost islet ~20 px under the window's top, the lowest ~75 px above the bottom). The fit now uses the part of the picture actually visible (your 'one visible scale' round). Different generated map each shoot. BEFORE: land touching the bottom edge."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The map fits beside the sidebar with sea on every side: land from ~34 px under the window's top to ~49 px above its bottom, ~160 px of sea left of it and ~140 right. A different generated map each shoot. BEFORE: land touching the bottom edge."
     },
     {
       "id": "map_zoomed_edge",
@@ -151,7 +151,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/map_zoomed_edge.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: zoomed in at the map's edge, sea to the right edge of the window; a different generated map; same behaviour.",
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. Zoomed in at the map's edge: sea runs to the window's right edge with no grey; the map continues under the sidebar on the left. A different generated map; same behaviour.",
       "crops": [
         {
           "label": "right edge: sea to the window edge, no grey",
@@ -176,7 +176,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/map_after_travel.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: after a Travel the map is back at its fit (same framing as map_fit); a different generated map."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. After a Travel the map is back at its fit - the same framing as map_fit; a different generated map."
     },
     {
       "id": "deck_over_chooser",
@@ -185,7 +185,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/deck_over_chooser.png",
-      "seen": "The run deck (crimson) opened over the chooser hides it completely - no Rerolls/Take shows; one solid gold X; the sidebar reads 'Close deck'. BEFORE: the chooser's Rerolls/Take line showed below the deck."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The run deck (crimson) opened over the chooser hides it completely - no Rerolls/Take shows; one solid gold X; the sidebar reads 'Close deck' over the stuck Queen of Balls. BEFORE: the chooser's Rerolls/Take line showed below the deck."
     },
     {
       "id": "deck_card_hover_over_chooser",
@@ -194,7 +194,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/deck_card_hover_over_chooser.png",
-      "seen": "The same, a deck card hovered: the sidebar describes Ace of Knives while the deck covers the chooser. BEFORE: near-black backdrop."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The same, a deck card hovered: the sidebar describes Ace of Knives while the deck covers the chooser. BEFORE: near-black backdrop."
     },
     {
       "id": "grid1_overview",
@@ -236,7 +236,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/game_hud.png",
-      "seen": "Unchanged layout (the board keeps its fit - your forty-fourth round); only the dealt cards differ. Measured: the board sits ~2 px right of the visible centre at 1280x720, as ruled."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The board keeps its fit (the forty-fourth round); only the dealt cards differ - the translucent tilted plan marks on the cells are in BEFORE too. The HUD reads Goal 1, Total 0, '0 x 1.0' over Deck/Discard/Rules and Undo/Marks."
     },
     {
       "id": "board_window_600x1000",
@@ -254,7 +254,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/card_lifted.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: a lifted Entrance card (8 of Hoops, raised with its base), every legal cell lit with a yellow rim - the lift brightens the ring fully and the pale fill a little (owner: 'Yes, cells filled too'); the sidebar describes the held card with its X."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. A lifted Entrance card (3 of Balls, raised with its base), every legal cell lit with a yellow rim; the sidebar describes the held card with its X."
     },
     {
       "id": "deck_viewer",
@@ -263,7 +263,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/viewer_description.png",
-      "seen": "The game's deck viewer in crimson: rows 8 px below the window's top, whole columns centred with spare width at the sides, a solid gold X level with the first row; 3 of Hoops hovered and described. Look for you: a click in the spare side strip is now inside the viewer's window and no longer closes it. BEFORE: near-black, rows flush to the top, a dark X."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The game's deck viewer in crimson: rows 8 px below the window's top, whole columns centred, a solid gold X level with the first row; 2 of Hoops hovered (lighter rim) and described. BEFORE: near-black, rows flush to the top, a dark X."
     },
     {
       "id": "deck_viewer_600x1000",
@@ -281,7 +281,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/rules_viewer.png",
-      "seen": "The Rules viewer in its own green, rows 8 px below the top, a solid X; Ace of Hoops described with its two rule blocks. Seen, not this round's change (in BEFORE too): the fourth card of the second row is a bare '12' numeral with no card body under it. BEFORE: near-black, flush to the top."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The Rules viewer in its own green, rows 8 px below the top, a solid X; Ace of Hoops described with its two rule blocks (Hoop, Input Zone Upper Adder). Still there, not this round's change (in BEFORE too): the fourth card of the second row is a bare '12' numeral with no card body. BEFORE: near-black, flush to the top."
     },
     {
       "id": "pack_chooser",
@@ -290,7 +290,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/choice_viewer_description.png",
-      "seen": "The pack chooser in its own purple, as tall as its one row (620x246, no empty space above or below), each Reroll button centred under its card, Rerolls: 5 beside Take in the foot row, the map visible all round. BEFORE: a full-height dark square with the cards in its middle and Reroll labels left-aligned."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The pack chooser in its own purple, as tall as its one row (620x246), each Reroll centred under its card, Rerolls: 5 beside Take in the foot row, the map visible all round; the sidebar describes 7 of Fires. BEFORE: a full-height dark square with the cards in its middle and Reroll labels left-aligned."
     },
     {
       "id": "possible_cards",
@@ -299,7 +299,16 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/possible_cards.png",
-      "seen": "The pack's possible cards as a 5-column grid of small labelled part icons in the list's own blue (types shrunk to the cell; Paper labelled 'Paper Card' - a placeholder name, in the list only). 'Revealing' stuck: the sidebar shows its name, description and a blank card with the eye stamp in its place. Looks for you: the rank numerals and the skill '+1' are dark ink on the dark backdrop; the 8x8 stamp/suit icons are tiny in wide cells; the sidebar preview puts a non-type part on a blank Paper body - your 'card preview ... by position on card' as I read it. BEFORE: loose parts drawn over nothing, the sidebar preview blank."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The pack's possible cards as a 5-column grid of labelled part icons in the list's own blue; 'Revealing' stuck (rimmed): the sidebar shows its name, description and a blank card with the eye stamp. LOOK FOR YOU, not in BEFORE: a 'Talent pack' name tag sits on the map above the list's top edge, its lower half cut off by the list - the map's hover name for the pack node the pointer rests on, drawn while the list is open. Still: the rank numerals are dark ink on the blue; the stamp/suit icons are tiny in wide cells. BEFORE: loose parts over a dark backdrop, the sidebar preview blank.",
+      "crops": [
+        {
+          "label": "the 'Talent pack' tag cut by the list",
+          "x": 700,
+          "y": 20,
+          "w": 420,
+          "h": 110
+        }
+      ]
     },
     {
       "id": "description_card",
@@ -308,7 +317,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/description_locked.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the sidebar's description card (8 of Hoops at the preview size) with its X while that card is lifted; the board's legal cells lit."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The sidebar's description card (3 of Balls at the preview size) with its X while that card is lifted; the board's legal cells lit."
     },
     {
       "id": "fire_on_cards",
@@ -502,7 +511,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/outcome_buttons.png",
-      "seen": "'Fame +4' with Continue (focused) and Undo centred over the board's columns (~x 803), not the picture's centre. BEFORE: centred ~x 636, left of the board."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. 'Fame +1' with Continue (focused, outlined) and Undo centred over the board's columns (~x 800), not the picture's centre; the board dimmed behind. BEFORE: centred ~x 636, left of the board."
     },
     {
       "id": "menu_focused_by_keys",
@@ -511,7 +520,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/menu_focused_by_keys.png",
-      "seen": ""
+      "seen": "1280x720 right after the 600x1000 still, the menu focused by keys: no sidebar, and the column laid out for the whole window - the title centred, Play alone, then Profile/Options/Quit/Collection/Language as ONE row inside the window; Quit carries the key-focus outline. The short band. No BEFORE (a new still). Round 4's first shoot showed this same moment with the column shifted right and its bottom row cut off at the window's edge - fixed since."
     },
     {
       "id": "score_line_pulse",
@@ -520,7 +529,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/score_line_pulse.png",
-      "seen": "The sidebar's score line '2 x 2.0' held at its combo pulse's peak: drawn larger, growing to the right from the left margin under Goal/Total, wholly inside the sidebar (it used to grow leftward off the window). A won show behind (the harness goal is 1). No BEFORE (a new still)."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The score line '2 x 2.0' held at its combo pulse's peak (scale 1.15 printed): 14 px tall against 13 at rest - larger, subtly - growing to the right from the left margin under Goal 1 / Total 4, wholly inside the sidebar. A won show behind ('Fame +4'). No BEFORE (a new still). This one still is staged on the random deal: 1 of 2 runs of the scene reached no new combo class and wrote none."
     },
     {
       "id": "menu",
@@ -547,7 +556,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/menu_picker.png",
-      "seen": "The deck picker's own teal panel (a distinct placeholder colour) over the dimmed menu, the sidebar slid in (empty), Pick on Deck 1 rimmed. The list scrolls; its 11th row shows half-cut above Close. BEFORE: a translucent dark panel with the menu showing through."
+      "seen": "The deck picker's own teal panel over the dimmed menu, the sidebar slid in (empty); 'Choose a deck', Pick on Deck 1 rimmed; the list scrolls, its 11th row half-cut above Close. The band is unchanged here (the menu never visited 600x1000 before it). BEFORE: a translucent dark panel with the menu showing through."
     },
     {
       "id": "menu_inspect",
@@ -556,7 +565,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/menu_inspect.png",
-      "seen": "The picker's Inspect viewer in its own mauve, the 8 cards 8 px below the window's top, a solid gold X tab outside the top-right corner. The window fills its space, so its lower half is empty mauve. BEFORE: near-black, cards flush to the top, a dark translucent X."
+      "seen": "The picker's Inspect viewer in its own mauve, the 8 cards 8 px below the window's top, a solid gold X tab outside the top-right corner; the window fills its space, so its lower half is empty mauve. BEFORE: near-black, cards flush to the top, a dark translucent X."
     },
     {
       "id": "deck_over_possible_cards",
@@ -565,7 +574,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/deck_over_possible_cards.png",
-      "seen": "The run deck opened over the possible cards in its own crimson covers the list completely (no blue shows), rows 8 px below the top, one solid X; the sidebar reads 'Close deck' over the stuck Revealing part. BEFORE: near-black, flush to the top, a dark X."
+      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The run deck in its own crimson covers the possible-cards list completely (no blue shows), rows 8 px below the top, one solid X; the sidebar reads 'Close deck' over the stuck Revealing part. The same 'Talent pack' tag as possible_cards shows above the deck, cut by it. BEFORE: near-black, flush to the top, a dark X."
     }
   ]
 }

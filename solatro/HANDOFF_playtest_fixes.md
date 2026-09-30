@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P82 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
-by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P82, 7cc213c5): `ALL 51 SUITES: 9611 CHECKS PASSED`, ~15 min with
+**State:** P1-P83 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
+by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P83, b9f5bdc7): `ALL 51 SUITES: 9586 CHECKS PASSED` (BOARD FUZZ 340), ~15 min with
 `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order:
-P83, review round 4 (P58d, shot and seen-written - re-shoot after P83), the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
+review round 4 (P58d, shot and seen-written - re-shoot after P83), P84, the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
@@ -334,6 +334,10 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [7cc213c5]
 - id: P83
   description: The overlay's Back/Forward/Wall buttons only ever GROW - WallOverlay._grow_to (wall_overlay.gd ~46) keeps maxf(button.size, target), so after the window's smaller side shrinks (a visit to 600x1000) and grows back they stay 80x69.12 at 1280x720 against a 38.9 target, and the band's bottom (81.1) keeps the sidebar's content pushed down (_position_below_overlay_buttons). Most of review round 4's 1280x720 shots show it (the band 78 px tall vs 44 on a fresh boot). Measured by P82's implementer (named writer). Ahead of review round 4.
+  status: done
+  commits: [b9f5bdc7]
+- id: P84
+  description: Inline WallOverlay._grow_to (wall_overlay.gd ~46-48) into its one call site, the row loop in _apply_touch_targets - one call site, no test seam (Fable review of P83; the handoff's rows name it only as P83's writer). Mechanical, plan-implementer-sonnet.
   status: pending
 - id: P80
   description: The listed PlayArea._deal_next_mark freed-instance SCRIPT ERROR (x20-x25 per run, play_area.gd ~2409, during the WALL FOCUS / WALL TRANSITION soaks) is past its three-failure budget - find the writer that frees the board (or its Main) while the plan-mark deal is still stepping, and make the deal end with its owner; measure first (the deal is released at go-live; P64b-3b round 2 rests the board focus on every game went_live - check whether it moved the frequency).
@@ -411,7 +415,7 @@ Finished rows carry only their commits: each commit message holds that step's me
   verification_command: 'the review tool refresh; the Design Loop watch'
   verification_kind: snapshot
   status: in_progress
-  evidence: 'Round 4 shot on 62d82c0e+ (review.py shoot; shoot --base 9d7d1f2f = round 3''s tree): 47 shots, 45 with BEFORE (menu_focused_by_keys and score_line_pulse are new stills). New in the manifest: menu, menu_top, menu_focused_by_keys, menu_picker, menu_inspect, deck_over_possible_cards, score_line_pulse. The overseer read every changed AFTER/BEFORE and wrote each seen (Fable drafted from the pixels; reconciled); round 3''s crops dropped from the rewritten shots. NOT PARKED YET: menu_focused_by_keys showed P82''s defect - re-shoot it after P82, write its seen, then park.'
+  evidence: 'Round 4 shot on 62d82c0e+ (review.py shoot; shoot --base 9d7d1f2f = round 3''s tree): 47 shots, 45 with BEFORE (menu_focused_by_keys and score_line_pulse are new stills). New in the manifest: menu, menu_top, menu_focused_by_keys, menu_picker, menu_inspect, deck_over_possible_cards, score_line_pulse. The overseer read every changed AFTER/BEFORE and wrote each seen (Fable drafted from the pixels; reconciled); round 3''s crops dropped from the rewritten shots. AFTER re-shot on b9f5bdc7 (P83): every 1280x720 shot with a sidebar now shows the short band; the overseer read every sidebar_snapshot AFTER and rewrote 21 seens (a new random deal and map, the band) - menu_focused_by_keys shows P82''s fix; possible_cards flags a ''Talent pack'' map tag cut by the list (not in BEFORE) for the owner. score_line_pulse''s AFTER is from a second run of the scene (the shoot''s run wrote none). PARKED on the watch.'
   notes: 'Shots: the board at 1/2/3 grids (overview and focused), the Entrance with a lifted card, a stacked cell, the deck/discard/rules viewers, the pack chooser, the description card, fire/fx on a card (the corner wrap), props/formations on a card, the outline and glare, the spotlight glow, the win/lose overlay, plus shot scenes for fx_editor, formation_editor (prop positions), outline_atlas and spotlight_tool. BEFORE: the tool shoots it on git merge-base main HEAD, which after P58a is main''s tip and already square - shoot BEFORE on the pre-square commit 0d5b6248 instead (shoot --base) and say so. Read every AFTER yourself and write its seen; every crop you look at goes in crops.'
 - id: P20
   description: The SCRIPT ERROR reported in HudContainer.return_to_lock (key game missing from _locked_entry_by_screen) - closed as NOT REPRODUCIBLE on HEAD; a regression net lands instead.
@@ -537,12 +541,13 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
   - P44, latent: a re-parent mid-move lerps from a stale parent-space start; a dying view hears a re-emitted went_live; enter_game while the camera flies AWAY from a live game picture starts a show then freezes it. OWNER QUESTION never answered: a grid ADDED mid-show to a one-grid board waits for the ordinary lift (a, built) or clears the commitment (b); a one-grid commitment is never lifted (a, built) or lifts as before (b).
 - FOR THE CLOSE (tooling, from the session reflection): two hooks match command TEXT, not the action - godot-needs-private-appdata.ps1 blocked a python script whose text contained run_tests.py, and block-source-rewrite.ps1 blocked a `sed` on MEMORY.md whose text contained the words of a PowerShell cmdlet; match a launch / a write to a source path, not a substring; solatro/visual-review/status.agent.json is rewritten by every shoot and never committed - gitignore it; round 2's Done never reached status.owner.json (still round 1), so the watch never fired - check the page's Done before round 3.
 - TOOLING, .claude/hooks/commit-gate.ps1: it blames a commit for duplicate pairs already on HEAD (test_sidebar 959/1114 and 2150/2210 blocked P73, which created neither) - it should report only pairs the staged diff creates; and its [dup-ok] check reads the command line, not a `-F` message file.
+- sidebar_snapshot's score_line_pulse still is staged on the random deal (placements until one registers a new combo class, Tests/Visual/sidebar_snapshot.gd _shoot_the_score_line_pulse ~581): 1 of 2 runs on the P83 tree wrote no PNG, so `review.py shoot` fails the round. COUNT 1. Measure before naming a cause.
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
-1. P83 (the overlay's Back/Forward/Wall buttons only ever grow - named writer WallOverlay._grow_to, wall_overlay.gd ~46; plan-implementer-low; gate; commit). Ahead of review round 4: most round-4 shots at 1280x720 show the tall band.
-2. Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
+1. Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
+2. P84 (inline _grow_to; while parked on the watch - it changes no shot; plan-implementer-sonnet; gate; commit).
 3. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
 
 ### Opening prompt for the next session (paste as is)
