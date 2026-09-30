@@ -71,6 +71,14 @@ existing effect, that is the rename option, not a new one.
 - **Taking points out of a bucket** is unruled (Q-question "Charge-back" in class AE11 asks it).
   Until it is ruled, write the debit as floored: "..., to no lower than 0".
 - **Nearest / farthest** always has ties: add "you choose among ties".
+- **A match bonus is points AND a mult**: only its points go in a bucket ("rank-match points").
+
+## Shapes already used up in this family
+
+Five everyday cards already pay "a step for every Entrance refill it waited" (For Rent, Coat Check,
+Overdue Notice, Bookmark, Time Card), and several re-score a line when a card returns. Do not write
+another clock of that kind; reach for a different mechanism. The Undo button exists, so "take back
+a placement" alone is not an effect.
 
 ## Slots and level 2
 
