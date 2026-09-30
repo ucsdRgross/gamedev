@@ -9,8 +9,8 @@ var data : CardData
 var _art := Polygon2D.new()
 ## The box the art is centred in: the cell every icon of one list shares.
 var _art_box := Control.new()
-## The part's name, in the UI font.
-var _label := Label.new()
+## The part's name, in the UI font, shrunk with the rest of its list's to fit the card cell's width.
+var _label := AutosizeLabel.new()
 ## The part's framed window in art units, its outline rim included.
 var _window : Vector2
 
@@ -66,13 +66,21 @@ func _set_hovered(value: bool) -> void:
 	_hovered = value
 	queue_redraw()
 
-## The cell every icon of one list shares: the largest non-type part at the viewer's card scale, as wide as the widest label.
+# ONE COLUMN WIDTH FOR EVERY VIEWER (owner): a list of parts is as wide as a list of cards of the same
+# column count, so the cell is the card's width and the labels share the one font the longest fits.
+## The cell every icon of one list shares: a card's width, as tall as the largest non-type part at the viewer's card scale.
 static func cell_of(icons: Array[PartIcon]) -> Vector2:
-	var cell := Vector2.ZERO
+	var cell := Vector2(CardVisual.preview_window_px().x, 0.0)
+	var font := icons[0]._label.font_size_max
 	for icon : PartIcon in icons:
 		if icon.data.type == null:
-			cell = cell.max(icon._window * CardVisual.DECK_VIEWER_SCALE)
-		cell.x = maxf(cell.x, icon._label.get_combined_minimum_size().x)
+			cell.y = maxf(cell.y, icon._window.y * CardVisual.DECK_VIEWER_SCALE)
+		var label := icon._label
+		label.custom_minimum_size = Vector2(cell.x,
+				label.get_theme_font(&"font").get_height(label.font_size_max))
+		font = mini(font, label.best_font_size())
+	for icon : PartIcon in icons:
+		icon._label.force_font_size(font)
 	return cell
 
 # ONE ART UNIT AT THE CARD SCALE, AS ON A CARD, except a type: its face is a whole card, so it is

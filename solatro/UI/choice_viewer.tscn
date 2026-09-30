@@ -28,7 +28,11 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_window")
 layout_mode = 0
 horizontal_scroll_mode = 0
 
-[node name="FlowContainer" type="HFlowContainer" parent="Layout/Scroll" unique_id=413004020]
+[node name="CardMargin" type="MarginContainer" parent="Layout/Scroll" unique_id=1216211913]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FlowContainer" type="HFlowContainer" parent="Layout/Scroll/CardMargin" unique_id=413004020]
 layout_mode = 2
 alignment = 1
 
@@ -38,10 +42,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = -76.0
-offset_right = -24.0
-offset_bottom = -24.0
+offset_top = -52.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/separation = 24

@@ -12,6 +12,8 @@ signal highlight_cleared
 @onready var flow_container: FlowContainer = %FlowContainer
 @onready var margin_container: MarginContainer = $MarginContainer
 @onready var _scroll: ScrollContainer = $MarginContainer/SmoothScrollContainer
+## The card gap between the list's outer cards and its container's edges, the scrollbar's included.
+@onready var _card_margin: MarginContainer = $MarginContainer/SmoothScrollContainer/CardMargin
 ## The X tab sticking out of the window's side, closing this viewer alone; its host sizes it to a touch target.
 @onready var close_tab: Button = %CloseTab
 
@@ -50,6 +52,8 @@ func _ready() -> void:
 	var gap := PlayArea.viewer_separation_px()
 	flow_container.add_theme_constant_override(&"h_separation", gap)
 	flow_container.add_theme_constant_override(&"v_separation", gap)
+	for side : StringName in [&"margin_left", &"margin_top", &"margin_bottom"]:
+		_card_margin.add_theme_constant_override(side, gap)
 
 # ⚠ THE OPENER HANDS ITS OWN CONTROL IN: focus is cleared across every viewport of one window. A
 # SECOND PRESS OF THAT SAME opener is a close and returns null; any other replaces the viewer, as
@@ -123,30 +127,34 @@ func fit_catcher(shown: Rect2) -> void:
 	margin_container.offset_right = shown.end.x - picture.x
 	margin_container.offset_bottom = shown.end.y - picture.y
 
-# THE LIST IS WHOLE COLUMNS ONLY, centred, the board's gap clear of every edge of the opaque window;
-# a scrolling list gives up its bar's width first, as the chooser's does. The X tab tops level with
-# the first row, so Up off that row finds nothing above it.
+# A PICTURE FRAME: the card gap at the window's four edges and again around the outer cards, the list
+# reaching the right edge for its bar; whole columns, the spare width outside the window in halves.
+# ⚠ The catcher comes from its offsets: its rect lags a shrinking minimum (992 wide where they gave 928).
 func fit_beside(remaining: Rect2) -> void:
 	_scroll.custom_minimum_size = Vector2.ZERO
-	var catcher := margin_container.get_rect()
+	var picture := get_viewport().get_visible_rect().size
+	var catcher := Rect2(margin_container.offset_left, margin_container.offset_top,
+			picture.x + margin_container.offset_right - margin_container.offset_left,
+			picture.y + margin_container.offset_bottom - margin_container.offset_top)
 	_inset_margin(&"margin_left", remaining.position.x - catcher.position.x)
 	_inset_margin(&"margin_top", remaining.position.y - catcher.position.y)
 	_inset_margin(&"margin_right", catcher.end.x - remaining.end.x)
 	_inset_margin(&"margin_bottom", catcher.end.y - remaining.end.y)
 	var left := margin_container.get_theme_constant(&"margin_left")
 	var right := margin_container.get_theme_constant(&"margin_right")
-	var own := _scroll.get_combined_minimum_size()
-	var inset := 2.0 * Vector2.ONE * PlayArea.viewer_separation_px()
-	var inner := catcher.size - own - inset - Vector2(left + right,
+	var window := catcher.size - Vector2(left + right,
 			margin_container.get_theme_constant(&"margin_top")
 			+ margin_container.get_theme_constant(&"margin_bottom"))
+	var frame := 2.0 * Vector2.ONE * PlayArea.viewer_separation_px()
+	var inner := window - frame - frame
 	var columns := _whole_columns(inner.x)
-	if _cards.column_px(ceili(float(_cards.controls.size()) / columns)) > inner.y:
-		inner.x -= _scroll.get_v_scroll_bar().get_combined_minimum_size().x
-		columns = _whole_columns(inner.x)
-	var spare := inner.x - _cards.row_px(columns)
-	_scroll.custom_minimum_size = Vector2(catcher.size.x - left - right - spare - inset.x, inner.y + own.y)
-	close_tab.offset_top = inset.y / 2.0
+	CardsViewer.bar_in_the_frame(_scroll, _card_margin,
+			_cards.column_px(ceili(float(_cards.controls.size()) / columns)) > inner.y)
+	var spare := floori(inner.x - _cards.row_px(columns))
+	margin_container.add_theme_constant_override(&"margin_left", left + floori(spare / 2.0))
+	margin_container.add_theme_constant_override(&"margin_right", right + spare - floori(spare / 2.0))
+	_scroll.custom_minimum_size = window - Vector2(frame.x / 2.0 + spare, frame.y)
+	close_tab.offset_top = frame.y
 	close_tab.offset_bottom = close_tab.offset_top
 
 func _whole_columns(width: float) -> int:

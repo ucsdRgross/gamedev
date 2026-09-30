@@ -41,6 +41,17 @@ func _list(control: Control, data: CardData) -> void:
 	if _on_inspect.is_valid():
 		inspect_on_highlight(control, data)
 
+# ⚠ THE BAR NEVER TAKES CARD WIDTH (owner): a scrolling and a still viewer of the same columns are one
+# width. The scroll's own rect must reach the window's right edge, its bar in the frame band there.
+## Shows `scroll`'s vertical bar only while `scrolls`, in the frame band beside the card gap `card_margin` keeps on the right.
+static func bar_in_the_frame(scroll: ScrollContainer, card_margin: MarginContainer, scrolls: bool) -> void:
+	var gap := PlayArea.viewer_separation_px()
+	var bar := ceili(scroll.get_v_scroll_bar().get_combined_minimum_size().x)
+	assert(bar <= gap, "the scrollbar fits the window's frame band")
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS if scrolls \
+			else ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	card_margin.add_theme_constant_override(&"margin_right", 2 * gap - (bar if scrolls else 0))
+
 ## The width `columns` listed cards take side by side with the list's own gap between them: every viewer sizes a row by it.
 func row_px(columns: int) -> float:
 	var gap := (_container as Control).get_theme_constant(&"h_separation")

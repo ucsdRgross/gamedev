@@ -7549,20 +7549,34 @@ func test_the_deck_over_the_possible_cards_by_keys_alone() -> void:
 	await _see_the_travel_through()
 	await _end_main_fixture()
 
-## The run deck opened over a pack's possible cards hides the whole list under it: every viewer's opaque backdrop fills its whole window, whatever each one lists.
+## A window where labelled cells wider than a card's (the 119 the longest part name once gave, against 108) fitted the possible cards a different whole-column width from the run deck's: measured, 667 against 612.
+const WIDER_CELLS_WINDOW := Vector2i(1360, 720)
+
+## The run deck opened over a pack's possible cards hides the whole list under it: every viewer lays out the card's one column width, so the deck's opaque window is the list's exactly -- in the harness by real clicks, and in the player's window at both shapes and where wider cells once differed.
 func test_the_deck_over_the_possible_cards_hides_the_whole_list() -> void:
 	var list := await _stick_a_possible_card()
 	check(await _click_button(_map.selection_deck_button, _booted_viewport),
 			"sanity: a real click on the stuck part's Deck pressed it")
+	await _check_the_deck_covers(list, "the harness")
+	for size : Vector2i in INSET_WINDOWS + ([WIDER_CELLS_WINDOW] as Array[Vector2i]):
+		await _start_map_fixture(size, true)
+		await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+		var listed := DeckViewer._open
+		listed.cards().stick_to((listed.cards().controls[0] as PartIcon).data)
+		_map.selection_deck_button.pressed.emit()
+		await _check_the_deck_covers(listed, "the player's window %s" % size)
+
+## Checks the deck just opened over `list` draws the list's own window, then closes both and ends the fixture.
+func _check_the_deck_covers(list: DeckViewer, where: String) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var deck := DeckViewer._open
-	check(is_instance_valid(deck) and deck != list, "sanity: the run deck opened over the list")
+	check(is_instance_valid(deck) and deck != list, "sanity: the run deck opened over the list (%s)" % where)
 	if is_instance_valid(deck) and deck != list:
 		var over := _backdrop_of(deck).get_global_rect()
 		var under := _backdrop_of(list).get_global_rect()
 		check(over.is_equal_approx(under),
-				"the run deck's opaque backdrop is the same whole window as the possible-cards list's under it",
+				"the run deck's opaque backdrop is the same whole window as the possible-cards list's under it (%s)" % where,
 				"%s over %s" % [over, under])
 		deck._close()
 		await get_tree().process_frame
@@ -10770,7 +10784,7 @@ func test_every_new_button_is_written_in_the_locale() -> void:
 func _card_for_a_pack() -> CardData:
 	return CardData.new().with_rank(PipRankNumeral.new().with_value(5)).with_suit(PipSuitKnife.new())
 
-## A pack's possible cards list each part it could roll as a labelled icon, every icon in one shared cell, a type's face shrunk into it -- and no card body is drawn anywhere in the list.
+## A pack's possible cards list each part it could roll as a labelled icon, every icon in one shared cell a card's width, each name on one line in one shared font, a type's face shrunk into it -- and no card body is drawn anywhere in the list.
 func test_the_possible_cards_list_every_part_as_an_icon_and_no_card() -> void:
 	await _start_map_fixture()
 	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
@@ -10791,6 +10805,18 @@ func test_the_possible_cards_list_every_part_as_an_icon_and_no_card() -> void:
 		var cell := icons[0].size
 		check(icons.all(func(icon: PartIcon) -> bool: return icon.size == cell),
 				"every icon shares its list's one cell", str(cell))
+		check(is_equal_approx(cell.x, CardVisual.preview_window_px().x),
+				"...as wide as a listed card's, so a column is one width in every viewer",
+				"%s vs %s" % [cell, CardVisual.preview_window_px()])
+		var font := icons[0]._label.get_theme_font_size(&"font_size")
+		for icon : PartIcon in icons:
+			var label := icon._label
+			var line := label.get_theme_font(&"font").get_string_size(label.text,
+					HORIZONTAL_ALIGNMENT_LEFT, -1, font).x
+			check(label.get_theme_font_size(&"font_size") == font and line <= cell.x,
+					"...its name on one line inside that width, in the one font every label shares",
+					"%s: %.1f wide at %d, list font %d" % [label.text, line,
+					label.get_theme_font_size(&"font_size"), font])
 		for icon : PartIcon in icons:
 			var named : String = PartIcon.part_of(icon.data).call(&"get_str")
 			check(icon._label.text == named,

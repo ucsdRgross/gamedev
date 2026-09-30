@@ -14,7 +14,7 @@ signal highlight_cleared
 
 const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 
-@onready var flow_container: HFlowContainer = $Layout/Scroll/FlowContainer
+@onready var flow_container: HFlowContainer = $Layout/Scroll/CardMargin/FlowContainer
 @onready var confirm_button: Button = %ConfirmButton
 @onready var rerolls_label: Label = %RerollsLeft
 
@@ -24,6 +24,8 @@ const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 @onready var _bottom_row: HBoxContainer = $Layout/BottomRow
 ## The card rows, scrolling once there are more than the window shows.
 @onready var _scroll: ScrollContainer = $Layout/Scroll
+## The card gap between the rows' outer cards and their container's edges, the scrollbar's included.
+@onready var _card_margin: MarginContainer = $Layout/Scroll/CardMargin
 
 ## Reroll button geometry, in pixels below the card it belongs to (no magic numbers in logic).
 const REROLL_BUTTON_HEIGHT := 34.0
@@ -74,6 +76,13 @@ func _ready() -> void:
 	flow_container.add_theme_constant_override(&"h_separation", gap)
 	flow_container.add_theme_constant_override(&"v_separation",
 			roundi(REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT) + gap)
+	for side : StringName in [&"margin_left", &"margin_top", &"margin_bottom"]:
+		_card_margin.add_theme_constant_override(side, gap)
+	var inset := 2 * gap
+	_bottom_row.offset_left = inset
+	_bottom_row.offset_right = -inset
+	_bottom_row.offset_top -= inset
+	_bottom_row.offset_bottom = -inset
 	_populate()
 	take_the_focus()
 
@@ -122,24 +131,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cards.unstick()
 	get_viewport().set_input_as_handled()
 
-# THE WINDOW FITS WHAT IT HOLDS, centred in the space beside the sidebar: a full row wide, and as tall
-# as its rows over the Rerolls-and-Take foot, growing a row at a time up to ROWS_SHOWN rows or the
-# space's height, whichever is less, with the rest scrolling. UI: no picture scale applies.
+# THE WINDOW FITS WHAT IT HOLDS, centred beside the sidebar: a row wide, as tall as its rows and foot up
+# to ROWS_SHOWN rows or the space, the rest scrolling, framed by the card gap at all four edges and
+# around the cards and the foot; the list reaches the right edge, its bar drawn in the frame band.
 func fit_beside(remaining: Rect2) -> void:
 	var rows := ceili(float(_cards.controls.size()) / ROW_CARDS)
 	var row_px := _cards.row_px(ROW_CARDS)
 	var band := REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT
 	var rows_px := _cards.column_px(rows) + band
 	flow_container.custom_minimum_size = Vector2(row_px, rows_px)
-	var pad := _bottom_row.offset_left
+	var pad := float(PlayArea.viewer_separation_px())
+	var padded := Vector2(row_px, rows_px) + 2.0 * Vector2.ONE * pad
 	var foot := -_bottom_row.offset_top
-	var tallest := minf(remaining.size.y, pad + _cards.column_px(ROWS_SHOWN) + band + foot)
-	var shown := Vector2(row_px, minf(rows_px, tallest - pad - foot))
-	if shown.y < rows_px:
-		shown.x += _scroll.get_v_scroll_bar().get_combined_minimum_size().x
+	var tallest := minf(remaining.size.y, pad + (_cards.column_px(ROWS_SHOWN) + band + 2.0 * pad) + foot)
+	var shown := Vector2(padded.x, minf(padded.y, tallest - pad - foot))
+	CardsViewer.bar_in_the_frame(_scroll, _card_margin, shown.y < padded.y)
 	var fitted := Vector2(minf(shown.x + 2.0 * pad, remaining.size.x), pad + shown.y + foot)
-	_scroll.position = Vector2((fitted.x - shown.x) / 2.0, pad)
-	_scroll.size = shown
+	_scroll.position = Vector2(pad, pad)
+	_scroll.size = Vector2(fitted.x - pad, shown.y)
 	var window := Rect2(remaining.get_center() - fitted / 2.0, fitted)
 	var picture := get_viewport_rect().size
 	_layout.offset_left = window.position.x

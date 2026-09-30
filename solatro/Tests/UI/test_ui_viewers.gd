@@ -55,6 +55,7 @@ func _ready() -> void:
 	await test_the_viewers_gap_is_the_boards_at_their_card_scale()
 	await test_the_deck_viewers_list_is_whole_columns_centred()
 	await test_a_deck_viewers_rows_stand_the_gap_inside_its_window()
+	await test_every_viewer_window_is_a_picture_frame()
 	_focus_window.queue_free()
 	finish()
 
@@ -235,11 +236,12 @@ func test_the_chooser_window_is_as_tall_as_its_rows() -> void:
 		var side := first.position.x - window.position.x
 		var above := first.position.y - window.position.y
 		var below := window.end.y - foot.end.y
+		var gap := PlayArea.viewer_separation_px() * get_tree().root.get_final_transform().get_scale().x
 		check(absf(above - side) <= GAP_TOLERANCE_PX and absf(below - side) <= GAP_TOLERANCE_PX,
 				"the window pads its rows above and its foot below as it pads its sides (%s)" % where,
 				"above %.2f below %.2f side %.2f" % [above, below, side])
-		check(absf(foot.position.y - last_band.end.y) <= GAP_TOLERANCE_PX,
-				"...its foot starting right under the last row's Reroll band, no space between (%s)" % where,
+		check(absf(foot.position.y - last_band.end.y - gap) <= GAP_TOLERANCE_PX,
+				"...its foot the card gap under the last row's Reroll band (%s)" % where,
 				"%.2f vs %.2f" % [foot.position.y, last_band.end.y])
 		check(_cards_rows(cards) == ceili(count / float(ChoiceViewer.ROW_CARDS))
 				and not viewer._scroll.get_v_scroll_bar().visible,
@@ -340,16 +342,15 @@ func test_the_deck_viewers_list_is_whole_columns_centred() -> void:
 				"list %.2f vs %d columns %.2f window px" % [list.size.x, columns, row.size.x])
 		var scale := get_tree().root.get_final_transform().get_scale().x
 		var resting := get_tree().root.get_final_transform() * remaining
-		var bar := viewer._scroll.get_v_scroll_bar()
-		var shown := row.grow_side(SIDE_RIGHT, _in_window(bar).size.x if bar.visible else 0.0)
+		var shown := row
 		check(absf(shown.get_center().x - resting.get_center().x) <= CENTRED_TOLERANCE_PX * scale,
-				"...its cards, and the scrollbar beside them, centred where it rests (%s)" % where,
+				"...its cards centred where it rests, the scrollbar in the frame (%s)" % where,
 				"%s in %s" % [shown, resting])
 		var room := resting.size.x - scale * (2.0 * viewer._authored_margins[&"margin_left"]
-				+ 2.0 * viewer.flow_container.position.x)
+				+ 4.0 * PlayArea.viewer_separation_px())
 		var column := (CardVisual.preview_window_px().x + PlayArea.viewer_separation_px()) * scale
 		check(shown.size.x <= room + GAP_TOLERANCE_PX and room - shown.size.x < column,
-				"...the widest whole number of columns inside the authored margins (%s)" % where,
+				"...the widest whole number of columns inside the authored margins and the frame (%s)" % where,
 				"%.2f shown of %.2f, a column %.2f" % [shown.size.x, room, column])
 		await _drop_viewer(viewer)
 
@@ -357,13 +358,13 @@ func test_the_deck_viewers_list_is_whole_columns_centred() -> void:
 const SCROLL_SETTLE_TIMEOUT_SEC := 5.0
 
 # Measured in the ROOT window, at content scale 1 like the rows above; other window sizes are shots.
-## A deck viewer's first row stands the board's gap below its window's top, and its last row, scrolled to by the keys, the same gap above the bottom; a short list sits at the top with that gap; each side is at least the gap; harness-scale only.
+## A deck viewer's first row stands the frame and the card gap, two board gaps, below its window's top, and its last row, scrolled to by the keys, the same above the bottom; a short list sits at the top; each side is at least that; harness-scale only.
 func test_a_deck_viewers_rows_stand_the_gap_inside_its_window() -> void:
 	var visible := get_tree().root.get_visible_rect()
 	var strip := Vector2(visible.size.x / 3.0, 0.0)
 	var remaining := Rect2(visible.position + strip, visible.size - strip)
 	var scale := get_tree().root.get_final_transform().get_scale().x
-	var gap := PlayArea.viewer_separation_px() * scale
+	var gap := 2.0 * PlayArea.viewer_separation_px() * scale
 	for count : int in [52, 3]:
 		var viewer := await _fitted_deck_viewer(count, remaining)
 		var cards := viewer.cards().controls
@@ -372,16 +373,15 @@ func test_a_deck_viewers_rows_stand_the_gap_inside_its_window() -> void:
 		var columns := _cards_in_the_first_row_of(cards)
 		var row := first.merge(_in_window(cards[columns - 1]))
 		var bar := viewer._scroll.get_v_scroll_bar()
-		var right_end := _in_window(bar).end.x if bar.visible else row.end.x
 		var where := "%d cards" % count
 		check(absf(first.position.y - window.position.y - gap) <= GAP_TOLERANCE_PX,
-				"the first row stands the gap below the window's top (%s)" % where,
+				"the first row stands the frame and the card gap below the window's top (%s)" % where,
 				"%.2f vs %.2f window px" % [first.position.y - window.position.y, gap])
 		check(row.position.x - window.position.x >= gap - GAP_TOLERANCE_PX
-				and window.end.x - right_end >= gap - GAP_TOLERANCE_PX,
+				and window.end.x - row.end.x >= gap - GAP_TOLERANCE_PX,
 				"...and at least the gap at each side (%s)" % where,
 				"left %.2f right %.2f vs %.2f" % [row.position.x - window.position.x,
-				window.end.x - right_end, gap])
+				window.end.x - row.end.x, gap])
 		(cards[cards.size() - 1] as Control).grab_focus()
 		check(await _scrolled_to_rest(cards[cards.size() - 1], window),
 				"sanity: the list came to rest with its last card in the window (%s)" % where)
@@ -395,6 +395,91 @@ func test_a_deck_viewers_rows_stand_the_gap_inside_its_window() -> void:
 			check(below >= gap - GAP_TOLERANCE_PX, "a short list leaves at least the gap below it (%s)" % where,
 					"%.2f vs %.2f window px" % [below, gap])
 		await _drop_viewer(viewer)
+
+## Every viewer window is a picture frame: the card gap between the window's edge and the list's container, and again around the outer cards; the list reaches the right edge, its scrollbar drawn in the frame band there, so a scrolling and a still viewer of the same columns are one width -- a scrolling and a short deck viewer, one refitted as its catcher shrinks, a still and a scrolling pack chooser, whose foot row stands inside the same card gap as its cards; harness-scale only.
+func test_every_viewer_window_is_a_picture_frame() -> void:
+	var visible := get_tree().root.get_visible_rect()
+	var strip := Vector2(visible.size.x / 3.0, 0.0)
+	var remaining := Rect2(visible.position + strip, visible.size - strip)
+	var deck_windows : Array[Rect2] = []
+	for count : int in [52, 3]:
+		var viewer := await _fitted_deck_viewer(count, remaining)
+		var window := _in_window(viewer.margin_container.get_node(^"ColorRect") as Control)
+		deck_windows.append(window)
+		await _check_the_frame(window, viewer._scroll, _in_window(viewer._scroll),
+				viewer.cards().controls, false, "deck viewer, %d cards" % count)
+		await _drop_viewer(viewer)
+	check(deck_windows[0].is_equal_approx(deck_windows[1]),
+			"a scrolling and a still deck viewer of the same columns have the same window",
+			"52 cards %s, 3 cards %s" % [deck_windows[0], deck_windows[1]])
+	var slid := await _fitted_deck_viewer(52, remaining)
+	slid.fit_catcher(remaining)
+	slid.fit_beside(remaining)
+	for frame : int in 3:
+		await get_tree().process_frame
+	var slid_window := _in_window(slid.margin_container.get_node(^"ColorRect") as Control)
+	await _check_the_frame(slid_window, slid._scroll, _in_window(slid._scroll), slid.cards().controls,
+			false, "deck viewer, its catcher shrunk as a slide does")
+	await _drop_viewer(slid)
+	var chooser_widths : Array[float] = []
+	for count : int in [ChoiceViewer.ROW_CARDS + 1, ChoiceViewer.ROW_CARDS * (ChoiceViewer.ROWS_SHOWN + 1)]:
+		var chooser := await _fitted_chooser(count, visible)
+		var window := _in_window(chooser._layout)
+		chooser_widths.append(window.size.x)
+		var gap := PlayArea.viewer_separation_px() * get_tree().root.get_final_transform().get_scale().x
+		var foot := _in_window(chooser._bottom_row).grow_side(SIDE_BOTTOM, gap)
+		var framed := _in_window(chooser._scroll).merge(foot)
+		await _check_the_frame(window, chooser._scroll, framed, chooser._cards.controls, true,
+				"pack chooser, %d cards" % count)
+		chooser.queue_free()
+		await get_tree().process_frame
+	check(is_equal_approx(chooser_widths[0], chooser_widths[1]),
+			"a still and a scrolling pack chooser of the same row are one width", str(chooser_widths))
+
+# The bottom is read scrolled to the end. A deck viewer keeps its height whatever its count, so a
+# short one ends at least the gap above its container's bottom, not exactly.
+## Checks `framed` stands the card gap inside `window` at its left, top and bottom and reaches its right edge; the outer listed cards the gap inside it and the frame and the gap from the window's right; a bar only in that frame band.
+func _check_the_frame(window: Rect2, scroll: ScrollContainer, framed: Rect2, cards: Array[Control],
+		fits_its_rows: bool, where: String) -> void:
+	var gap := PlayArea.viewer_separation_px() * get_tree().root.get_final_transform().get_scale().x
+	var sides : Array[float] = [framed.position.x - window.position.x - gap,
+			framed.position.y - window.position.y - gap, window.end.x - framed.end.x,
+			window.end.y - framed.end.y - gap]
+	check(sides.all(func(off: float) -> bool: return absf(off) <= GAP_TOLERANCE_PX),
+			"the window frames its list's container with the card gap at its left, top and bottom, the list reaching its right edge (%s)" % where,
+			"left, top, right, bottom off by %s at a %.2f gap" % [str(sides), gap])
+	var container := _in_window(scroll)
+	var per_row := _cards_in_the_first_row_of(cards)
+	var row := _in_window(cards[0]).merge(_in_window(cards[per_row - 1]))
+	var right := window.end.x - row.end.x
+	var full := cards.size() > per_row
+	check(absf(row.position.x - container.position.x - gap) <= GAP_TOLERANCE_PX
+			and absf(row.position.y - container.position.y - gap) <= GAP_TOLERANCE_PX
+			and (absf(right - 2.0 * gap) <= GAP_TOLERANCE_PX if full else right >= 2.0 * gap - GAP_TOLERANCE_PX),
+			"...and its outer cards the card gap inside the container, the frame and the gap from the window's right (%s)" % where,
+			"left %.2f top %.2f right %.2f vs %.2f window px, full row %s" % [row.position.x - container.position.x,
+			row.position.y - container.position.y, right, gap, full])
+	var bar := scroll.get_v_scroll_bar()
+	if bar.visible:
+		var drawn := _in_window(bar)
+		check(drawn.position.x >= window.end.x - gap - GAP_TOLERANCE_PX
+				and drawn.end.x <= window.end.x + GAP_TOLERANCE_PX
+				and drawn.position.x - row.end.x >= gap - GAP_TOLERANCE_PX,
+				"the scrollbar lies within the right frame band, clear of the cards by the gap (%s)" % where,
+				"bar %s, window right %.2f, cards right %.2f, gap %.2f" % [drawn, window.end.x, row.end.x, gap])
+	var last : Control = cards[cards.size() - 1]
+	if scroll.follow_focus: last.grab_focus()
+	else: scroll.scroll_vertical = ceili(bar.max_value)
+	check(await _scrolled_to_rest(last, container),
+			"sanity: the list came to rest with its last card in the container (%s)" % where)
+	var lowest := _in_window(last)
+	for child : Node in last.get_children():
+		if child is Button: lowest = lowest.merge(_in_window(child as Button))
+	var below := container.end.y - lowest.end.y
+	var exact := fits_its_rows or bar.visible
+	check(absf(below - gap) <= GAP_TOLERANCE_PX if exact else below >= gap - GAP_TOLERANCE_PX,
+			"...the last row, scrolled to, the card gap above the container's bottom (%s)" % where,
+			"%.2f vs %.2f window px, exact %s" % [below, gap, exact])
 
 ## Waits until `card` lies inside `window` and a frame moves it no more; false when the watchdog ran out first.
 func _scrolled_to_rest(card: Control, window: Rect2) -> bool:
