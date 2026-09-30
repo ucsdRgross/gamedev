@@ -358,6 +358,9 @@ Finished rows carry only their commits: each commit message holds that step's me
 - id: P90
   description: 'The start menu in a portrait window (review round 4, menu_top). Owner, verbatim: "would look better if buttons were aligned top to bottom in a vertical window." At a vertical window the bottom row''s buttons stack top to bottom; the landscape row stays.'
   status: pending
+- id: P91
+  description: 'The spotlight circle as wide as the card. Owner, verbatim: "i notice that spotlight effect circle is not as wide as card talent art 32x32 is. in fact, lets make spotlight effect as wide as entire card is now, which should be 52x52, since square card can now fit a whole circle inside. could not do this previously with rectangular card." Today: FxSpotlightStyle.circle_radius (UI/Fx/fx_spotlight_style.gd ~37, default 16 art units, @export_range 4..48 per the owner''s Q85 ask that it stay adjustable), saved 16 in Shaders/Styles/glow_beam.tres and 17 in glow_circle.tres, fallback CIRCLE_ART_UNITS_FALLBACK 16 (UI/spotlight_director.gd ~35), used at ~446 as radius x scale; the card art is CARD_ART_SIZE 52x52 (Cards/card_visual.gd ~8). MEASURE FIRST the drawn circle''s diameter on a real card against the talent art''s drawn 32 and the card''s 52 - the owner sees it narrower than 32, so a lost scale may be the first defect; stop if so. Then the default derives from the card (radius = CARD_ART_SIZE.x / 2, no typed 26), both saved styles follow it, the knob stays adjustable; the cone''s mouth derives from the radius, so check the beam still meets the circle. By eye on fire/spotlight shots.'
+  status: pending
 - id: P80
   description: The listed PlayArea._deal_next_mark freed-instance SCRIPT ERROR (x20-x25 per run, play_area.gd ~2409, during the WALL FOCUS / WALL TRANSITION soaks) is past its three-failure budget - find the writer that frees the board (or its Main) while the plan-mark deal is still stepping, and make the deal end with its owner; measure first (the deal is released at go-live; P64b-3b round 2 rests the board focus on every game went_live - check whether it moved the frequency).
   status: done
@@ -568,7 +571,8 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 1. DONE - review round 4 answered (RULINGS). Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
 2. The placement-lag profiling (owner: "at end of task queue. so after P84 if that is last task in queue.") - the plan is solatro/todo.md § Performance: measure and report the cause to the owner before any fix.
 3. P85-P90, review round 4's comments, in order (each gated, by eye where it draws; re-shoot and review the shots they change as round 5, only those).
-4. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
+4. P91 (the spotlight circle as wide as the card, owner's ask after round 4).
+5. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
 
 ### Opening prompt for the next session (paste as is)
 
