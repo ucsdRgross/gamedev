@@ -346,7 +346,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [39241dc3]
 - id: P86
   description: 'The pack chooser''s foot row (review round 4, pack_chooser). Owner, verbatim: "there should probably be separation buffer between rerolls: 5 take row and the choosing cards. take button should not be touching the reroll buttons. use same separation as card separation. assume same separation as card separation if there is ever separation being used." The Rerolls/Take row and the Reroll buttons get the card separation between them and the cards; Take never touches a Reroll button.'
-  status: pending
+  status: done
+  commits: [9e000089]
 - id: P87
   description: 'The possible-cards list by type (review round 4, possible_cards). Owner, verbatim: "including name is great. rows should be split by type though to make it easier to determine the type, similar to starting a new line for a new paragraph, with header label such as Card Type, Talent, Suit, Rank separating the rows, left aligned. rank should not be black as well since outline is also black. use the white cream color as the rank filling instead." Rows grouped by part type, each group opened by a left-aligned header label (Card Type, Talent, Suit, Rank); the rank numerals filled cream, not black.'
   status: pending
