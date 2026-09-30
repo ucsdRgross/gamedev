@@ -5,7 +5,7 @@ and gated, each against the ruling below, on this branch, ready for the owner to
 **State:** P1-P84 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
 by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P84): `ALL 51 SUITES: 9607 CHECKS PASSED` (BOARD FUZZ 361, SIDEBAR 4178), ~15 min with
 `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order:
-review round 4 (P58d, parked on the owner), the placement-lag profiling, the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
+the placement-lag profiling (running), P85-P90 (review round 4's comments), the close. Review round 4 answered: 9 approved, 8 comments. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
@@ -340,6 +340,24 @@ Finished rows carry only their commits: each commit message holds that step's me
   description: Inline WallOverlay._grow_to (wall_overlay.gd ~46-48) into its one call site, the row loop in _apply_touch_targets - one call site, no test seam (Fable review of P83; the handoff's rows name it only as P83's writer). Mechanical, plan-implementer-sonnet.
   status: done
   commits: [8a4284d3]
+- id: P85
+  description: 'Every viewer window is a picture frame (review round 4, deck_over_chooser + deck_viewer). Owner, verbatim: "appears to be wider than before. scrollbar too close to the card. separation between cards should also exist on edges from the window. window''s own buffer separate from card container should be a same value border along entire window, not just the left and right sides, since right now there is extra space on left and right that top and bottom doesnt have. think picture frame." and "as mentioned in previous comment, if adding a border it should be along all 4 sides. otherwise all good." And (pack_chooser): "assume same separation as card separation if there is ever separation being used." So: the card separation also between the outer cards and the card container''s edges, and one border of that same value on all four sides of each viewer window (deck, discard, rules, possible cards, the chooser, the picker''s Inspect); the scrollbar kept clear of the cards. Measure first what makes the deck over the chooser wider than before and where each margin comes from (P58b-7 made the deck viewer whole columns centred).'
+  status: pending
+- id: P86
+  description: 'The pack chooser''s foot row (review round 4, pack_chooser). Owner, verbatim: "there should probably be separation buffer between rerolls: 5 take row and the choosing cards. take button should not be touching the reroll buttons. use same separation as card separation. assume same separation as card separation if there is ever separation being used." The Rerolls/Take row and the Reroll buttons get the card separation between them and the cards; Take never touches a Reroll button.'
+  status: pending
+- id: P87
+  description: 'The possible-cards list by type (review round 4, possible_cards). Owner, verbatim: "including name is great. rows should be split by type though to make it easier to determine the type, similar to starting a new line for a new paragraph, with header label such as Card Type, Talent, Suit, Rank separating the rows, left aligned. rank should not be black as well since outline is also black. use the white cream color as the rank filling instead." Rows grouped by part type, each group opened by a left-aligned header label (Card Type, Talent, Suit, Rank); the rank numerals filled cream, not black.'
+  status: pending
+- id: P88
+  description: 'Hoop overlap (review round 4, formation_editor_hoop). Owner, verbatim: "hoop top portion should always cover any other hoops'' bottom half. if this is just tool editor idiosyncrasy then its fine if actual game already does this, this editor is just for positioning." MEASURE FIRST whether the game draws each hoop''s top over the others'' bottom halves; if it does, the editor-only difference needs no fix (report it); if the game does not, fix the game.'
+  status: pending
+- id: P89
+  description: 'The win overlay''s vertical centre (review round 4, win_overlay). Owner, verbatim: "middle centering is good, but it does not look vertically centered." Horizontal stays over the board''s columns; centre it vertically over the same space.'
+  status: pending
+- id: P90
+  description: 'The start menu in a portrait window (review round 4, menu_top). Owner, verbatim: "would look better if buttons were aligned top to bottom in a vertical window." At a vertical window the bottom row''s buttons stack top to bottom; the landscape row stays.'
+  status: pending
 - id: P80
   description: The listed PlayArea._deal_next_mark freed-instance SCRIPT ERROR (x20-x25 per run, play_area.gd ~2409, during the WALL FOCUS / WALL TRANSITION soaks) is past its three-failure budget - find the writer that frees the board (or its Main) while the plan-mark deal is still stepping, and make the deal end with its owner; measure first (the deal is released at go-live; P64b-3b round 2 rests the board focus on every game went_live - check whether it moved the frequency).
   status: done
@@ -543,14 +561,15 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - FOR THE CLOSE (tooling, from the session reflection): two hooks match command TEXT, not the action - godot-needs-private-appdata.ps1 blocked a python script whose text contained run_tests.py, and block-source-rewrite.ps1 blocked a `sed` on MEMORY.md whose text contained the words of a PowerShell cmdlet; match a launch / a write to a source path, not a substring; solatro/visual-review/status.agent.json is rewritten by every shoot and never committed - gitignore it; round 2's Done never reached status.owner.json (still round 1), so the watch never fired - check the page's Done before round 3.
 - TOOLING, .claude/hooks/commit-gate.ps1: it blames a commit for duplicate pairs already on HEAD (test_sidebar 959/1114 and 2150/2210 blocked P73, which created neither) - it should report only pairs the staged diff creates; and its [dup-ok] check reads the command line, not a `-F` message file.
 - sidebar_snapshot's score_line_pulse still is staged on the random deal (placements until one registers a new combo class, Tests/Visual/sidebar_snapshot.gd _shoot_the_score_line_pulse ~581): 1 of 2 runs on the P83 tree wrote no PNG, so `review.py shoot` fails the round. COUNT 1. Measure before naming a cause.
-- solatro/project.godot was rewritten by a test run (06:15 on the P84 tree, no editor open, the full gate after it left it alone): [input] ui_focus_next / ui_focus_prev moved below ui_cancel, same empty events - a no-op reorder, left uncommitted. The writer ran in the P84 implementer's `--filter Sidebar` or `--logic` runs; some test saves ProjectSettings (a tracked file). COUNT 1. Measure before naming a cause.
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
-1. Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
+1. DONE - review round 4 answered (RULINGS). Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
 2. The placement-lag profiling (owner: "at end of task queue. so after P84 if that is last task in queue.") - the plan is solatro/todo.md § Performance: measure and report the cause to the owner before any fix.
-3. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
+3. P85-P90, review round 4's comments, in order (each gated, by eye where it draws; re-shoot and review the shots they change as round 5, only those).
+4. OWNER QUESTION open: menu_picker - "why would sidebar slide in if its empty and shows nothing?" (the thirty-third round's pick b); record the answer, a change becomes a step.
+5. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
 
 ### Opening prompt for the next session (paste as is)
 
