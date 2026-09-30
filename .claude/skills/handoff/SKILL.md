@@ -8,6 +8,9 @@ description: The session-continuity loop for this repo — read a handoff doc to
 One file per work stream: `<project>/HANDOFF_<topic>.md` (e.g. `solatro/HANDOFF_spotlight.md`). It is
 both the resume point and the live journal — **never split state across two files**, and never
 create a parallel copy of an existing handoff. Update it in place.
+The one sanctioned sibling: the owner's verbatim rulings, once they outgrow the handoff, live in
+`<project>/RULINGS_<topic>.md` - a record, not state, outside the ~300-line count; the handoff points
+at it (owner-approved).
 
 ## Resuming (the file exists)
 

@@ -262,7 +262,7 @@ Measured: one such answer became six steps nobody had estimated.
 **Quote a gap's own option text when asking the owner to decide.** Paraphrasing one caused an answer
 to be given against a mislabelled list.
 
-⚠ **A ruling the owner gives mid-run is quoted verbatim in the handoff AND marked on every design
+⚠ **A ruling the owner gives mid-run is quoted verbatim in the handoff (or its RULINGS file) AND marked on every design
 node, answer, `TEST_PLAN` row and `NAMES` entry it supersedes, in the same commit.** An unmarked
 superseded node reads as the live rule to the next brief and the close's reviewer.
 

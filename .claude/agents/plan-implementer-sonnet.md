@@ -84,9 +84,10 @@ specified, say so too. A step that keeps growing past what its brief implies is 
 
 ## Verifying your own work
 
-Run the full suite before reporting `done`. Read only the errors log (empty = green) and the final
+Run the verification command the brief names (a filter or the logic tier) before reporting `done`;
+the full gate is the overseer's, never yours. Read only the errors log (empty = green) and the final
 banner; judge by the SUITE COUNT and the failure SET, never the check total. If it is red, fix it or
-report `blocked` with the failure set — do not report `done` with a red suite, and do not describe a
+report `blocked` with the failure set — do not report `done` with a red run, and do not describe a
 skipped check as a pass.
 
 Prove every new test red-then-green and compare per-suite counts across both runs; the procedure
