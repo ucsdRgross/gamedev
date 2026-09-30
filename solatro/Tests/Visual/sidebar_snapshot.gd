@@ -13,7 +13,9 @@ const MAP_POPUP_OUT_PATH := "user://sidebar_snapshot/map_popup.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
 const MENU_PICKER_OUT_PATH := "user://sidebar_snapshot/menu_picker.png"
-const MENU_INSPECT_OUT_PATH := "user://sidebar_snapshot/menu_inspect.png"
+const MENU_FOCUSED_BY_KEYS_OUT_PATH := "user://sidebar_snapshot/menu_focused_by_keys.png"
+const SCORE_LINE_PULSE_OUT_PATH := "user://sidebar_snapshot/score_line_pulse.png"
+const MENU_INSPECT_OUT_PATH:= "user://sidebar_snapshot/menu_inspect.png"
 const MENU_INSPECT_HOVER_OUT_PATH := "user://sidebar_snapshot/menu_inspect_hover.png"
 const DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/description.png"
 const DESCRIPTION_LOCKED_OUT_PATH := "user://sidebar_snapshot/description_locked.png"
@@ -97,8 +99,9 @@ func _ready() -> void:
 	DisplayServer.window_set_size(window_size)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	await _shoot_the_menu_focused_by_keys(main)
 
-	var picker := await _open_the_pickers_viewer(main)
+	var picker :=await _open_the_pickers_viewer(main)
 	if main.hud_container.slid_fraction() < 1.0: await main.hud_container.slide_settled
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
@@ -299,6 +302,7 @@ func _ready() -> void:
 	await _show_the_goal_met(view)
 	var shot := await _shoot_a_cascade(main, view)
 	print("SIDEBAR_SNAPSHOT cascade_captured=%s total=%d" % [shot, view.game.state.live_total()])
+	await _shoot_the_score_line_pulse(main, view)
 
 	await _end_the_show(view)
 	await RenderingServer.frame_post_draw
@@ -322,9 +326,7 @@ func _ready() -> void:
 # was still running has settled. The goal is dropped to the board's own total, so what is
 # photographed is the WIN screen and its buttons.
 func _end_the_show(view: GameView) -> void:
-	for frame : int in CASCADE_WATCH_FRAMES:
-		if not view.game.processing: break
-		await RenderingServer.frame_post_draw
+	await _await_the_cascade_over(view)
 	view.game.state.goal = view.game.state.live_total()
 	view.game.end_show()
 	await get_tree().process_frame
@@ -560,14 +562,78 @@ func _entrance_controls(view: GameView, viewport: SubViewport) -> Array[Control]
 # proves is that the HUD -- whose numbers are what the cascade animates -- takes the container back.
 func _shoot_a_cascade(main: Main, view: GameView) -> bool:
 	for attempt : int in CASCADE_PLACEMENT_ATTEMPTS:
-		if view.play_area.selected_cards.is_empty(): await _click_an_entrance_card(main, view)
-		var held : Array[CardData] = view.play_area.selected_cards.duplicate()
-		if held.is_empty(): continue
-		var legal := await view.game.legal_cells_for(held, view.game.state.grids)
-		if legal.is_empty(): continue
-		view.play_area.data_selected.emit(legal[0])
+		if not await _place_a_card(main, view): continue
 		if await _capture_while_processing(view): return true
 	return false
+
+## Lifts an Entrance card by a real click and places it on its first legal cell; false when nothing could be placed.
+func _place_a_card(main: Main, view: GameView) -> bool:
+	if view.play_area.selected_cards.is_empty(): await _click_an_entrance_card(main, view)
+	var held : Array[CardData] = view.play_area.selected_cards.duplicate()
+	if held.is_empty(): return false
+	var legal := await view.game.legal_cells_for(held, view.game.state.grids)
+	if legal.is_empty(): return false
+	view.play_area.data_selected.emit(legal[0])
+	return true
+
+# THE SCORE LINE AT ITS COMBO PULSE'S PEAK: placements repeat until one registers a new combo class,
+# and the pulse is held the instant its grow step ends -- its authored peak -- for the one capture.
+func _shoot_the_score_line_pulse(main: Main, view: GameView) -> void:
+	var held : Array[Tween] = []
+	var hold_the_first_pulse := func(_count: int) -> void:
+		if not held.is_empty(): return
+		var pulse := view._combo_tween
+		held.append(pulse)
+		pulse.step_finished.connect(func(_step: int) -> void: pulse.pause(), CONNECT_ONE_SHOT)
+	view.game.combo_changed.connect(hold_the_first_pulse)
+	var line := view.hud_container.combo_label
+	for attempt : int in CASCADE_PLACEMENT_ATTEMPTS:
+		if not held.is_empty(): break
+		await _await_the_cascade_over(view)
+		view.hud_container.show_hud()
+		if not await _place_a_card(main, view): continue
+		for frame : int in CASCADE_WATCH_FRAMES:
+			if not held.is_empty() and not held[0].is_running(): break
+			await RenderingServer.frame_post_draw
+	view.game.combo_changed.disconnect(hold_the_first_pulse)
+	if held.is_empty():
+		print("SIDEBAR_SNAPSHOT score_line_pulse captured=false")
+		return
+	var peak := line.scale.x
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(SCORE_LINE_PULSE_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT score_line_pulse held_scale=%.3f captured_scale=%.3f line=%s"
+			% [peak, line.scale.x, line.text])
+	held[0].play()
+	await _await_the_cascade_over(view)
+
+func _await_the_cascade_over(view: GameView) -> void:
+	for frame : int in CASCADE_WATCH_FRAMES:
+		if not view.game.processing: return
+		await RenderingServer.frame_post_draw
+
+# THE MENU'S KEY FOCUS RIM: a real Down pushed at the window moves the focus off Play, and a real Up
+# gives it back, so the stills after this one start from the menu as the boot left it.
+func _shoot_the_menu_focused_by_keys(main: Main) -> void:
+	_push_key(KEY_DOWN)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(MENU_FOCUSED_BY_KEYS_OUT_PATH)
+	var focused := (main._pictures[&"start_menu"].viewport as SubViewport).gui_get_focus_owner()
+	print("SIDEBAR_SNAPSHOT menu_focused_by_keys focus=%s" % (focused.name if focused else &"none"))
+	_push_key(KEY_UP)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+func _push_key(keycode: Key) -> void:
+	for pressed : bool in [true, false]:
+		var key := InputEventKey.new()
+		key.keycode = keycode
+		key.pressed = pressed
+		get_viewport().push_input(key)
 
 # Captured on the frame AFTER the board reports itself busy, so the still carries what was drawn
 # while the cascade ran rather than the last frame before it started. Only a placement that

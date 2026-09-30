@@ -133,16 +133,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/chooser_window.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the pack chooser's square window is 688 px at 1280x720 (was 516): five cards in one row at the 8 px gap, 'Reroll' under each, Rerolls: 5 and Take at the foot; it nearly fills the screen's height, so the map shows only as sea at the window's sides with slivers of land above and below it. QUESTION for the owner: round 2 asked for a square window with the map visible outside it - is this much map enough, or should the window stop short of the screen's height?",
-      "crops": [
-        {
-          "label": "land sliver above the window",
-          "x": 730,
-          "y": 0,
-          "w": 90,
-          "h": 20
-        }
-      ]
+      "seen": "The chooser with a card stuck (its description and X in the sidebar): Reroll and Take held, drawn grey, each Reroll centred under its card; the window sized to its row. BEFORE: the full-height dark square."
     },
     {
       "id": "map_fit",
@@ -151,16 +142,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/map_hud.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the map at its fit beside the sidebar with the sea buffer; a different generated map from BEFORE (the two commits generate differently) - the framing is the same.",
-      "crops": [
-        {
-          "label": "top edge: sea buffer above the land",
-          "x": 320,
-          "y": 0,
-          "w": 960,
-          "h": 80
-        }
-      ]
+      "seen": "The map fits beside the sidebar with sea on every side (the topmost islet ~20 px under the window's top, the lowest ~75 px above the bottom). The fit now uses the part of the picture actually visible (your 'one visible scale' round). Different generated map each shoot. BEFORE: land touching the bottom edge."
     },
     {
       "id": "map_zoomed_edge",
@@ -203,23 +185,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/deck_over_chooser.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the run deck open over the chooser: five columns of square cards at the 8 px gap, an opaque panel (nothing shows through between cards), the bookmark X on its right edge, 'Close deck' at the top of the sidebar. Below the deck's list the chooser's own Rerolls: 5 / Take row stays visible, because the chooser window is now taller than the deck's panel. QUESTION for the owner: should the open deck cover the chooser's bottom row too?",
-      "crops": [
-        {
-          "label": "the chooser's Rerolls/Take row below the deck",
-          "x": 456,
-          "y": 590,
-          "w": 690,
-          "h": 115
-        },
-        {
-          "label": "the bookmark X",
-          "x": 1095,
-          "y": 85,
-          "w": 85,
-          "h": 50
-        }
-      ]
+      "seen": "The run deck (crimson) opened over the chooser hides it completely - no Rerolls/Take shows; one solid gold X; the sidebar reads 'Close deck'. BEFORE: the chooser's Rerolls/Take line showed below the deck."
     },
     {
       "id": "deck_card_hover_over_chooser",
@@ -228,16 +194,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/deck_card_hover_over_chooser.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the same deck over the chooser; the sidebar describes the hovered Ace of Knives ('Ace of / Knives' wraps), 'Close deck' at the top; the chooser's Rerolls/Take row again visible below the deck.",
-      "crops": [
-        {
-          "label": "Deck row under a run-deck card's description",
-          "x": 0,
-          "y": 90,
-          "w": 320,
-          "h": 160
-        }
-      ]
+      "seen": "The same, a deck card hovered: the sidebar describes Ace of Knives while the deck covers the chooser. BEFORE: near-black backdrop."
     },
     {
       "id": "grid1_overview",
@@ -279,7 +236,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/game_hud.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the board centred in the space beside the sidebar, caught mid-deal (cells tumbling in); the Entrance row printed cards and red star backs; all square."
+      "seen": "Unchanged layout (the board keeps its fit - your forty-fourth round); only the dealt cards differ. Measured: the board sits ~2 px right of the visible centre at 1280x720, as ruled."
     },
     {
       "id": "board_window_600x1000",
@@ -288,7 +245,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/game_hud_top.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the tall window - the sidebar across the top, the board centred below it about 85 px from each side, the Entrance row under it, caught mid-deal; the top-left cell rotated with the focus rim."
+      "seen": "Unchanged layout under the top-band sidebar; only the cards differ."
     },
     {
       "id": "entrance_card_lifted",
@@ -306,7 +263,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/viewer_description.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the game's deck viewer - five whole columns of square cards with 8 px gaps, centred on the space beside the sidebar, the scrollbar at the right, the bookmark X outside the panel; the board's top row peeks above the panel. BEFORE: seven portrait columns with a ragged right edge."
+      "seen": "The game's deck viewer in crimson: rows 8 px below the window's top, whole columns centred with spare width at the sides, a solid gold X level with the first row; 3 of Hoops hovered and described. Look for you: a click in the spare side strip is now inside the viewer's window and no longer closes it. BEFORE: near-black, rows flush to the top, a dark X."
     },
     {
       "id": "deck_viewer_600x1000",
@@ -315,7 +272,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/viewer_description_top.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the deck viewer at 600x1000: eight whole columns, centred (58-541 of 600), the X tab on its right edge. BEFORE: eleven portrait columns."
+      "seen": "600x1000: 8 columns x 6 rows in crimson under the top-band sidebar, 8 px gap at the top, a solid X; the window fills its space, leaving the lower third empty. BEFORE: near-black, same grid."
     },
     {
       "id": "rules_viewer",
@@ -324,16 +281,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/rules_viewer.png",
-      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the Rules viewer - rule cards in whole columns (five Ace-of-Hoops rules with the upper-zone icon, one with its cream rim; then 'II', a three-cards icon, '13'). The fourth card of row 2 draws its '12' art on the bare panel with NO card behind it - a rule card with no body (the same cause as the possible-cards list, P71). The sidebar describes the stuck rule (Input Zone Upper Adder).",
-      "crops": [
-        {
-          "label": "'12' with no card body",
-          "x": 860,
-          "y": 220,
-          "w": 130,
-          "h": 130
-        }
-      ]
+      "seen": "The Rules viewer in its own green, rows 8 px below the top, a solid X; Ace of Hoops described with its two rule blocks. Seen, not this round's change (in BEFORE too): the fourth card of the second row is a bare '12' numeral with no card body under it. BEFORE: near-black, flush to the top."
     },
     {
       "id": "pack_chooser",
@@ -342,7 +290,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/choice_viewer_description.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: the chooser alone - five square cards at the 8 px gap, Reroll under each, Rerolls: 5 and an active Take; the window square and centred beside the sidebar (see chooser_overlay_greyed's question about its height)."
+      "seen": "The pack chooser in its own purple, as tall as its one row (620x246, no empty space above or below), each Reroll button centred under its card, Rerolls: 5 beside Take in the foot row, the map visible all round. BEFORE: a full-height dark square with the cards in its middle and Reroll labels left-aligned."
     },
     {
       "id": "possible_cards",
@@ -351,16 +299,7 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/possible_cards.png",
-      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: a pack's possible-cards list over the map: three card faces (a blank paper, two grey backs) and every other entry drawn as loose art with no card - '+1', icons, ranks '3 4 5 6 7' - the known partial-card problem the owner ruled 'c: icons, not cards' (P71, queued). Left of the narrower list the map's 'Ta(lent pack)' label peeks out. The sidebar shows the stuck blank card with no title.",
-      "crops": [
-        {
-          "label": "label peeking left of the list",
-          "x": 430,
-          "y": 250,
-          "w": 60,
-          "h": 80
-        }
-      ]
+      "seen": "The pack's possible cards as a 5-column grid of small labelled part icons in the list's own blue (types shrunk to the cell; Paper labelled 'Paper Card' - a placeholder name, in the list only). 'Revealing' stuck: the sidebar shows its name, description and a blank card with the eye stamp in its place. Looks for you: the rank numerals and the skill '+1' are dark ink on the dark backdrop; the 8x8 stamp/suit icons are tiny in wide cells; the sidebar preview puts a non-type part on a blank Paper body - your 'card preview ... by position on card' as I read it. BEFORE: loose parts drawn over nothing, the sidebar preview blank."
     },
     {
       "id": "description_card",
@@ -455,7 +394,7 @@
       "scene": "res://Tests/Visual/formation_editor_shot.tscn",
       "env": {},
       "png": "user://tool_shots/formation_editor_hoop.png",
-      "seen": "No BEFORE: this shot scene is newer than the pre-square commit. AFTER: the formation editor's hoop formation over two real cards: the five rings centred on the first card, the outer ones overhanging its edges as they did on the old 40-wide card (the points were widened 20 -> 27 to the new half-width)."
+      "seen": "The hoop formation's rings share one top and one bottom (level). Look for you: in the editor the ring group sits left of the stand-in card's centre. BEFORE: the row sloped down to the right."
     },
     {
       "id": "formation_editor_knife",
@@ -563,7 +502,70 @@
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/outcome_buttons.png",
-      "seen": "BEFORE is this branch just before the square-card merge (bd8c9f81, 40x54 cards). AFTER: 'Fame +4' over the dimmed board with Continue focused and Undo; the dimmed square board and star backs behind."
+      "seen": "'Fame +4' with Continue (focused) and Undo centred over the board's columns (~x 803), not the picture's centre. BEFORE: centred ~x 636, left of the board."
+    },
+    {
+      "id": "menu_focused_by_keys",
+      "title": "The start menu after a Down key: the key focus rim on a menu button",
+      "row": "P64b-3b",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/menu_focused_by_keys.png",
+      "seen": ""
+    },
+    {
+      "id": "score_line_pulse",
+      "title": "The game sidebar's score line at its combo pulse's peak",
+      "row": "P81",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/score_line_pulse.png",
+      "seen": "The sidebar's score line '2 x 2.0' held at its combo pulse's peak: drawn larger, growing to the right from the left margin under Goal/Total, wholly inside the sidebar (it used to grow leftward off the window). A won show behind (the harness goal is 1). No BEFORE (a new still)."
+    },
+    {
+      "id": "menu",
+      "title": "The start menu at 1280x720",
+      "row": "P73",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/menu.png",
+      "seen": "One centred column at the UI scale: title, Play (key-focus rim - the menu takes the focus when shown), then Profile/Options/Quit/Collection/Language as one tight row. BEFORE: Play drawn over the submenu area, the bottom row spread edge to edge at uneven heights."
+    },
+    {
+      "id": "menu_top",
+      "title": "The start menu in a tall 600x1000 window",
+      "row": "P73",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/menu_top.png",
+      "seen": "600x1000: the same column, small and centred, the bottom row on one line inside the window. BEFORE: the bottom row ran edge to edge (Profile at x 0, Language touching x 600). Look for you: at rest the row does not wrap (it fits, ~87% of the width) - it wraps only when the sidebar slides in."
+    },
+    {
+      "id": "menu_picker",
+      "title": "New Run: the deck picker with the sidebar slid in beside the menu",
+      "row": "P72",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/menu_picker.png",
+      "seen": "The deck picker's own teal panel (a distinct placeholder colour) over the dimmed menu, the sidebar slid in (empty), Pick on Deck 1 rimmed. The list scrolls; its 11th row shows half-cut above Close. BEFORE: a translucent dark panel with the menu showing through."
+    },
+    {
+      "id": "menu_inspect",
+      "title": "A deck inspected from the picker: its viewer beside the sidebar",
+      "row": "P78c",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/menu_inspect.png",
+      "seen": "The picker's Inspect viewer in its own mauve, the 8 cards 8 px below the window's top, a solid gold X tab outside the top-right corner. The window fills its space, so its lower half is empty mauve. BEFORE: near-black, cards flush to the top, a dark translucent X."
+    },
+    {
+      "id": "deck_over_possible_cards",
+      "title": "The run deck open over a pack's possible cards",
+      "row": "P71",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
+      "env": {},
+      "png": "user://sidebar_snapshot/deck_over_possible_cards.png",
+      "seen": "The run deck opened over the possible cards in its own crimson covers the list completely (no blue shows), rows 8 px below the top, one solid X; the sidebar reads 'Close deck' over the stuck Revealing part. BEFORE: near-black, flush to the top, a dark X."
     }
   ]
 }
