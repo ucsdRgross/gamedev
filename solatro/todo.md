@@ -615,6 +615,32 @@ Card is `CardVisual.CARD_SIZE`; every element wears `Shaders/outline.gdshader`'s
   (§16); meta progression (§19); leaders/acts (§11). Deterministic RNG streams (§6/§23) are
   planned above.
 
+## Performance — lag moving and putting down cards (owner playtest, not yet measured)
+
+- ⬜ **Profile a drag and a drop on the board before fixing anything.** Owner: "some playtesting
+  shows there might be lag or performance issues when moving cards around board and putting them
+  down"; suspects: something inefficient in new code, or the save system no longer threading.
+  1. **Reproduce in a harness** on Box A (the perf target), windowed, private APPDATA: the real
+     Main and board, cards dragged and placed through the viewport (no direct handler calls), at
+     1-grid and 3-grid boards, a long show (history near its cap) and a fresh one.
+  2. **Frame times, not averages:** per-frame CPU (`Performance.TIME_PROCESS`, wall clock per
+     frame) and GPU (`viewport_get_measured_render_time_gpu`) through the drag and the drop; report
+     max and p95 per phase, and which frame spikes.
+  3. **Attribute the spike:** the engine profiler (script functions by self time), then
+     `Time.get_ticks_usec` brackets around each suspect on the drop frame - `Game.save_state`'s
+     `state.to_saveable()` (a snapshot per action, main thread, `Levels/game.gd` ~489);
+     `RunManager.request_save`'s `_build_payload` (main thread) and the saver thread's
+     `ResourceSaver.save` (off-thread - check it is not blocking the main thread on its mutex or on
+     shared resources); the drop map / legal-cell refresh; the board's relayout and marking
+     refresh; FX/glow redraws; any per-frame `print` (`Tools/outline_atlas.gd` ~340 prints a line
+     per card polygon on every rebuild - check whether the game builds it).
+  4. **A/B each suspect** (disable one, re-measure, same box, same session), and compare against
+     `main` to learn whether it is a regression; bisect if it is.
+  Traced, not measured: per-action saves ARE still queued to a background thread
+  (`Scripts/run_manager.gd` `request_save` / `_saver_loop`); the snapshot and payload that feed it
+  are built on the main thread; a show's opening save is synchronous by design (`Levels/game.gd`
+  ~244).
+
 ## Testing / infrastructure
 
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.

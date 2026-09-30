@@ -35,7 +35,9 @@ the scenes take their knobs. Shots with the same `scene` and `env` share one God
 
 ## The worker
 
-1. **Register** the shots in `manifest.json`, with `seen` left empty.
+1. **Register** the shots in `manifest.json`, with `seen` left empty. ⚠ **A round shows only what the
+   owner has not approved:** a shot whose last verdict in `review.json` is an approve leaves the
+   manifest, so a round never re-asks an answered question (owner ruling, visual review round 4).
 2. **Refresh** from the repo root, with `GODOT_BIN` set (see `.claude/memory/machine-profiles.md`):
    `py solatro/visual-review/review.py refresh`. It reshoots BEFORE on `git merge-base main HEAD`
    in a temporary `git worktree` (imported headless first, then removed) and AFTER on the working tree.
