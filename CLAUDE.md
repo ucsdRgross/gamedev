@@ -66,8 +66,9 @@ More mechanical checks, same shape as `doc_check.py`; the first two share its `S
   comment-stripped code of HEAD and of the working copy must be byte-identical. A trailing
   comment's removal edits its code line, which a diff cannot tell from a code change; this can.
 
-**`.claude/hooks/commit-gate.ps1` blocks an agent commit whose staged diff duplicates existing
-logic**, with `[dup-ok]` in the commit message as the deliberate-duplication escape. It fires only
+**`.claude/hooks/commit-gate.ps1` blocks an agent commit whose staged diff creates a
+duplicate pair** (a pair already on HEAD does not block), with `[dup-ok]` in the commit message
+(`-m` or `-F`) as the deliberate-duplication escape. It fires only
 on commits an agent makes, never on the owner's GitHub Desktop flow.
 
 ⚠ **Duplication blocks; add-only shape only warns.** That split is measured, not taste: add-only
@@ -147,6 +148,8 @@ most of them test-to-test setup. About ten touch production code.
 - **Execution.** Never stop early citing context — compaction exists. One blocked scenario: finish
   the rest and report the blocker. Commit only the current step's files, staged by path. Subagent
   presets: model aliases and explicit effort in frontmatter ([[implementer-routing]]).
+- **Context at 80% triggers the session close.** `.claude/hooks/context-handoff-nudge.py` (main-thread Stop,
+  once per session, ~0.3 s) tells the session to run `/handoff` and end with the next opening prompt.
 - **Reflect at every gate, unprompted.** Every session end, plan finish and `/plan-run` close runs
   `/handoff`'s "Reflect and record": what cost time, whether it will recur, the rule written where
   it is read next time, and the last message says what was recorded. Do not wait to be asked.
