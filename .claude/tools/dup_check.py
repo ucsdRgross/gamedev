@@ -10,6 +10,7 @@ resolves.
     py .claude/tools/dup_check.py                     # whole repo
     py .claude/tools/dup_check.py --changed           # only pairs touching a changed file
     py .claude/tools/dup_check.py --staged            # same, scoped to what is staged
+    py .claude/tools/dup_check.py --staged --new-only # only pairs the staged diff creates
 
 Exit 0 = clean, 1 = at least one finding. --warn-only always exits 0.
 
@@ -58,23 +59,26 @@ def source_files() -> list[Path]:
 
 
 def normalize(path: Path) -> list[tuple[int, str]]:
+    try:
+        return normalize_text(path.read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        return []
+
+
+def normalize_text(source: str) -> list[tuple[int, str]]:
     """(original line number, normalized text) for lines that carry logic.
 
     Comments and blanks go; a trailing comment on a real line goes with it. Indentation
     stays -- in GDScript it IS the block structure, so two blocks at different nesting
-    depths are not the same code.
+    depths are not the same code. A trailing # is stripped only when no quote could be
+    hiding one inside a string.
     """
-    try:
-        raw = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
-        return []
     out = []
-    for i, line in enumerate(raw, 1):
+    for i, line in enumerate(source.splitlines(), 1):
         text = line.rstrip()
         stripped = text.lstrip()
         if not stripped or stripped.startswith("#"):
             continue
-        # Only strip a trailing # when no quote could be hiding one inside a string.
         if '"' not in text and "'" not in text and "#" in text:
             text = text.split("#", 1)[0].rstrip()
             if not text.strip():
@@ -83,16 +87,29 @@ def normalize(path: Path) -> list[tuple[int, str]]:
     return out
 
 
-def find_dups(lines: dict[Path, list[tuple[int, str]]], window: int):
-    buckets: dict[int, list[tuple[Path, int]]] = defaultdict(list)
+def window_buckets(lines: dict[Path, list[tuple[int, str]]], window: int):
+    """Every window of logic lines, keyed by its text.
+
+    A window that is mostly one repeated line is a data table or a field list, not logic
+    someone copied, so it is left out.
+    """
+    buckets: dict[tuple[str, ...], list[tuple[Path, int]]] = defaultdict(list)
     for p, rows in lines.items():
         for i in range(len(rows) - window + 1):
             chunk = tuple(t for _, t in rows[i:i + window])
-            # A window that is mostly one repeated line is a data table or a field list,
-            # not logic someone copied.
             if len(set(chunk)) < window - 2:
                 continue
-            buckets[hash(chunk)].append((p, i))
+            buckets[chunk].append((p, i))
+    return buckets
+
+
+def find_dups(lines: dict[Path, list[tuple[int, str]]], window: int):
+    """Pairs of matching windows, each extended forward while both sides keep agreeing.
+
+    One 40-line copy reports once instead of 33 overlapping times; overlapping windows in
+    one file are the same text, not a copy.
+    """
+    buckets = window_buckets(lines, window)
 
     findings = []
     claimed: set[tuple[Path, int]] = set()
@@ -106,11 +123,9 @@ def find_dups(lines: dict[Path, list[tuple[int, str]]], window: int):
             for y in range(x + 1, len(bucket)):
                 a, b = bucket[x], bucket[y]
                 if a[0] == b[0] and abs(a[1] - b[1]) < window:
-                    continue  # overlapping windows in one file are the same text
+                    continue
                 if a in claimed or b in claimed:
                     continue
-                # Extend forward while the two blocks keep agreeing, so one 40-line copy
-                # reports once instead of 33 overlapping times.
                 ra, rb = lines[a[0]], lines[b[0]]
                 n = window
                 while (a[1] + n < len(ra) and b[1] + n < len(rb)
@@ -158,6 +173,40 @@ def scoped_paths(staged: bool) -> set[str] | None:
     return names
 
 
+def staged_and_head(lines: dict[Path, list[tuple[int, str]]], scope: set[str]):
+    """The repo as the commit would record it, and the same with the scope at HEAD.
+
+    Files outside the scope are identical in both, so the working copy stands in for them.
+    """
+    staged = dict(lines)
+    head = dict(lines)
+    for name in scope:
+        path = ROOT / name
+        if path.suffix not in EXT or set(Path(name).parts) & SKIP_PARTS:
+            continue
+        staged[path] = normalize_text(git("show", f":{name}") or "")
+        head[path] = normalize_text(git("show", f"HEAD:{name}") or "")
+    return staged, head
+
+
+def created_by_diff(findings, lines, head_lines, window: int):
+    """Keep a finding only when its block has more copies staged than at HEAD.
+
+    Compared by block content, not line number: an edit above a standing pair shifts both
+    sides, and that pair is still not the commit's doing. A third copy of a standing pair
+    raises the count, so it is still reported.
+    """
+    head_counts = {k: len(v) for k, v in window_buckets(head_lines, window).items()}
+    staged_buckets = window_buckets(lines, window)
+    kept = []
+    for f in findings:
+        start = f[1][1]
+        chunk = tuple(t for _, t in lines[f[1][0]][start:start + window])
+        if len(staged_buckets[chunk]) > head_counts.get(chunk, 0):
+            kept.append(f)
+    return kept
+
+
 def main() -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -168,6 +217,8 @@ def main() -> int:
                     help="only report a pair where at least one side is a file you changed")
     ap.add_argument("--staged", action="store_true",
                     help="same, scoped to staged files -- for a gate that runs before a commit")
+    ap.add_argument("--new-only", action="store_true",
+                    help="with --staged: drop a pair whose block has as many copies at HEAD")
     ap.add_argument("--min-lines", type=int, default=8,
                     help="shortest block worth reporting, in logic lines (default 8)")
     ap.add_argument("--cross-project", action="store_true",
@@ -186,7 +237,13 @@ def main() -> int:
 
     files = source_files()
     lines = {p: normalize(p) for p in files}
+    head_lines = None
+    if args.new_only:
+        assert args.staged, "--new-only compares the staged blobs with HEAD"
+        lines, head_lines = staged_and_head(lines, scope)
     findings = find_dups(lines, args.min_lines)
+    if head_lines is not None:
+        findings = created_by_diff(findings, lines, head_lines, args.min_lines)
 
     if not args.cross_project:
         findings = [f for f in findings if project(f[1][0]) == project(f[2][0])]

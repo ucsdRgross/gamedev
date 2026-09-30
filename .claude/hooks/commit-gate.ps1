@@ -16,8 +16,12 @@
 #   Re-derive both numbers any time with:
 #     py .claude/tools/diff_shape.py --history 400
 #
-# ESCAPE HATCH: put [dup-ok] in the commit message. Intentional duplication exists (a test fixture
-# that must not share a helper with the code it tests), and a gate with no way past it gets
+# Only a pair the staged diff CREATES blocks: a pair already standing at HEAD is the backlog, and
+# blocking every commit that touches its file taught agents to type [dup-ok] by reflex.
+#
+# ESCAPE HATCH: put [dup-ok] in the commit message (-m text, or the file -F/--file names).
+# Intentional duplication exists (a test fixture that must not share a helper with the code it
+# tests), and a gate with no way past it gets
 # deleted rather than argued with. The marker lands in git history, so the decision is auditable.
 #
 # Exit 0 = allow, exit 2 = block and show stderr to Claude.
@@ -34,10 +38,17 @@ if ($cmd -match '(?i)\[dup-ok\]') { exit 0 }
 $repo = $env:CLAUDE_PROJECT_DIR
 if (-not $repo) { $repo = (Get-Location).Path }
 
+if ($cmd -cmatch '(?:^|\s)(?:-F\s*|--file[=\s]\s*)(?:"([^"]+)"|''([^'']+)''|(\S+))') {
+    $msgFile = $Matches[1] + $Matches[2] + $Matches[3]
+    if (-not [System.IO.Path]::IsPathRooted($msgFile)) { $msgFile = Join-Path $repo $msgFile }
+    if ((Test-Path -LiteralPath $msgFile) -and
+        ((Get-Content -Raw -LiteralPath $msgFile) -match '(?i)\[dup-ok\]')) { exit 0 }
+}
+
 $dupTool = Join-Path $repo '.claude\tools\dup_check.py'
 if (-not (Test-Path $dupTool)) { exit 0 }
 
-$dup = & py $dupTool --staged 2>&1 | Out-String
+$dup = & py $dupTool --staged --new-only 2>&1 | Out-String
 $dupFound = ($LASTEXITCODE -ne 0)
 
 if (-not $dupFound) { exit 0 }
