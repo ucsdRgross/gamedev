@@ -243,6 +243,16 @@ func test_the_chooser_window_is_as_tall_as_its_rows() -> void:
 		check(absf(foot.position.y - last_band.end.y - gap) <= GAP_TOLERANCE_PX,
 				"...its foot the card gap under the last row's Reroll band (%s)" % where,
 				"%.2f vs %.2f" % [foot.position.y, last_band.end.y])
+		var card_to_band := last_band.position.y - _in_window(cards[cards.size() - 1]).end.y
+		check(absf(card_to_band - gap) <= GAP_TOLERANCE_PX,
+				"...each Reroll button the card gap under its card (%s)" % where,
+				"%.2f vs %.2f" % [card_to_band, gap])
+		var take := _in_window(viewer.confirm_button)
+		var label_to_take := take.position.x - _in_window(viewer.rerolls_label).end.x
+		check(absf(label_to_take - gap) <= GAP_TOLERANCE_PX,
+				"...Take the card gap beside Rerolls (%s)" % where, "%.2f vs %.2f" % [label_to_take, gap])
+		check(viewer._reroll_buttons.all(func(b: Button) -> bool: return not _in_window(b).intersects(take)),
+				"...Take touching no Reroll button (%s)" % where, str(take))
 		check(_cards_rows(cards) == ceili(count / float(ChoiceViewer.ROW_CARDS))
 				and not viewer._scroll.get_v_scroll_bar().visible,
 				"...showing every row, none scrolling (%s)" % where, str(_cards_rows(cards)))

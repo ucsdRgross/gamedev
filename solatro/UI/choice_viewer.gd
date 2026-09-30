@@ -27,9 +27,8 @@ const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 ## The card gap between the rows' outer cards and their container's edges, the scrollbar's included.
 @onready var _card_margin: MarginContainer = $Layout/Scroll/CardMargin
 
-## Reroll button geometry, in pixels below the card it belongs to (no magic numbers in logic).
+## A Reroll button's height; it hangs the card gap below the card it belongs to.
 const REROLL_BUTTON_HEIGHT := 34.0
-const REROLL_BUTTON_GAP := 4.0
 ## Cards in one row; a sixth starts the next row.
 const ROW_CARDS := 5
 ## Rows the window grows to show before the rest scroll inside it.
@@ -74,8 +73,8 @@ func _ready() -> void:
 			PaletteDB.color(PaletteDB.ROLES.viewer_pack)
 	var gap := PlayArea.viewer_separation_px()
 	flow_container.add_theme_constant_override(&"h_separation", gap)
-	flow_container.add_theme_constant_override(&"v_separation",
-			roundi(REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT) + gap)
+	flow_container.add_theme_constant_override(&"v_separation", roundi(REROLL_BUTTON_HEIGHT) + 2 * gap)
+	_bottom_row.add_theme_constant_override(&"separation", gap)
 	for side : StringName in [&"margin_left", &"margin_top", &"margin_bottom"]:
 		_card_margin.add_theme_constant_override(side, gap)
 	var inset := 2 * gap
@@ -137,7 +136,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func fit_beside(remaining: Rect2) -> void:
 	var rows := ceili(float(_cards.controls.size()) / ROW_CARDS)
 	var row_px := _cards.row_px(ROW_CARDS)
-	var band := REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT
+	var band := PlayArea.viewer_separation_px() + REROLL_BUTTON_HEIGHT
 	var rows_px := _cards.column_px(rows) + band
 	flow_container.custom_minimum_size = Vector2(row_px, rows_px)
 	var pad := float(PlayArea.viewer_separation_px())
@@ -166,8 +165,8 @@ func _add_reroll_button(control: Control, index: int) -> Button:
 	button.text = TRANSLATION.find('CHOICE_REROLL')
 	control.add_child(button)
 	button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	button.offset_top = REROLL_BUTTON_GAP
-	button.offset_bottom = REROLL_BUTTON_GAP + REROLL_BUTTON_HEIGHT
+	button.offset_top = PlayArea.viewer_separation_px()
+	button.offset_bottom = button.offset_top + REROLL_BUTTON_HEIGHT
 	button.pressed.connect(func() -> void: await reroll(index))
 	return button
 
