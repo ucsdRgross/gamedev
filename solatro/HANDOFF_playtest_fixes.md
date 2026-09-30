@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P83 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
-by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P83, b9f5bdc7): `ALL 51 SUITES: 9586 CHECKS PASSED` (BOARD FUZZ 340), ~15 min with
+**State:** P1-P84 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
+by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P84): `ALL 51 SUITES: 9607 CHECKS PASSED` (BOARD FUZZ 361, SIDEBAR 4178), ~15 min with
 `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order:
-review round 4 (P58d, shot and seen-written - re-shoot after P83), P84, the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
+review round 4 (P58d, parked on the owner), the placement-lag profiling, the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
@@ -338,7 +338,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [b9f5bdc7]
 - id: P84
   description: Inline WallOverlay._grow_to (wall_overlay.gd ~46-48) into its one call site, the row loop in _apply_touch_targets - one call site, no test seam (Fable review of P83; the handoff's rows name it only as P83's writer). Mechanical, plan-implementer-sonnet.
-  status: pending
+  status: done
+  commits: [8a4284d3]
 - id: P80
   description: The listed PlayArea._deal_next_mark freed-instance SCRIPT ERROR (x20-x25 per run, play_area.gd ~2409, during the WALL FOCUS / WALL TRANSITION soaks) is past its three-failure budget - find the writer that frees the board (or its Main) while the plan-mark deal is still stepping, and make the deal end with its owner; measure first (the deal is released at go-live; P64b-3b round 2 rests the board focus on every game went_live - check whether it moved the frequency).
   status: done
@@ -542,14 +543,14 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - FOR THE CLOSE (tooling, from the session reflection): two hooks match command TEXT, not the action - godot-needs-private-appdata.ps1 blocked a python script whose text contained run_tests.py, and block-source-rewrite.ps1 blocked a `sed` on MEMORY.md whose text contained the words of a PowerShell cmdlet; match a launch / a write to a source path, not a substring; solatro/visual-review/status.agent.json is rewritten by every shoot and never committed - gitignore it; round 2's Done never reached status.owner.json (still round 1), so the watch never fired - check the page's Done before round 3.
 - TOOLING, .claude/hooks/commit-gate.ps1: it blames a commit for duplicate pairs already on HEAD (test_sidebar 959/1114 and 2150/2210 blocked P73, which created neither) - it should report only pairs the staged diff creates; and its [dup-ok] check reads the command line, not a `-F` message file.
 - sidebar_snapshot's score_line_pulse still is staged on the random deal (placements until one registers a new combo class, Tests/Visual/sidebar_snapshot.gd _shoot_the_score_line_pulse ~581): 1 of 2 runs on the P83 tree wrote no PNG, so `review.py shoot` fails the round. COUNT 1. Measure before naming a cause.
+- solatro/project.godot was rewritten by a test run (06:15 on the P84 tree, no editor open, the full gate after it left it alone): [input] ui_focus_next / ui_focus_prev moved below ui_cancel, same empty events - a no-op reorder, left uncommitted. The writer ran in the P84 implementer's `--filter Sidebar` or `--logic` runs; some test saves ProjectSettings (a tracked file). COUNT 1. Measure before naming a cause.
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
 1. Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
-2. P84 (inline _grow_to; while parked on the watch - it changes no shot; plan-implementer-sonnet; gate; commit).
-3. The placement-lag profiling (owner: "at end of task queue. so after P84 if that is last task in queue.") - the plan is solatro/todo.md § Performance: measure and report the cause to the owner before any fix.
-4. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
+2. The placement-lag profiling (owner: "at end of task queue. so after P84 if that is last task in queue.") - the plan is solatro/todo.md § Performance: measure and report the cause to the owner before any fix.
+3. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
 
 ### Opening prompt for the next session (paste as is)
 
