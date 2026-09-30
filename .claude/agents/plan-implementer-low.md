@@ -98,6 +98,9 @@ and its traps (the expected checks, a mutant when HEAD cannot run the test): the
 - **NO `git add`, NO commits, NO staging.** The overseer commits the steps it verifies.
 - **Never `git checkout`/`restore`/`reset`/`stash` a tracked file** — the overseer and other agents
   share the tree. Park a file with `Copy-Item` and copy it back.
+- **A mutant run restores its parked files in the SAME command, whatever happens** - bash:
+  `trap 'cp <abs> <abs>' EXIT INT TERM`; PowerShell: `try { } finally { Copy-Item }` (both byte
+  copies) - then a byte compare proves it. A hung chain once outlived its report with a copy-back pending.
 - **Never remove or relax an assertion to reach green.** A red your change exposes is reported
   (NOTES / OWNER QUESTIONS), with the assertion left in. A deletion you claim is proved in the
   report by a grep of the deleted name coming back empty.

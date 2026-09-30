@@ -26,7 +26,9 @@ grid) releases its focus, leaving no owner at all. So: read the owner BEFORE a d
 whether a pick came by focus, grab on the pad's behalf only then, and rest the focus back inside
 the viewport the pad was in. ⚠ **Focus is one per WINDOW:** a separate `Window` (embedded or
 native) keeps its own owner through grabs elsewhere - the only way to isolate a test's focus from
-other suites sharing the run's window; a SubViewport host does not isolate it (measured).
+other suites sharing the run's window; a SubViewport host does not isolate it (measured). Make
+such a Window `unfocusable` unless the row needs its focus - a focusable one takes the root's input
+([[tests-that-prove-nothing]] item 22).
 
 **How to apply:** never handle focus-driven key actions in a parent's `gui_input`; test
 input paths with real synthesized events (see `Tests/Interaction/test_interaction.gd`),
