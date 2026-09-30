@@ -85,6 +85,7 @@ func _ready() -> void:
 	await test_every_menu_control_draws_at_the_ui_size_inside_the_window_and_none_overlaps()
 	await test_the_menus_bottom_row_wraps_beside_the_slid_in_sidebar()
 	await test_the_menus_column_only_shifts_while_the_sidebar_slides()
+	await test_the_menu_lays_out_for_the_window_after_every_resize()
 	await test_keys_alone_start_a_run_from_the_start_menu_and_find_it_again()
 	await test_a_pad_alone_starts_a_run_from_the_start_menu()
 	await test_a_show_resumed_through_the_menu_rests_a_key_focus_on_its_board()
@@ -1502,7 +1503,7 @@ func test_a_wall_view_picture_draws_at_least_a_texel_per_pixel() -> void:
 	for size : Vector2i in INSET_WINDOWS:
 		await _start_map_fixture(size)
 		await _main._go_to_wall_view()
-		await _await_the_wall_drawn_at_its_camera_zoom()
+		await _await_the_wall_drawn_at_its_camera_zoom(_main)
 		for id : StringName in [&"map", &"game", &"start_menu"] as Array[StringName]:
 			var sprite : Sprite2D = _main._pictures[id].get_node(^"%Screen")
 			var texels_per_px := Vector2.ONE / sprite.get_global_transform_with_canvas().get_scale()
@@ -1525,7 +1526,7 @@ func test_a_visited_picture_shows_its_content_in_wall_view_and_stays_frozen() ->
 		await _enter_game_fixture()
 		RenderingServer.frame_post_draw.disconnect(keep_the_live_frame)
 		await _main._go_to_wall_view()
-		await _await_the_wall_drawn_at_its_camera_zoom()
+		await _await_the_wall_drawn_at_its_camera_zoom(_main)
 		for id : StringName in [&"start_menu", &"map", &"game"] as Array[StringName]:
 			var thumbnail := _main._pictures[id].viewport.get_texture().get_image()
 			check(_opaque_fraction(thumbnail) > THUMBNAIL_OPAQUE_FRACTION
@@ -1575,7 +1576,7 @@ func test_the_wall_view_shows_one_surface_colour_behind_the_pictures() -> void:
 		check(worst_in_transit.is_empty(),
 				"in transit to the wall at %s only the surface colour shows behind the pictures" % size,
 				"worst frame: %d off, first %s" % [worst_in_transit.size(), worst_in_transit.slice(0, 1)])
-		await _await_the_wall_drawn_at_its_camera_zoom()
+		await _await_the_wall_drawn_at_its_camera_zoom(_main)
 		await RenderingServer.frame_post_draw
 		var at_rest := _off_surface_pixels(_uncovered_pixels(), surface.color)
 		check(at_rest.is_empty(),
@@ -1680,12 +1681,12 @@ func _mean_colour_difference(a: Image, b: Image) -> float:
 	return total / float(samples)
 
 # THE CAMERA IS PHYSICS-INTERPOLATED, so the drawn canvas lags its zoom by a few frames after a
-# move lands -- measured 0.785 drawn against 0.449 two frames on. Bounded, so a lag that never
+# move lands or a resize -- measured 0.785 drawn against 0.449 two frames on. Bounded, so a lag that never
 # closes fails the check rather than hanging.
-func _await_the_wall_drawn_at_its_camera_zoom() -> void:
-	var camera : Camera2D = _main.wall.get_node(^"%Camera2D")
+func _await_the_wall_drawn_at_its_camera_zoom(main: Main) -> void:
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
 	for _frame : int in range(120):
-		if is_equal_approx(_main.wall.get_viewport().get_canvas_transform().get_scale().x, camera.zoom.x):
+		if is_equal_approx(main.wall.get_viewport().get_canvas_transform().get_scale().x, camera.zoom.x):
 			return
 		await get_tree().process_frame
 
@@ -2353,6 +2354,42 @@ func test_the_menus_column_only_shifts_while_the_sidebar_slides() -> void:
 		_check_the_column_only_shifts(closing, "the picker closing at %s" % size)
 		_check_the_bottom_row_beside_the_sidebar(viewport, main, "with the picker closed at %s" % size)
 		await _end_booted_fixture(viewport, main)
+
+## With the sidebar hidden on the bare menu, every resize between the two window shapes, in either order and in the harness and the player's window alike, leaves the menu's column centred in the whole picture with every control inside the window.
+func test_the_menu_lays_out_for_the_window_after_every_resize() -> void:
+	for in_players_window : bool in [false, true]:
+		for sizes : Array[Vector2i] in [INSET_WINDOWS, [INSET_WINDOWS[1], INSET_WINDOWS[0]] as Array[Vector2i]]:
+			backup_real_save(suite_tag())
+			_prev_run = RunManager.run
+			_prev_save_info = Main.save_info
+			var booted := await _boot_main_at(sizes[0], in_players_window)
+			var host : Viewport = booted[0]
+			var main : Main = booted[1]
+			var route := "%s in the %s" % [sizes, "player's window" if in_players_window else "harness"]
+			check(main.hud_container.shows_the_bare_menu() and is_zero_approx(main.hud_container.slid_fraction()),
+					"sanity: the sidebar is out on the bare menu, %s" % route)
+			for size : Vector2i in [sizes[1], sizes[0]] as Array[Vector2i]:
+				if host is Window: (host as Window).size = size
+				else: (host as SubViewport).size = size
+				await get_tree().process_frame
+				await _await_the_wall_drawn_at_its_camera_zoom(main)
+				_check_the_menu_centred_in_the_window(host, main, "after the resize to %s, %s" % [size, route])
+			await _end_booted_fixture(host, main)
+
+func _check_the_menu_centred_in_the_window(host: Viewport, main: Main, what: String) -> void:
+	var window := Rect2(Vector2.ZERO, Vector2((host as SubViewport).size if host is SubViewport else (host as Window).size))
+	var column := Rect2()
+	for node : Node in main.menu_scene.get_node(^"Content").find_children("*", "Control", true, false):
+		var control := node as Control
+		if not (control is Button or control is Label) or not control.is_visible_in_tree(): continue
+		var rect := _menu_control_in_window(host, main._pictures[&"start_menu"], control)
+		check(window.grow(1.0).encloses(rect), "%s lies inside the window %s" % [control.name, what],
+				"%s in %s" % [rect, window])
+		column = rect if column.size == Vector2.ZERO else column.merge(rect)
+	var off := column.get_center() - window.get_center()
+	var tolerance := MENU_CENTRED_TOLERANCE_PX * host.get_final_transform().get_scale()
+	check(absf(off.x) <= tolerance.x and absf(off.y) <= tolerance.y,
+			"the menu's column centres in the whole picture %s" % what, "%s in %s" % [column, window])
 
 # ⚠ THE COLUMN IS READ IN THE MENU'S OWN CANVAS, the sidebar in window pixels: the landing's slide
 # starts while the camera still settles its zoom (measured ~25 px of drift), which moves the whole

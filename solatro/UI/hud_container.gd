@@ -91,7 +91,9 @@ func _ready() -> void:
 			_position_below_overlay_buttons()
 			get_viewport().size_changed.connect(_position_below_overlay_buttons)
 		overlay.ready.connect(follow_the_band, CONNECT_ONE_SHOT)
-	get_viewport().size_changed.connect(_apply_container_rect)
+# ⚠ DEFERRED: `Main` re-packs the wall on the same resize, after this node's handler would run, and
+# every screen fits against its picture's NEW rect -- announced at once, it lays out for the old size.
+	get_viewport().size_changed.connect(_apply_container_rect, CONNECT_DEFERRED)
 	PlayArea.settings().settings_changed.connect(_apply_container_rect)
 	_apply_container_rect()
 

@@ -312,6 +312,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 |---|---|---|
 | `Tests/Wall/test_sidebar.gd` / `.tscn` | `TestSidebar` | Charts B, C — open, swap, lock, dismiss, processing |
 | `Tests/Wall/test_sidebar.gd` | `func test_the_possible_cards_list_every_part_as_an_icon_and_no_card()`, `func test_a_possible_part_is_described_by_its_name_on_a_card_preview()`, `func _check_the_part_described(icon, how)`, `func _carries(card, part) -> bool`, `func _check_icons_at_the_ui_size(viewport, list, where)` | (added during execution) The possible cards as icons: one per part, no card body, one cell, a type shrunk; each described by name over a card preview by mouse, keys and d-pad |
+| `Tests/Wall/test_sidebar.gd` | `func test_the_menu_lays_out_for_the_window_after_every_resize()`, `func _check_the_menu_centred_in_the_window(host, main, what)` | Test support (added during execution): the bare menu resized 1280x720 <-> 600x1000 in both orders, in the harness and the player's window, keeps its column centred in the whole picture and inside the window |
 | `Tests/Engine/test_gesture_metrics.gd` / `.tscn` | `TestGestureMetrics` | Chart M — both bases, no DPI anywhere |
 | `Tests/Engine/test_entrance_stocks.gd` / `.tscn` | `TestEntranceStocks` | Chart H — deal, rebalance, exhaustion, determinism |
 | `Tests/Interaction/test_drag_place.gd` / `.tscn` | `TestDragPlace` | Chart E — click vs drag, release targets |
