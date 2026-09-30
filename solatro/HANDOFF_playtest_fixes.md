@@ -568,8 +568,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 1. DONE - review round 4 answered (RULINGS). Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
 2. The placement-lag profiling (owner: "at end of task queue. so after P84 if that is last task in queue.") - the plan is solatro/todo.md § Performance: measure and report the cause to the owner before any fix.
 3. P85-P90, review round 4's comments, in order (each gated, by eye where it draws; re-shoot and review the shots they change as round 5, only those).
-4. OWNER QUESTION open: menu_picker - "why would sidebar slide in if its empty and shows nothing?" (the thirty-third round's pick b); record the answer, a change becomes a step.
-5. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
+4. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
 
 ### Opening prompt for the next session (paste as is)
 
