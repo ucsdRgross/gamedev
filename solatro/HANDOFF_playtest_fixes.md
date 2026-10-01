@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P89 (P66 closed without code, P88 closed), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
+**State:** P1-P90 (P66 closed without code, P88 closed), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
 by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P87's review follow-up): `ALL 51 SUITES: 9727 CHECKS PASSED` (BOARD FUZZ 353, SIDEBAR 4265/4267, UI VIEWERS 177, PALETTE 51, WALL PAUSE 71/72), ~15 min with
 `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order:
-P90 (review round 4's comments), P91, P92-P95 (the measured placement lag), then a round-5 review of only the shots P85-P91 changed, the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
+P91, P92-P95 (the measured placement lag), then a round-5 review of only the shots P85-P91 changed, the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
@@ -362,7 +362,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [52934da9]
 - id: P90
   description: 'The start menu in a portrait window (review round 4, menu_top). Owner, verbatim: "would look better if buttons were aligned top to bottom in a vertical window." At a vertical window the bottom row''s buttons stack top to bottom; the landscape row stays.'
-  status: pending
+  status: done
+  commits: [88a2b988]
 - id: P91
   description: 'The spotlight circle as wide as the card. Owner, verbatim: "i notice that spotlight effect circle is not as wide as card talent art 32x32 is. in fact, lets make spotlight effect as wide as entire card is now, which should be 52x52, since square card can now fit a whole circle inside. could not do this previously with rectangular card." Today: FxSpotlightStyle.circle_radius (UI/Fx/fx_spotlight_style.gd ~37, default 16 art units, @export_range 4..48 per the owner''s Q85 ask that it stay adjustable), saved 16 in Shaders/Styles/glow_beam.tres and 17 in glow_circle.tres, fallback CIRCLE_ART_UNITS_FALLBACK 16 (UI/spotlight_director.gd ~35), used at ~446 as radius x scale; the card art is CARD_ART_SIZE 52x52 (Cards/card_visual.gd ~8). MEASURE FIRST the drawn circle''s diameter on a real card against the talent art''s drawn 32 and the card''s 52 - the owner sees it narrower than 32, so a lost scale may be the first defect; stop if so. Then the default derives from the card (radius = CARD_ART_SIZE.x / 2, no typed 26), both saved styles follow it, the knob stays adjustable; the cone''s mouth derives from the radius, so check the beam still meets the circle. By eye on fire/spotlight shots.'
   status: pending
@@ -592,7 +593,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 (Thirty-sixth round: a NEW task goes to the END of this list.)
 1. DONE - review round 4 answered (RULINGS). Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
 2. DONE - the placement-lag profiling (measured; solatro/todo.md § Performance; harness Tests/Visual/placement_lag_probe.tscn).
-3. P90 (P85-P87, P89 done, P88 closed), review round 4's comments, in order (each gated, by eye where it draws; re-shoot and review the shots they change as round 5, only those).
+3. DONE - review round 4's comments (P85-P87, P89, P90; P88 closed). Round 5 shows only the shots they and P91 changed.
 4. P91 (the spotlight circle as wide as the card, owner's ask after round 4).
 5. P92-P95, the placement-lag fixes, one per gate, each re-measured with the probe (Fable checked the options: none is an owner decision).
 6. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
