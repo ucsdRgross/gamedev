@@ -35,7 +35,7 @@ Solatro's catalogue - every kind of step its streams have run, with its tier and
 | mechanical: a comment sweep, a one-line inline, a doc correction, a re-point of named rows | `plan-implementer-sonnet` | Sonnet 5 at low: 5 of 5 landed first round, 29k-54k tokens each; Sonnet 5.5 at high not yet measured here |
 | the writer and row are named: a one-site fix with its `file:line`, a recon-backed bug | `plan-implementer-low` | 34k-69k tokens each; each one either landed or stopped with a measured owner question |
 | the cause is open, a focus/input model across viewports, a modal or lock state machine, a deletion that must prove every caller gone | `plan-implementer` (medium) | 100k-680k tokens per round; split the brief before dispatch - a smaller brief, not a bigger model, is the lever |
-| read-only recon ahead of a step | `Explore` on `sonnet` | grep-and-cite; the implementer measures anyway |
+| read-only recon ahead of a step | `Explore` with `model: "sonnet"` on EVERY call | grep-and-cite; the implementer measures anyway. Explore pins no model, so an omitted parameter runs it on the harness default |
 | every review | `bloat-reviewer` / `plan-auditor` / `adversarial-review` / `pair-reviewer` on `fable` | read-only, see below |
 
 **Escalation - by the KIND of miss, not a count.** A low or Sonnet report that calls an unknown
