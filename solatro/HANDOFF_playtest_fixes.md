@@ -350,7 +350,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [9e000089]
 - id: P87
   description: 'The possible-cards list by type (review round 4, possible_cards). Owner, verbatim: "including name is great. rows should be split by type though to make it easier to determine the type, similar to starting a new line for a new paragraph, with header label such as Card Type, Talent, Suit, Rank separating the rows, left aligned. rank should not be black as well since outline is also black. use the white cream color as the rank filling instead." Rows grouped by part type, each group opened by a left-aligned header label (Card Type, Talent, Suit, Rank); the rank numerals filled cream, not black.'
-  status: pending
+  status: done
+  commits: [67449ddb]
 - id: P88
   description: 'Hoop overlap (review round 4, formation_editor_hoop). Owner, verbatim: "hoop top portion should always cover any other hoops'' bottom half. if this is just tool editor idiosyncrasy then its fine if actual game already does this, this editor is just for positioning." MEASURE FIRST whether the game draws each hoop''s top over the others'' bottom halves; if it does, the editor-only difference needs no fix (report it); if the game does not, fix the game.'
   status: pending
@@ -578,6 +579,7 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - FOR THE CLOSE (tooling, from the session reflection): two hooks match command TEXT, not the action - godot-needs-private-appdata.ps1 blocked a python script whose text contained run_tests.py, and block-source-rewrite.ps1 blocked a `sed` on MEMORY.md whose text contained the words of a PowerShell cmdlet; match a launch / a write to a source path, not a substring; solatro/visual-review/status.agent.json is rewritten by every shoot and never committed - gitignore it; round 2's Done never reached status.owner.json (still round 1), so the watch never fired - check the page's Done before round 3.
 - TOOLING, .claude/hooks/commit-gate.ps1: it blames a commit for duplicate pairs already on HEAD (test_sidebar 959/1114 and 2150/2210 blocked P73, which created neither) - it should report only pairs the staged diff creates; and its [dup-ok] check reads the command line, not a `-F` message file.
 - sidebar_snapshot's score_line_pulse still is staged on the random deal (placements until one registers a new combo class, Tests/Visual/sidebar_snapshot.gd _shoot_the_score_line_pulse ~581): 1 of 2 runs on the P83 tree wrote no PNG, so `review.py shoot` fails the round. COUNT 1. Measure before naming a cause.
+- NEW on the P87 tree, 1 of 2 overseer gates: GRID LAYOUT "TP-85: caught mid-growth, the row is PART WAY to its new height -- it eases rather than snapping" - a mid-ease sample; green in the rerun and 139/139 alone; the box had another session working during the red gate (CLAUDE.md edited mid-run). P87 touches the possible-cards list and a palette role - no board reach traced. COUNT 1. Measure before naming a cause.
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
