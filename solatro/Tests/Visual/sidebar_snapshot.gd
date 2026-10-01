@@ -12,6 +12,8 @@ const MAP_HUD_TOP_OUT_PATH := "user://sidebar_snapshot/map_hud_top.png"
 const MAP_POPUP_OUT_PATH := "user://sidebar_snapshot/map_popup.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
+const MENU_TOP_PLAY_OPEN_OUT_PATH := "user://sidebar_snapshot/menu_top_play_open.png"
+const MENU_PICKER_TOP_OUT_PATH := "user://sidebar_snapshot/menu_picker_top.png"
 const MENU_PICKER_OUT_PATH := "user://sidebar_snapshot/menu_picker.png"
 const MENU_FOCUSED_BY_KEYS_OUT_PATH := "user://sidebar_snapshot/menu_focused_by_keys.png"
 const SCORE_LINE_PULSE_OUT_PATH := "user://sidebar_snapshot/score_line_pulse.png"
@@ -25,6 +27,9 @@ const DESCRIPTION_SCROLL_OUT_PATH := "user://sidebar_snapshot/description_scroll
 const VIEWER_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/viewer_description.png"
 const VIEWER_DESCRIPTION_TOP_OUT_PATH := "user://sidebar_snapshot/viewer_description_top.png"
 const CHOICE_VIEWER_OUT_PATH := "user://sidebar_snapshot/choice_viewer_description.png"
+const CHOICE_VIEWER_THREE_ROWS_OUT_PATH := "user://sidebar_snapshot/choice_viewer_three_rows.png"
+## Cards in the three-row chooser's pack: two full rows and a short third.
+const THREE_ROW_PACK_CARDS := ChoiceViewer.ROW_CARDS * 2 + 3
 const VIEWER_HOVER_OUT_PATH := "user://sidebar_snapshot/viewer_hover_no_x.png"
 const VIEWER_STICKY_OUT_PATH := "user://sidebar_snapshot/viewer_sticky_with_x.png"
 const VIEWER_CLOSED_OUT_PATH := "user://sidebar_snapshot/viewer_closed_hud.png"
@@ -35,6 +40,7 @@ const DECK_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_over_chooser.p
 const DECK_CARD_HOVER_OVER_CHOOSER_OUT_PATH := "user://sidebar_snapshot/deck_card_hover_over_chooser.png"
 const DECK_OVER_POSSIBLE_CARDS_OUT_PATH := "user://sidebar_snapshot/deck_over_possible_cards.png"
 const POSSIBLE_CARDS_OUT_PATH := "user://sidebar_snapshot/possible_cards.png"
+const POSSIBLE_CARDS_RANKS_OUT_PATH := "user://sidebar_snapshot/possible_cards_ranks.png"
 const RULES_VIEWER_OUT_PATH := "user://sidebar_snapshot/rules_viewer.png"
 const MAP_ZOOMED_EDGE_OUT_PATH := "user://sidebar_snapshot/map_zoomed_edge.png"
 const MAP_AFTER_TRAVEL_OUT_PATH := "user://sidebar_snapshot/map_after_travel.png"
@@ -96,6 +102,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	_capture(MENU_TOP_OUT_PATH)
+	await _shoot_the_portrait_menu_opened_by_keys(main)
 	DisplayServer.window_set_size(window_size)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -167,6 +174,7 @@ func _ready() -> void:
 	var pack := _open_choice_viewer(main)
 	if pack: pack.free()
 	await get_tree().process_frame
+	await _shoot_the_three_row_chooser(main)
 
 	await main.enter_game()
 	var view := (main._pictures[&"game"].screen_root as GameView)
@@ -645,6 +653,61 @@ func _shoot_the_menu_focused_by_keys(main: Main) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
+# THE PORTRAIT MENU OPENED BY KEYS ALONE: Enter on Play unfolds its row, Down and Enter open the deck
+# picker. Escape, Up and Enter then fold both away, so the stills after these start from the menu
+# as the boot left it.
+func _shoot_the_portrait_menu_opened_by_keys(main: Main) -> void:
+	_push_key(KEY_ENTER)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(MENU_TOP_PLAY_OPEN_OUT_PATH)
+	_report_the_menu(main, "menu_top_play_open")
+	_push_key(KEY_DOWN)
+	await get_tree().process_frame
+	_push_key(KEY_ENTER)
+	await _await_the_slide(main, 1.0)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(MENU_PICKER_TOP_OUT_PATH)
+	_report_the_menu(main, "menu_picker_top")
+	_push_key(KEY_ESCAPE)
+	await _await_the_slide(main, 0.0)
+	_push_key(KEY_UP)
+	await get_tree().process_frame
+	_push_key(KEY_ENTER)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_report_the_menu(main, "menu_top_restored")
+
+## Waits for the sidebar to finish sliding to `aim`: 1 is slid in, 0 is out.
+func _await_the_slide(main: Main, aim: float) -> void:
+	for frame : int in CASCADE_WATCH_FRAMES:
+		await get_tree().process_frame
+		if is_equal_approx(main.hud_container.slid_fraction(), aim): return
+
+# A menu still is one a player can reach only if its buttons, its picker and the focus agree, so
+# all are printed: `lines` equal to `controls` is every shown button on a line of its own.
+func _report_the_menu(main: Main, shot: String) -> void:
+	var menu := main.menu_scene
+	var buttons : Array[Node] = [menu.get_node(^"Content/Play")]
+	buttons += menu.play_row.get_children() + menu._bottom_row.get_children()
+	var lines : Dictionary[int, bool] = {}
+	for button : Control in buttons:
+		if button.is_visible_in_tree(): lines[roundi(button.global_position.y)] = true
+	var shown := buttons.filter(func(button: Control) -> bool: return button.is_visible_in_tree())
+	var menu_focus := (main._pictures[&"start_menu"].viewport as SubViewport).gui_get_focus_owner()
+	var ui_focus := get_viewport().gui_get_focus_owner()
+	var picker := main.hud_container.get_parent().find_child("DeckPicker", false, false)
+	print(("SIDEBAR_SNAPSHOT menu_state %s window=%s play_open=%s controls=%d lines=%d picker=%s "
+			+ "slid=%.2f menu_focus=%s ui_focus=%s")
+			% [shot, DisplayServer.window_get_size(), menu.play_row.visible, shown.size(),
+					lines.size(), picker != null and not picker.is_queued_for_deletion(),
+					main.hud_container.slid_fraction(),
+					menu_focus.name if menu_focus else &"none",
+					("%s/%s" % [ui_focus.get_parent().name, ui_focus.name]) if ui_focus else "none"])
+
 func _push_key(keycode: Key) -> void:
 	for pressed : bool in [true, false]:
 		var key := InputEventKey.new()
@@ -896,11 +959,53 @@ func _shoot_the_deck_over_the_possible_cards(main: Main) -> void:
 					(container.get_node(^"%ExitX") as Control).visible])
 	await _click_the_control(map.selection_deck_button)
 	await get_tree().process_frame
+	await _shoot_the_possible_cards_ranks(list, map.controller.camera)
 	if is_instance_valid(list): list._close()
 	await get_tree().process_frame
 	map.controller.clear_selection()
 	_stand_the_token_on(map.controller, token_node)
 	await get_tree().process_frame
+
+# THE LIST WHEELED DOWN TO ITS LAST ROWS, where the Rank group is. LAST in the list's visit: the
+# list is closed right after, so no later still inherits the scroll or the pointer resting over it.
+func _shoot_the_possible_cards_ranks(list: DeckViewer, map_camera: Camera2D) -> void:
+	var map_zoom := map_camera.zoom.x
+	var scroll := list._scroll
+	var last : Control = list.cards().controls.back()
+	var at := _window_px(scroll, scroll.size * 0.5)
+	_push_pointer(get_viewport(), at)
+	for notch : int in CASCADE_WATCH_FRAMES:
+		if scroll.get_global_rect().encloses(last.get_global_rect()): break
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_WHEEL_DOWN
+		event.pressed = true
+		event.position = at
+		event.global_position = at
+		get_viewport().push_input(event)
+		await _await_the_list_moved_and_still(scroll)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(POSSIBLE_CARDS_RANKS_OUT_PATH)
+	var headers : Array[String] = []
+	for header : Label in list.cards()._headers:
+		if scroll.get_global_rect().encloses(header.get_global_rect()): headers.append(header.text)
+	print(("SIDEBAR_SNAPSHOT possible_cards_ranks headers_in_view=%s scrolled=%d last_in_view=%s "
+			+ "stuck=%s map_zoom=%.4f map_zoom_before=%.4f")
+			% [headers, scroll.scroll_vertical,
+					scroll.get_global_rect().encloses(last.get_global_rect()), list.cards().sticky,
+					map_camera.zoom.x, map_zoom])
+
+# ⚠ EACH NOTCH IS LEFT TO LAND BEFORE THE NEXT: notches pushed faster than the list moves ran past
+# its end and reached the map beneath (measured: the map zoomed and the list closed).
+func _await_the_list_moved_and_still(scroll: ScrollContainer) -> void:
+	var from := scroll.scroll_vertical
+	var still := 0
+	var last := from
+	for frame : int in CASCADE_WATCH_FRAMES:
+		await get_tree().process_frame
+		still = still + 1 if scroll.scroll_vertical == last else 0
+		if still >= BOARD_STILL_FRAMES and last != from: return
+		last = scroll.scroll_vertical
 
 ## A real left click at `at` in map-viewport points, the pointer moved there first.
 func _click_on_the_map(main: Main, at: Vector2) -> void:
@@ -1115,16 +1220,47 @@ func _open_a_board_viewer(view: GameView, opener_ui: Control) -> void:
 # The CHOICE still: a real booster node opened through the map's own handler, one pack card under
 # the highlight -- the second viewer the sidebar took over from.
 func _open_a_booster_pack(main: Main) -> void:
-	var node := WorldGraphNode.new()
-	node.meta[MapNodeRoles.ROLE_KEY] = MapNodeRoles.ROLE_BOOSTER
-	node.meta[MapNodeRoles.BOOSTER_KEY] = TypeBoosterBasic.new()
-	await main.map_scene._open_booster(node)
-	node.free()
-	await get_tree().process_frame
-	var viewer := _open_choice_viewer(main)
+	var viewer := await _open_a_pack(main, TypeBoosterBasic.new())
 	if viewer == null: return
 	var cards := _listed_cards(viewer.flow_container)
 	if not cards.is_empty(): cards[0].grab_focus()
+	await get_tree().process_frame
+
+## `booster` opened through the map's own handler, from a node made for it; returns its chooser.
+func _open_a_pack(main: Main, booster: BoosterTemplate) -> ChoiceViewer:
+	var node := WorldGraphNode.new()
+	node.meta[MapNodeRoles.ROLE_KEY] = MapNodeRoles.ROLE_BOOSTER
+	node.meta[MapNodeRoles.BOOSTER_KEY] = booster
+	await main.map_scene._open_booster(node)
+	node.free()
+	await get_tree().process_frame
+	return _open_choice_viewer(main)
+
+## A basic pack offering THREE_ROW_PACK_CARDS cards: no shipped pack fills more than one row.
+class ThreeRowPack extends TypeBoosterBasic:
+	func get_frame() -> int: return THREE_ROW_PACK_CARDS
+
+# THE CHOOSER AT THREE ROWS, the last one short and centred, entered by a real Right key so the
+# first card wears the focus. The pack is the one written state; its chooser is freed after the still.
+func _shoot_the_three_row_chooser(main: Main) -> void:
+	var chooser := await _open_a_pack(main, ThreeRowPack.new())
+	_push_key(KEY_RIGHT)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(CHOICE_VIEWER_THREE_ROWS_OUT_PATH)
+	var rows : Dictionary[int, int] = {}
+	for card : Control in chooser.cards().controls:
+		var y := roundi(card.global_position.y)
+		rows[y] = (rows.get(y, 0) as int) + 1
+	var focused := get_viewport().gui_get_focus_owner()
+	print("SIDEBAR_SNAPSHOT three_row_chooser cards=%d rows=%s rerolls=%d window=%s focus_card=%d sticky=%s"
+			% [chooser.cards().controls.size(), rows.values(), chooser.data.rerolls,
+					(chooser.get_node(^"Layout") as Control).get_global_rect(),
+					chooser.cards().controls.find(focused), chooser.cards().sticky])
+	_report_the_map(main.map_scene.controller, "three_row_chooser")
+	chooser.free()
 	await get_tree().process_frame
 
 # The MENU stills: New Run opens the deck picker, shot alone once the sidebar is in, then the first

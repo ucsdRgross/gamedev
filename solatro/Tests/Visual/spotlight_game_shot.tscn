@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Tests/Visual/spotlight_game_shot.gd" id="1_shot"]
+
+[node name="SpotlightGameShot" type="Node2D"]
+script = ExtResource("1_shot")

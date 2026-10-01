@@ -1,179 +1,130 @@
 {
   "shots": [
     {
-      "id": "chooser_overlay_greyed",
-      "title": "The pack chooser up: Back, Forward and Wall greyed until Take",
-      "row": "P52",
-      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
-      "env": {},
-      "png": "user://sidebar_snapshot/chooser_window.png",
-      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The chooser with Queen of Balls stuck (its description and X in the sidebar): Reroll and Take held, drawn grey, each Reroll centred under its card; the purple window sized to its one row, the map around it. BEFORE: the full-height dark square."
-    },
-    {
-      "id": "map_fit",
-      "title": "The map at its default fit beside the sidebar, with the sea buffer",
-      "row": "P55",
-      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
-      "env": {},
-      "png": "user://sidebar_snapshot/map_hud.png",
-      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The map fits beside the sidebar with sea on every side: land from ~34 px under the window's top to ~49 px above its bottom, ~160 px of sea left of it and ~140 right. A different generated map each shoot. BEFORE: land touching the bottom edge."
-    },
-    {
       "id": "deck_over_chooser",
       "title": "The run deck open over the chooser; the chooser's Deck button stays up to close it",
-      "row": "P56",
+      "row": "P85",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/deck_over_chooser.png",
-      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The run deck (crimson) opened over the chooser hides it completely - no Rerolls/Take shows; one solid gold X; the sidebar reads 'Close deck' over the stuck Queen of Balls. BEFORE: the chooser's Rerolls/Take line showed below the deck."
-    },
-    {
-      "id": "grid1_overview",
-      "title": "One grid, the overview: square cells with their pale see-through fill",
-      "row": "P58b-2b",
-      "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
-      "env": {
-        "GRID_COUNT": "1"
-      },
-      "png": "user://reveal_shots/grid_zoom_1_overview.png",
-      "seen": "BEFORE is round 3's tree (square cards, as AFTER). The picture is unchanged since you approved it; it is here only so you can judge the review page's own scaling, which now shrinks each image WITH smoothing (click an image for its native pixels)."
+      "seen": "The run deck (crimson) over the chooser is now a picture frame: about 18-20 px of crimson on all four sides of the cards (top 18, left 20, bottom 20), four whole rows and no cut fifth row, and the scrollbar drawn inside the right border, about 11 px clear of the last column. The window is narrower (x 464..1136; BEFORE 431..1169), hugging its five columns; the chooser is hidden completely; the gold X tab sits outside the top-right corner. BEFORE: cards 8 px from the top and ~48 px from the left, a fifth row cut at the bottom, the scrollbar touching the last column. The described card differs (a random roll)."
     },
     {
       "id": "deck_viewer",
       "title": "The Deck viewer: an even gap between cards, whole columns, centred",
-      "row": "P58b-7",
+      "row": "P85",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/viewer_description.png",
-      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The game's deck viewer in crimson: rows 8 px below the window's top, whole columns centred, a solid gold X level with the first row; 2 of Hoops hovered (lighter rim) and described. BEFORE: near-black, rows flush to the top, a dark X."
+      "seen": "The game's deck viewer with the same frame: an equal crimson border on all four sides, four whole rows, the scrollbar inside the right border; 2 of Hoops focused (light rim) and described. BEFORE: the wider window, rows 8 px from the top, a cut fifth row. Look for you: the board's top-row cards peek out above the window's top edge (y ~75-90) in both."
     },
     {
       "id": "pack_chooser",
       "title": "Opening a pack: the offered cards, with a gap under each Reroll button",
-      "row": "P58b-7",
+      "row": "P86",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/choice_viewer_description.png",
-      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The pack chooser in its own purple, as tall as its one row (620x246), each Reroll centred under its card, Rerolls: 5 beside Take in the foot row, the map visible all round; the sidebar describes 7 of Fires. BEFORE: a full-height dark square with the cards in its middle and Reroll labels left-aligned."
+      "seen": "The pack chooser: one row of five, a Reroll under each card with a small gap, then a clear gap (~10 px, the card gap) before the foot row; Take no longer touches the Reroll buttons. The window is narrower (464..1136; BEFORE 456..1144) with the same border on every side. BEFORE: Take's top touching the Reroll row. The cards differ (a random roll)."
     },
     {
       "id": "possible_cards",
       "title": "A pack's possible cards, one of them picked",
-      "row": "P58b-7",
+      "row": "P87",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/possible_cards.png",
-      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The pack's possible cards as a 5-column grid of labelled part icons in the list's own blue; 'Revealing' stuck (rimmed): the sidebar shows its name, description and a blank card with the eye stamp. LOOK FOR YOU, not in BEFORE: a 'Talent pack' name tag sits on the map above the list's top edge, its lower half cut off by the list - the map's hover name for the pack node the pointer rests on, drawn while the list is open. Still: the rank numerals are dark ink on the blue; the stamp/suit icons are tiny in wide cells. BEFORE: loose parts over a dark backdrop, the sidebar preview blank.",
-      "crops": [
-        {
-          "label": "the 'Talent pack' tag cut by the list",
-          "x": 700,
-          "y": 20,
-          "w": 420,
-          "h": 110
-        }
-      ]
+      "seen": "The pack's possible cards grouped by type, each group opened by a left-aligned header: Card Type (Paper, Heavy, Stone), Talent (Extra Point, Echoing Trigger, Hungry Hippo), Stamp (Revealing - stuck and rimmed - Global, Double Trigger), then Suit, its row cut by the window's bottom; Rank is below the fold (next shot). BEFORE: one ungrouped five-column grid with black rank numerals. Looks for you: each group has three items in a five-column window, so the right 40% is empty; the Extra Point '+1' is still dark ink on the blue; the map's large 'Talent pack' name plate is drawn above the list's top edge."
     },
     {
-      "id": "formation_editor_hoop",
-      "title": "The formation tool: hoops laid out over cards",
-      "row": "P58c-2",
-      "scene": "res://Tests/Visual/formation_editor_shot.tscn",
+      "id": "possible_cards_ranks",
+      "title": "A pack's possible cards scrolled to the Rank group: the header and the rank numerals",
+      "row": "P87",
+      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
-      "png": "user://tool_shots/formation_editor_hoop.png",
-      "seen": "The hoop formation's rings share one top and one bottom (level). Look for you: in the editor the ring group sits left of the stand-in card's centre. BEFORE: the row sloped down to the right."
-    },
-    {
-      "id": "pip_row",
-      "title": "A printed card's bottom row of rank, suit and stamp on the wider card",
-      "row": "P58b-6",
-      "scene": "res://Tests/Visual/grid_zoom_shot.tscn",
-      "env": {
-        "GRID_COUNT": "1"
-      },
-      "png": "user://reveal_shots/grid_zoom_1_focused.png",
-      "seen": "BEFORE is round 3's tree (square cards, as AFTER); the pip spacing stays as you approved it. Here only for the page's scaling, which now shrinks each image WITH smoothing (click an image for its native pixels) - judge the outline at native size.",
+      "png": "user://sidebar_snapshot/possible_cards_ranks.png",
+      "seen": "The same list wheel-scrolled to its end: Suit (Hoop, Knife, Ball, Fire), then a left-aligned Rank header and Ace to King in rows of five, each numeral filled cream with a dark outline - none is black. No BEFORE (a new still; BEFORE's black numerals are in the previous shot). Looks for you: a fragment of the map's 'Talent pack' plate (a 'T') sticks out left of the list at y ~470-530; the sidebar's Deck button wears the focus rim.",
       "crops": [
         {
-          "label": "the top row's bottom pips and the row score beside them",
-          "x": 730,
-          "y": 160,
-          "w": 548,
-          "h": 40
+          "label": "the rank numerals Ace, 2 and 3",
+          "x": 500,
+          "y": 285,
+          "w": 340,
+          "h": 60
         }
       ]
     },
     {
       "id": "win_overlay",
       "title": "The show won: the result over the board",
-      "row": "P58b",
+      "row": "P89",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/outcome_buttons.png",
-      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. 'Fame +1' with Continue (focused, outlined) and Undo centred over the board's columns (~x 800), not the picture's centre; the board dimmed behind. BEFORE: centred ~x 636, left of the board."
-    },
-    {
-      "id": "menu_focused_by_keys",
-      "title": "The start menu after a Down key: the key focus rim on a menu button",
-      "row": "P64b-3b",
-      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
-      "env": {},
-      "png": "user://sidebar_snapshot/menu_focused_by_keys.png",
-      "seen": "1280x720 right after the 600x1000 still, the menu focused by keys: no sidebar, and the column laid out for the whole window - the title centred, Play alone, then Profile/Options/Quit/Collection/Language as ONE row inside the window; Quit carries the key-focus outline. The short band. No BEFORE (a new still). Round 4's first shoot showed this same moment with the column shifted right and its bottom row cut off at the window's edge - fixed since."
-    },
-    {
-      "id": "score_line_pulse",
-      "title": "The game sidebar's score line at its combo pulse's peak",
-      "row": "P81",
-      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
-      "env": {},
-      "png": "user://sidebar_snapshot/score_line_pulse.png",
-      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The score line '2 x 2.0' held at its combo pulse's peak (scale 1.15 printed): 14 px tall against 13 at rest - larger, subtly - growing to the right from the left margin under Goal 1 / Total 4, wholly inside the sidebar. A won show behind ('Fame +4'). No BEFORE (a new still). This one still is staged on the random deal: 1 of 2 runs of the scene reached no new combo class and wrote none."
-    },
-    {
-      "id": "menu",
-      "title": "The start menu at 1280x720",
-      "row": "P73",
-      "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
-      "env": {},
-      "png": "user://sidebar_snapshot/menu.png",
-      "seen": "One centred column at the UI scale: title, Play (key-focus rim - the menu takes the focus when shown), then Profile/Options/Quit/Collection/Language as one tight row. BEFORE: Play drawn over the submenu area, the bottom row spread edge to edge at uneven heights."
+      "seen": "The result block ('Fame +1921', then Continue focused and Undo) now spans y ~250..490, centred near the window's middle and over the board's columns (x ~800). BEFORE: the label at y ~330..395 and the buttons at ~512..563, over the Entrance row - the block sat low. The score differs (a random deal)."
     },
     {
       "id": "menu_top",
       "title": "The start menu in a tall 600x1000 window",
-      "row": "P73",
+      "row": "P90",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
       "png": "user://sidebar_snapshot/menu_top.png",
-      "seen": "600x1000: the same column, small and centred, the bottom row on one line inside the window. BEFORE: the bottom row ran edge to edge (Profile at x 0, Language touching x 600). Look for you: at rest the row does not wrap (it fits, ~87% of the width) - it wraps only when the sidebar slides in."
+      "seen": "600x1000: the title, then ONE column of six buttons top to bottom - Play (focused), Profile, Options, Quit, Collection, Language - each centred, each its own width. BEFORE: Play alone, then the other five as one row across the window."
     },
     {
-      "id": "menu_picker",
-      "title": "New Run: the deck picker with the sidebar slid in beside the menu",
-      "row": "P72",
+      "id": "pack_chooser_13",
+      "title": "A pack chooser of 13 cards: three rows, the last one short and centred",
+      "row": "P85/P86",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
-      "png": "user://sidebar_snapshot/menu_picker.png",
-      "seen": "The deck picker's own teal panel over the dimmed menu, the sidebar slid in (empty); 'Choose a deck', Pick on Deck 1 rimmed; the list scrolls, its 11th row half-cut above Close. The band is unchanged here (the menu never visited 600x1000 before it). BEFORE: a translucent dark panel with the menu showing through."
+      "png": "user://sidebar_snapshot/choice_viewer_three_rows.png",
+      "seen": "A 13-card chooser (staged: no shipped pack offers 13): rows of 5, 5 and 3, the short row centred; a Reroll under every card with an equal gap (~10-12 px) above and below each Reroll row; the foot row (Rerolls: 5, Take) clear of the third row's Rerolls; ~18-20 px of purple on all four sides. The window is 620 px tall of the 720. No BEFORE (a new still)."
     },
     {
-      "id": "menu_inspect",
-      "title": "A deck inspected from the picker: its viewer beside the sidebar",
-      "row": "P78c",
+      "id": "menu_picker_600x1000",
+      "title": "New Run in the tall 600x1000 window: the deck picker over the stacked menu",
+      "row": "P90",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
-      "png": "user://sidebar_snapshot/menu_inspect.png",
-      "seen": "The picker's Inspect viewer in its own mauve, the 8 cards 8 px below the window's top, a solid gold X tab outside the top-right corner; the window fills its space, so its lower half is empty mauve. BEFORE: near-black, cards flush to the top, a dark translucent X."
+      "png": "user://sidebar_snapshot/menu_picker_top.png",
+      "seen": "600x1000 with the deck picker open from New Run: the empty sidebar slid in as a band across the top (y 0..250); below it the dimmed stacked column with Play's submenu open; the teal picker centred over the column (x 185..415, y 510..740), its first Pick focused. No BEFORE (a new still). Looks for you: the picker's text is far smaller than the menu's buttons (it draws at the UI scale, ~0.52 here); it covers the middle of the column; its 11th row is half cut above Close."
     },
     {
-      "id": "deck_over_possible_cards",
-      "title": "The run deck open over a pack's possible cards",
-      "row": "P71",
+      "id": "menu_top_play_open",
+      "title": "The start menu in the tall 600x1000 window with Play's submenu open",
+      "row": "P90",
       "scene": "res://Tests/Visual/sidebar_snapshot.tscn",
       "env": {},
-      "png": "user://sidebar_snapshot/deck_over_possible_cards.png",
-      "seen": "The Back/Forward/Wall row is the short 1280x720 band again (buttons ~39 px tall, content starting right under them); BEFORE's taller band (~69 px, left over from the 600x1000 visit) pushed the sidebar's content ~30 px lower. The run deck in its own crimson covers the possible-cards list completely (no blue shows), rows 8 px below the top, one solid X; the sidebar reads 'Close deck' over the stuck Revealing part. The same 'Talent pack' tag as possible_cards shows above the deck, cut by it. BEFORE: near-black, flush to the top, a dark X."
+      "png": "user://sidebar_snapshot/menu_top_play_open.png",
+      "seen": "600x1000 with Play open: ten buttons in one column - Play (focused), New Run, Continue (greyed), Challenges, Deck, Profile, Options, Quit, Collection, Language - under the title, all inside the window (y ~255..770). No BEFORE (a new still). Look for you: the stack never changes back to rows, but the whole column re-centres - the title and Play sit ~85 px higher than with Play closed (previous shot)."
+    },
+    {
+      "id": "spotlight_game_zoomed",
+      "title": "The game's spotlight on its focused, zoomed board",
+      "row": "P91",
+      "scene": "res://Tests/Visual/spotlight_game_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/spotlight_game_zoomed.png",
+      "seen": "A real scoring act on the focused board (zoom 1.82): the top row of five placed cards lit, one beam each from the top edge, each pool as wide as its card and centred on it (printed: pool 94.7 px, card art 94.7 px, off centre 0.00), the card corners left dim; the rest of the board and the sidebar dimmed. Staged: the goal is 1,000,000,000 so the first scored line does not end the show. No BEFORE (a new scene). Looks for you: the lit faces wash to near white - the pips are faint, the rank and suit marks still readable; the last-placed card carries a pale focus rim."
+    },
+    {
+      "id": "spotlight_tool_glow",
+      "title": "The spotlight tool: the glow around each lit card",
+      "row": "P91",
+      "scene": "res://Tests/Visual/spotlight_tool_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/spotlight_tool_glow.png",
+      "seen": "The spotlight tool, the rig mid-wobble: three beams on the first three of six two-card stacks, each pool now as wide as the card. BEFORE: pools about half as wide, across the seam of the two cards. Looks for you: each pool is centred on the covered BACK card, so it lands on the top half of the front card, not on its centre; the lit faces wash to white."
+    },
+    {
+      "id": "spotlight_tool_glow_rest",
+      "title": "The spotlight tool with the cards held still: the glow round the corners",
+      "row": "P91",
+      "scene": "res://Tests/Visual/spotlight_tool_shot.tscn",
+      "env": {},
+      "png": "user://tool_shots/spotlight_tool_glow_rest.png",
+      "seen": "The same three stacks with the rig at rest (cards square): the same card-wide pools, the same position on the back card, the same wash. BEFORE: the half-width pools."
     }
   ]
 }
