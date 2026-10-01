@@ -4,11 +4,12 @@
 each with three variants plus reject, and the rulings exported to a single CSV. Done = the owner has
 answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for every one.
 
-**State:** **S15, the card index (family AE)**, is written, reviewed, fixed and merged into
-`combine-sidebar-boardplan`: all 439 concepts plus the 10 structural questions of AE11, no IP
-names, every default working on a plain board. The questionnaire renders 1,997 live questions,
-0 errors, 0 warnings, no existing id moved. **S9**: the owner is answering (121 answered on
-`main`). Open bugs lists what is the owner's, each with options.
+**State:** **S15, the card index (family AE)**, is done and merged into
+`combine-sidebar-boardplan`, together with `main`'s answers (120 answered): all 439 concepts plus
+the 10 structural questions of AE11, no IP names anywhere in the review, every default working on
+a plain board. The questionnaire renders 1,997 live questions, 0 errors, 0 warnings, no existing
+id moved. **S9**: the owner is answering. `card-index` and `combine-sidebar-boardplan` point at
+the same commit.
 
 **Entry docs:** `solatro/design/effect-review/build/GAME_BRIEF.md` (the rulebook every effect must
 fit — read it before judging anything) · `solatro/design/effect-review/build/REVIEW.md` (how to
@@ -53,6 +54,7 @@ the next render silently discards the edit.
 | `build/levels.py`, `build/levels/l<FAM>.py` | the level-2 pass: one row per question (verdict, level 2, flag reason); `render.py` draws the level 2 and the ⚑ flag from it |
 | `build/generated/g029.py` | family AC, one row per answered effect — **the record for AC rows; edit it directly** |
 | `build/generated/g030.py` | family AD, the effects the design review proposed — the record for AD rows; its level rows (`levels/lAD.py`) are keyed by qid, and a new AD row renumbers the AD rows after it, so rewrite `lAD.py` after rendering |
+| `build/shown_names.py` | the name the owner sees in place of an IP name, by eid; the record name stays as the sort key, so no id moves |
 | `build/fixkit.py`, `build/retired_questions.py` | `set_options`, `retire`, `patch`, `verify`; every retired question and why, keyed by eid |
 | `build/mine_mods/` | **S13 working set**: the mod-wiki crawl in chunks, per-chunk candidate TSVs, `new_draft.tsv` (the judged keep-list), the subagent briefs, the dedupe groups |
 
@@ -236,59 +238,37 @@ the next render silently discards the edit.
 
 ## Open bugs
 
-None known in the pipeline. What is left is the owner's, each with the options and a
-recommendation:
+None known in the pipeline. The owner's rulings on the last round are in `build/GAME_BRIEF.md`
+(the discard pile returns to the deck at show end; no IP names; a bucket debit is floored at 0;
+Undo may reveal hidden information for now; an effect may trigger level 2 away from a mark).
+What is left:
 
-1. ⚠ **The discard pile: the brief and the code disagree.** `build/GAME_BRIEF.md` says the pile
-   "persists to the next show"; `solatro/Levels/game.gd` (`returned.append_array(state.discard_deck)`)
-   returns it to the run deck when the show ends. (a) The code is right: fix the brief, so a
-   discard is out for this show only; nothing else changes, and family AE is already written this
-   way. (b) The brief is right: change `game.gd` so discarded cards miss the next show, a real
-   cost that makes a cross-show graveyard archetype possible, and re-read every effect that
-   discards. (c) Both: only a card an effect sends "to the pile for the run" stays out.
-   Recommended (a), the built and cheapest one.
-2. **IP names on the existing effects.** Family AE carries none (the owner's ruling, applied). The
-   live effects before it still do: Jenga card (Q0320), Hungry Hippo (Q0284), Monopoly card
-   (Q0455), Monopoly pay-to-unlock squares (Q1150), Tetris shape-matching bonus tiles (Q0168),
-   Wordle-style hidden target card (Q1298), Mini Metro mode (Q1276), Amogus fake card (Q0870),
-   and the Balatro and Cryptid joker names mined into family A onward (Smeared Joker, Burnt Joker,
-   Many Have Lost Their Minds Comprehending This Joker, ...). (a) Rename them now the way family AE
-   was: a new name, the head opening "After <source>:"; the question id and every recorded answer
-   are untouched, since a name is not the id. (b) Wait for the final naming pass, where the
-   nineteen shared-name pairs are already waiting. Recommended (a) for the IP names, since the
-   ruling is legal rather than taste. It needs the owner's word because this stream's brief says
-   an existing effect is never renamed.
-3. **Charge-back (CI1110, class AE11) is unanswered** and several effects lean on it: may an effect
-   take points back out of a bucket? Every debit in the family is written floored at 0, its
-   option (a). Answering it in the questionnaire settles them all.
-4. **Fungible (CI1103) is a dependency.** Six resources (Ore, Coin, Poker Chip, Sand, Stick, Wood
-   (b)) merge "as Fungible says"; rejecting Fungible leaves them without a merge rule. Answer
-   CI1103 before them, or reject the six together.
-5. **Undo may reveal hidden information** — accepted for now (owner, `build/GAME_BRIEF.md`). If
-   playtesting shows players probing guesses with Undo, the owner's two candidates are a cap on
-   Undo (fewer than the 25 placements `undo_cap` allows) or Undo as a spendable resource; a third
-   is to make Undo not cross an Entrance refill, which closes most of the leak by itself.
-6. **The level 2 dispatch is not built.** Every level 2 in this questionnaire assumes "a
-   property's level 2 is unlocked by its own match only" (`design/board-plan/gaps/GAP-007.md`,
-   resolved); the engine change is not written. Game-code work, outside this stream.
-7. **747 DUPLICATE drops** are the largest single judgement surface. `DROPPED.csv` sorts by reason
-   so the DUPLICATE block can be scanned; each row names the id it was folded into.
-8. **`G0142` The Overhead Show** was classed `C6` (grid shape) rather than family N. It is a play
-   zone above the grid, not a camera move; the one call on that boundary.
-9. **Show Your Cards (CI0217) renames Q0097 with only the second idea in the owner's note**; the
+1. **Borderline names kept** (21): ordinary words or traditional terms that one work also uses.
+   Rename any of them by adding its eid to `build/shown_names.py`: Q0013 Joker Stencil, Q0021 Breaking Infinity, Q0063 Lemon Trophy, Q0075 The Forty-Two, Q0092 Clusterfuck/Cluster, Q0172 Trap card, Q0198 Neighbor-type value bonus (3-Ring Circus), Q0242 The Mighty Atom, Q0421 The Death Rattle, Q0447 SUS, Q0456 Queen's Gambit, Q0520 Reverse Card, Q0596 Happy House, Q0621 Weary Willie, Q0630 Burn After Reading, Q0703 Luxury Tax, Q0783 Non Verisimile, Q0804 Overpurified, Q1094 Eldritch Invasion, Q1131 FEMA mode, Q1199 Fantasyland.
+2. **Brand words inside option text** of five unanswered questions: Q1140, Q1141 and Q1170 (FTL),
+   Q1151 (Minesweeper), Q1271 (Connect-4). Names are fixed; the text needs a `fixkit.set_options`
+   pass. The "from ..." provenance label naming a mined wiki or game is the reference the owner
+   asked to keep, not a name.
+3. **The level 2 dispatch is not built** (`design/board-plan/gaps/GAP-007.md`, resolved): game
+   code, outside this stream.
+4. **747 DUPLICATE drops** are mined items folded into another mined item before any question was
+   written; they are not in the review. `DROPPED.csv` lists each with the id it was folded into.
+5. **`G0142` The Overhead Show** was classed `C6` (grid shape) rather than family N: the one call
+   on that boundary.
+6. **Show Your Cards (CI0217) renames Q0097 with only the second idea in the owner's note**; the
    first, the whole grid as one meld, is Q0033's, which Full House (CI0410) renames.
-10. TOOLING: `doc_check.py` flags `taxonomy_data.py` lines for class codes Q2-Q8, a standing false
-    alarm. Every pair review found new options that were a live effect under a new name (caught,
-    2-5 per batch), and a review's claim about the code is worth re-checking against `game.gd`:
-    two were wrong (Undo unlimited; a rank change re-scoring a line).
+7. TOOLING: `doc_check.py` flags `taxonomy_data.py` lines for class codes Q2-Q8, a standing false
+   alarm. Every pair review found new options that were a live effect under a new name (caught,
+   2-5 per batch), and a review's claim about the code is worth re-checking against `game.gd`:
+   two were wrong (Undo unlimited; a rank change re-scoring a line).
 
-## Next up — the owner answers; then the landing on `main`
+## Next up — the owner answers
 
-`card-index` is merged into `combine-sidebar-boardplan`. When that branch lands on `main`: merging
-`main` conflicts in `solatro/Cards/card_visual.gd`, which is not this stream's file; and
-`answers.json` belongs to the owner's checkout, so take `main`'s copy (it has answers this branch
-lacks, Q0120 and Q0121 among them) and move any question answered since into family AC (the S14
-note). Never merge to `main` without the owner (hard rule 1).
+`combine-sidebar-boardplan` carries everything, `main`'s answers included. ⚠ `answers.json` is the
+owner's: when it gains answers on another branch, merge them in, and an answered question whose
+text a later pass changed is restored to the text the owner answered (`levels/l<FAM>.py` verdict
+`ANSWERED`, its level 2 asked in family AC unless the owner's own words give it, as Q0120 and
+Q0121 did). Never merge to `main` without the owner (hard rule 1).
 
 Family AE's working set stays for a re-run or a later batch:
 `solatro/design/effect-review/build/mine_cardindex/` — `concepts.py` (the keep-list and every drop
@@ -337,7 +317,7 @@ mining and one fix-application pass Claude Sonnet 5.5; every review the `pair-re
 > Continue the effect review (Solatro) on branch `combine-sidebar-boardplan`. Read
 > `solatro/HANDOFF_effect_review.md`: Open bugs lists the owner's decisions, each with options.
 > Run the S15 verification command first; it must pass. Act on whatever the owner has ruled since
-> (IP renames of the existing effects, the discard pile), then export `EFFECTS.csv`. Not
+> on the Open bugs, then export `EFFECTS.csv`. Not
 > negotiable: never hand-edit `DESIGN.md`; never move a question id; never commit on `main`; no
 > Godot is needed and none may be run. On a machine without the `py` launcher use `python3`.
 

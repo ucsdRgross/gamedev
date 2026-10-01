@@ -67,6 +67,9 @@ rewarding.
   existing effect this name and changes nothing else; a name a live effect already holds carries
   " v2". Class AE11 asks how the family is framed: themed packs, the minigames your braindump
   named, and the prop trunk.
+- **No IP names** (your ruling). A card named after a game, a brand or another work's own coinage
+  shows a new name, and its head opens "After <source>:" so you can see what it refers to. The
+  question ids did not move, so every answer still points at its effect.
 - **Your rulings on the whole-game questions:** a bonus with no line goes to the special bucket; a
   fake card is a ghost card, one that leaves the deck when its show ends (Kayfabe and The Committee
   are rewritten around it, and six effects that assumed a hidden fake to find are flagged); a token
