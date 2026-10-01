@@ -245,10 +245,8 @@ What is left:
 
 1. **Borderline names kept** (21): ordinary words or traditional terms that one work also uses.
    Rename any of them by adding its eid to `build/shown_names.py`: Q0013 Joker Stencil, Q0021 Breaking Infinity, Q0063 Lemon Trophy, Q0075 The Forty-Two, Q0092 Clusterfuck/Cluster, Q0172 Trap card, Q0198 Neighbor-type value bonus (3-Ring Circus), Q0242 The Mighty Atom, Q0421 The Death Rattle, Q0447 SUS, Q0456 Queen's Gambit, Q0520 Reverse Card, Q0596 Happy House, Q0621 Weary Willie, Q0630 Burn After Reading, Q0703 Luxury Tax, Q0783 Non Verisimile, Q0804 Overpurified, Q1094 Eldritch Invasion, Q1131 FEMA mode, Q1199 Fantasyland.
-2. **Brand words inside option text** of five unanswered questions: Q1140, Q1141 and Q1170 (FTL),
-   Q1151 (Minesweeper), Q1271 (Connect-4). Names are fixed; the text needs a `fixkit.set_options`
-   pass. The "from ..." provenance label naming a mined wiki or game is the reference the owner
-   asked to keep, not a name.
+2. **A brand in a "from ..." provenance label** (a mined wiki, game or design-doc section, e.g.
+   `DESIGN_DOC.md §15 Map v4 (FTL, latest)`) is the reference the owner asked to keep, not a name.
 3. **The level 2 dispatch is not built** (`design/board-plan/gaps/GAP-007.md`, resolved): game
    code, outside this stream.
 4. **747 DUPLICATE drops** are mined items folded into another mined item before any question was
