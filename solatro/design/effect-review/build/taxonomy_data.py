@@ -421,7 +421,7 @@ FAMILIES = [
  ("AB4","Called and bounced hits","none","hits you announce, misses that herd marks, hits that carry to the far end of a line"),
 ]),
 ("AC", "Level 2 of effects already ruled on",
- "The owner ruled on these effects before level 2 existed, so the level-2 form is asked here instead of being added to a recorded answer. (d) is not a reject: it keeps the effect with no level 2, so a match pays only its flat bonus. Not asked: the effects you rejected; types, hazards, statuses and consumables, which never sit on a mark; Q0059, Q0113 and Q0114, which your words made bosses; Q0091 and Q0092, which share Q0088's hand and are asked with it. An option letting an uncovered mark stand in for a card is your Q0109 rule scoped to that hand: take it only if you want the hand to have it without the Paved Joker in the deck.", [
+ "The owner ruled on these effects before level 2 existed, so the level-2 form is asked here instead of being added to a recorded answer. (d) is not a reject: it keeps the effect with no level 2, so a match pays only its flat bonus. Not asked: the effects you rejected; types, hazards, statuses and consumables, which never sit on a mark; Q0059, Q0113 and Q0114, which your words made bosses; Q0091 and Q0092, which share Q0088's hand and are asked with it. Q0120 and Q0121, whose answers already give their level 2 in your own words. An option letting an uncovered mark stand in for a card is your Q0109 rule scoped to that hand: take it only if you want the hand to have it without the Paved Joker in the deck.", [
  ("AC1","Level 2 of a ruled effect","none","one question per effect already answered, in question order"),
 ]),
 ("AD", "New effects from the design review",
@@ -431,5 +431,19 @@ FAMILIES = [
  ("AD3","Stacks and legality","none","what may stack where, and what a stack pays"),
  ("AD4","Marks, hits and level 2","none","cues and bets on marks, and how far a level 2 reaches"),
  ("AD5","Ranks, suits and what stays","none","new rank readings, and a card that stays on stage between shows"),
+]),
+("AE", "The card index - cards from everywhere",
+ "Every card a general audience recognises - the Human Card Index's everyday cards, the famous cards and pieces of card, board, dice and casino games, Stacklands' generic cards and the cards Dungeons & Degenerate Gamblers borrowed - kept by name and idea only and given an effect that fits this game. An option that begins \"Renames Qnnnn\" gives that existing effect this name and changes nothing else. A name that another effect already uses carries v2. Classes are by where the card comes from, so a themed pack is a class; a separate family only because the question id is positional.", [
+ ("AE1","Everyday cards: the Human Card Index","none","tickets, licences, letters, receipts and passes - what Arthur Lloyd pulled from his pockets"),
+ ("AE2","The card table","none","the standard deck's oddities, card-table idioms, card magic and cheating"),
+ ("AE3","Party and family card games","none","the shedding, matching and party games everyone played"),
+ ("AE4","Poker, blackjack and the midway","none","the casino, dice and coin calls, pinball and the fairground games"),
+ ("AE5","Tarot and fortune","none","the major arcana, the four suits and the fortune-teller"),
+ ("AE6","Board games","none","the famous cards, spaces and rules of family board games"),
+ ("AE7","Tiles, dice and pieces","none","chess, checkers, dominoes, mahjong and the dice"),
+ ("AE8","Trading-card tropes","none","what every collectible card game shares: packs, foils, lands, traps, evolutions"),
+ ("AE9","Resources and tokens","none","fungible cards - wood, brick, ore, food, coins - as materials and talents"),
+ ("AE10","The village","none","Stacklands' generic cards: villagers, buildings, beasts and ideas"),
+ ("AE11","Packs, minigames and the prop trunk","none","themed packs, the minigames the braindump named, and how the family is framed"),
 ]),
 ]

@@ -43,7 +43,9 @@ stale; one that ADDS a button is legal design space.
 
 **Discarding is a real board mechanic.** A card effect removes cards from the board into the
 **discard pile**, either as its target or as a side effect. The discard pile is where cards go that
-are not deleted from the deck outright, and it **persists to the next show**. What does NOT exist is a
+are not deleted from the deck outright, and it **returns to the deck when the show ends**
+(`Levels/game.gd`, `returned.append_array(state.discard_deck)`; owner, choosing the built
+behaviour), so a discard is out for this show only. What does NOT exist is a
 player discard ACTION or a Balatro-style per-round discard BUDGET. So an effect keyed to discard
 events, the discard pile, or cards leaving the board is live design space; only one that assumes a
 discard budget the player spends is stale.
@@ -134,7 +136,9 @@ only works on the pre-plan board.
 - **A match is same kind to same kind** (owner): suit to suit, rank to rank, hat to hat, skill to
   skill. **A property's level 2 is unlocked by its own match only, unless an effect says
   otherwise** (owner). So a skill's level 2 needs a talent match, a stamp's a hat match; a rank
-  match does nothing for either. An effect may unlock on another property by saying so.
+  match does nothing for either. An effect may unlock on another property by saying so, and an
+  effect may trigger level 2 away from any mark (owner: "there can be effects that trigger level 2
+  outside of marks").
 - **Suit and rank: level 1 is the plain suit or rank** — it scores and makes melds everywhere.
   **Level 2 is level 1 plus its additional effect.** Today's suit prop effects already have this
   shape (§1.6), and so does the rank-match points bonus (`plan_rank_match_step`). A suit or rank
@@ -243,6 +247,13 @@ equipment), Producer (token and money cards).
   effect"): each effect that pays a step has its own amount, set when it is balanced.
 - **Fame is not spendable** (owner). Fame is earned and can be lost as a penalty, but nothing
   buys anything with it; a cost that was paid in fame is a skipped reward.
+- **No IP names** (owner: "no ip names since thats not legal. create new name but keep name on the
+  side so i know what its referncing while reviewing"). A card named after a game title or a
+  branded card term gets a new name, and its head opens "After <source>:".
+- **Taking points out of a bucket is floored at 0** (owner, on the Charge-back question): a debit
+  that would take a bucket below 0 empties it.
+- **Undo may reveal hidden information, for now** (owner: "undo leaking hidden information is fine
+  for now will worry after testing. capping undos or having undos potential solution").
 
 ## What makes an effect BAD here
 

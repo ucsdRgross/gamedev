@@ -11,6 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from taxonomy_data import FAMILIES
 from retired_questions import RETIRED
+from shown_names import SHOWN
 import levels
 
 LEVELS = levels.rows()
@@ -189,8 +190,13 @@ for r in ordered:
         retired_n += 1
         continue
     prov = (clean(r["src"]) or "generated") if r["origin"] == "generated" else "`%s`" % label_src(clean(r["src"]))
+    name, mech = clean(r["name"]), clean(r["mech"])
+    if r["eid"] in SHOWN:
+        name, after = SHOWN[r["eid"]]
+        if after:
+            mech = "After %s: %s" % (after, mech[:1].lower() + mech[1:])
     head = "**%s** — %s, %s, from %s. %s" % (
-        clean(r["name"]), r["slot"], r["cls"] or "unclassified", prov, clean(r["mech"]))
+        clean(name), r["slot"], r["cls"] or "unclassified", prov, mech)
     opts = [clean(r["a"]), clean(r["b"]), clean(r["c"])]
     if r["eid"] in LEVELS:
         lqid, verdict, level2, why = LEVELS[r["eid"]]
