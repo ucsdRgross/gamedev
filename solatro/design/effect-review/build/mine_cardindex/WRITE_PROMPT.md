@@ -43,9 +43,10 @@ existing effect, that is the rename option, not a new one.
 
 ## Names
 
-- The name is the **generic, recognisable name**, never a brand: *Reverse*, not *Uno Reverse*;
-  *Get Out of Jail Free*, not *Monopoly card*. The source game goes in the head only when the card
-  is unrecognisable without it.
+- The name is the **generic, recognisable name**, never a brand or a game's title: *Reverse*, not
+  *Uno Reverse*; *Block Tower*, not *Jenga*. An ordinary word a game also uses (Chance, Railroad)
+  is fine. When the name had to change, the head opens "After <source>:" so the reference stays
+  visible (owner ruling, `GAME_BRIEF.md`).
 - ⚠ **Duplicate names are allowed, lost effects are not.** If the name already belongs to a live
   question (case-insensitive, ignoring a leading "The") or to another AE row, append ` v2`
   (then ` v3`) to the new one. The rename option does not count: a rename is the same effect.
@@ -105,8 +106,8 @@ a level-2 addition.
 - **Undo rewinds up to 25 placements, scores included** (`Levels/game.gd`, `undo_cap`). A chance
   the player could re-roll by undoing must be "drawn from the show's seed", said in the head.
   ⚠ Undo also crosses an Entrance refill, so anything revealed in answer to a player's choice (a
-  guess, a hit or miss, a peek) can be read and undone for free. Unruled; do not lean on a wrong
-  guess's cost as the card's only tension.
+  guess, a hit or miss, a peek) can be read and undone for free. The owner accepts that until
+  playtesting (`GAME_BRIEF.md`); still, do not lean on a wrong guess's cost as the only tension.
 - **Only placement, move and removal re-score a line** (`Levels/game.gd`,
   `_broadcast_board_mutation`). A rank, suit or talent change touches nothing.
 - **A covered card does not fire.** An effect on a card that something is placed on must sit on

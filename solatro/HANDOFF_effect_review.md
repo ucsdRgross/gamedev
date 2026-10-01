@@ -4,12 +4,11 @@
 each with three variants plus reject, and the rulings exported to a single CSV. Done = the owner has
 answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for every one.
 
-**State:** **S15, the card index (family AE)**, is written on branch `card-index` (pushed): all
-439 concepts plus the 10 structural questions of AE11, each batch pair-reviewed and fixed, then
-one review of the whole family. The questionnaire on that branch renders 1,997 live questions,
-0 errors, 0 warnings, no existing id moved. **Waiting on the owner:** how `card-index` lands (it
-carries `effect-levels`), and the questions under Open bugs. **S9**: the owner is answering (121
-answered on `main`).
+**State:** **S15, the card index (family AE)**, is written, reviewed, fixed and merged into
+`combine-sidebar-boardplan`: all 439 concepts plus the 10 structural questions of AE11, no IP
+names, every default working on a plain board. The questionnaire renders 1,997 live questions,
+0 errors, 0 warnings, no existing id moved. **S9**: the owner is answering (121 answered on
+`main`). Open bugs lists what is the owner's, each with options.
 
 **Entry docs:** `solatro/design/effect-review/build/GAME_BRIEF.md` (the rulebook every effect must
 fit — read it before judging anything) · `solatro/design/effect-review/build/REVIEW.md` (how to
@@ -237,44 +236,59 @@ the next render silently discards the edit.
 
 ## Open bugs
 
-None known in the pipeline. Two judgement calls the owner may want to revisit:
+None known in the pipeline. What is left is the owner's, each with the options and a
+recommendation:
 
-1. **747 DUPLICATE drops** are the largest single judgement surface, and the design docs restate the
-   catalogue under historical names constantly. `DROPPED.csv` sorts by reason so the DUPLICATE block
-   can be scanned; each row names the id it was folded into.
-2. **`G0142` The Overhead Show** was classed `C6` (grid shape) rather than treated as family N. It
-   is a play zone above the grid, not a camera move — but it is the one call on that boundary.
-3. ⚠ **The discard pile: the brief and the code disagree.** `build/GAME_BRIEF.md` says the discard
-   pile "persists to the next show"; `solatro/Levels/game.gd` (`returned.append_array(state.discard_deck)`)
-   returns it to the run deck at show end. Owner ruling needed; family AE writes "to the discard
-   pile" as out for this show only (`mine_cardindex/WRITE_PROMPT.md` § Code facts).
-4. **Owner questions from the family-AE reviews**, none blocking:
-   - **Undo leaks hidden information.** Undo crosses an Entrance refill (`Levels/game.gd`
-     snapshots per committed action), so anything revealed in answer to a choice (Battleship,
-     Guess Who, Werewolf, Charades, Mastermind, Seer, and live Q0846, Q0847, Q0862, Q0870) can be
-     read and undone for free. Accept Undo as the player's tool, or require hidden information on
-     a schedule the player's choices do not steer?
-   - **Game names as card names.** Twister, Jenga, Guess Who, Hungry Hippo v2, Mastermind,
-     Operation, Mouse Trap, Sorry, Pay Day, Taboo, Battleship and Exploding Kitten are the game's
-     own name, with no generic one as recognisable (live Q0320 is "Jenga card"). Keep, or rename?
-   - **Show Your Cards (CI0217) renames Q0097 with only the owner's second idea** in its note;
-     the first, the whole grid as one meld, is already Q0033's, renamed by Full House (CI0410).
-   - **Patterns the reviews left for the owner's eye:** "no effect or hazard can move or remove
-     it" is the whole third option of six rows (Dog, Cat, Zoo, Castling, Stand, King v2), equal to
-     their (a) in a hazard-free show; an immediate re-deal of a slot (Key Card, Flower Tile,
-     Doubles, Counterspell, Marked Card) is the used-up sixth-placement shape in five more coats.
-5. TOOLING: `doc_check.py` flags `taxonomy_data.py` lines for class codes Q2-Q8, a standing false
-   alarm. Every pair review found new options that were a live effect under a new name (caught,
-   2-5 per batch), and a review's claim about the code is worth re-checking against `game.gd`: two
-   were wrong (Undo unlimited; a rank change re-scoring a line).
+1. ⚠ **The discard pile: the brief and the code disagree.** `build/GAME_BRIEF.md` says the pile
+   "persists to the next show"; `solatro/Levels/game.gd` (`returned.append_array(state.discard_deck)`)
+   returns it to the run deck when the show ends. (a) The code is right: fix the brief, so a
+   discard is out for this show only; nothing else changes, and family AE is already written this
+   way. (b) The brief is right: change `game.gd` so discarded cards miss the next show, a real
+   cost that makes a cross-show graveyard archetype possible, and re-read every effect that
+   discards. (c) Both: only a card an effect sends "to the pile for the run" stays out.
+   Recommended (a), the built and cheapest one.
+2. **IP names on the existing effects.** Family AE carries none (the owner's ruling, applied). The
+   live effects before it still do: Jenga card (Q0320), Hungry Hippo (Q0284), Monopoly card
+   (Q0455), Monopoly pay-to-unlock squares (Q1150), Tetris shape-matching bonus tiles (Q0168),
+   Wordle-style hidden target card (Q1298), Mini Metro mode (Q1276), Amogus fake card (Q0870),
+   and the Balatro and Cryptid joker names mined into family A onward (Smeared Joker, Burnt Joker,
+   Many Have Lost Their Minds Comprehending This Joker, ...). (a) Rename them now the way family AE
+   was: a new name, the head opening "After <source>:"; the question id and every recorded answer
+   are untouched, since a name is not the id. (b) Wait for the final naming pass, where the
+   nineteen shared-name pairs are already waiting. Recommended (a) for the IP names, since the
+   ruling is legal rather than taste. It needs the owner's word because this stream's brief says
+   an existing effect is never renamed.
+3. **Charge-back (CI1110, class AE11) is unanswered** and several effects lean on it: may an effect
+   take points back out of a bucket? Every debit in the family is written floored at 0, its
+   option (a). Answering it in the questionnaire settles them all.
+4. **Fungible (CI1103) is a dependency.** Six resources (Ore, Coin, Poker Chip, Sand, Stick, Wood
+   (b)) merge "as Fungible says"; rejecting Fungible leaves them without a merge rule. Answer
+   CI1103 before them, or reject the six together.
+5. **Undo may reveal hidden information** — accepted for now (owner, `build/GAME_BRIEF.md`). If
+   playtesting shows players probing guesses with Undo, the owner's two candidates are a cap on
+   Undo (fewer than the 25 placements `undo_cap` allows) or Undo as a spendable resource; a third
+   is to make Undo not cross an Entrance refill, which closes most of the leak by itself.
+6. **The level 2 dispatch is not built.** Every level 2 in this questionnaire assumes "a
+   property's level 2 is unlocked by its own match only" (`design/board-plan/gaps/GAP-007.md`,
+   resolved); the engine change is not written. Game-code work, outside this stream.
+7. **747 DUPLICATE drops** are the largest single judgement surface. `DROPPED.csv` sorts by reason
+   so the DUPLICATE block can be scanned; each row names the id it was folded into.
+8. **`G0142` The Overhead Show** was classed `C6` (grid shape) rather than family N. It is a play
+   zone above the grid, not a camera move; the one call on that boundary.
+9. **Show Your Cards (CI0217) renames Q0097 with only the second idea in the owner's note**; the
+   first, the whole grid as one meld, is Q0033's, which Full House (CI0410) renames.
+10. TOOLING: `doc_check.py` flags `taxonomy_data.py` lines for class codes Q2-Q8, a standing false
+    alarm. Every pair review found new options that were a live effect under a new name (caught,
+    2-5 per batch), and a review's claim about the code is worth re-checking against `game.gd`:
+    two were wrong (Undo unlimited; a rank change re-scoring a line).
 
-## Next up — the owner: how `card-index` lands
+## Next up — the owner answers; then the landing on `main`
 
-`card-index` is based on `effect-levels` and carries it; merging `main` conflicts in
-`solatro/Cards/card_visual.gd`, which is not this stream's file. Ask the owner whether to merge
-`card-index` (with `effect-levels`) into `main`, or the route they prefer, then run
-`/merge-branches`. ⚠ `answers.json` belongs to the owner's checkout: re-read `main`'s copy before
-merging, and move any question answered since into family AC (the S14 note).
+`card-index` is merged into `combine-sidebar-boardplan`. When that branch lands on `main`: merging
+`main` conflicts in `solatro/Cards/card_visual.gd`, which is not this stream's file; and
+`answers.json` belongs to the owner's checkout, so take `main`'s copy (it has answers this branch
+lacks, Q0120 and Q0121 among them) and move any question answered since into family AC (the S14
+note). Never merge to `main` without the owner (hard rule 1).
 
 Family AE's working set stays for a re-run or a later batch:
 `solatro/design/effect-review/build/mine_cardindex/` — `concepts.py` (the keep-list and every drop
@@ -320,13 +334,12 @@ mining and one fix-application pass Claude Sonnet 5.5; every review the `pair-re
 
 ## Opening prompt for the next agent
 
-> Land S15, the card index (family AE of the effect review), from branch `card-index`. Read
-> `solatro/HANDOFF_effect_review.md` — "Next up — the owner" is the resumption point. Run the S15
-> verification command first; it must pass. Ask the owner how `card-index` should land and put the
-> Open bugs questions to them; then follow `/merge-branches`. Not negotiable: never hand-edit
-> `DESIGN.md`; never rename or delete an existing effect (the question id is positional); never
-> commit on `main`; no Godot is needed and none may be run. On a machine without the `py` launcher
-> use `python3`.
+> Continue the effect review (Solatro) on branch `combine-sidebar-boardplan`. Read
+> `solatro/HANDOFF_effect_review.md`: Open bugs lists the owner's decisions, each with options.
+> Run the S15 verification command first; it must pass. Act on whatever the owner has ruled since
+> (IP renames of the existing effects, the discard pile), then export `EFFECTS.csv`. Not
+> negotiable: never hand-edit `DESIGN.md`; never move a question id; never commit on `main`; no
+> Godot is needed and none may be run. On a machine without the `py` launcher use `python3`.
 
 ## References
 

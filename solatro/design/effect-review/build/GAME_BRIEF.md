@@ -243,6 +243,11 @@ equipment), Producer (token and money cards).
   effect"): each effect that pays a step has its own amount, set when it is balanced.
 - **Fame is not spendable** (owner). Fame is earned and can be lost as a penalty, but nothing
   buys anything with it; a cost that was paid in fame is a skipped reward.
+- **No IP names** (owner: "no ip names since thats not legal. create new name but keep name on the
+  side so i know what its referncing while reviewing"). A card named after a game title or a
+  branded card term gets a new name, and its head opens "After <source>:".
+- **Undo may reveal hidden information, for now** (owner: "undo leaking hidden information is fine
+  for now will worry after testing. capping undos or having undos potential solution").
 
 ## What makes an effect BAD here
 
