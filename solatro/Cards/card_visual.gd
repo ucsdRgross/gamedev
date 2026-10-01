@@ -480,11 +480,9 @@ var hover : bool = false
 # WHERE A SPOTLIGHT CIRCLE GOES ON THIS CARD: the DRAWN card's centre, so a circle of half the card
 # art's width sits inside the square card and touches all four edges (owner). `Visual` rides
 # `Offset`, which the scoring jump lives on, so the circle follows a card that jumps.
-
-# `visual` is @onready, so a card asked before it is in the tree answers with the honest fallback
-# rather than crashing; the caller's own is_inside_tree guard is what normally prevents it.
 func spotlight_center() -> Vector2:
-	return visual.global_position if visual else global_position
+	assert(visual, "spotlight_center() asked of a card that is not in the tree yet")
+	return visual.global_position
 
 # THE ROOT'S scale, never `Offset`'s or `Art`'s: the jump pulses `Offset` to 1.15 and the rig bends
 # `Art` (measured 1.795 x 1.821 on a card drawn at 1.821), and a light sized off either would pulse.

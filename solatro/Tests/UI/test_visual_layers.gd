@@ -1596,6 +1596,10 @@ const SPOT_FOOT_UNITS := 6.0
 # The card nearest the middle is lit, its float stilled as a scoring jump stills it: the focused
 # board clips the Entrance cards at its edges, and the idle tilt foreshortens the drawn box by 1 to
 # 4 px (measured 94 to 97 px on a 98.3 px card).
+
+# ⚠ THE POOL IS MEASURED AWAY FROM THE LAMP. A tilted cone overhangs it on the lamp's side only, so
+# the centre column is the lowest rows' middle, the radius is the widest row's NARROWER half about
+# that column, and the centre sits one radius above the lowest lit row.
 func test_the_spotlight_pool_is_as_wide_as_the_card_on_a_zoomed_board() -> void:
 	var view : GameView = await _stand_up_view()
 	await view.game.next()
@@ -1660,28 +1664,45 @@ func test_the_spotlight_pool_is_as_wide_as_the_card_on_a_zoomed_board() -> void:
 	if card_rows.is_empty() or pool_rows.is_empty():
 		await _teardown_view(view)
 		return
-	var card_box := _box_of(card_rows)
+	var card_box := Rect2()
+	for y : int in card_rows:
+		var row := Rect2(card_rows[y].x, y, card_rows[y].y + 1 - card_rows[y].x, 1)
+		card_box = row if card_box.size == Vector2.ZERO else card_box.merge(row)
 	var unit := card_box.size.x / CardVisual.CARD_SIZE.x
 	var card_scale : float = SettingsManager.settings.card_scale
 	check(absf(unit / card_scale - 1.0) > 0.1,
 			"the card is DRAWN at a scale card_scale alone does not give, so a dropped zoom shows",
 			"%.3f px per art unit drawn, card_scale %.3f, board zoom %.3f"
 			% [unit, card_scale, pa.drawn_zoom])
-	var pool := _pool_of(pool_rows, unit)
+	var ys : Array[int] = []
+	ys.assign(pool_rows.keys())
+	ys.sort()
+	var foot_rows : int = mini(ceili(SPOT_FOOT_UNITS * unit), ys.size())
+	var column := 0.0
+	for i : int in foot_rows:
+		var span : Vector2i = pool_rows[ys[ys.size() - 1 - i]]
+		column += (span.x + span.y + 1) * 0.5 / foot_rows
+	var radius := 0.0
+	for y : int in ys:
+		radius = maxf(radius, minf(column - pool_rows[y].x, pool_rows[y].y + 1 - column))
 	var art_px := CardVisual.CARD_ART_SIZE.x * unit
 	var slack := SPOT_TOLERANCE_UNITS * unit
-	check(absf(pool.z * 2.0 - art_px) <= slack,
+	check(absf(radius * 2.0 - art_px) <= slack,
 			"the spotlight pool is as wide as the card's art, as both are DRAWN on a zoomed board",
 			"pool %.1f px wide, card art %.1f px (card box %s), allowed %.1f"
-			% [pool.z * 2.0, art_px, card_box, slack])
-	var pool_centre := Vector2(pool.x, pool.y)
+			% [radius * 2.0, art_px, card_box, slack])
+	var pool_centre := Vector2(column, ys[ys.size() - 1] + 1 - radius)
 	TestLog.line("    [pool] %.1f px wide at %s; card art %.1f px, card box %s, zoom %.3f"
-			% [pool.z * 2.0, pool_centre, art_px, card_box, pa.drawn_zoom])
+			% [radius * 2.0, pool_centre, art_px, card_box, pa.drawn_zoom])
 	check(pool_centre.distance_to(card_box.get_center()) <= slack,
 			"...and it is centred on the drawn card, so it sits inside the square card",
 			"pool centre %s, card centre %s, allowed %.1f px"
 			% [pool_centre, card_box.get_center(), slack])
-	var bounds := _export_range_of(layer.style, &"circle_radius")
+	var bounds := Vector2.ZERO
+	for info : Dictionary in layer.style.get_property_list():
+		if info.name != &"circle_radius": continue
+		var parts : PackedStringArray = str(info.hint_string).split(",")
+		bounds = Vector2(float(parts[0]), float(parts[1]))
 	check(bounds.x <= layer.style.circle_radius and layer.style.circle_radius <= bounds.y,
 			"...and the radius knob's range admits the shipped radius, so its slider can tune it",
 			"radius %.1f, range %s" % [layer.style.circle_radius, bounds])
@@ -1714,41 +1735,6 @@ func _changed_rows(a: Image, b: Image) -> Dictionary[int, Vector2i]:
 			last = x
 		if first >= 0: rows[y] = Vector2i(first, last)
 	return rows
-
-## The pixel box around every changed row, edges on pixel boundaries.
-func _box_of(rows: Dictionary[int, Vector2i]) -> Rect2:
-	var box := Rect2()
-	for y : int in rows:
-		var row := Rect2(rows[y].x, y, rows[y].y + 1 - rows[y].x, 1)
-		box = row if box.size == Vector2.ZERO else box.merge(row)
-	return box
-
-# ⚠ MEASURED AWAY FROM THE LAMP. A tilted cone overhangs the pool on the lamp's side but never on
-# the far side or below, so the centre column is the lowest rows' middle, the radius is the widest
-# row's NARROWER half about that column, and the centre sits one radius above the lowest lit row.
-
-## The pool's centre (x, y) and radius (z), in the render's pixels.
-func _pool_of(rows: Dictionary[int, Vector2i], unit: float) -> Vector3:
-	var ys : Array[int] = []
-	ys.assign(rows.keys())
-	ys.sort()
-	var foot_rows : int = mini(ceili(SPOT_FOOT_UNITS * unit), ys.size())
-	var column := 0.0
-	for i : int in foot_rows:
-		var span : Vector2i = rows[ys[ys.size() - 1 - i]]
-		column += (span.x + span.y + 1) * 0.5 / foot_rows
-	var radius := 0.0
-	for y : int in ys:
-		radius = maxf(radius, minf(column - rows[y].x, rows[y].y + 1 - column))
-	return Vector3(column, ys[ys.size() - 1] + 1 - radius, radius)
-
-## The (min, max) an `@export_range` property declares.
-func _export_range_of(object: Object, property: StringName) -> Vector2:
-	for info : Dictionary in object.get_property_list():
-		if info.name != property: continue
-		var parts : PackedStringArray = str(info.hint_string).split(",")
-		return Vector2(float(parts[0]), float(parts[1]))
-	return Vector2.ZERO
 
 # DEAL UNTIL A COLUMN IS ACTUALLY STACKED. ⚠ ONE next() GIVES A BOARD ONE CARD DEEP, WHERE NOTHING
 # IS COVERED, so the reveal correctly does nothing and every assertion about it passes for the wrong

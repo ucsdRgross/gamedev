@@ -450,7 +450,8 @@ func _push_lights() -> void:
 	var lights : Array[LightLayer.Light] = []
 	for b : _TBeam in _beams:
 		var centre := _beam_centre(b)
-		var scale := _slot_scale(b.slot)
+		var cv : CardVisual = _slot_card.get(b.slot)
+		var scale := cv.spotlight_scale() if is_instance_valid(cv) else settings.card_scale
 		var light := LightLayer.Light.new()
 		light.centre = centre
 		light.radius = _style().circle_radius * scale
@@ -472,11 +473,6 @@ func _beam_centre(b: _TBeam) -> Vector2:
 func _slot_centre(slot: Vector2i) -> Vector2:
 	var cv : CardVisual = _slot_card.get(slot)
 	return cv.spotlight_center() if is_instance_valid(cv) else Vector2.ZERO
-
-## The scale a slot's card is drawn at, or the settings' own if that slot has no card built.
-func _slot_scale(slot: Vector2i) -> float:
-	var cv : CardVisual = _slot_card.get(slot)
-	return cv.spotlight_scale() if is_instance_valid(cv) else settings.card_scale
 
 # RE-MATCHES THE LIVE BEAMS to the lit section: a kept slot keeps its light, a light whose slot left
 # travels to one that gained a slot (paired in x order, so travels never cross, and never from ZERO,

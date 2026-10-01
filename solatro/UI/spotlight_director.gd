@@ -223,21 +223,17 @@ func _on_cued(cards: Array[CardData]) -> void:
 # WHERE A BEAM'S CIRCLE IS RIGHT NOW: its target's centre, a point along its travel, or its last
 # drawn position when the card's visual is gone. The travel is a smoothstep on POSITION only:
 # full size the whole way, because a real followspot neither shrinks nor dims in transit.
+
+# ⚠ ALSO RECORDS THE CARD'S DRAWN SCALE in `last_scale`, held like the position when the visual is
+# gone: at a board zoom of 1.82 a radius scaled by card_scale alone drew 17.6 art units wide, not 32.
 func _beam_centre(b: _Beam) -> Vector2:
 	var visual := _visual_of(b.card) if b.card else null
+	if visual: b.last_scale = visual.spotlight_scale()
 	var target := visual.spotlight_center() if visual else b.last_pos
 	if b.t < 1.0 and b.card != null:
 		target = b.from.lerp(target, smoothstep(0.0, 1.0, b.t))
 	b.last_pos = target
 	return target
-
-# THE SCALE A BEAM IS DRAWN AT is its card's own, so the circle and the lamp keep the card's size
-# at any board zoom: at a zoom of 1.82 a radius scaled by card_scale alone drew 17.6 art units wide
-# instead of 32. Held at the last value when the card's visual is gone, as the position is.
-func _beam_scale(b: _Beam) -> float:
-	var visual := _visual_of(b.card) if b.card else null
-	if visual: b.last_scale = visual.spotlight_scale()
-	return b.last_scale
 
 ## A card's centre in screen pixels. ⚠ (0,0) when it has no live visual: filter by `_visual_of` first.
 func _centre_of(data: CardData) -> Vector2:
@@ -319,11 +315,10 @@ func _push() -> void:
 	var lights : Array[LightLayer.Light] = []
 	for b : _Beam in _beams:
 		var centre := _beam_centre(b)
-		var scale := _beam_scale(b)
 		var light := LightLayer.Light.new()
 		light.centre = centre
-		light.radius = style.circle_radius * scale
-		light.origin_width = style.beam_width_at_origin * scale
+		light.radius = style.circle_radius * b.last_scale
+		light.origin_width = style.beam_width_at_origin * b.last_scale
 		light.flare = style.flare
 		light.intensity = b.fade
 		light.gated = not b.cue

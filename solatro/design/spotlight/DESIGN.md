@@ -1,6 +1,6 @@
-# SPOTLIGHT_DESIGN.md — the Spotlight mechanic and its visual effects
+# DESIGN.md — the Spotlight mechanic and its visual effects
 
-> ⚠ **`Q85`'s "radius 16" SHIPS AS 17 SINCE 2026-08-06.** The number was never 16, it was HALF THE ART SQUARE — and the art square went 32x32 -> 34x34 when every card element gained the outline shader's 1-unit rim. A radius of 16 now stops one unit short and clips the picture's own outline. `Q85`'s and `Q217`'s reasoning is unchanged; only the arithmetic moved. See `design/card_size_outline/`.
+> ⚠ **`Q85`'s "radius 16, centred on the art square" SHIPS AS HALF THE CARD ART'S WIDTH, CENTRED ON THE DRAWN CARD.** `circle_radius` defaults to `CardVisual.CARD_ART_SIZE.x / 2` art units, so it follows the card; the director multiplies it by the card's drawn scale (`CardVisual.spotlight_scale()`, board zoom included) and centres it with `CardVisual.spotlight_center()`, so the pool sits inside the square card and touches all four edges. Every "16" and "art square" below is the round's wording, not the shipped light.
 
 
 **Status: CONFIRMED, version 12. Rounds 1–3 COMPLETE (2026-08-03), design confirmed by the owner
@@ -1857,7 +1857,7 @@ So: **the glow is a light field over a mask, and the three clients differ only i
 | A glowing card | the host's **exact deformed outline** — Q124=(b), `SHAPE_RADII`, the 24-vertex mask | the card's `FxAttachment` |
 | ~~A glowing prop~~ | ~~the art's alpha~~ | ⚠ **CUT by round 1 — §0b C7.** Q221: *"should be three card circle beam, no prop."* Props do not glow. Q219 says a prop is lit *"only if crossing the lit up portion on same layer"* — that is incidental illumination by the beam, a different mechanism. **Q257, Q258** |
 | **The beam** | a cone between origin and target | the light layer — but see §0b C1 |
-| **The spotlight circle** | a **disc** of `circle_radius`, centred on the card's art square | QR9=(c): **one shader, two hosts** — the circle's quad stays on the light layer |
+| **The spotlight circle** | a **disc** of `circle_radius` times the card's drawn scale, centred on the drawn card's centre | QR9=(c): **one shader, two hosts** — the circle's quad stays on the light layer |
 
 That is one new shader, one `FxGlowStyle`, three `.tres` (card, circle, beam — Q221), and one extra
 mask branch.
@@ -2127,7 +2127,7 @@ default with no way to reach it, and `circle_radius` / `beam_width_at_origin` ha
 |---|---|---|
 | `dim_target` | how dark the dim goes. ⚠ **shipped in `player_settings.gd` as `spotlight_dim_target`, not on a style** — the light layer has no style resource for `Q84`=(b) to live on, so `Q168`=(a) is what the code does. **`= 0` is the dim's off switch**: it keeps every beam, circle and glow and drops only the dim, which is the opposite split from `fx_intensity = 0` (`Q83` forbids that one from removing the dim) | 0.75 |
 | `spotlight_dim_casual_scale` | `Q245`=(c)'s shallower dim OUTSIDE scoring — multiplies `dim_target` when the cue is not part of an act. Selected by `LightLayer.set_lights(lights, scoring=false)` | 0.35 |
-| `circle_radius` | in ART units | 16 |
+| `circle_radius` | in ART units; `@export_range(4.0, 48.0, 0.5)`, scaled by the lit card's drawn scale at the point of use | derived: `CardVisual.CARD_ART_SIZE.x / 2` |
 | `circle_intensity` | brighter than the beam | 1.0 |
 | `beam_intensity` | | 0.45 |
 | `beam_width_at_origin` | art units | 4 |
@@ -2153,7 +2153,7 @@ ships `fire_card` / `fire_prop` / `fire_ball`.
 | `inner_alpha` | **the alpha over the host's own art — ask 2's knob** | 0.35 | **Q216** |
 | `sink` | how far inside the silhouette the field starts | 4 | Q209 |
 | `dither` | breaks the ramp's bands, indexed on the FX pixel grid | 1.0 | Q214 |
-| `circle_radius` | the disc mask's radius, in ART units | 16 | Q85 |
+| `circle_radius` | the disc mask's radius, in ART units. ⚠ A literal on `FxGlowStyle`, NOT derived from the card as the light layer's `FxSpotlightStyle.circle_radius` is | 17 (the script default and `glow_circle.tres`); `glow_beam.tres` carries 16 | Q85 |
 | `circle_inner_alpha` | the circle's own over-art alpha, if it is not the glow's | 0.5 | Q217 |
 | `breathe_amp` / `breathe_speed` | if the glow animates at all | 0.0 | Q126 |
 
@@ -2678,7 +2678,7 @@ is an implementing agent deciding quietly and the owner finding out from the dif
 # GAP-007 — <one-line title>
 status: open | questioned | resolved | withdrawn
 raised: <date>, during <execution plan step>
-design: SPOTLIGHT_DESIGN.md version <N>, nodes <D6, I10>
+design: DESIGN.md version <N>, nodes <D6, I10>
 severity: GAP | CONTRADICTION
 
 **What the design says** — <quote it, cited by node or section>
@@ -2697,7 +2697,7 @@ questions unchanged, so escalating costs one file.
 ```markdown
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 
-Derived from: solatro/SPOTLIGHT_DESIGN.md, version <N>, confirmed <date>. Every step below cites
+Derived from: solatro/design/spotlight/DESIGN.md, version <N>, confirmed <date>. Every step below cites
 the design node IDs it implements (`Step 4 — implements D6, D7, I10`).
 
 If you are executing this and you reach a decision the design does not cover:
@@ -2708,7 +2708,7 @@ If you are executing this and you reach a decision the design does not cover:
    scope) → **park that thread, file a gap, keep working on unaffected threads, and tell the owner.**
 3. The design contradicts itself or the code → always a gap, highest priority.
 
-File gaps at `solatro/gaps/GAP-NNN.md` using the template in SPOTLIGHT_DESIGN.md §20. Write the
+File gaps at `solatro/gaps/GAP-NNN.md` using the template in DESIGN.md §20. Write the
 options in the questionnaire grammar; they become the next round's questions unchanged.
 
 Do not resolve a gap by picking an answer. Do not proceed on the parked thread. Do not delete a gap

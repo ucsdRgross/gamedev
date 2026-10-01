@@ -552,9 +552,9 @@ func _park_cards(root: Node) -> void:
 # at all three radii, with the card under it keeping its rank and pips; the beams carry visible
 # grain that is not screen static; the dim is a dark palette colour, NOT black, and not a vignette.
 
-# Three lights, TWO CROSSING on purpose, at circle radii 46 / 70 / 100 px (the shipped 16 art units
-# is ~46 px here), so the mouth and end cap, both derived from the radius, are looked at over three
-# sizes. A beam's `.w` is FLARE past the circle; 0 means the mouth is exactly the circle it serves.
+# Three lights, TWO CROSSING on purpose, at circle radii 46 / 70 / 100 px, so the mouth and end
+# cap, both derived from the radius, are looked at over three sizes. A beam's `.w` is FLARE past
+# the circle; 0 means the mouth is exactly the circle it serves.
 
 ## THE LIGHT LAYER over a stand-in board.
 func _shot_light_layer() -> void:
