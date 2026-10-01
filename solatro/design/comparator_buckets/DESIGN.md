@@ -70,14 +70,15 @@ straight adjacency is plain arithmetic on bucket keys (`scoring.gd:646`).
 
 ### 1c. Dispatch facts
 
-- `CardEnvironment.return_first_compare_mod_result` (`card_environment.gd:160`) returns **the
+- `CardEnvironment.return_first_compare_mod_result` (`card_environment.gd`) returns **the
   first implementing mod's answer** and never calls the rest. Pinned by
   `test_comparator.gd:212`.
-- `_compare_implementers` (`card_environment.gd:141`) is **cached per board revision**
-  (`_revision_key()`, `:138`), so "does anything implement this hook" is a dictionary lookup on
-  Game and an uncached walk in tests and on the map.
-- A skill's `spotlit` flag flips **without** a board revision bump; that is why the dispatch path
-  re-checks it at use time (`:162`) rather than trusting the cache.
+- `_compare_implementers` (`card_environment.gd`) is **cached per board revision and per modifier
+  epoch** (`_revision_key()` plus `CardData.modifier_epoch`, which counts every card gaining or
+  losing a modifier), so "does anything implement this hook" is a dictionary lookup on Game and an
+  uncached walk in tests and on the map.
+- A skill's `spotlit` flag flips **without** a revision or epoch bump; that is why the dispatch
+  path re-checks it at use time rather than trusting the cache.
 
 ### 1d. Cost facts
 

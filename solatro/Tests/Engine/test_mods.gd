@@ -416,7 +416,6 @@ func run_shuffle_tests() -> void:
 	var spy := SpyAppendFront.new()
 	deck[5].with_type(spy)
 	var modded := deck[5]
-	g.state.revision += 1
 	await g.shuffle_deck(deck)
 	check(deck[0] == modded, "on_append mod controls its card's final spot")
 	check(spy.append_calls == 10, "on_append fires once per appended card",

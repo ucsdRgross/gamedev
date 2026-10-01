@@ -194,7 +194,7 @@ func _note_mod_fired(mod: CardModifier, function: StringName, feeds_act_combo :=
 	if counts_as_activation or (feeds_act_combo and _act_cancellable):
 		register_combo(mod.combo_key(function))
 
-#The compare-mod cache stays valid while the same state object is unmutated.
+#The board half of the implementer cache's key; CardEnvironment adds CardData.modifier_epoch.
 func _revision_key() -> Array:
 	return [state.get_instance_id(), state.revision]
 

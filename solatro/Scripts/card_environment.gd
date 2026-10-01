@@ -246,15 +246,15 @@ func return_first_true_pair_result(hook: StringName, a: Variant, b: Variant) -> 
 		if verdict: return true
 	return false
 
+#⚠ NOT return_first_mod_variant: a grid cell answers [] for every cell but its own, so the first
+#implementer's answer taken verbatim would refuse every other placement.
 
+## The FIRST NON-EMPTY answer wins; an implementer answering [] is passed over.
 func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
-	for data in CardDataIterator.new(self):
-		for mod : CardModifier in _dispatch_mods(data):
-			if not mod or not mod.has_method(function): continue
-			if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
-			var result : Array[CardData] = await Callable(mod, function).callv(params)
-			_note_mod_fired(mod, function, false)
-			if result: return result
+	for mod : CardModifier in active_implementers(function):
+		var result : Array[CardData] = await Callable(mod, function).callv(params)
+		_note_mod_fired(mod, function, false)
+		if result: return result
 	return []
 
 #It walks every card and reconciles the cached `spotlit` flag with the live rule, firing
