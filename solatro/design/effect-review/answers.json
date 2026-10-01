@@ -1,7 +1,7 @@
 {
   "slug": "effect-review",
-  "doc_hash": "sha256:23f95aafc63597228c236dc31393cbc0c666d284f6f42c206d6aa5a033a8b02b",
-  "updated": "2026-09-18T01:08:59Z",
+  "doc_hash": "sha256:d776a442c13336e0211dcd11bcc2b835bfc8a594ec5dc0b2fea98d5b57bcfc81",
+  "updated": "2026-09-27T06:31:41Z",
   "answers": {
     "Q0001": {
       "state": "chosen",
@@ -1064,6 +1064,24 @@
       "active": true,
       "round": 1,
       "at": "2026-09-18T01:08:59Z"
+    },
+    "Q0120": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, when on grid allows cards to be stacked on top of itself in ascending rank order, starting from the rank on itself. lvl 2, cards with same rank are considered wild when stacking.\nbonus if stack reaches top/king",
+      "override": true,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-27T06:22:26Z"
+    },
+    "Q0121": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, once per show tap to trigger skill, this cards rank and suit copies the next card you tap on permanently.\nlvl 2, also copies the skill as well, replacing its own forgery skill.",
+      "override": true,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-27T06:31:41Z"
     }
   }
 }
