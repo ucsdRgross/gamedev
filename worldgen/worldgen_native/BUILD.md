@@ -29,6 +29,13 @@ python -m SCons platform=windows target=template_debug
 python -m SCons platform=windows target=template_release
 ```
 
+Linux (cloud, ~3.5 min cold on 4 cores): `git clone --depth 1 https://github.com/godotengine/godot-cpp.git godot-cpp`,
+copy `api/*` over `godot-cpp/gdextension/`, `pip install scons`, then
+`python3 -m SCons platform=linux target=template_debug custom_api_file=api/extension_api.json -j4`.
+The `.so` lands in `../addons/worldgen/bin/`; copy it into `solatro/addons/worldgen/bin/` beside the
+vendored `worldgen.gdextension`. Only the debug `.so` is built; a release export needs
+`target=template_release` too.
+
 (`scons` is often not on PATH — `python -m SCons` always works.) Output lands
 directly in `../addons/worldgen/bin/`. Editor + debug exports use
 template_debug; release exports use template_release (see `worldgen.gdextension`).
