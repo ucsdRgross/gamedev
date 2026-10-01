@@ -4,7 +4,7 @@
     import patch_ae
     m = patch_ae.load("g031")
     patch_ae.row(m, "CI0016", c="...", default="a")      # fields: name mechanic a b c default
-    patch_ae.level2(m, "CI0016", ("...", "...", "..."))
+    patch_ae.level2(m, "CI0016", ("...", "...", "..."))     # or level2(m, eid, b="...") for one option
     patch_ae.flag(m, "CI0016", "one line the owner sees")  # None removes it
     patch_ae.save(m)
 """
@@ -31,9 +31,18 @@ def row(m, eid, **fields):
         r[FIELDS[k]] = v
 
 
-def level2(m, eid, value):
+def level2(m, eid, value=None, **per_option):
+    """`level2(m, eid, "...")` sets it whole; `level2(m, eid, b="...")` sets one option's and keeps
+    the others, turning a single string into a 3-tuple."""
     assert eid in m.LEVEL2
-    m.LEVEL2[eid] = value
+    if not per_option:
+        m.LEVEL2[eid] = value
+        return
+    cur = m.LEVEL2[eid]
+    cur = list(cur) if isinstance(cur, tuple) else [cur] * 3
+    for letter, text in per_option.items():
+        cur["abc".index(letter)] = text
+    m.LEVEL2[eid] = tuple(cur)
 
 
 def flag(m, eid, why):

@@ -107,7 +107,6 @@ KEEPS = [
 ('CI0096', 'Polaroid', 'AE1', "everyday; photo booth strip", "skill: a snapshot - copies a card's state as it was"),
 ('CI0097', 'Autograph', 'AE1', "everyday (autograph card)", "stamp: a signed card is worth more"),
 ('CI0098', 'Postage Stamp', 'AE1', "everyday", "stamp: the hat slot's own pun - sends its card somewhere"),
-('CI0099', 'Appointment Card', 'AE1', "everyday", "skill: an effect booked for a set refill"),
 ('CI0100', 'Do Not Disturb', 'AE1', "everyday (door sign)", "stamp or skill: nothing may touch this card"),
 ('CI0101', 'Ration Card', 'AE1', "everyday", "hazard or skill: limits how many of a kind"),
 ('CI0102', 'Lost and Found', 'AE1', "everyday", "skill: recovers a discarded card"),
@@ -549,6 +548,7 @@ DROPS = [
 ('Show Your Cards', 'everyday', 'asked under the card table'),
 ('Joker in the Pack', 'everyday', 'asked under the card table as Joker'),
 ('Score Card', 'everyday', 'kept as Scorecard'),
+('Appointment Card', 'everyday', 'declined at writing (CI0099): an effect booked for a set refill is already The Big Game Ticket, Save the Date and Savings Bond'),
 # the games pool
 ('Wild', 'Uno', 'folded into Wild Card'),
 ('Attack', 'Exploding Kittens', 'a turn rule; no hook without turns'),
