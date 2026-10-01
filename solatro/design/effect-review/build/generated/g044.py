@@ -40,8 +40,8 @@ ROWS = [
 
 ('CI1006', 'Lumberjack', 'AE10', 'skill',
  'A lumberjack fells what stands tall and cuts it into Wood (the material); here what stands tall is a stack.',
- 'Cue, once per Entrance refill: fell a stack of two or more cards in its lines: it topples along its row the way you choose, its cards from the top down landing one in each empty cell in turn until a card or the edge stops the fall, the rest staying in the stump, and every complete line they land in scores',
- 'As (a), and each felled card is cut into Wood: it takes the Wood type for the show',
+ 'Cue, once per Entrance refill: fell a stack of two or more cards in its lines: every card above the bottom one is cut into logs, each going to the bottom of the stock you choose with the Wood type for the show, and the stump is left standing, every complete line through its cell scoring',
+ 'As (a), and each log pays its rank into the special bucket as it is cut',
  'When a line through its cell scores, it cuts one card of that line you choose into Wood: it takes the Wood type for the show',
  'a'),
 
@@ -270,7 +270,7 @@ LEVEL2 = {
  'CI1003': 'It may heel to any card placed this Entrance refill, orthogonally or diagonally',
  'CI1004': 'It also fits a cell open on one side',
  'CI1005': 'A card built in its lines may go into the middle of a stack, at the height you choose',
- 'CI1006': 'It may fell a stack anywhere on its grid, along its row or its column',
+ 'CI1006': 'It may fell a stack anywhere on its grid',
  'CI1007': 'The card it brings up may go to the top of any stock',
  'CI1008': 'It may reel the mark in to any uncovered cell of that line, not only the nearest',
  'CI1009': 'It may enchant a card already on its grid',
@@ -310,4 +310,5 @@ FLAGS = {
  'CI1027': 'it pays only while covered cards are in play; a deck with no stacking effect never fires it',
  'CI1024': 'every option gives the Stone type, so it does nothing if Stone v2 (CI0903) is rejected',
  'CI1017': 'every option makes a card carrying the Baby talent, so it depends on Baby (CI1002) being kept',
+ 'CI1005': 'pays only in a deck with a stacking effect, and its step for every card beneath is House of Cards (CI0208) (a) without the fall',
 }

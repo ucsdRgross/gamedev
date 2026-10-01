@@ -291,4 +291,6 @@ LEVEL2 = {
 # eid -> the flag the owner sees
 FLAGS = {
  'CI0031': '(c) opens a second grid for one show: a normal run plays one grid, so it asks whether a card may do that',
+ 'CI0019': 'every option borrows from the discard pile, which nothing fills by default, and the family rule is not to make such an option the default',
+ 'CI0020': 'every option waits on cards in the discard pile, and (c) on a pile that persists between shows, which the code does not do',
 }

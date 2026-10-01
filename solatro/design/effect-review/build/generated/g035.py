@@ -89,10 +89,10 @@ ROWS = [
 
 ('CI0236', 'Suit Yourself', 'AE2', 'skill',
  'Have it your own way.',
- 'When placed, it suits itself to the cell: it takes the suit its mark shows, for the show',
+ 'When it hits its mark on suit, it suits itself: it fires the prop of any suit you choose instead of its own',
  'When placed, it takes any suit you choose, for the show',
  'As (b), and every card later placed orthogonally next to it may suit itself the same way',
- 'a'),
+ 'b'),
 
 ('CI0237', 'Diamond in the Rough', 'AE2', 'skill',
  'A dull stone until somebody polishes it.',
@@ -179,7 +179,7 @@ LEVEL2 = {
  'CI0233': 'The card it crowns counts as hitting its own mark on rank',
  'CI0234': ('A face card that bows out from a mark it matches goes to the top of the stock you choose instead', 'A face card that bows out from a mark it matches goes to the top of the stock you choose instead', 'Face cards sitting on marks they match keep their rank and still pay the step'),
  'CI0235': 'It may hold its bite and is paid all the same',
- 'CI0236': ('It takes the rank its mark shows as well, for the show', 'It may change its suit again at each Entrance refill', 'It may change its suit again at each Entrance refill'),
+ 'CI0236': ('It suits itself again at every line through its cell that scores, firing the chosen prop once more', 'It may change its suit again at each Entrance refill', 'It may change its suit again at each Entrance refill'),
  'CI0237': ('The cut takes one orthogonal neighbour you choose with it: that card becomes Diamond type too', 'The cut takes one orthogonal neighbour you choose with it: that card becomes Diamond type too', 'You choose which other card in the line takes the polish'),
  'CI0238': ('Debuffs on the other cards in its lines count toward it too', 'The rank it gives up goes to an orthogonal neighbour you choose for the show instead of being lost', 'It may blame any card in its lines, not only a neighbour'),
  'CI0239': ('Discarded from its mark, it goes to the top of the stock you choose instead of the discard', 'The points are paid into the bucket you choose', 'The points are paid into the bucket you choose'),

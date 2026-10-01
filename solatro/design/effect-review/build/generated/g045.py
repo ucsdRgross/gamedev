@@ -323,7 +323,7 @@ LEVEL2 = {
  'CI1072': None,
  'CI1073': None,
  'CI1074': None,
- 'CI1075': None,
+ 'CI1075': ('Burning never spreads onto cards sitting on marks they match', 'None: a hazard has no level 2', 'None: a hazard has no level 2'),
  'CI1076': None,
  'CI1077': None,
 }

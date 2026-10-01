@@ -101,7 +101,7 @@ ROWS = [
  'As (a), with no question cue: each card placed on its grid asks whether the mystery shares its suit, and is answered',
  'a'),
 
-('CI0644', 'Connect Four', 'AE6', 'skill',
+('CI0644', 'Four in a Row', 'AE6', 'skill',
  'Drop a disc into a column and it falls to the bottom; four in a row wins. Down is toward the bottom row of its grid.',
  'A card placed in its column falls to the lowest empty cell of that column, and four cards of one suit in four cells in a row through the cell it lands in, along a row, column or flat diagonal, connect four: they pay a step into the special bucket for each of the four',
  'As (a), for every column of its grid',
@@ -157,7 +157,7 @@ ROWS = [
  'Hazard: as (a), and a cure holds: a cured card cannot catch it again this show, and each card cured pays a step into the special bucket',
  'a'),
 
-('CI0652', 'Meeple', 'AE6', 'skill',
+('CI0652', 'Wooden Worker', 'AE6', 'skill',
  'The little wooden worker stood on a road or a city to claim it, and taken back once it is finished.',
  'It has three meeples: once per Entrance refill stand one on a card of its grid to claim an incomplete line through that card, and when that line completes it pays again into its bucket and the meeple comes back',
  'As (a), with one meeple, which claims every incomplete line through the card it stands on',

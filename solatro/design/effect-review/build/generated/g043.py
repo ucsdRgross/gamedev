@@ -12,7 +12,7 @@ ROWS = [
 
 ('CI0902', 'Brick', 'AE9', 'type',
  'Walls are built of brick, and nothing gets through a wall.',
- 'A prop that reaches a Brick stops against it, and the Brick pays a step into the special bucket for every card that prop crossed',
+ 'A prop that reaches a Brick turns back the way it came and crosses its path again, firing on each card a second time',
  'A Brick is a wall to cards as well: a card an effect slides or steps along a row or column stops against it, and a prop that reaches it stops too',
  'As (a), and Bricks bond: a Brick orthogonally next to another Brick cannot be moved or removed by any effect',
  'a'),
@@ -195,7 +195,7 @@ ROWS = [
 
 # eid -> level 2: a str, a 3-tuple, "SUIT", "RANK", or None
 LEVEL2 = {
- 'CI0901': None,
+ 'CI0901': ('On its mark, this card may itself be placed on top of any card, whatever the stacking rules say', 'None: a type has no level 2', 'None: a type has no level 2'),
  'CI0902': None,
  'CI0903': None,
  'CI0904': None,

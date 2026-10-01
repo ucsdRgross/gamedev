@@ -293,7 +293,7 @@ LEVEL2 = {
  'CI0061': ("A recalled card put down on a mark it matches leaves its old line's score intact", 'A returned card may be any card on its grid, not only one placed this refill', 'A returned card may be any card on its grid, not only one placed this refill'),
  'CI0062': None,
  'CI0063': "The ticket's line pays into the bucket you choose",
- 'CI0064': 'The ring is the cell it sits on, wherever that is',
+ 'CI0064': 'A card that enters the ring fires its talent once as it steps in',
  'CI0065': ('Its front row is whichever row it sits in', 'Its front row is whichever row it sits in', 'Its column pays into the row bucket as well'),
  'CI0066': 'It may move its seat to the cell it sits on now',
  'CI0067': 'It may turn the wheel either way, up to three steps',

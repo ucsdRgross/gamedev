@@ -108,7 +108,7 @@ LEVEL2 = {
  'CI0809': ('It negates two', 'Placed on a mark it matches instead, it counters once from the grid, and stays where it is', 'Placed on a mark it matches instead, it counters once from the grid, and stays where it is'),
  'CI0810': ('When it flips, it fires once more for each card in its lines that sits on its own matching mark', 'It may spring again: each later card placed next to it may replace what it copies, your choice', 'It may spring again: each later card placed next to it may replace what it copies, your choice'),
  'CI0811': 'Attached on a mark it matches, it powers the cards orthogonally next to its stack as well',
- 'CI0812': 'An evolved card in its lines also carries the talent of the form beneath it',
+ 'CI0812': 'Once per Entrance refill an evolved stack in its lines may move to an empty cell whose mark its top card matches, every complete line it lands in scoring',
  'CI0813': 'It counts as one of a kind while no other card in its lines shares its rank, whatever the rest of the grid holds',
 }
 

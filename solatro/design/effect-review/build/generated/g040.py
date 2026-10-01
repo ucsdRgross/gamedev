@@ -194,10 +194,10 @@ ROWS = [
 
 ('CI0628', 'Cavalry', 'AE6', 'skill',
  'Horsemen: fast, and they charge.',
- 'Renames Q0321 (The Bull): Placing this card pushes the whole line of cards beyond it along by one, like a shove',
+ 'Cue, once per Entrance refill: it charges along its row or column, the way you choose, across two or more empty cells into the first card it meets, which is ridden down to the bottom of the stock you choose, the Cavalry takes its cell, its old cell is empty again, and every complete line it arrives in scores',
  'Cue, once per Entrance refill: it rides to any empty cell of its row or column with no card in between, and every complete line it arrives in scores, so it may complete the same line again at a later refill',
  'As (b), riding only at the charge, three cells or more, and a line it completes on arrival adds +1 to the combo',
- 'a'),
+ 'c'),
 
 ('CI0629', 'Artillery', 'AE6', 'skill',
  'The big guns, firing in support from a distance.',
@@ -236,7 +236,7 @@ LEVEL2 = {
  'CI0625': ('It gives one free clue each show', 'A wrong accusation costs nothing', 'You may change the accusation once, at any Entrance refill'),
  'CI0626': 'The passage opens to the other two corners as well',
  'CI0627': 'It may attack a card diagonally next to it too',
- 'CI0628': ('A pushed card may be pushed onto a stack', 'The first ride each Entrance refill onto a mark it matches does not spend the cue', 'The first ride each Entrance refill onto a mark it matches does not spend the cue'),
+ 'CI0628': ('It may charge along a flat diagonal through its cell as well', 'The first ride each Entrance refill onto a mark it matches does not spend the cue', 'The first ride each Entrance refill onto a mark it matches does not spend the cue'),
  'CI0629': ('Its support pays into the bucket you choose', 'Its support pays into the bucket you choose', 'It may shell a card on a diagonal through its cell too'),
 }
 
