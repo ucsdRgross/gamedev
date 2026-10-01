@@ -20,6 +20,11 @@ task to do next."
 2. **The Showitaire repo split** - the first item under "Planned by the owner" below, with every
    item here that serves it: the worldgen heavy images, the docs that name `gamedev`, and the
    whole-repo comment sweep that waits for the split (§ Doc hygiene backlog).
+   Owner: "this will include cleaning up all the old branches no longer in use. end goal is new
+   repo with one branch, and one branch for old repo too." So: once a branch is merged (or
+   measured as already held by `main`), delete it locally and on `origin`, its worktree with it;
+   `gamedev` ends with `main` alone, and Showitaire starts with one branch. Deleting a branch is
+   confirmed with the owner per branch that carries commits `main` lacks.
 3. **Review what is left of this file with the owner** and pick the next task.
 
 ## Planned by the owner — notes to design in a later session
