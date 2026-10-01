@@ -380,7 +380,7 @@ written when a run stalls or fails.
   - **The two no-legal-placement loops in `game.gd` lost their early exit** when they were composed
     over `Game.legal_cells_for` (one walk, three readers): each now walks every cell of a grid
     before answering, after every placement and every commit. Measured on Box A: part of the
-    placement lag (§ Performance); the narrowing is P93 in solatro/HANDOFF_playtest_fixes.md.
+    placement lag; the narrowing is the first item of § Performance.
   - **Two stick "rest" checks in `test_sidebar.gd` hold `STICK_HELD_FRAMES` (10 frames, ~15 ms at
     Box B's ~660 fps)**, so they prove rest over a frame-rate-dependent span. A time span costs
     ~2 s per suite run; the owner's call.
@@ -638,18 +638,37 @@ Card is `CardVisual.CARD_SIZE`; every element wears `Shaders/outline.gdshader`'s
   (§16); meta progression (§19); leaders/acts (§11). Deterministic RNG streams (§6/§23) are
   planned above.
 
-## Performance — lag moving and putting down cards (owner playtest, not yet measured)
+## Performance — lag moving and putting down cards
 
-- ⬜ **Measured on Box A (debug, windowed; harness `Tests/Visual/placement_lag_probe.tscn`):** every
-  drag-and-drop costs three main-thread frames of 40-90 ms (3 grids up to ~150) - pickup, release,
-  commit; GPU <= 13.5 ms; HEAD's worst drop frame p50 60-63 ms against `main`'s 45.6 (a regression).
-  The shares: `Game.legal_cells_for` ~15 ms a call, 3-4 calls a drop, ~85% of it
-  `CardEnvironment.return_first_data_array_result` re-scanning every card's modifiers with
-  `has_method` per cell; `ungrab_cards` rebuilding while the dropped card is still held (one extra
-  walk); the existence checks walking whole grids; `Game.save_state`'s second, debug-only
-  snapshot (4-9 ms). NOT the save thread (main-thread wait 0.001 ms max) and NOT history length.
-  A/B all four fixes: worst drop frame p50 34 ms. The fixes are P92-P95 in
-  solatro/HANDOFF_playtest_fixes.md; delete this entry when they land.
+Measured on Box A (debug, windowed; harness `Tests/Visual/placement_lag_probe.tscn`, `GRIDS=3
+PLACEMENTS=10`). The legality walk now reads the cached implementer list: a `Game.legal_cells_for`
+walk costs 3.1 ms at pickup and 4.3 ms at commit (it was 14.8 / 17.8), and the worst commit frame's
+median is 61 ms (it was 76). About 2.6 walks run in a commit, so roughly 50 ms of that frame is
+NOT the walk and is unprofiled. NOT the save thread
+(main-thread wait 0.001 ms max) and NOT history length; GPU <= 13.5 ms. Re-measure with the probe
+before and after each fix, same session, same box. Three fixes are sized and not built (owner:
+"leave remaining profiling after 92 as todo"):
+
+- ⬜ **The existence checks stop at the first legal cell.** `Game._no_legal_placement_remains_in_grid`
+  and its callers `_lift_a_spent_commitment` and `_no_held_card_has_a_legal_placement` only test
+  `is_empty()` but run the whole `legal_cells_for` walk. An early-exit parameter on
+  `legal_cells_for` (the one walk), no second walk. To measure: `_lift_a_spent_commitment` walks
+  and discards on a one-grid board; the refill check walks grids a commitment refuses
+  (`PlayArea._sweep_legal_cells` already narrows to the committed grid).
+- ⬜ **The release frame rebuilds while the card is still held.** `PlayArea.ungrab_cards` rebuilds
+  before it clears `selected_cards`, so the rebuild lays out the held look (`_bind_slot`,
+  `_append_ordered_visual`, `_refresh_mark_matches`, `_sweep_legal_cells`) that the ungrab then
+  undoes. New order: the visual reset loop (it reads `selected_cards`) -> `selected_cards = []` ->
+  `flush_rebuild()`. `hand_changed` then fires before the rebuild; its one listener
+  `HudContainer.set_card_in_hand` reads no board maps. A Fable check of two earlier drafts found
+  one would refuse every placement and one would leave the card lifted - measure, do not reorder
+  by reading.
+- ⬜ **`Game.save_state`'s second, debug-only snapshot** (4-9 ms a commit in debug builds).
+  `_debug_commit` takes a fresh `to_saveable()`; append `save_history.back()` instead - entries are
+  immutable by contract (`run_manager.gd`), every reader duplicates before use, and `_resume_show`
+  already shares them. Update the two "FRESH to_saveable() duplicate" comments
+  (`test_leak_canary.gd`, `leak_holder_probe.gd`). It also halves the modifier-epoch bumps a commit
+  makes (the snapshot's copies run the setters; 858 per placement with both snapshots).
 
 ## Testing / infrastructure
 
