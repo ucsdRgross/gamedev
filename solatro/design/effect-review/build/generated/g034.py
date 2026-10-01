@@ -117,7 +117,7 @@ ROWS = [
 
 ('CI0217', 'Show Your Cards', 'AE2', 'skill',
  'The showdown: every hand is turned face up and the best one takes the pot.',
- 'Renames Q0097 (Many Have Lost Their Minds Comprehending This Joker): When placed, draw one card from each Entrance stock and score the hand, then discard those five',
+ 'Renames Q0097 (The Whole Company): When placed, draw one card from each Entrance stock and score the hand, then discard those five',
  'Cue, once per show: call the showdown: the best complete line on its grid, you choose among ties, takes the pot, a step into its bucket for every card in every other complete line',
  "As (b), with the pot paid into the special bucket instead of the winner's own",
  'a'),

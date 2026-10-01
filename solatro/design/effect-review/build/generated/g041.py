@@ -5,7 +5,7 @@ ROWS = [
 
 ('CI0630', 'Card Set', 'AE6', 'skill',
  'Three cards of a kind, or one of each, traded in together, and every set traded is worth more than the last; (a) is the approved Q0102, whose level 2 is asked at Q1785.',
- 'Renames Q0102 (Sets-of-3 rank boost (Risk)): Any three matching cards on the grid may be cashed in for an effect you choose from three',
+ 'Renames Q0102 (Sets-of-3 rank boost): Any three matching cards on the grid may be cashed in for an effect you choose from three',
  'Cue, once per Entrance refill: cash in three Entrance cards of one suit or of three different suits: they go to the discard pile unplaced, and the set pays steps into the special bucket, four for the first set this show and two more for each set after',
  'As (b), the set paying in armies instead: three +1 ranks for the show, laid on the cards of its grid you choose, one or more on the same card',
  'a'),
@@ -89,7 +89,7 @@ ROWS = [
 
 ('CI0642', 'Block Tower', 'AE6', 'skill',
  "After the game Jenga: pull a block from low in the tower, set it on top, and hope the tower stands; in (b) and (c) the tower is a column of the grid, and the fall in (b) is drawn from the show's seed, so Undo cannot pull again.",
- 'Renames Q0320 (Jenga card): Clicking a buried card moves it to the top of the next-smallest stack, leaving a gap; too many gaps and this card is discarded',
+ 'Renames Q0320 (Block Pull card): Clicking a buried card moves it to the top of the next-smallest stack, leaving a gap; too many gaps and this card is discarded',
  "Cue, once per Entrance refill: pull a card that is in no complete line out of a column of its grid and set it in an empty cell of that column above it, the pull paying a step into the special bucket for every pull this show; the tower falls on a chance drawn from the show's seed, one in ten for every pull so far, sending every card of that column to the bottom of its stock",
  'As (b), with no chance of a fall, but each pull costs the pulled card 1 rank for the show',
  'b'),
