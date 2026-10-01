@@ -446,11 +446,11 @@ func _current_section() -> Array[Vector2i]:
 func _push_lights() -> void:
 	if not is_instance_valid(_layer): return
 	_sync_beams()
-	var scale := settings.card_scale
 	var viewport := Rect2(Vector2.ZERO, Vector2(screen_size))
 	var lights : Array[LightLayer.Light] = []
 	for b : _TBeam in _beams:
 		var centre := _beam_centre(b)
+		var scale := _slot_scale(b.slot)
 		var light := LightLayer.Light.new()
 		light.centre = centre
 		light.radius = _style().circle_radius * scale
@@ -462,16 +462,21 @@ func _push_lights() -> void:
 		lights.append(light)
 	_layer.set_lights(lights, _scoring_now())
 
-## Where a beam's circle is RIGHT NOW — its slot's art square, or a point along its travel.
+## Where a beam's circle is RIGHT NOW — its slot's card centre, or a point along its travel.
 func _beam_centre(b: _TBeam) -> Vector2:
 	var target := _slot_centre(b.slot)
 	if b.t >= 1.0: return target
 	return b.from.lerp(target, smoothstep(0.0, 1.0, b.t))
 
-## A slot's art-square centre, or ZERO if that slot has no card built.
+## A slot's card centre, or ZERO if that slot has no card built.
 func _slot_centre(slot: Vector2i) -> Vector2:
 	var cv : CardVisual = _slot_card.get(slot)
 	return cv.spotlight_center() if is_instance_valid(cv) else Vector2.ZERO
+
+## The scale a slot's card is drawn at, or the settings' own if that slot has no card built.
+func _slot_scale(slot: Vector2i) -> float:
+	var cv : CardVisual = _slot_card.get(slot)
+	return cv.spotlight_scale() if is_instance_valid(cv) else settings.card_scale
 
 # RE-MATCHES THE LIVE BEAMS to the lit section: a kept slot keeps its light, a light whose slot left
 # travels to one that gained a slot (paired in x order, so travels never cross, and never from ZERO,

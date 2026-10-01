@@ -60,6 +60,8 @@ func _ready() -> void:
 	await test_the_reveal_keeps_props_and_gutters_glued_G31_G32()
 	await test_lights_stay_glued_to_cards_that_move_while_lit()
 	await test_lights_track_a_scrolled_board()
+	await test_the_spotlight_pool_is_as_wide_as_the_card_on_a_zoomed_board()
+	check_all_tests_registered()
 	restore_real_settings()
 	finish()
 
@@ -290,7 +292,7 @@ func cleanup(g: Game, pa: PlayArea) -> void:
 	await get_tree().process_frame
 	g.free()
 
-func run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
+func _run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
 		relocated: Array) -> bool:
 	var sig := pl.begin_prop_tick(live, spawned, movers, relocated)
 	var fired : Array[bool] = [false]
@@ -353,7 +355,7 @@ func test_normal_prop_above_cards() -> void:
 	p.kind = 1
 	p.at = BoardCoord.new(0, 1, 0, 0)
 	p.route = [BoardCoord.new(0, 2, 0, 0)] as Array[BoardCoord]
-	var ok := await run_tick(pl, [p], [p], [p], [])
+	var ok := await _run_tick(pl, [p], [p], [p], [])
 	check(ok, "knife spawn/move tick completes")
 	var vis : PropVisual = pl._visuals.get(p)
 	var order := dump_draw_order("normal knife over the board", pa)
@@ -438,7 +440,7 @@ func test_overlay_above_everything() -> void:
 	p.kind = 1
 	p.at = BoardCoord.new(0, 1, 0, 0)
 	p.route = [BoardCoord.new(0, 2, 0, 0)] as Array[BoardCoord]
-	await run_tick(pl, [p], [p], [p], [])
+	await _run_tick(pl, [p], [p], [p], [])
 	var popup := TextPopup.new_popup("Flush 12", pa.global_position)
 	pa.overlay_layer.add_child(popup)
 	await get_tree().process_frame
@@ -476,7 +478,7 @@ func test_hoop_back_half_interleaves() -> void:
 	p.kind = 0
 	p.at = BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 1)
 	p.route = [] as Array[BoardCoord]
-	var ok := await run_tick(pl, [p], [p], [], [])
+	var ok := await _run_tick(pl, [p], [p], [], [])
 	check(ok, "hoop spawn tick completes")
 	var vis : PropVisual = pl._visuals.get(p)
 	check(vis != null and vis.has_back_half(), "the hoop opts into the front/back split")
@@ -544,7 +546,7 @@ func test_hoop_back_half_interleaves() -> void:
 # Despawn frees BOTH half nodes with the visual, with no leak.
 	p.done = true
 	p.route = [] as Array[BoardCoord]
-	await run_tick(pl, [p], [], [], [])
+	await _run_tick(pl, [p], [], [], [])
 	var waited := 0.0
 	while is_instance_valid(vis) and not vis.is_queued_for_deletion() and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
@@ -590,7 +592,7 @@ func test_hoop_split_multi_column() -> void:
 		p.kind = 0
 		p.at = BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, 1)
 		p.route = [] as Array[BoardCoord]
-		var ok := await run_tick(pl, [p], [p], [], [])
+		var ok := await _run_tick(pl, [p], [p], [], [])
 		check(ok, "hoop spawn tick completes (separation %.1f)" % sep_scale)
 		var vis : PropVisual = pl._visuals.get(p)
 # A hoop still takes no FORMATION offset: its whole lane offset is the card-jump rise, the one thing
@@ -704,7 +706,7 @@ func test_hoop_split_multi_column() -> void:
 # retargets the visual and re-pins its anchor slot, and the bracket follows the anchor onto the new
 # row - back behind the new row's cards but in front of the old row's, front in front of the new.
 		p.at = BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, 2)
-		ok = await run_tick(pl, [p], [], [p], [])
+		ok = await _run_tick(pl, [p], [], [p], [])
 		check(ok, "the row-change mover tick completes (separation %.1f)" % sep_scale)
 		for _j in 6:
 			await get_tree().process_frame
@@ -739,7 +741,7 @@ func test_hoop_short_column_row_hold() -> void:
 # The middle column has NO card at row 1, which is the empty-slot crossing.
 	p.at = BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, 1)
 	p.route = [] as Array[BoardCoord]
-	var ok := await run_tick(pl, [p], [p], [], [])
+	var ok := await _run_tick(pl, [p], [p], [], [])
 	check(ok, "short-column hoop spawn tick completes")
 	var vis : PropVisual = pl._visuals.get(p)
 	for _i in 6:
@@ -853,40 +855,32 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 	for l : LightLayer.Light in layer._lights:
 		if not SpotlightOrigins.points_down(l.origin, l.centre): all_down = false
 	check(all_down, "and every live beam points DOWN at its target (Q117)")
-# ⚠ THE CIRCLE IS CENTRED ON THE ART SQUARE, NOT ON THE CARD'S ORIGIN. Owner: "circles should be
-# centered on the skill art, not on card center". The two differ by the Art node's authored offset,
-# and centring on the origin put the pool high enough to be hard to tell which card it is on.
+# ⚠ THE CIRCLE IS CENTRED ON THE CARD, NOT ON ITS ART SQUARE. Owner: "The circle sits exactly inside
+# the square card and touches all four edges ... The beam lands on the card's centre instead of the
+# talent art's." The two differ by the Art node's authored offset.
 
-# It is asserted against the CARD's own answer rather than a constant, so the authored offset stays
-# the single source.
-
-# ⚠ STATED AS "NO LIGHT SITS ON A CARD ORIGIN", NOT "EVERY LIGHT SITS ON AN ART SQUARE". The
-# positive form looks stronger and is flaky.
-
-# PlayArea controls are POOLED per slot, so a CardVisual can be re-bound between the emit and this
-# check and a light legitimately stops matching any current card - measured, it failed 2 of 3 that
-# way while the code was correct.
-
-# The negative form is the actual regression: under the bug EVERY centre was a card origin.
-	var on_origin := 0
+# ⚠ THE NEGATIVE FORM IS THE REGRESSION CHECK, the positive one only proves it can fail: PlayArea
+# controls are POOLED per slot, so a CardVisual can be re-bound between the emit and this check and
+# a light legitimately stops matching any current card (measured: 2 of 3 runs).
 	var on_art := 0
+	var on_card := 0
 	for l : LightLayer.Light in layer._lights:
 		for data : CardData in view.play_area.data_card.keys():
 			var cv : CardVisual = view.play_area.data_card[data]
 			if not is_instance_valid(cv) or not cv.is_inside_tree(): continue
-			if l.centre.is_equal_approx(cv.global_position): on_origin += 1
-			if l.centre.is_equal_approx(cv.spotlight_center()): on_art += 1
-	check(on_origin == 0,
-			"Q85: NO circle sits on a card's origin — they are on the ART SQUARE",
-			"%d light(s) on an origin" % on_origin)
-	check(on_art > 0,
-			"...and at least one circle is positively matched to an art square, so this can fail",
-			"%d of %d" % [on_art, layer._lights.size()])
+			if l.centre.is_equal_approx(cv.art.global_position): on_art += 1
+			if l.centre.is_equal_approx(cv.visual.global_position): on_card += 1
+	check(on_art == 0,
+			"NO circle sits on a card's art square — they are on the CARD'S CENTRE",
+			"%d light(s) on an art square" % on_art)
+	check(on_card > 0,
+			"...and at least one circle is positively matched to a card's centre, so this can fail",
+			"%d of %d" % [on_card, layer._lights.size()])
 # The two points must actually differ, or neither check above could ever catch the bug.
 	var probe : CardVisual = view.play_area.data_card.values()[0]
-	check(not probe.spotlight_center().is_equal_approx(probe.global_position),
-			"...and the art centre is a DIFFERENT point from the card origin (Art sits at y+5)",
-			"%s vs %s" % [str(probe.spotlight_center()), str(probe.global_position)])
+	check(not probe.art.global_position.is_equal_approx(probe.visual.global_position),
+			"...and the art square's centre is a DIFFERENT point from the card's centre",
+			"%s vs %s" % [str(probe.art.global_position), str(probe.visual.global_position)])
 # The dim RISES because something is lit, not because an act said so.
 	var settled := 0.0
 	while settled < 1.0 and is_equal_approx(layer._dim, 0.0):
@@ -1500,7 +1494,7 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 			"the lit card really did MOVE while lit (else this whole test is vacuous)",
 			"it shifted only %.1f px over the cycle" % moved)
 	check(worst < 1.0,
-			"a light stays on its card's art square every frame while that card moves",
+			"a light stays on its card's centre every frame while that card moves",
 			"the nearest light was %.2f px off the moving card's centre at worst (%d lights, %d lit, moved %.1f)"
 			% [worst, layer._lights.size(), lit.size(), moved])
 	await _teardown_view(view)
@@ -1577,6 +1571,185 @@ func test_lights_track_a_scrolled_board() -> void:
 	pa.flush_rebuild()
 	await _teardown_view(view)
 
+# The pool's soft edge crosses DRAWN_STEP inside its nominal radius (measured: 93.4 to 93.8 px read
+# off a 94.7 px pool), and the card's drawn box lands on whole pixels (97 or 98 px for 98.3).
+## How far a measured edge may sit from its prediction, in art units as drawn.
+const SPOT_TOLERANCE_UNITS := 2.0
+# One 8-bit step is rounding: a neighbour's rim flickered by exactly one between two renders.
+## The smallest channel difference that counts as drawn.
+const DRAWN_STEP := 2.0 / 255.0
+## How many card widths the measured window spans, centred on the lit card.
+const SPOT_WINDOW_CARDS := 3.0
+# Under a quarter of the radius, so every row in it is the pool's own arc for a lamp tilted up to
+# 50 degrees, and enough rows that one dark pixel under an edge does not move the middle.
+## How much of the pool's foot locates its centre column, in art units as drawn.
+const SPOT_FOOT_UNITS := 6.0
+
+# THE POOL IS AS WIDE AS THE CARD'S ART AND SITS ON THE CARD'S CENTRE, ON A ZOOMED BOARD: read off
+# four renders of the real view (lit, dimmed with no light, undimmed, undimmed with the card hidden).
+# The card's drawn box and scale come from the last two, never from the production scale.
+
+# ⚠ THE ZOOM IS THE POINT: at zoom 1 a radius scaled by card_scale alone is right by accident, and
+# every other fixture here latches zoom 1. Time is stopped across the four renders, so the beam's
+# grain is the same in all of them.
+
+# The card nearest the middle is lit, its float stilled as a scoring jump stills it: the focused
+# board clips the Entrance cards at its edges, and the idle tilt foreshortens the drawn box by 1 to
+# 4 px (measured 94 to 97 px on a 98.3 px card).
+func test_the_spotlight_pool_is_as_wide_as_the_card_on_a_zoomed_board() -> void:
+	var view : GameView = await _stand_up_view()
+	await view.game.next()
+	var pa := view.play_area
+	var layer := view.light_layer
+	pa.flush_rebuild()
+	pa.focus_grid(0)
+	pa.snap_the_view_into_place()
+	for _i : int in 3: await _tick_seconds()
+	var target : CardData = null
+	var cv : CardVisual = null
+	var middle := _stand_up_vp.size.x * 0.5
+	for data : CardData in pa.data_card.keys():
+		if data.stage == CardData.Stage.DRAW: continue
+		var coord := view.game.state.grid_position_of(data)
+		if not coord.is_entrance() or coord.h != 0: continue
+		var at : CardVisual = pa.data_card[data]
+		if cv != null and absf(at.global_position.x - middle) >= absf(cv.global_position.x - middle):
+			continue
+		target = data
+		cv = at
+	check(target != null, "the dealt board has an uncovered Entrance card to light")
+	if target == null:
+		await _teardown_view(view)
+		return
+	_stand_up_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	view.game.spotlight_section_changed.emit([target] as Array[CardData])
+	var waited := 0.0
+	while waited < WATCHDOG_SECS and not _the_show_is_fully_up(layer):
+		waited += await _tick_seconds()
+	check(_the_show_is_fully_up(layer), "one light came fully up on the card",
+			"show %.2f, dim %.2f, %d light(s)" % [layer._show, layer._dim, layer._lights.size()])
+
+	var reach := Vector2.ONE * CardVisual.CARD_SIZE.x * cv.get_global_transform().get_scale().x \
+			* SPOT_WINDOW_CARDS * 0.5
+	var window := Rect2i(Rect2(cv.global_position - reach, reach * 2.0)).intersection(
+			Rect2i(Vector2i.ZERO, _stand_up_vp.size))
+	var mat := layer.material as ShaderMaterial
+	cv.floating = false
+	await _tick_seconds()
+	Engine.time_scale = 0.0
+	var lit := await _grab(window)
+	mat.set_shader_parameter(&"u_light_count", 0)
+	var dimmed := await _grab(window)
+	mat.set_shader_parameter(&"u_light_count", layer._lights.size())
+	layer.set_process(false)
+	layer.visible = false
+	var plain := await _grab(window)
+	cv.visible = false
+	var bare := await _grab(window)
+	cv.visible = true
+	layer.visible = true
+	layer.set_process(true)
+	Engine.time_scale = 1.0
+
+	var card_rows := _changed_rows(plain, bare)
+	var pool_rows := _changed_rows(lit, dimmed)
+	check(not card_rows.is_empty(), "hiding the card changed the render, so its drawn box is known",
+			"window %s" % window)
+	check(not pool_rows.is_empty(), "the light changed the dimmed render, so the pool is known",
+			"window %s" % window)
+	if card_rows.is_empty() or pool_rows.is_empty():
+		await _teardown_view(view)
+		return
+	var card_box := _box_of(card_rows)
+	var unit := card_box.size.x / CardVisual.CARD_SIZE.x
+	var card_scale : float = SettingsManager.settings.card_scale
+	check(absf(unit / card_scale - 1.0) > 0.1,
+			"the card is DRAWN at a scale card_scale alone does not give, so a dropped zoom shows",
+			"%.3f px per art unit drawn, card_scale %.3f, board zoom %.3f"
+			% [unit, card_scale, pa.drawn_zoom])
+	var pool := _pool_of(pool_rows, unit)
+	var art_px := CardVisual.CARD_ART_SIZE.x * unit
+	var slack := SPOT_TOLERANCE_UNITS * unit
+	check(absf(pool.z * 2.0 - art_px) <= slack,
+			"the spotlight pool is as wide as the card's art, as both are DRAWN on a zoomed board",
+			"pool %.1f px wide, card art %.1f px (card box %s), allowed %.1f"
+			% [pool.z * 2.0, art_px, card_box, slack])
+	var pool_centre := Vector2(pool.x, pool.y)
+	TestLog.line("    [pool] %.1f px wide at %s; card art %.1f px, card box %s, zoom %.3f"
+			% [pool.z * 2.0, pool_centre, art_px, card_box, pa.drawn_zoom])
+	check(pool_centre.distance_to(card_box.get_center()) <= slack,
+			"...and it is centred on the drawn card, so it sits inside the square card",
+			"pool centre %s, card centre %s, allowed %.1f px"
+			% [pool_centre, card_box.get_center(), slack])
+	var bounds := _export_range_of(layer.style, &"circle_radius")
+	check(bounds.x <= layer.style.circle_radius and layer.style.circle_radius <= bounds.y,
+			"...and the radius knob's range admits the shipped radius, so its slider can tune it",
+			"radius %.1f, range %s" % [layer.style.circle_radius, bounds])
+	view.game.spotlight_section_changed.emit([] as Array[CardData])
+	await _teardown_view(view)
+
+## Is exactly one light lit at full strength, with the show and the dim both arrived?
+func _the_show_is_fully_up(layer: LightLayer) -> bool:
+	return layer._lights.size() == 1 and layer._lights[0].intensity >= 1.0 and layer._show >= 1.0 \
+			and layer._dim > 0.0 and is_equal_approx(layer._dim, layer._dim_target())
+
+## The hosted view's next finished frame, cut to `window`.
+func _grab(window: Rect2i) -> Image:
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	return _stand_up_vp.get_texture().get_image().get_region(window)
+
+## Per row, the first and last column where two same-sized renders differ; rows with none are absent.
+func _changed_rows(a: Image, b: Image) -> Dictionary[int, Vector2i]:
+	var rows : Dictionary[int, Vector2i] = {}
+	for y : int in a.get_height():
+		var first := -1
+		var last := -1
+		for x : int in a.get_width():
+			var p := a.get_pixel(x, y)
+			var q := b.get_pixel(x, y)
+			if maxf(absf(p.r - q.r), maxf(absf(p.g - q.g), absf(p.b - q.b))) < DRAWN_STEP: continue
+			if first < 0: first = x
+			last = x
+		if first >= 0: rows[y] = Vector2i(first, last)
+	return rows
+
+## The pixel box around every changed row, edges on pixel boundaries.
+func _box_of(rows: Dictionary[int, Vector2i]) -> Rect2:
+	var box := Rect2()
+	for y : int in rows:
+		var row := Rect2(rows[y].x, y, rows[y].y + 1 - rows[y].x, 1)
+		box = row if box.size == Vector2.ZERO else box.merge(row)
+	return box
+
+# ⚠ MEASURED AWAY FROM THE LAMP. A tilted cone overhangs the pool on the lamp's side but never on
+# the far side or below, so the centre column is the lowest rows' middle, the radius is the widest
+# row's NARROWER half about that column, and the centre sits one radius above the lowest lit row.
+
+## The pool's centre (x, y) and radius (z), in the render's pixels.
+func _pool_of(rows: Dictionary[int, Vector2i], unit: float) -> Vector3:
+	var ys : Array[int] = []
+	ys.assign(rows.keys())
+	ys.sort()
+	var foot_rows : int = mini(ceili(SPOT_FOOT_UNITS * unit), ys.size())
+	var column := 0.0
+	for i : int in foot_rows:
+		var span : Vector2i = rows[ys[ys.size() - 1 - i]]
+		column += (span.x + span.y + 1) * 0.5 / foot_rows
+	var radius := 0.0
+	for y : int in ys:
+		radius = maxf(radius, minf(column - rows[y].x, rows[y].y + 1 - column))
+	return Vector3(column, ys[ys.size() - 1] + 1 - radius, radius)
+
+## The (min, max) an `@export_range` property declares.
+func _export_range_of(object: Object, property: StringName) -> Vector2:
+	for info : Dictionary in object.get_property_list():
+		if info.name != property: continue
+		var parts : PackedStringArray = str(info.hint_string).split(",")
+		return Vector2(float(parts[0]), float(parts[1]))
+	return Vector2.ZERO
+
 # DEAL UNTIL A COLUMN IS ACTUALLY STACKED. ⚠ ONE next() GIVES A BOARD ONE CARD DEEP, WHERE NOTHING
 # IS COVERED, so the reveal correctly does nothing and every assertion about it passes for the wrong
 # reason.
@@ -1627,7 +1800,7 @@ func _deal_until_stacked(view: GameView) -> void:
 	view.play_area.flush_rebuild()
 	await get_tree().process_frame
 
-## A card's art-square centre, for comparing against what the layer was handed.
+## A card's spotlight centre, for comparing against what the layer was handed.
 func _centre_for(view: GameView, data: CardData) -> Vector2:
 	var cv : CardVisual = view.play_area.data_card.get(data)
 	return cv.spotlight_center() if is_instance_valid(cv) else Vector2.ZERO
@@ -1733,7 +1906,7 @@ func test_hoop_split_brackets_a_grid_height_layer() -> void:
 	p.kind = 0
 	p.at = BoardCoord.new(0, 0, 0, 1)
 	p.route = [] as Array[BoardCoord]
-	var ok := await run_tick(pl, [p], [p], [], [])
+	var ok := await _run_tick(pl, [p], [p], [], [])
 	check(ok, "grid hoop spawn tick completes")
 	var vis : PropVisual = pl._visuals.get(p)
 	check(vis != null and vis.has_back_half(), "the grid hoop opts into the front/back split")

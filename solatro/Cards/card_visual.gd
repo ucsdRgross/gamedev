@@ -477,18 +477,22 @@ var hover : bool = false
 @onready var suit: Polygon2D  = $Offset/Visual/Suit
 @onready var art: Polygon2D = $Offset/Visual/Art
 
-# WHERE A SPOTLIGHT CIRCLE GOES ON THIS CARD: the centre of the ART SQUARE at radius 17 art units,
-# not the card's own origin. `Art` sits at (0, 6) inside `Visual` and spans +/-17 - 32 of drawing plus
-# the shader's 1-unit rim each side - and centring on the origin put the pool high and read ambiguous.
+# WHERE A SPOTLIGHT CIRCLE GOES ON THIS CARD: the DRAWN card's centre, so a circle of half the card
+# art's width sits inside the square card and touches all four edges (owner). `Visual` rides
+# `Offset`, which the scoring jump lives on, so the circle follows a card that jumps.
 
-# ⚠ ASKED OF THE CARD, never re-derived by the caller. The offset is authored in card_visual.tscn
-# and rides `Offset`'s own transform, which the scoring jump lives on, so a second copy in the
-# director would disagree the moment a card moves.
-
-# `art` is @onready, so a card asked before it is in the tree answers with the honest fallback rather
-# than crashing; the caller's own is_inside_tree guard is what normally prevents it.
+# `visual` is @onready, so a card asked before it is in the tree answers with the honest fallback
+# rather than crashing; the caller's own is_inside_tree guard is what normally prevents it.
 func spotlight_center() -> Vector2:
-	return art.global_position if art else global_position
+	return visual.global_position if visual else global_position
+
+# THE ROOT'S scale, never `Offset`'s or `Art`'s: the jump pulses `Offset` to 1.15 and the rig bends
+# `Art` (measured 1.795 x 1.821 on a card drawn at 1.821), and a light sized off either would pulse.
+# The root carries card_scale and every scale above it, the board's zoom included.
+
+## The scale this card is drawn at, for a spotlight sized in art units.
+func spotlight_scale() -> float:
+	return get_global_transform().get_scale().x
 # Created at runtime - there is no .tscn slot - and OWNERLESS, because this script is @tool and an
 # owned child would be written into card_visual.tscn by the editor.
 
