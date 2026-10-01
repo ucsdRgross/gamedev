@@ -99,6 +99,22 @@ line scores whenever anything touches it. Say so in the option when you mean it,
 whole; for (b) and (c) level 1 is ..."), because the renderer prints every option of a rank row as
 a level-2 addition.
 
+## Code facts the reviews measured
+
+- **Undo rewinds up to 25 placements, scores included** (`Levels/game.gd`, `undo_cap`). A chance
+  the player could re-roll by undoing must be "drawn from the show's seed", said in the head.
+- **The default stacking rule** allows a card one rank apart on a DIFFERENT suit
+  (`Cards/Skills/Rules/skill_placer_og_lower.gd`); any other stack needs "whatever the stacking
+  rules say".
+- **The Entrance refills when it is empty or no held card has a legal placement**, so sending the
+  rest of the Entrance away is a free re-draw unless it costs something.
+- **A suit's prop fires only on a suit-mark match** (the board plan), so "when three props cross"
+  almost never happens; Hoops sweep rows only.
+- ⚠ **The discard pile**: `GAME_BRIEF.md` says it persists to the next show; the code returns it
+  to the run deck at show end (`Levels/game.gd`, `returned.append_array(state.discard_deck)`).
+  Unruled. Write "to the discard pile" as out for this show, and do not build an effect on a
+  discard pile that grows across shows.
+
 ## Slots and level 2
 
 `suit`, `rank`, `type`, `stamp`, `skill`, `consumable`, `hazard`, `structure`, `status`. Most
