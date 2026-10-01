@@ -59,6 +59,8 @@ the scenes take their knobs. Shots with the same `scene` and `env` share one God
    presses Done, prints every verdict with its comment, and marks the worker `working`. Park only
    after a shoot: a Done older than the last shoot does not count, so parking again without one
    waits.
+   The owner may hand back in chat without pressing Done: then read `review.json` yourself and
+   stop the watch you started.
 5. Every **reject** and every **comment** becomes the next implementer step, with the owner's
    comment, verbatim, as its brief. Verdicts stay in `review.json` across rounds; the page marks
    one given on an older AFTER and shows its comment beside it, leaving the comment box empty.
