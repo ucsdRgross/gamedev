@@ -5,7 +5,7 @@ and gated, each against the ruling below, on this branch, ready for the owner to
 **State:** P1-P87 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
 by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P87's review follow-up): `ALL 51 SUITES: 9727 CHECKS PASSED` (BOARD FUZZ 353, SIDEBAR 4265/4267, UI VIEWERS 177, PALETTE 51, WALL PAUSE 71/72), ~15 min with
 `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order:
-P88-P90 (review round 4's comments), P91, P92-P95 (the measured placement lag), then a round-5 review of only the shots P85-P91 changed, the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
+P89-P90 (review round 4's comments), P91, P92-P95 (the measured placement lag), then a round-5 review of only the shots P85-P91 changed, the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
@@ -354,7 +354,8 @@ Finished rows carry only their commits: each commit message holds that step's me
   commits: [67449ddb]
 - id: P88
   description: 'Hoop overlap (review round 4, formation_editor_hoop). Owner, verbatim: "hoop top portion should always cover any other hoops'' bottom half. if this is just tool editor idiosyncrasy then its fine if actual game already does this, this editor is just for positioning." MEASURE FIRST whether the game draws each hoop''s top over the others'' bottom halves; if it does, the editor-only difference needs no fix (report it); if the game does not, fix the game.'
-  status: pending
+  status: closed
+  evidence: 'No code (owner: a: leave it). Measured with 4 tinted hoops on a real PlayArea: over a card PropLayer._apply_split (prop_layer.gd ~232-261) draws all far halves, the row''s cards, then all near halves; off any card (the staged queue, the exit) and in the formation editor the halves hide and whole rings draw in child order (prop_visual.gd ~203-209). The overseer read the three tinted crops.'
 - id: P89
   description: 'The win overlay''s vertical centre (review round 4, win_overlay). Owner, verbatim: "middle centering is good, but it does not look vertically centered." Horizontal stays over the board''s columns; centre it vertically over the same space.'
   status: pending
@@ -581,13 +582,14 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - sidebar_snapshot's score_line_pulse still is staged on the random deal (placements until one registers a new combo class, Tests/Visual/sidebar_snapshot.gd _shoot_the_score_line_pulse ~581): 1 of 2 runs on the P83 tree wrote no PNG, so `review.py shoot` fails the round. COUNT 1. Measure before naming a cause.
 - NEW on the P87 tree, 1 of 2 overseer gates: GRID LAYOUT "TP-85: caught mid-growth, the row is PART WAY to its new height -- it eases rather than snapping" - a mid-ease sample; green in the rerun and 139/139 alone; the box had another session working during the red gate (CLAUDE.md edited mid-run). P87 touches the possible-cards list and a palette role - no board reach traced. COUNT 1. Measure before naming a cause.
 - WALL PAUSE's count moves 71 <-> 72 on unchanged code (72 in 1 of 8 gates on 2026-09-30): "the world generator finished before the reveal at scale ... freed its Main" is emitted a timing-dependent number of times - a per-suite count that varies is the only trace (tests-that-prove-nothing item 20); never red. Measure before naming a cause.
+- Found by P88 (read, pinned by VISUAL LAYERS 'a hoop NEVER takes one'): the game never applies a formation to hoops (prop_layer.gd ~515-518, `if kind == 0: continue`), so Cards/Props/Formations/hoop.tres and the formation editor's hoop view position nothing in the game - the owner's round-3 comment 'hoops should be aligned horizontally' (P78 g) changed only that unused resource. An owner question for the close: keep the hoop editor view, or wire the formation.
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
 1. DONE - review round 4 answered (RULINGS). Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
 2. DONE - the placement-lag profiling (measured; solatro/todo.md § Performance; harness Tests/Visual/placement_lag_probe.tscn).
-3. P88-P90 (P85-P87 done), review round 4's comments, in order (each gated, by eye where it draws; re-shoot and review the shots they change as round 5, only those).
+3. P89-P90 (P85-P87 done, P88 closed), review round 4's comments, in order (each gated, by eye where it draws; re-shoot and review the shots they change as round 5, only those).
 4. P91 (the spotlight circle as wide as the card, owner's ask after round 4).
 5. P92-P95, the placement-lag fixes, one per gate, each re-measured with the probe (Fable checked the options: none is an owner decision).
 6. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.
