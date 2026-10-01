@@ -77,3 +77,18 @@
 {"event":"verdict","id":"menu_picker","verdict":"comment","comment":"why would sidebar slide in if its empty and shows nothing?","at":"2026-09-30T14:02:16Z"}
 {"event":"verdict","id":"menu_inspect","verdict":"approve","comment":"","at":"2026-09-30T14:02:43Z"}
 {"event":"verdict","id":"deck_over_possible_cards","verdict":"approve","comment":"","at":"2026-09-30T14:03:30Z"}
+{"event":"verdict","id":"deck_over_chooser","verdict":"approve","comment":"","at":"2026-10-01T12:55:19Z"}
+{"event":"verdict","id":"deck_viewer","verdict":"approve","comment":"","at":"2026-10-01T12:55:30Z"}
+{"event":"verdict","id":"pack_chooser","verdict":"approve","comment":"","at":"2026-10-01T12:55:38Z"}
+{"event":"verdict","id":"possible_cards","verdict":"approve","comment":"","at":"2026-10-01T12:55:54Z"}
+{"event":"verdict","id":"possible_cards_ranks","verdict":"approve","comment":"","at":"2026-10-01T12:55:58Z"}
+{"event":"verdict","id":"win_overlay","verdict":"approve","comment":"","at":"2026-10-01T12:56:01Z"}
+{"event":"verdict","id":"menu_top","verdict":"approve","comment":"","at":"2026-10-01T12:56:05Z"}
+{"event":"verdict","id":"pack_chooser_13","verdict":"approve","comment":"","at":"2026-10-01T12:56:10Z"}
+{"event":"verdict","id":"menu_picker_600x1000","verdict":"comment","comment":"why does picker cover cause menu buttons to expand outwards. it should be an overlay like all the other viewers.","at":"2026-10-01T12:57:24Z"}
+{"event":"verdict","id":"menu_top_play_open","verdict":"approve","comment":"","at":"2026-10-01T12:57:32Z"}
+{"event":"verdict","id":"menu_picker_600x1000","verdict":"approve","comment":"","at":"2026-10-01T12:57:41Z"}
+{"event":"verdict","id":"menu_top_play_open","verdict":"approve","comment":"","at":"2026-10-01T12:57:51Z"}
+{"event":"verdict","id":"spotlight_game_zoomed","verdict":"approve","comment":"","at":"2026-10-01T12:57:57Z"}
+{"event":"verdict","id":"spotlight_tool_glow","verdict":"approve","comment":"","at":"2026-10-01T12:58:04Z"}
+{"event":"verdict","id":"spotlight_tool_glow_rest","verdict":"approve","comment":"","at":"2026-10-01T12:58:10Z"}

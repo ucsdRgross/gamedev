@@ -51,9 +51,9 @@
       "at": "2026-09-28T11:29:37Z"
     },
     "deck_over_chooser": {
-      "verdict": "comment",
-      "comment": "appears to be wider than before. scrollbar too close to the card. separation between cards should also exist on edges from the window. window's own buffer separate from card container should be a same value border along entire window, not just the left and right sides, since right now there is extra space on left and right that top and bottom doesnt have. think picture frame.",
-      "at": "2026-09-30T13:47:19Z"
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:55:19Z"
     },
     "deck_card_hover_over_chooser": {
       "verdict": "approve",
@@ -91,9 +91,9 @@
       "at": "2026-09-28T11:34:53Z"
     },
     "deck_viewer": {
-      "verdict": "comment",
-      "comment": "as mentioned in previous comment, if adding a border it should be along all 4 sides. otherwise all good.",
-      "at": "2026-09-30T13:48:45Z"
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:55:30Z"
     },
     "deck_viewer_600x1000": {
       "verdict": "approve",
@@ -106,14 +106,14 @@
       "at": "2026-09-28T11:36:16Z"
     },
     "pack_chooser": {
-      "verdict": "comment",
-      "comment": "there should probably be separation buffer between rerolls: 5 take row and the choosing cards. take button should not be touching the reroll buttons. use same separation as card separation. assume same separation as card separation if there is ever separation being used.",
-      "at": "2026-09-30T13:50:25Z"
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:55:38Z"
     },
     "possible_cards": {
-      "verdict": "comment",
-      "comment": "including name is great. rows should be split by type though to make it easier to determine the type, similar to starting a new line for a new paragraph, with header label such as Card Type, Talent, Suit, Rank separating the rows, left aligned. rank should not be black as well since outline is also black. use the white cream color as the rank filling instead.",
-      "at": "2026-09-30T13:55:04Z"
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:55:54Z"
     },
     "description_card": {
       "verdict": "approve",
@@ -188,17 +188,17 @@
     "spotlight_tool_glow": {
       "verdict": "approve",
       "comment": "",
-      "at": "2026-09-28T11:41:46Z"
+      "at": "2026-10-01T12:58:04Z"
     },
     "spotlight_tool_glow_rest": {
       "verdict": "approve",
       "comment": "",
-      "at": "2026-09-28T11:41:49Z"
+      "at": "2026-10-01T12:58:10Z"
     },
     "win_overlay": {
-      "verdict": "comment",
-      "comment": "middle centering is good, but it does not look vertically centered.",
-      "at": "2026-09-30T14:00:16Z"
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:56:01Z"
     },
     "menu_focused_by_keys": {
       "verdict": "approve",
@@ -216,9 +216,9 @@
       "at": "2026-09-30T14:00:52Z"
     },
     "menu_top": {
-      "verdict": "comment",
-      "comment": "would look better if buttons were aligned top to bottom in a vertical window.",
-      "at": "2026-09-30T14:01:39Z"
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:56:05Z"
     },
     "menu_picker": {
       "verdict": "comment",
@@ -234,7 +234,32 @@
       "verdict": "approve",
       "comment": "",
       "at": "2026-09-30T14:03:30Z"
+    },
+    "possible_cards_ranks": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:55:58Z"
+    },
+    "pack_chooser_13": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:56:10Z"
+    },
+    "menu_picker_600x1000": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:57:41Z"
+    },
+    "menu_top_play_open": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:57:51Z"
+    },
+    "spotlight_game_zoomed": {
+      "verdict": "approve",
+      "comment": "",
+      "at": "2026-10-01T12:57:57Z"
     }
   },
-  "updated": "2026-09-30T14:03:30Z"
+  "updated": "2026-10-01T12:58:10Z"
 }
