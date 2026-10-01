@@ -1,7 +1,7 @@
 @tool
 class_name CardData
 extends Resource
-## ⚠ `@tool` BECAUSE THE FX EDITOR PREVIEWS A REAL CARD, and a class whose chain is not `@tool` loads in the editor as a PLACEHOLDER: the type name survives and every member does not. Measured 2026-07-29 in the owner's editor — *"Invalid access to property or key 'data_changed' on a base object of type 'Resource (CardData)'"*, and a `PipSuitHoop` that came back as a bare `Resource` with no `set_texture`. Nothing here needs a running game (the `_init` registry is a weakref, the setters only emit), so the flag costs nothing and it is what lets a tool stand up the card the player sees rather than a mock of one. THE WHOLE CHAIN HAS TO CARRY IT: CardModifier, CardModifierType, PipSuit, PipRank.
+## ⚠ `@tool` BECAUSE THE FX EDITOR PREVIEWS A REAL CARD, and a class whose chain is not `@tool` loads in the editor as a PLACEHOLDER: the type name survives and every member does not. Nothing here needs a running game (the `_init` registry is a weakref, the setters only count and emit), so the flag costs nothing and it is what lets a tool stand up the card the player sees rather than a mock of one. THE WHOLE CHAIN HAS TO CARRY IT: CardModifier, CardModifierType, PipSuit, PipRank.
 
 signal data_changed
 signal stage_changed
@@ -10,6 +10,9 @@ signal stage_changed
 # release cost). LeakSentinel prunes dead entries and compares the survivors against the
 # cards reachable from legitimate owners; see Scripts/leak_sentinel.gd.
 static var sentinel_registry : Array[WeakRef] = []
+
+## Process-wide count of modifier attaches and removals on ANY card: monotonic, ended by nothing, and only ever compared for equality.
+static var modifier_epoch : int = 0
 
 func _init() -> void:
 	if OS.is_debug_build():
@@ -34,14 +37,17 @@ func _init() -> void:
 @export var skill: CardModifierSkill:
 	set(value):
 		skill = value
+		modifier_epoch += 1
 		data_changed.emit()
 @export var type: CardModifierType:
 	set(value):
 		type = value
+		modifier_epoch += 1
 		data_changed.emit()
 @export var stamp: CardModifierStamp:
 	set(value):
 		stamp = value
+		modifier_epoch += 1
 		data_changed.emit()
 @export var statuses: Array[CardModifierStatus] = []
 @export var flipped := false
@@ -82,7 +88,7 @@ func with_stamp(stamp:CardModifier) -> CardData:
 		self.stamp = null
 	return self
 
-## Apply a status: merge into an existing same-class status (stacks add) or append a fresh copy. S7 trap: a status arriving already bound to another card is duplicated so the two cards never share one stacks/data.
+## Apply a status: merge into an existing same-class status (stacks add) or append a fresh copy. ⚠ A status arriving already bound to another card is duplicated so the two cards never share one stacks/data.
 func add_status(status: CardModifierStatus) -> void:
 	for existing: CardModifierStatus in statuses:
 		if existing.can_merge_with(status):
@@ -94,10 +100,12 @@ func add_status(status: CardModifierStatus) -> void:
 	if status.data != null and status.data != self:
 		status = status.duplicate() as CardModifierStatus
 	statuses.append(status.with_data(self))
+	modifier_epoch += 1
 	data_changed.emit()
 
 func remove_status(status: CardModifierStatus) -> void:
 	statuses.erase(status)
+	modifier_epoch += 1
 	data_changed.emit()
 
 func with_status(status: CardModifierStatus) -> CardData:
@@ -107,11 +115,9 @@ func with_status(status: CardModifierStatus) -> CardData:
 func _on_child_data_changed() -> void:
 	data_changed.emit()
 
-# ⚠ **THIS IS A SECOND METHOD RATHER THAN AN EDIT TO `_to_string()`, DELIBERATELY.** `_to_string()`
-# feeds test assertions and the **G1.7 headless-parity diff**, which compares whole log sections
-# between two runs — shortening it would either break those or, worse, change what the parity gate
-
-# compares without anyone noticing. The verbose form stays exactly as it is for those readers.
+# ⚠ A SECOND METHOD RATHER THAN AN EDIT TO `_to_string()`, DELIBERATELY: `_to_string()` feeds test
+# assertions and the headless-parity diff of whole log sections between two runs, so shortening it
+# would break those or silently change what the parity gate compares. The verbose form stays.
 
 # Shape: `<suit 2 chars><rank><flags>`, e.g. `Kn3sR` = Knife, rank 3, Stone, Revealing. Stage is
 # appended ONLY when it is not `PLAY`, since almost every logged card is on the board.

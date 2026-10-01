@@ -14,6 +14,7 @@ func suite_name() -> String:
 
 func _ready() -> void:
 	TestLog.line("============ SUIT PROPS TEST PASS ============")
+	check_all_tests_registered()
 	behavior_section("HOOP / KNIFE (row travellers)")
 	await test_hoop_scores_talents()
 	await test_knife_scores_props()
@@ -28,6 +29,7 @@ func _ready() -> void:
 	behavior_section("FIREWORK + on_score BROADCAST")
 	await test_firework_banks_column()
 	await test_juggling_pays_on_score()
+	await test_juggling_pays_in_the_placement_its_balls_land()
 	finish()
 
 # ==============================================================================
@@ -262,4 +264,35 @@ func test_juggling_pays_on_score() -> void:
 	check(g.state.board_total() > 0.0,
 			"...so the board's own score actually moves, which col_total never made it do",
 			"board_total %f" % g.state.board_total())
+	done(g)
+
+#One placement scores row 2 first, with nothing on the board implementing on_score, and the main
+#diagonal second, whose talented Ball at (0, 0) drops its 3 balls on itself and is scored after.
+#⚠ The balls pay in the placement they land in, into the column bucket the shown score reads.
+func test_juggling_pays_in_the_placement_its_balls_land() -> void:
+	var g := grid_game()
+	var detector := CardData.new().with_skill(SkillLineDetector.new())
+	detector.stage = CardData.Stage.RULES
+	detector.skill.spotlit = true
+	g.state.rules_deck = [detector] as Array[CardData]
+	var ball := suit_card(3, PipSuitBall.new()).with_skill(SkillEchoingTrigger.new())
+	var diagonal : Array[CardData] = [ball, plain(4), null, plain(6), plain(7)]
+	var row : Array[CardData] = [plain(9), plain(11), null, plain(12), plain(13)]
+	for i : int in diagonal.size():
+		if i == 2: continue
+		Board.place_in_cell(g.state, diagonal[i], BoardCoord.new(0, i, i, 0))
+		Board.place_in_cell(g.state, row[i], BoardCoord.new(0, i, 2, 0))
+	mark_cell(g, 0, 0, PipSuitBall.new())
+	await g.place_card_in_grid(plain(5), BoardCoord.new(0, 2, 2, 0))
+	check(g.state.line_score(g.state.scores_row, 0, 2, 0) > 0.0
+			and not g.state.score_special.is_empty(),
+			"the one placement scored row 2 and then the diagonal",
+			"row %f diagonal buckets %d" % [g.state.line_score(g.state.scores_row, 0, 2, 0),
+			g.state.score_special.size()])
+	check(juggling_stacks(ball) == 3,
+			"the diagonal's talented Ball dropped its 3 balls on itself in that placement",
+			str(juggling_stacks(ball)))
+	check(g.state.line_score(g.state.scores_col, 0, 0, 0) == 3.0,
+			"Juggling pays its 3 stacks in the placement the balls landed in",
+			"column bucket %f" % g.state.line_score(g.state.scores_col, 0, 0, 0))
 	done(g)

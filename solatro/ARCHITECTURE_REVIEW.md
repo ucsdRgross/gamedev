@@ -74,7 +74,7 @@ CardEnvironment (Scripts/card_environment.gd, @abstract, base of Game)
  ├─ skill_spotlight_check ...... toggles skill.spotlit, fires on_spotlight/on_unspotlight
  │                               (runs after EVERY mod call — owner ruling, don't batch)
  └─ _compare_implementers ...... comparator/hook implementer cache keyed on
-                                 [state id, state.revision]
+                                 [state id, state.revision, CardData.modifier_epoch]
 
 CardData (Cards/card_data.gd, Resource) — one card
  ├─ suit : PipSuit            rank : PipRank        (the "pips")

@@ -124,9 +124,9 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 	if triggered and function != &"on_anything":
 		await run_all_mods(&"on_anything")
 
-#Comparators run per card-compare, so the "which mods implement this hook" walk is cached while the
-#board has not mutated. Skills stay in the list regardless of `spotlit` and are gate-checked at use
-#time, the spotlit flag flipping without a mutation.
+#Comparators run per card-compare, so the "which mods implement this hook" walk is cached until the
+#board mutates or any card gains or loses a modifier, which CardData.modifier_epoch counts. Skills
+#stay in the list regardless of `spotlit`, gate-checked at use time: that flag flips without either.
 var _compare_cache : Dictionary[StringName, Array] = {}
 var _compare_cache_key : Array = []
 
@@ -142,6 +142,7 @@ func _revision_key() -> Array:
 func _compare_implementers(function: StringName) -> Array:
 	var key := _revision_key()
 	if key:
+		key.append(CardData.modifier_epoch)
 		if key != _compare_cache_key:
 			_compare_cache.clear()
 			_compare_cache_key = key
