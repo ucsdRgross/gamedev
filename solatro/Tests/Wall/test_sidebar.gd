@@ -2414,12 +2414,12 @@ func test_the_menus_buttons_stack_wherever_the_whole_column_fits_beside_the_side
 		var main : Main = booted[1]
 		var stacks := _MENU_STACKS_AT[size]
 		await _await_the_menu_laid_out(main)
-		_check_the_menus_layout(host, main, stacks, "on the bare menu at %s" % size)
-		_check_the_bottom_rows_lines(host, main, stacks, "on the bare menu at %s" % size)
+		_check_the_menus_layout(host, main, stacks, false, "on the bare menu at %s" % size)
+		if not stacks: _check_the_bottom_rows_lines(host, main, "on the bare menu at %s" % size)
 		(main.menu_scene.get_node(^"Content/Play") as Button).pressed.emit()
 		await _await_the_menu_laid_out(main)
 		check(main.menu_scene.play_row.visible, "sanity: Play opened its submenu at %s" % size)
-		_check_the_menus_layout(host, main, stacks, "with the Play submenu open at %s" % size)
+		_check_the_menus_layout(host, main, stacks, true, "with the Play submenu open at %s" % size)
 		main.menu_scene.new_run_button.pressed.emit()
 		await get_tree().process_frame
 		await _await_the_menus_slide(main.hud_container, 1.0)
@@ -2427,7 +2427,8 @@ func test_the_menus_buttons_stack_wherever_the_whole_column_fits_beside_the_side
 		check(_the_deck_picker(main) != null and is_equal_approx(main.hud_container.slid_fraction(), 1.0),
 				"sanity: the deck picker is up and the sidebar rests beside the menu at %s" % size,
 				"slid %.3f" % main.hud_container.slid_fraction())
-		_check_the_menus_layout(host, main, stacks, "with the deck picker up at %s" % size)
+		check(main.menu_scene.play_row.visible, "sanity: the submenu stays open under the deck picker at %s" % size)
+		_check_the_menus_layout(host, main, stacks, true, "with the deck picker up at %s" % size)
 		await _end_booted_fixture(host, main)
 
 ## In the player's window a resize from 1280x720 to 600x1000 stacks the bare menu's buttons, and the resize back lays the bottom row out as one line again.
@@ -2442,8 +2443,8 @@ func test_a_resize_between_the_window_shapes_stacks_the_menu_and_unstacks_it() -
 		host.size = size
 		await _await_the_menu_laid_out(main)
 		var what := "after the resize to %s" % size
-		_check_the_menus_layout(host, main, _MENU_STACKS_AT[size], what)
-		_check_the_bottom_rows_lines(host, main, _MENU_STACKS_AT[size], what)
+		_check_the_menus_layout(host, main, _MENU_STACKS_AT[size], false, what)
+		if not _MENU_STACKS_AT[size]: _check_the_bottom_rows_lines(host, main, what)
 	await _end_booted_fixture(host, main)
 
 # A flow reports the height its LAST sort measured, so a change of line count reaches the column
@@ -2469,19 +2470,24 @@ func _menu_row_lines(host: Viewport, main: Main, row: Container) -> int:
 		lines[roundi(_menu_control_in_window(host, main._pictures[&"start_menu"], button).position.y)] = true
 	return lines.size()
 
-func _check_the_bottom_rows_lines(host: Window, main: Main, stacked: bool, what: String) -> void:
+func _check_the_bottom_rows_lines(host: Window, main: Main, what: String) -> void:
 	var row : Container = main.menu_scene.get_node(^"Content/Main")
 	var lines := _menu_row_lines(host, main, row)
-	check(lines == (row.get_child_count() if stacked else 1),
-			"the bare menu's bottom row is %s %s" % ["one button a line" if stacked else "one line", what],
+	check(lines == 1, "the bare menu's unstacked bottom row is one line %s" % what,
 			"%d lines of %d buttons" % [lines, row.get_child_count()])
 
 # ONE LINE PER BUTTON IS THE STACK and fewer lines than buttons a row, wrapped or not. Either way
-# every shown control lies inside the window and overlaps no other; stacked, each sits below the
-# one before it on one centre line, the column's own separation apart.
-func _check_the_menus_layout(host: Window, main: Main, stacked: bool, what: String) -> void:
+# every control of the scene is shown inside the window and overlaps no other; stacked, each sits
+# below the one before it on one centre line, the column's own separation apart.
+func _check_the_menus_layout(host: Window, main: Main, stacked: bool, submenu_open: bool, what: String) -> void:
 	var window := Rect2(Vector2.ZERO, Vector2(host.size)).grow(1.0)
 	var rects := _menu_controls_in_window(host, main)
+	var content := main.menu_scene.get_node(^"Content")
+	var expected := content.get_children().filter(func(child: Node) -> bool: return not child is Container).size()
+	expected += content.get_node(^"Main").get_child_count()
+	if submenu_open: expected += main.menu_scene.play_row.get_child_count()
+	check(rects.size() == expected, "the menu shows its title and every button %s" % what,
+			"%d shown of %d" % [rects.size(), expected])
 	var outside := rects.filter(func(rect: Rect2) -> bool: return not window.encloses(rect))
 	check(outside.is_empty(), "every menu control lies inside the window %s" % what, "%s in %s" % [outside, window])
 	var overlapping : Array[String] = []

@@ -38,9 +38,9 @@ func _ready() -> void:
 	_content.minimum_size_changed.connect(_apply_container_inset)
 	_apply_container_inset()
 
-# The column is laid out at exactly the UI scale (the picture draws this canvas at its cover scale,
-# so the column undoes it) in the space beside the RESTING sidebar whenever any of it is in, and only
-# shifts with the slide, centre to centre: a row too wide wraps once, as the slide starts or ends.
+# The column is laid out at the UI scale beside the RESTING sidebar and only shifts with the slide. Its buttons STACK wherever the whole column, submenu open, fits there, so the window alone decides.
+# A SEPARATION AS WIDE AS THE ROW leaves no line room for a second button, whatever the labels.
+# ⚠ A row reports its LAST sort's height, so this re-runs on the column's minimum change. ⚠ Left and Right stay put on a stack: the engine takes any wider button above or below as lying to the side.
 func _apply_container_inset() -> void:
 	var shown := hud_container.rect_beside(wall_picture)
 	var resting := hud_container.resting_rect_beside(wall_picture)
@@ -50,12 +50,16 @@ func _apply_container_inset() -> void:
 	_content.scale = Vector2.ONE * ui_per_canvas
 	_content.position = fitted.position + shown.get_center() - fitted.get_center()
 	_content.size = fitted.size / ui_per_canvas
-	_stack_the_buttons(_stacked_height() <= resting.size.y / ui_per_canvas)
-
-# A SEPARATION AS WIDE AS THE ROW leaves no line room for a second button, whatever the labels.
-# ⚠ Left and Right stay put on a stack: the engine takes any wider button above or below as lying
-# to the side (measured: Left on Play landed on Profile).
-func _stack_the_buttons(stacked: bool) -> void:
+	var stacked_height := _content.get_theme_constant(&"separation") * (_content.get_child_count() - 1.0)
+	for child : Control in _content.get_children():
+		var row := child as HFlowContainer
+		if row == null:
+			stacked_height += child.get_combined_minimum_size().y
+			continue
+		stacked_height += row.get_theme_constant(&"v_separation") * (row.get_child_count() - 1.0)
+		for button : Control in row.get_children():
+			stacked_height += button.get_combined_minimum_size().y
+	var stacked := stacked_height <= resting.size.y / ui_per_canvas
 	var buttons : Array[Node] = [$Content/Play]
 	for row : HFlowContainer in [play_row, _bottom_row] as Array[HFlowContainer]:
 		if stacked: row.add_theme_constant_override(&"h_separation", ceili(_content.size.x))
@@ -64,21 +68,6 @@ func _stack_the_buttons(stacked: bool) -> void:
 	for button : Control in buttons:
 		button.focus_neighbor_left = ^"." if stacked else ^""
 		button.focus_neighbor_right = button.focus_neighbor_left
-
-# THE BUTTONS STACK INTO ONE COLUMN wherever all of it, the Play submenu open, fits beside the
-# resting sidebar: the window alone decides, so neither Play nor the slide re-arranges the menu.
-# ⚠ A row reports its LAST sort's height, so the column re-fits when its own minimum changes.
-func _stacked_height() -> float:
-	var height := _content.get_theme_constant(&"separation") * (_content.get_child_count() - 1.0)
-	for child : Control in _content.get_children():
-		var row := child as HFlowContainer
-		if row == null:
-			height += child.get_combined_minimum_size().y
-			continue
-		height += row.get_theme_constant(&"v_separation") * (row.get_child_count() - 1.0)
-		for button : Control in row.get_children():
-			height += button.get_combined_minimum_size().y
-	return height
 
 # A KEY OR PAD PLAYER STARTS HERE: Play takes the focus each time the menu becomes the screen shown,
 # so one device alone reaches every button -- unless the picker or a viewer is up over it, which
