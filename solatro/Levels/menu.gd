@@ -14,6 +14,7 @@ signal info_requested(entry: InfoEntry)
 @onready var new_run_button: Button = get_node("Content/Run/New Run") as Button
 @onready var continue_button: Button = $Content/Run/Continue
 @onready var _content: VBoxContainer = $Content
+@onready var _bottom_row: HFlowContainer = $Content/Main
 
 # Set by `Main` before this screen's picture is built, the same hand-over `Map.hud_container` gets.
 # A standalone fixture with no `Main` (`Tools/wall_editor.gd`'s preview) leaves it null and gets a
@@ -34,6 +35,7 @@ func _ready() -> void:
 	hud_container.connect_for_screen(self, hud_container.active_screen_changed, take_the_focus)
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed,
 			_apply_container_inset)
+	_content.minimum_size_changed.connect(_apply_container_inset)
 	_apply_container_inset()
 
 # The column is laid out at exactly the UI scale (the picture draws this canvas at its cover scale,
@@ -41,13 +43,42 @@ func _ready() -> void:
 # shifts with the slide, centre to centre: a row too wide wraps once, as the slide starts or ends.
 func _apply_container_inset() -> void:
 	var shown := hud_container.rect_beside(wall_picture)
-	var any_in := hud_container.slid_fraction() > 0.0
-	var fitted := hud_container.resting_rect_beside(wall_picture) if any_in else shown
+	var resting := hud_container.resting_rect_beside(wall_picture)
+	var fitted := resting if hud_container.slid_fraction() > 0.0 else shown
 	var ui_per_canvas := 1.0 / WallPicture.cover_scale(get_viewport_rect().size,
 			hud_container.get_viewport().get_visible_rect().size)
 	_content.scale = Vector2.ONE * ui_per_canvas
 	_content.position = fitted.position + shown.get_center() - fitted.get_center()
 	_content.size = fitted.size / ui_per_canvas
+	_stack_the_buttons(_stacked_height() <= resting.size.y / ui_per_canvas)
+
+# A SEPARATION AS WIDE AS THE ROW leaves no line room for a second button, whatever the labels.
+# ⚠ Left and Right stay put on a stack: the engine takes any wider button above or below as lying
+# to the side (measured: Left on Play landed on Profile).
+func _stack_the_buttons(stacked: bool) -> void:
+	var buttons : Array[Node] = [$Content/Play]
+	for row : HFlowContainer in [play_row, _bottom_row] as Array[HFlowContainer]:
+		if stacked: row.add_theme_constant_override(&"h_separation", ceili(_content.size.x))
+		else: row.remove_theme_constant_override(&"h_separation")
+		buttons += row.get_children()
+	for button : Control in buttons:
+		button.focus_neighbor_left = ^"." if stacked else ^""
+		button.focus_neighbor_right = button.focus_neighbor_left
+
+# THE BUTTONS STACK INTO ONE COLUMN wherever all of it, the Play submenu open, fits beside the
+# resting sidebar: the window alone decides, so neither Play nor the slide re-arranges the menu.
+# ⚠ A row reports its LAST sort's height, so the column re-fits when its own minimum changes.
+func _stacked_height() -> float:
+	var height := _content.get_theme_constant(&"separation") * (_content.get_child_count() - 1.0)
+	for child : Control in _content.get_children():
+		var row := child as HFlowContainer
+		if row == null:
+			height += child.get_combined_minimum_size().y
+			continue
+		height += row.get_theme_constant(&"v_separation") * (row.get_child_count() - 1.0)
+		for button : Control in row.get_children():
+			height += button.get_combined_minimum_size().y
+	return height
 
 # A KEY OR PAD PLAYER STARTS HERE: Play takes the focus each time the menu becomes the screen shown,
 # so one device alone reaches every button -- unless the picker or a viewer is up over it, which

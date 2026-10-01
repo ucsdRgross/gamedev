@@ -87,6 +87,9 @@ func _ready() -> void:
 	await test_the_menus_bottom_row_wraps_beside_the_slid_in_sidebar()
 	await test_the_menus_column_only_shifts_while_the_sidebar_slides()
 	await test_the_menu_lays_out_for_the_window_after_every_resize()
+	await test_the_menus_buttons_stack_wherever_the_whole_column_fits_beside_the_sidebar()
+	await test_a_resize_between_the_window_shapes_stacks_the_menu_and_unstacks_it()
+	await test_keys_and_the_d_pad_walk_the_stacked_menu_in_order()
 	await test_keys_alone_start_a_run_from_the_start_menu_and_find_it_again()
 	await test_a_pad_alone_starts_a_run_from_the_start_menu()
 	await test_a_show_resumed_through_the_menu_rests_a_key_focus_on_its_board()
@@ -2393,6 +2396,182 @@ func _check_the_menu_centred_in_the_window(host: Viewport, main: Main, what: Str
 	var tolerance := MENU_CENTRED_TOLERANCE_PX * host.get_final_transform().get_scale()
 	check(absf(off.x) <= tolerance.x and absf(off.y) <= tolerance.y,
 			"the menu's column centres in the whole picture %s" % what, "%s in %s" % [column, window])
+
+## Whether the menu's whole column, the Play submenu open, fits beside the resting sidebar at each player's window the layout rows visit.
+const _MENU_STACKS_AT : Dictionary[Vector2i, bool] = {
+	Vector2i(600, 1000): true, Vector2i(1000, 1000): false, Vector2i(1000, 800): false,
+	Vector2i(1280, 720): false,
+}
+
+## In the player's window the menu's buttons stack into one centred column where the whole column fits beside the resting sidebar (600x1000) and keep their rows where it does not (near-square, 1280x720); neither Play nor the deck picker's slide changes which.
+func test_the_menus_buttons_stack_wherever_the_whole_column_fits_beside_the_sidebar() -> void:
+	for size : Vector2i in _MENU_STACKS_AT:
+		backup_real_save(suite_tag())
+		_prev_run = RunManager.run
+		_prev_save_info = Main.save_info
+		var booted := await _boot_main_at(size, true)
+		var host : Window = booted[0]
+		var main : Main = booted[1]
+		var stacks := _MENU_STACKS_AT[size]
+		await _await_the_menu_laid_out(main)
+		_check_the_menus_layout(host, main, stacks, "on the bare menu at %s" % size)
+		_check_the_bottom_rows_lines(host, main, stacks, "on the bare menu at %s" % size)
+		(main.menu_scene.get_node(^"Content/Play") as Button).pressed.emit()
+		await _await_the_menu_laid_out(main)
+		check(main.menu_scene.play_row.visible, "sanity: Play opened its submenu at %s" % size)
+		_check_the_menus_layout(host, main, stacks, "with the Play submenu open at %s" % size)
+		main.menu_scene.new_run_button.pressed.emit()
+		await get_tree().process_frame
+		await _await_the_menus_slide(main.hud_container, 1.0)
+		await _await_the_menu_laid_out(main)
+		check(_the_deck_picker(main) != null and is_equal_approx(main.hud_container.slid_fraction(), 1.0),
+				"sanity: the deck picker is up and the sidebar rests beside the menu at %s" % size,
+				"slid %.3f" % main.hud_container.slid_fraction())
+		_check_the_menus_layout(host, main, stacks, "with the deck picker up at %s" % size)
+		await _end_booted_fixture(host, main)
+
+## In the player's window a resize from 1280x720 to 600x1000 stacks the bare menu's buttons, and the resize back lays the bottom row out as one line again.
+func test_a_resize_between_the_window_shapes_stacks_the_menu_and_unstacks_it() -> void:
+	backup_real_save(suite_tag())
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	var booted := await _boot_main_at(INSET_WINDOWS[0], true)
+	var host : Window = booted[0]
+	var main : Main = booted[1]
+	for size : Vector2i in [INSET_WINDOWS[0], INSET_WINDOWS[1], INSET_WINDOWS[0]] as Array[Vector2i]:
+		host.size = size
+		await _await_the_menu_laid_out(main)
+		var what := "after the resize to %s" % size
+		_check_the_menus_layout(host, main, _MENU_STACKS_AT[size], what)
+		_check_the_bottom_rows_lines(host, main, _MENU_STACKS_AT[size], what)
+	await _end_booted_fixture(host, main)
+
+# A flow reports the height its LAST sort measured, so a change of line count reaches the column
+# one sort later; the camera's zoom lags a resize as well.
+func _await_the_menu_laid_out(main: Main) -> void:
+	await get_tree().process_frame
+	await _await_the_wall_drawn_at_its_camera_zoom(main)
+	await await_drawn_frames(3)
+
+## The menu's shown title and buttons in the column's own order, as drawn in `host`'s window pixels.
+func _menu_controls_in_window(host: Viewport, main: Main) -> Array[Rect2]:
+	var rects : Array[Rect2] = []
+	for node : Node in main.menu_scene.get_node(^"Content").find_children("*", "Control", true, false):
+		var control := node as Control
+		if (control is Button or control is Label) and control.is_visible_in_tree():
+			rects.append(_menu_control_in_window(host, main._pictures[&"start_menu"], control))
+	return rects
+
+## How many lines `row`'s buttons are drawn on in `host`'s window.
+func _menu_row_lines(host: Viewport, main: Main, row: Container) -> int:
+	var lines : Dictionary[int, bool] = {}
+	for button : Control in row.get_children():
+		lines[roundi(_menu_control_in_window(host, main._pictures[&"start_menu"], button).position.y)] = true
+	return lines.size()
+
+func _check_the_bottom_rows_lines(host: Window, main: Main, stacked: bool, what: String) -> void:
+	var row : Container = main.menu_scene.get_node(^"Content/Main")
+	var lines := _menu_row_lines(host, main, row)
+	check(lines == (row.get_child_count() if stacked else 1),
+			"the bare menu's bottom row is %s %s" % ["one button a line" if stacked else "one line", what],
+			"%d lines of %d buttons" % [lines, row.get_child_count()])
+
+# ONE LINE PER BUTTON IS THE STACK and fewer lines than buttons a row, wrapped or not. Either way
+# every shown control lies inside the window and overlaps no other; stacked, each sits below the
+# one before it on one centre line, the column's own separation apart.
+func _check_the_menus_layout(host: Window, main: Main, stacked: bool, what: String) -> void:
+	var window := Rect2(Vector2.ZERO, Vector2(host.size)).grow(1.0)
+	var rects := _menu_controls_in_window(host, main)
+	var outside := rects.filter(func(rect: Rect2) -> bool: return not window.encloses(rect))
+	check(outside.is_empty(), "every menu control lies inside the window %s" % what, "%s in %s" % [outside, window])
+	var overlapping : Array[String] = []
+	for i : int in rects.size():
+		for j : int in i:
+			if rects[i].grow(-0.5).intersects(rects[j]): overlapping.append("%d over %d" % [i, j])
+	check(overlapping.is_empty(), "no menu control overlaps another %s" % what, str(overlapping))
+	for row : Container in [main.menu_scene.play_row, main.menu_scene.get_node(^"Content/Main")] as Array[Container]:
+		if not row.is_visible_in_tree(): continue
+		var lines := _menu_row_lines(host, main, row)
+		check((lines == row.get_child_count()) == stacked,
+				"%s's buttons are %s %s" % [row.name, "stacked one a line" if stacked else "laid out as a row", what],
+				"%d lines of %d buttons" % [lines, row.get_child_count()])
+	if not stacked: return
+	var scale := host.get_final_transform().get_scale()
+	var separation := (main.menu_scene.get_node(^"Content") as Control).get_theme_constant(&"separation") * scale.y
+	var off_the_line : Array[String] = []
+	var off_the_gap : Array[String] = []
+	for i : int in range(1, rects.size()):
+		if absf(rects[i].get_center().x - rects[0].get_center().x) > MENU_CENTRED_TOLERANCE_PX * scale.x:
+			off_the_line.append("%d at %.1f" % [i, rects[i].get_center().x])
+		var gap := rects[i].position.y - rects[i - 1].end.y
+		if absf(gap - separation) > 0.5: off_the_gap.append("%d after %.2f" % [i, gap])
+	check(off_the_line.is_empty(), "the stacked menu's controls share one centre line %s" % what,
+			"%s against %.1f" % [off_the_line, rects[0].get_center().x])
+	check(off_the_gap.is_empty(),
+			"each stacked control sits the column's own separation below the one before it %s" % what,
+			"%s against %.2f" % [off_the_gap, separation])
+
+## At 600x1000 in the player's window, keys alone and the d-pad alone walk the stacked menu top to bottom and back, Play first, past a disabled Continue, and Left and Right move nothing.
+func test_keys_and_the_d_pad_walk_the_stacked_menu_in_order() -> void:
+	for device : String in ["keys", "pad"] as Array[String]:
+		backup_real_save(suite_tag())
+		_prev_run = RunManager.run
+		_prev_save_info = Main.save_info
+		var booted := await _boot_main_at(INSET_WINDOWS[1], true)
+		var host : Window = booted[0]
+		var main : Main = booted[1]
+		var menu := main.menu_scene
+		await _await_the_menu_laid_out(main)
+		var bottom : Array[Node] = menu.get_node(^"Content/Main").get_children()
+		var play : Button = menu.get_node(^"Content/Play")
+		var closed : Array[Node] = [play]
+		await _check_the_walk(host, main, device, closed + bottom, "the submenu closed")
+		await _press_on(host, device, KEY_ENTER, JOY_BUTTON_A)
+		await _await_the_menu_laid_out(main)
+		check(menu.play_row.visible and menu.continue_button.disabled,
+				"%s: sanity: accept on Play opened the submenu, Continue disabled with no save" % device)
+		var live := menu.play_row.get_children().filter(
+				func(button: Node) -> bool: return button != menu.continue_button)
+		check(live.size() == menu.play_row.get_child_count() - 1, "%s: sanity: only Continue is left out" % device)
+		await _check_the_walk(host, main, device, closed + live + bottom, "the submenu open")
+		await _end_booted_fixture(host, main)
+
+# Down from the first of `stack` to its last, a Left and a Right tried at every stop, then Up all
+# the way back; the focus is read in the menu picture's own viewport, where the presses land.
+func _check_the_walk(host: Window, main: Main, device: String, stack: Array[Node], what: String) -> void:
+	var viewport : SubViewport = main._pictures[&"start_menu"].viewport
+	check(viewport.gui_get_focus_owner() == stack[0], "%s: the walk starts on %s, %s" % [device, stack[0].name, what],
+			str(viewport.gui_get_focus_owner()))
+	for i : int in stack.size():
+		if i > 0:
+			await _press_on(host, device, KEY_DOWN, JOY_BUTTON_DPAD_DOWN)
+			check(viewport.gui_get_focus_owner() == stack[i], "%s: Down reaches %s, %s" % [device, stack[i].name, what],
+					str(viewport.gui_get_focus_owner()))
+		await _press_on(host, device, KEY_LEFT, JOY_BUTTON_DPAD_LEFT)
+		check(viewport.gui_get_focus_owner() == stack[i],
+				"%s: Left on %s moves nothing, %s" % [device, stack[i].name, what],
+				str(viewport.gui_get_focus_owner()))
+		await _press_on(host, device, KEY_RIGHT, JOY_BUTTON_DPAD_RIGHT)
+		check(viewport.gui_get_focus_owner() == stack[i],
+				"%s: Right on %s moves nothing, %s" % [device, stack[i].name, what],
+				str(viewport.gui_get_focus_owner()))
+	for i : int in range(stack.size() - 2, -1, -1):
+		await _press_on(host, device, KEY_UP, JOY_BUTTON_DPAD_UP)
+		check(viewport.gui_get_focus_owner() == stack[i], "%s: Up reaches %s, %s" % [device, stack[i].name, what],
+				str(viewport.gui_get_focus_owner()))
+
+## One tap of `key` by keys or of `button` by the pad, pushed into `host` as the engine delivers it.
+func _press_on(host: Viewport, device: String, key: Key, button: JoyButton) -> void:
+	for pressed : bool in [true, false]:
+		if device == "keys":
+			_push_key(host, key, pressed)
+			continue
+		var event := InputEventJoypadButton.new()
+		event.button_index = button
+		event.pressed = pressed
+		host.push_input(event)
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 # ⚠ THE COLUMN IS READ IN THE MENU'S OWN CANVAS, the sidebar in window pixels: the landing's slide
 # starts while the camera still settles its zoom (measured ~25 px of drift), which moves the whole
