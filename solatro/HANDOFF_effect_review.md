@@ -4,14 +4,12 @@
 each with three variants plus reject, and the rulings exported to a single CSV. Done = the owner has
 answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for every one.
 
-**State:** two things are open. **S9**: the owner is answering (121 answered on `main`). **S15,
-the card index (family AE)**, is half written on branch `card-index`: 223 of 439 concepts are
-written, pair-reviewed, fixed and committed (classes AE1, AE2, AE3, AE4, AE8), plus the 10
-structural questions of AE11; classes AE5, AE6, AE7, AE9 and AE10 (216 concepts) are not written.
-The questionnaire on that branch renders 1,781 live questions, 0 errors, 0 warnings, no existing
-id moved.
-A session on another machine needs `card-index` pushed: it was created local-only, in a worktree
-beside the main checkout, and the owner pushes it.
+**State:** **S15, the card index (family AE)**, is written on branch `card-index` (pushed): all
+439 concepts plus the 10 structural questions of AE11, each batch pair-reviewed and fixed, then
+one review of the whole family. The questionnaire on that branch renders 1,997 live questions,
+0 errors, 0 warnings, no existing id moved. **Waiting on the owner:** how `card-index` lands (it
+carries `effect-levels`), and the questions under Open bugs. **S9**: the owner is answering (121
+answered on `main`).
 
 **Entry docs:** `solatro/design/effect-review/build/GAME_BRIEF.md` (the rulebook every effect must
 fit — read it before judging anything) · `solatro/design/effect-review/build/REVIEW.md` (how to
@@ -52,7 +50,7 @@ the next render silently discards the edit.
 | `build/SOURCES.md` | **the register of every source mined, skipped or outstanding.** Update it whenever a source is added |
 | `build/variants/v*.py` | variants for batch 1, which was tagged separately in `batches/tagged01.tsv` |
 | `build/GAME_BRIEF.md` | the rules brief every mining subagent must be given |
-| `build/TAXONOMY_CODES.md` | the 226 class codes, regenerate with `build_taxonomy_page.py` |
+| `build/TAXONOMY_CODES.md` | the class codes the mining briefs cite, families A–W only; hand-written. `build_taxonomy_page.py` writes an untracked `build/taxonomy.html` from `taxonomy_data.py` |
 | `build/levels.py`, `build/levels/l<FAM>.py` | the level-2 pass: one row per question (verdict, level 2, flag reason); `render.py` draws the level 2 and the ⚑ flag from it |
 | `build/generated/g029.py` | family AC, one row per answered effect — **the record for AC rows; edit it directly** |
 | `build/generated/g030.py` | family AD, the effects the design review proposed — the record for AD rows; its level rows (`levels/lAD.py`) are keyed by qid, and a new AD row renumbers the AD rows after it, so rewrite `lAD.py` after rendering |
@@ -177,11 +175,13 @@ the next render silently discards the edit.
   files_touched: [solatro/design/effect-review/build/mine_cardindex, solatro/design/effect-review/build/generated, solatro/design/effect-review/build/levels/lAE.py, solatro/design/effect-review/build/taxonomy_data.py, solatro/design/effect-review/build/SOURCES.md, solatro/design/effect-review/DESIGN.md]
   verification_command: 'py solatro/design/effect-review/build/mine_cardindex/levels_ae.py && py -c "import sys; sys.path.insert(0, ''solatro/design/effect-review/build''); import fixkit; fixkit.verify()" && npm --prefix designloop run check -- solatro/effect-review'
   verification_kind: manual
-  status: in_progress
+  status: done
   evidence: >
-    233 AE rows in levels/lAE.py, v2 name check clean; fixkit.verify: order unchanged
-    Q0001-Q1509; designloop check: 1,781 live, 278 retired, 0 errors, 0 warnings. Commits
-    959c1702, f8167f17, ecd1f459, 1cfcbe00, 97d30d55, d61f3c2d, b9342f89 on `card-index`.
+    449 AE rows in levels/lAE.py (54 flagged), v2 name check clean; 115 rename offers, no Qnnnn
+    offered twice, none to a rejected question; fixkit.verify: order unchanged Q0001-Q1509;
+    designloop check: 1,997 live, 278 retired, 0 errors, 0 warnings. One commit per batch on
+    `card-index`: 959c1702, f8167f17, ecd1f459, 1cfcbe00, 97d30d55, d61f3c2d, b9342f89, 8be27a8c,
+    32baebb4, f16cb8e5, 8ac3f20f, 9a4d6034, fb17456f, c6baa297; the whole-family review f216046d.
   notes: >
     Owner rulings, verbatim: "add to designloop questionnaire, thats why a rename is allowed in the
     first place." "cards will have suit and rank, a catan wood card for example would have wood as
@@ -211,12 +211,14 @@ the next render silently discards the edit.
 
 ## Verified vs assumed
 
-- **1,781 live questions, 278 retired, 0 errors, 0 warnings, 0 dag-audit defects** on
+- **1,997 live questions, 278 retired, 0 errors, 0 warnings, 0 dag-audit defects** on
   `card-index` — verified, `npm --prefix designloop run check -- solatro/effect-review`
   (1,548 before family AE).
-- **Every reviewed AE batch had its fix list applied** — verified by construction, one commit per
-  batch. **The 216 unwritten concepts** — nothing exists for them but their keep-list rows.
-- **`header.md` still says 1,548 and does not mention family AE** — known, left for the S15 close.
+- **Every AE batch had its fix list applied** — verified by construction, one commit per batch,
+  then the whole-family review's list. The overseer declined or changed a fix only where it broke
+  a rule: a rename restates its target's default, and a type or hazard row carries no level 2.
+- **`main`'s newer answers change no AE rename** — verified: `main` adds Q0120 and Q0121, both
+  notes; regenerating `_live_index.tsv` from them changed no row.
 - **No class outside family N and feel-only W sits below four effects** — verified by counting
   keepers per class off the rendered document.
 - **Nineteen pairs of live effects share a name** — measured by grep; renaming waits for the final effects.
@@ -246,50 +248,43 @@ None known in the pipeline. Two judgement calls the owner may want to revisit:
    pile "persists to the next show"; `solatro/Levels/game.gd` (`returned.append_array(state.discard_deck)`)
    returns it to the run deck at show end. Owner ruling needed; family AE writes "to the discard
    pile" as out for this show only (`mine_cardindex/WRITE_PROMPT.md` § Code facts).
-4. **`card-index` lacks the three answers on `main`** (121 answered there). Before the S15 close,
-   `git show main:solatro/design/effect-review/answers.json` and regenerate `_live_index.tsv`
-   with `mine_cardindex/live_index.py`; an AE rename must not target a question since rejected.
-5. **One live effect is offered to two AE names** in places (Q0336 by Jumping Jack, and Double Jump
-   will want it; Q0681 was avoided for Permission Slip). The final review must list every Qnnnn
-   named by more than one "Renames" option.
-6. TOOLING (this session): `doc_check.py` flags `taxonomy_data.py` lines for class codes Q2-Q8,
-   a standing false alarm. Reviewers: every one of the eight pair reviews found new options that
-   were a live effect under a new name (caught, 2-5 per batch); one reviewer's code claim (Undo
-   unlimited) was corrected by the next (capped at 25). Proposed, not built: a script that applies
-   a reviewer's `eid field = text` fix list through `patch_ae.py`, since the overseer hand-wrote
-   that script five times.
+4. **Owner questions from the family-AE reviews**, none blocking:
+   - **Undo leaks hidden information.** Undo crosses an Entrance refill (`Levels/game.gd`
+     snapshots per committed action), so anything revealed in answer to a choice (Battleship,
+     Guess Who, Werewolf, Charades, Mastermind, Seer, and live Q0846, Q0847, Q0862, Q0870) can be
+     read and undone for free. Accept Undo as the player's tool, or require hidden information on
+     a schedule the player's choices do not steer?
+   - **Game names as card names.** Twister, Jenga, Guess Who, Hungry Hippo v2, Mastermind,
+     Operation, Mouse Trap, Sorry, Pay Day, Taboo, Battleship and Exploding Kitten are the game's
+     own name, with no generic one as recognisable (live Q0320 is "Jenga card"). Keep, or rename?
+   - **Show Your Cards (CI0217) renames Q0097 with only the owner's second idea** in its note;
+     the first, the whole grid as one meld, is already Q0033's, renamed by Full House (CI0410).
+   - **Patterns the reviews left for the owner's eye:** "no effect or hazard can move or remove
+     it" is the whole third option of six rows (Dog, Cat, Zoo, Castling, Stand, King v2), equal to
+     their (a) in a hazard-free show; an immediate re-deal of a slot (Key Card, Flower Tile,
+     Doubles, Counterspell, Marked Card) is the used-up sixth-placement shape in five more coats.
+5. TOOLING: `doc_check.py` flags `taxonomy_data.py` lines for class codes Q2-Q8, a standing false
+   alarm. Every pair review found new options that were a live effect under a new name (caught,
+   2-5 per batch), and a review's claim about the code is worth re-checking against `game.gd`: two
+   were wrong (Undo unlimited; a rank change re-scoring a line).
 
-## Next up — S15, the card index
+## Next up — the owner: how `card-index` lands
 
-Everything lives in `solatro/design/effect-review/build/mine_cardindex/`:
-`concepts.py` (the keep-list: eid, name, class, sources, steer; and every drop with its reason),
-`WRITE_PROMPT.md` (the writer's brief, grown by each review: shapes that do nothing, shapes used
-up, code facts), `REVIEW_PROMPT.md` (the reviewer's brief and its fix-list format), `patch_ae.py`
-(apply fixes by eid), `levels_ae.py` (the v2 name check, and `levels/lAE.py` rebuilt from each
-module's `LEVEL2` and `FLAGS`), `live_index.py` (every live question with the owner's ruling, for
-finding rename targets), and the mining records.
+`card-index` is based on `effect-levels` and carries it; merging `main` conflicts in
+`solatro/Cards/card_visual.gd`, which is not this stream's file. Ask the owner whether to merge
+`card-index` (with `effect-levels`) into `main`, or the route they prefer, then run
+`/merge-branches`. ⚠ `answers.json` belongs to the owner's checkout: re-read `main`'s copy before
+merging, and move any question answered since into family AC (the S14 note).
 
-**One batch = one loop:** a general-purpose Opus subagent writes the module from `WRITE_PROMPT.md`;
-`py build/mine_cardindex/levels_ae.py` must pass; a `pair-reviewer` subagent reads it against
-`REVIEW_PROMPT.md` and returns a numbered fix list; the overseer applies it with `patch_ae.py`,
-runs `levels_ae.py` then `render.py`, and commits the module, `DESIGN.md` and `levels/lAE.py`.
-A review runs while the next batch is written; never two writers on the same class at once.
-
-| Batch | Concepts | Module, `SOURCE` | Notes for the writer's task message |
-|---|---|---|---|
-| AE5 tarot | CI0501-CI0524 | module `g039`, "tarot and fortune" | most arcana names are live already (Balatro): the row is `<Name> v2` with its own effect built from the card's picture, and a rename only to a live effect under a DIFFERENT name; Cups, Wands, Swords, Coins are suit rows (`"SUIT"`) |
-| AE6 board games 1 | CI0601-CI0629 | module `g040`, "board games" | no money: rent, tax and mortgage in points, cards or combo; House and Hotel are a pair; the Clue weapons do what the OBJECT does; Top Hat is a stamp |
-| AE6 board games 2 | CI0630-CI0658 | module `g041`, "board games" | Bomb and Epidemic sit beside Exploding Kitten (g036); Spy and Werewolf beside Cheat |
-| AE7 pieces | CI0701-CI0730 | module `g042`, "tiles, dice and pieces" | the chess pieces are live (Pawn, Knight, Rook, Bishop, Queen): v2 with a new effect, never a same-name rename; Double Jump wants Q0336, which Jumping Jack already offers; dice and coins must be seeded; Heads or Tails sits beside The Coin Flip (CI1106) |
-| AE9 resources | CI0901-CI0927 | module `g043`, "resources and tokens" | the owner's ruling: a resource is a type (Wood, Brick, Stone) or a talent (Wheat), with suit and rank kept; Fungible (CI1103) is the merge rule they share; Stone, Glass, Gold and Iron types are live; Coin is a counter, never currency |
-| AE10 village 1 | CI1001-CI1037 | module `g044`, "Stacklands" | villagers, buildings, Idea (a recipe: two cards stacked make a third); House is `House v2` (CI0609 holds House) |
-| AE10 village 2 | CI1038-CI1077 | module `g045`, "Stacklands" | beasts and weather are hazards with a counterplay; equipment is the stamp slot; Ghost must agree with the owner's ghost card (a card that leaves at show end) |
-
-**The close, once every batch is in:** one pair review of the whole family for cross-batch repeats
-and a Qnnnn offered by two renames; `build/header.md` (the counts, and a paragraph on family AE
-under "What changed"); `py build/build_taxonomy_page.py`; `py export_csv.py`;
-`status.agent.json`; `py .claude/tools/doc_check.py`; Open bugs 4 and 5 above; then ask the owner
-how `card-index` should land (it carries `effect-levels`).
+Family AE's working set stays for a re-run or a later batch:
+`solatro/design/effect-review/build/mine_cardindex/` — `concepts.py` (the keep-list and every drop
+with its reason), `WRITE_PROMPT.md` (the writer's brief: shapes that do nothing, shapes used up,
+code facts), `REVIEW_PROMPT.md` (the reviewer's brief and its `eid field = text` fix list),
+`patch_ae.py` (apply fixes by eid), `levels_ae.py` (the v2 name check, and `levels/lAE.py` rebuilt
+from each module's `LEVEL2` and `FLAGS`), `live_index.py` (every live question with the owner's
+ruling, for rename targets), and the mining records. One batch is one loop: a writer subagent, then
+`levels_ae.py`, then a `pair-reviewer` fix list applied with `patch_ae.py`, then `levels_ae.py` and
+`render.py` (render fails once on renumbering until `levels_ae.py` has run), then one commit.
 
 Owner rulings from reading round 2 (recorded in `build/GAME_BRIEF.md`): fame is not spendable (a
 cost paid in fame is a skipped reward); a property's level 2 is unlocked by its own match only,
@@ -325,16 +320,13 @@ mining and one fix-application pass Claude Sonnet 5.5; every review the `pair-re
 
 ## Opening prompt for the next agent
 
-> Continue S15, the card index (family AE of the effect review), on branch `card-index`. Read
-> `solatro/HANDOFF_effect_review.md` — "Next up — S15" is the resumption point — then
-> `solatro/design/effect-review/build/mine_cardindex/WRITE_PROMPT.md` and `REVIEW_PROMPT.md`, and
-> `build/GAME_BRIEF.md`. Run the S15 verification command first; it must pass before anything is
-> written. Then work the batch table top to bottom (AE5 first), one writer and one reviewer at a
-> time, and finish with the close. Not negotiable: never hand-edit `DESIGN.md`; never rename or
-> delete an existing effect (the question id is positional); a name a live effect holds carries
-> ` v2`; every card keeps a suit and a rank; references a general audience recognises; commit one
-> batch per commit on `card-index`, never on `main`; no Godot is needed and none may be run. On a
-> machine without the `py` launcher use `python3`.
+> Land S15, the card index (family AE of the effect review), from branch `card-index`. Read
+> `solatro/HANDOFF_effect_review.md` — "Next up — the owner" is the resumption point. Run the S15
+> verification command first; it must pass. Ask the owner how `card-index` should land and put the
+> Open bugs questions to them; then follow `/merge-branches`. Not negotiable: never hand-edit
+> `DESIGN.md`; never rename or delete an existing effect (the question id is positional); never
+> commit on `main`; no Godot is needed and none may be run. On a machine without the `py` launcher
+> use `python3`.
 
 ## References
 

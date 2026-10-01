@@ -4,7 +4,7 @@
 candidate effect, and every answer is a ruling on whether that effect enters the game and in
 which form. Nothing here specifies how anything is built.
 
-**1,548 live questions, plus 278 retired in place.** There is no branching: every question is
+**1,997 live questions, plus 278 retired in place.** There is no branching: every question is
 independent, so the count you see is the count you answer. Rejecting is one keystroke.
 
 ## ⚠ What changed since your round-1 answers
@@ -58,6 +58,15 @@ rewarding.
 - **Family AD is new — 29 effects the pair reviewer proposed** while improving the others, each
   filling a gap it found: new scoring shapes and bucket play, the five stocks and the slot above
   each column as places that pay, cues and bets on marks, and a card that stays on stage.
+- **Family AE is new — the card index, 449 effects named after cards everyone knows**: everyday
+  cards (tickets, licences, passes), the card table and its idioms, party card games, poker and the
+  midway, tarot, board games, tiles, dice and chess pieces, trading-card tropes, resources, and a
+  village of workers, buildings, beasts and equipment. Only each card's name and idea are kept;
+  every effect is written for the grid, and every card keeps a suit and a rank (a resource is a
+  type or a talent, as you ruled). An option beginning "Renames Qnnnn (Old Name):" offers that
+  existing effect this name and changes nothing else; a name a live effect already holds carries
+  " v2". Class AE11 asks how the family is framed: themed packs, the minigames your braindump
+  named, and the prop trunk.
 - **Your rulings on the whole-game questions:** a bonus with no line goes to the special bucket; a
   fake card is a ghost card, one that leaves the deck when its show ends (Kayfabe and The Committee
   are rewritten around it, and six effects that assumed a hidden fake to find are flagged); a token
