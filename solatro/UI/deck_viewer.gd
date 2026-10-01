@@ -190,7 +190,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if verdict == CardsViewer.Modal.CLOSE: _close()
 
 # EITHER BUTTON: a press outside the list closes, and the second button cancels from anywhere on
-# screen, which over this viewer is the same act.
+# screen, which over this viewer is the same act. ⚠ THE WHEEL STOPS AT THE CATCHER, set in the scene
+# (`mouse_force_pass_scroll_events` off): one the list did not use would move the screen beneath.
 func _on_margin_container_gui_input(event: InputEvent) -> void:
 	var button := event as InputEventMouseButton
 	if button == null or not button.pressed: return

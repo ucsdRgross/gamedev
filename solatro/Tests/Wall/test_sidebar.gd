@@ -215,6 +215,7 @@ func _ready() -> void:
 	await test_tab_opens_the_wall_on_every_screen_as_the_pad_button_does()
 	await test_the_chooser_is_a_fitted_window_with_the_map_around_it()
 	await test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel()
+	await test_a_wheel_over_a_deck_viewer_never_reaches_the_screen_beneath()
 	await test_a_click_outside_closes_the_pack_viewer_but_never_the_chooser()
 	await test_every_route_leaves_the_chooser_and_comes_back_to_it_in_progress()
 	await test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it()
@@ -2172,17 +2173,31 @@ func _await_map_framing_settled(main: Main) -> void:
 		if now.is_equal_approx(last): return
 		last = now
 
-## Real wheel-up notches through the wall, which hands them to the focused map.
+## Real wheel-up notches at the window, over the map beside the sidebar, which the wall hands to the focused map.
 func _zoom_the_map_in(main: Main, notches: int) -> void:
 	for _i : int in range(notches):
-		main.wall._unhandled_input(_wheel_event(MOUSE_BUTTON_WHEEL_UP))
+		_push_wheel_notch(main.get_viewport(), MOUSE_BUTTON_WHEEL_UP, _ui_space(main).get_center())
 	await _await_map_framing_settled(main)
 
-func _wheel_event(button: MouseButton) -> InputEventMouseButton:
-	var event := InputEventMouseButton.new()
-	event.button_index = button
-	event.pressed = true
-	return event
+# A VIEWER TAKES EVERY WHEEL AT THE WINDOW, so a map under one is zoomed at the wall's own handler.
+func _zoom_the_map_under_a_viewer(main: Main, notches: int) -> void:
+	for _i : int in range(notches):
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_WHEEL_UP
+		event.pressed = true
+		main.wall._unhandled_input(event)
+	await _await_map_framing_settled(main)
+
+# A NOTCH IS A PRESS AND ITS RELEASE, as the platform sends it: a press alone keeps the viewport's
+# mouse focus on the control under it, and the next click lands there instead of under the pointer.
+func _push_wheel_notch(viewport: Viewport, button: MouseButton, at: Vector2) -> void:
+	for pressed : bool in [true, false] as Array[bool]:
+		var event := InputEventMouseButton.new()
+		event.button_index = button
+		event.pressed = pressed
+		event.position = at
+		event.global_position = at
+		viewport.push_input(event)
 
 const _MENU_BUTTON_PATHS : Array[NodePath] = [
 	^"Content/Main/Profile", ^"Content/Play", ^"Content/Main/Options", ^"Content/Main/Quit",
@@ -5201,7 +5216,7 @@ func test_zooming_out_stops_at_the_fit() -> void:
 
 func _wheel_the_map_out(notches: int) -> void:
 	for _i : int in range(notches):
-		_main.wall._unhandled_input(_wheel_event(MOUSE_BUTTON_WHEEL_DOWN))
+		_push_wheel_notch(_booted_viewport, MOUSE_BUTTON_WHEEL_DOWN, _ui_space(_main).get_center())
 	await _await_map_framing_settled(_main)
 
 ## At the fit the whole map is on screen, so there is nothing to pan: a drag moves nothing, and neither does the token walking; harness-scale only.
@@ -6621,10 +6636,7 @@ func test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel() -> voi
 			check(controller.camera.global_transform.is_equal_approx(camera_before),
 					"a drag starting outside the window pans nothing",
 					"%s -> %s" % [camera_before.origin, controller.camera.global_transform.origin])
-			var wheel := _wheel_event(MOUSE_BUTTON_WHEEL_DOWN)
-			wheel.position = at
-			wheel.global_position = at
-			_booted_viewport.push_input(wheel)
+			_push_wheel_notch(_booted_viewport, MOUSE_BUTTON_WHEEL_DOWN, at)
 			await _await_map_framing_settled(_main)
 			check(controller.camera.zoom.is_equal_approx(zoom_before),
 					"...and the wheel there zooms nothing", "%s -> %s" % [zoom_before, controller.camera.zoom])
@@ -6632,6 +6644,115 @@ func test_the_map_around_the_chooser_ignores_clicks_drags_and_the_wheel() -> voi
 		chooser.queue_free()
 		await get_tree().process_frame
 	await _end_main_fixture()
+
+## A wheel over a deck viewer moves nothing beneath it -- its list at either limit, its frame, the map around its window, the board under a game viewer -- and still scrolls the list.
+func test_a_wheel_over_a_deck_viewer_never_reaches_the_screen_beneath() -> void:
+	await _start_map_fixture()
+	var fit := _map.controller.camera.zoom.x
+	await _zoom_the_map_in(_main, 3)
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	var list := DeckViewer._open
+	check(is_instance_valid(list) and _map.controller.camera.zoom.x > fit,
+			"sanity: the pack's list is up over a map zoomed in past its fit, so a wheel either way would show",
+			"%.4f vs fit %.4f" % [_map.controller.camera.zoom.x, fit])
+	if is_instance_valid(list):
+		var scroll := list._scroll as SmoothScrollContainer
+		await _await_the_list_at_rest(scroll)
+		var window := _backdrop_of(list).get_global_rect()
+		var inside := scroll.get_global_rect()
+		var catcher := list.margin_container.get_global_rect()
+		var centre := inside.get_center()
+		var frame := Vector2((window.position.x + inside.position.x) * 0.5, centre.y)
+		var outside := catcher.end - Vector2.ONE
+		var bar := scroll.get_v_scroll_bar()
+		var end := bar.max_value - bar.page
+		check(end > 0.0 and scroll.scroll_vertical == 0 and inside.has_area(),
+				"sanity: the list has a range to scroll and rests at its top",
+				"range %.1f, at %d, in %s" % [end, scroll.scroll_vertical, inside])
+		check(window.has_point(frame) and not inside.has_point(frame),
+				"sanity: the frame point is on the window's frame, outside the list",
+				"%s, window %s, list %s" % [frame, window, inside])
+		check(catcher.has_point(outside) and not window.has_point(outside),
+				"sanity: the outside point is on the map beside the window",
+				"%s, catcher %s, window %s" % [outside, catcher, window])
+		await _check_a_notch_zooms_no_map(scroll, MOUSE_BUTTON_WHEEL_UP, centre, 0,
+				"up at the list's top limit")
+		await _check_a_notch_zooms_no_map(scroll, MOUSE_BUTTON_WHEEL_DOWN, frame, 0,
+				"over the window's frame")
+		await _check_a_notch_zooms_no_map(scroll, MOUSE_BUTTON_WHEEL_DOWN, outside, 0,
+				"over the map beside the window")
+		await _notch_over_the_viewer(scroll, MOUSE_BUTTON_WHEEL_DOWN, centre)
+		var part_way := scroll.scroll_vertical
+		check(part_way > 0, "a notch over the list still scrolls it", str(part_way))
+		await _notch_over_the_viewer(scroll, MOUSE_BUTTON_WHEEL_UP, bar.get_global_rect().get_center())
+		check(scroll.scroll_vertical < part_way, "...and one over its scrollbar scrolls it back",
+				"%d -> %d" % [part_way, scroll.scroll_vertical])
+		for _notch : int in range(ceili(end)):
+			if scroll.scroll_vertical >= floori(end): break
+			await _notch_over_the_viewer(scroll, MOUSE_BUTTON_WHEEL_DOWN, centre)
+		var at_end := scroll.scroll_vertical
+		check(absf(at_end - end) <= 1.0, "sanity: real notches took the list to its end",
+				"%d of %.1f" % [at_end, end])
+		await _check_a_notch_zooms_no_map(scroll, MOUSE_BUTTON_WHEEL_DOWN, centre, at_end,
+				"down at the list's end")
+		check(is_instance_valid(list) and not list.is_queued_for_deletion(),
+				"...and the list is still up through every notch")
+		await _close_the_open_viewer()
+	await _end_main_fixture()
+	await _start_game_fixture()
+	check(await _click_button(_container.deck_ui.get_node(^"Button") as Button, _booted_viewport),
+			"sanity: a real click on the board's Deck pressed it")
+	await get_tree().process_frame
+	var viewer := DeckViewer._open
+	check(is_instance_valid(viewer), "sanity: the board's Deck opened its viewer")
+	if is_instance_valid(viewer):
+		var scroll := viewer._scroll as SmoothScrollContainer
+		await _await_the_list_at_rest(scroll)
+		var bar := scroll.get_v_scroll_bar()
+		check(bar.max_value - bar.page > 0.0 and scroll.scroll_vertical == 0
+				and scroll.get_global_rect().has_area(),
+				"sanity: the board's deck list has a range to scroll and rests at its top",
+				"range %.1f, at %d" % [bar.max_value - bar.page, scroll.scroll_vertical])
+		var reached : Array[int] = [0]
+		var count_the_notch := func(event: InputEvent) -> void:
+			var button := event as InputEventMouseButton
+			if button and button.pressed and button.button_index == MOUSE_BUTTON_WHEEL_UP: reached[0] += 1
+		_play_area.scroll_container.gui_input.connect(count_the_notch)
+		await _notch_over_the_viewer(scroll, MOUSE_BUTTON_WHEEL_UP, scroll.get_global_rect().get_center())
+		_play_area.scroll_container.gui_input.disconnect(count_the_notch)
+		check(reached[0] == 0, "a notch up at the deck list's top limit reaches no board beneath it",
+				"%d reached the board's own scroll" % reached[0])
+		check(scroll.scroll_vertical == 0, "...and the list rests at its top", str(scroll.scroll_vertical))
+		await _close_the_open_viewer()
+	await _end_main_fixture()
+
+## One real notch at `at` over a viewer, then the list and the map beneath both left to come to rest.
+func _notch_over_the_viewer(scroll: SmoothScrollContainer, button: MouseButton, at: Vector2) -> void:
+	_hover_in(_booted_viewport, at)
+	await get_tree().process_frame
+	_push_wheel_notch(_booted_viewport, button, at)
+	await _await_the_list_at_rest(scroll)
+	await _await_map_framing_settled(_main)
+
+## Checks one real notch at `at` leaves the map's zoom as it was and the list resting at `rests_at`.
+func _check_a_notch_zooms_no_map(scroll: SmoothScrollContainer, button: MouseButton, at: Vector2,
+		rests_at: int, where: String) -> void:
+	var zoom := _map.controller.camera.zoom
+	await _notch_over_the_viewer(scroll, button, at)
+	check(_map.controller.camera.zoom.is_equal_approx(zoom),
+			"a wheel notch %s zooms no map beneath" % where,
+			"%s -> %s" % [zoom, _map.controller.camera.zoom])
+	check(scroll.scroll_vertical == rests_at, "...and the list rests where it was (%s)" % where,
+			"%d vs %d" % [scroll.scroll_vertical, rests_at])
+
+# THE LIST EASES AFTER A NOTCH, and springs back from past a limit: at rest once a frame has run and
+# nothing is left moving it, bounded so a list that never rests surfaces as a failure.
+func _await_the_list_at_rest(scroll: SmoothScrollContainer) -> void:
+	var waited := 0.0
+	await get_tree().process_frame
+	while (scroll.is_scrolling or scroll.velocity != Vector2.ZERO) and waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
 
 # A node a click could pick, drawn on the map beside the chooser's window rather than under it. The
 # graph is random per boot, so the token is stood where its next step lands outside the window.
@@ -7108,7 +7229,7 @@ func test_the_choosers_cards_draw_at_the_ui_size_whatever_the_map_zoom() -> void
 		if chooser != null:
 			var zoom_before := _map.controller.camera.zoom
 			_check_cards_at_the_ui_size(_booted_viewport, chooser.cards().controls, "the chooser, %s at the map's fit" % size)
-			await _zoom_the_map_in(_main, 3)
+			await _zoom_the_map_under_a_viewer(_main, 3)
 			check(not _map.controller.camera.zoom.is_equal_approx(zoom_before),
 					"sanity: the map zoomed in at %s" % size,
 					"%s -> %s" % [zoom_before, _map.controller.camera.zoom])
@@ -7510,7 +7631,7 @@ func test_the_maps_viewers_draw_at_the_ui_size_whatever_the_map_zoom() -> void:
 		if is_instance_valid(list):
 			var zoom_before := _map.controller.camera.zoom
 			_check_icons_at_the_ui_size(_booted_viewport, list, "possible cards, %s at the fit" % size)
-			await _zoom_the_map_in(_main, 3)
+			await _zoom_the_map_under_a_viewer(_main, 3)
 			check(not _map.controller.camera.zoom.is_equal_approx(zoom_before),
 					"sanity: the map zoomed in under the list at %s" % size)
 			_check_icons_at_the_ui_size(_booted_viewport, list, "possible cards, %s zoomed in" % size)

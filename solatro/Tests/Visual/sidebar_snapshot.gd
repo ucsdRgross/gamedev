@@ -747,6 +747,17 @@ func _cancel_the_held_card_once(main: Main, view: GameView) -> bool:
 	await _await_held_card_settled(view, data)
 	return view.hud_container.showing_description()
 
+# A NOTCH IS A PRESS AND ITS RELEASE, as the platform sends it: a press alone keeps the window's
+# mouse focus on the control under it, and the next click lands there instead of under the pointer.
+func _push_wheel_notch(button: MouseButton, at: Vector2) -> void:
+	for pressed : bool in [true, false] as Array[bool]:
+		var event := InputEventMouseButton.new()
+		event.button_index = button
+		event.pressed = pressed
+		event.position = at
+		event.global_position = at
+		get_viewport().push_input(event)
+
 func _push_click(viewport: Viewport, at: Vector2, pressed: bool) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
@@ -976,12 +987,7 @@ func _shoot_the_possible_cards_ranks(list: DeckViewer, map_camera: Camera2D) -> 
 	_push_pointer(get_viewport(), at)
 	for notch : int in CASCADE_WATCH_FRAMES:
 		if scroll.get_global_rect().encloses(last.get_global_rect()): break
-		var event := InputEventMouseButton.new()
-		event.button_index = MOUSE_BUTTON_WHEEL_DOWN
-		event.pressed = true
-		event.position = at
-		event.global_position = at
-		get_viewport().push_input(event)
+		_push_wheel_notch(MOUSE_BUTTON_WHEEL_DOWN, at)
 		await _await_the_list_moved_and_still(scroll)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
@@ -995,8 +1001,7 @@ func _shoot_the_possible_cards_ranks(list: DeckViewer, map_camera: Camera2D) -> 
 					scroll.get_global_rect().encloses(last.get_global_rect()), list.cards().sticky,
 					map_camera.zoom.x, map_zoom])
 
-# ⚠ EACH NOTCH IS LEFT TO LAND BEFORE THE NEXT: notches pushed faster than the list moves ran past
-# its end and reached the map beneath (measured: the map zoomed and the list closed).
+# EACH NOTCH IS LEFT TO LAND BEFORE THE NEXT: the list eases, so where a notch took it reads late.
 func _await_the_list_moved_and_still(scroll: ScrollContainer) -> void:
 	var from := scroll.scroll_vertical
 	var still := 0
@@ -1098,12 +1103,7 @@ func _shoot_the_zoomed_map(main: Main) -> void:
 	var near_edge := Vector2(map_viewport.size) * Vector2(0.9, 0.5)
 	_push_map_pointer(main, near_edge)
 	for _notch : int in MAP_ZOOM_NOTCHES:
-		var notch := InputEventMouseButton.new()
-		notch.button_index = MOUSE_BUTTON_WHEEL_UP
-		notch.pressed = true
-		notch.position = _map_point_in_window(main, near_edge)
-		notch.global_position = notch.position
-		get_viewport().push_input(notch)
+		_push_wheel_notch(MOUSE_BUTTON_WHEEL_UP, _map_point_in_window(main, near_edge))
 		await get_tree().process_frame
 # The wheel zooms about the token, not the pointer, so a drag carries the view on to that edge.
 	var middle := _middle_beside_the_sidebar(main)
