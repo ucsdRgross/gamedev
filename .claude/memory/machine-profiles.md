@@ -39,4 +39,18 @@ Other per-box notes:
 - Both boxes are on 4.7.2. If a `class_name` suddenly won't resolve, it is the
   import cache, not the version — see [[running-godot-scenes]].
 
+## Cloud container (claude.ai/code session)
+
+Linux, no GPU: Godot renders through Mesa llvmpipe on a virtual display. Bootstrap with
+`bash .claude/tools/cloud_setup.sh`, then `source /opt/godot/env.sh` (gives `godot <args>`,
+which wraps `xvfb-run`; the Linux binary is already the console build). Resume from
+`HANDOFF_cloud_godot.md`.
+
+- Logic, importing, snapshot scenes (look at the PNGs) and `worldgen/tests/native_ab_test.tscn`
+  work. Perf numbers (`fx_cost`, GPU timer) mean nothing here, and pixel-exact checks can differ
+  from the daily drivers.
+- A full `Tests/all_tests.tscn` run takes ~7 min and aborts (exit 134) at teardown.
+- The worldgen extension has a committed Linux debug `.so`; rebuild recipe in
+  `worldgen/worldgen_native/BUILD.md`.
+
 If you are on a third machine, add a column rather than editing an existing one.
