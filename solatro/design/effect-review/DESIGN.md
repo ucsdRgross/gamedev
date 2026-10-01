@@ -81,7 +81,7 @@ one; the rows use this vocabulary:
 | a trigger "each act" | **each placement** |
 | a budget "once per act" | **once per Entrance refill** (five cards; four to eight a show) |
 | a round / a blind / an ante | a **show** / a **level** / a **lap** |
-| a discard budget | **discard events**: effects discard cards from the board into a pile that persists |
+| a discard budget | **discard events**: effects discard cards from the board into a pile that returns to the deck when the show ends |
 | the tableau, the upper/lower zone | the **grid**, the **Entrance** |
 
 Families Y (the board plan's marks), Z (solitaires re-expressed on the grid) and AA (Balatro content

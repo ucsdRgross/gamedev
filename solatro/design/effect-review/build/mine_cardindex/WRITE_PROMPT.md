@@ -70,8 +70,8 @@ existing effect, that is the rename option, not a new one.
 - **"Every grid"** is void in a normal run, which plays one grid; **"all marks"** is a flat bonus
   fixed at the deal. Count matched or uncovered marks.
 - **A payout outside a line names its bucket.**
-- **Taking points out of a bucket** is unruled (Q-question "Charge-back" in class AE11 asks it).
-  Until it is ruled, write the debit as floored: "..., to no lower than 0".
+- **Taking points out of a bucket** is floored at 0 (owner, `GAME_BRIEF.md`): write the debit as
+  "..., to no lower than 0".
 - **Nearest / farthest** always has ties: add "you choose among ties".
 - **A match bonus is points AND a mult**: only its points go in a bucket ("rank-match points").
 
@@ -119,10 +119,8 @@ a level-2 addition.
   rest of the Entrance away is a free re-draw unless it costs something.
 - **A suit's prop fires only on a suit-mark match** (the board plan), so "when three props cross"
   almost never happens; Hoops sweep rows only.
-- ⚠ **The discard pile**: `GAME_BRIEF.md` says it persists to the next show; the code returns it
-  to the run deck at show end (`Levels/game.gd`, `returned.append_array(state.discard_deck)`).
-  Unruled. Write "to the discard pile" as out for this show, and do not build an effect on a
-  discard pile that grows across shows.
+- **The discard pile returns to the deck when the show ends** (`GAME_BRIEF.md` § Discards): a
+  discard is out for this show only; never build an effect on a pile that grows across shows.
 
 ## Slots and level 2
 

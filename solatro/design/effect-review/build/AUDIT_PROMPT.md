@@ -44,7 +44,7 @@ every line each prints. A garbled character is only console encoding; ignore it.
 - "per Entrance refill" / "each Entrance refill" — the house translation of a multi-card act (a
   refill delivers five cards). It is correct, not stale.
 - Discards. Effects discard cards from the board into the discard pile, as a target or a side
-  effect, and the pile persists to the next show. An effect about discard events or the pile is
+  effect, and the pile returns to the deck when the show ends. An effect about discard events or the pile is
   live; only a per-round discard BUDGET the player spends is stale.
 - An effect that GRANTS a new player action (a discard, a swap, a peek) — granting is legal; only
   ASSUMING the action already exists is stale.

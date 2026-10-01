@@ -37,5 +37,5 @@ Edit the sources, then re-render. Never edit `DESIGN.md` by hand.
 - a multi-card **act** -> an **Entrance refill** (five cards); a per-act trigger -> a placement
 - a **scoreless act** -> a scoreless refill, never a scoreless placement (that is the normal case)
 - a **discard budget** -> **discard events**: effects discard cards from the board into a pile that
-  persists to the next show. There is no player discard action or budget, but discards are real
+  returns to the deck when the show ends. There is no player discard action or budget, but discards are real
 - **"mark"** means the board plan's cell mark; other senses are "tag", "flag" or "claim"
