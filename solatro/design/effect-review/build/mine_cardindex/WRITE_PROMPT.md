@@ -84,8 +84,20 @@ Four cards already score a line, remove a card of it, and score it again when th
 (Ace of Spades, Card Shark, Fifty-Two Pickup, Eviction Notice), and three give a sixth placement
 beside the five in the Entrance (VIP Pass, Key Card, Dummy). Both shapes are used up too.
 
+Four options already let a line score short of five cards (Skip, Doctor's Note, Zero, Half), with
+The Courier and Four Fingers live. Used up as well.
+
 An effect that needs the discard pile to hold cards does nothing in a run with no discarder: do
 not make it the default.
+
+**A free re-score clock** is the commonest hidden engine: anything that moves, swaps or slips a
+card into a complete line at every refill scores that line again each time, because a complete
+line scores whenever anything touches it. Say so in the option when you mean it, and bound it
+(a cue, a charge, a placement you spend) when you do not.
+
+**A rank or suit row whose option (a) is a rename**: the head must say so ("(a) is the live X
+whole; for (b) and (c) level 1 is ..."), because the renderer prints every option of a rank row as
+a level-2 addition.
 
 ## Slots and level 2
 
