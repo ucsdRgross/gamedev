@@ -7101,7 +7101,7 @@ func test_the_board_is_centred_beside_the_resting_sidebar_in_the_players_window(
 				space, authored_px, window.get_final_transform() * _ui_space(_main)])
 		await _end_main_fixture()
 
-## The win or lose result centres over the board across the picture, its label and its buttons, and moves with the board as the sidebar slides, centre to centre, in the harness and in the player's window at both window shapes.
+## The win or lose result centres over the board across the picture, its label and its buttons, and as one block down the space beside the sidebar, and moves with the board as the sidebar slides, centre to centre, in the harness and in the player's window at both window shapes.
 func test_the_outcome_centres_over_the_board_resting_and_slid() -> void:
 	for in_players_window : bool in [false, true]:
 		for size : Vector2i in INSET_WINDOWS:
@@ -7128,11 +7128,32 @@ func test_the_outcome_centres_over_the_board_resting_and_slid() -> void:
 						"the outcome's label and buttons centre across the board in %s" % at,
 						"label %s row %s board %s" % [label, row, board])
 				apart.append(label.get_center() - board.get_center())
+				_check_the_outcome_is_centred_down_its_space(view, at)
 			check(apart[0].distance_to(apart[1]) < 1.0,
 					"...and the slide moves the outcome as it moves the board, centre to centre, in %s" % where,
 					str(apart))
 			await _container.slide_to(1.0)
 			await _end_main_fixture()
+
+# Measured in the host's own pixels from what is drawn: the label and buttons as one block, against
+# the window less the band the sidebar draws over it. The board is reserved at the covering scale
+# and drawn overfilled, so under a top band its centre stands half the overfill of the band lower.
+func _check_the_outcome_is_centred_down_its_space(view: GameView, at: String) -> void:
+	var host := _main.get_viewport()
+	var game : WallPicture = _main._pictures[&"game"]
+	var block := _menu_control_in_window(host, game, view._outcome_title).merge(
+			_menu_control_in_window(host, game, view._outcome_buttons))
+	var window := host.get_final_transform() * host.get_visible_rect()
+	var sidebar := host.get_final_transform() * _container.get_global_rect()
+	var band := 0.0
+	if HudContainer.container_is_top(host.get_visible_rect().size, PlayArea.settings()):
+		band = maxf(sidebar.end.y - window.position.y, 0.0)
+	var centre := window.get_center().y + band / 2.0
+	var slack := (PlayArea.settings().wall_overfill_margin - 1.0) * band / 2.0 + 1.0
+	check(block.size.y > 0.0 and absf(block.get_center().y - centre) <= slack,
+			"the outcome's label and buttons, as one block, centre down the space beside the sidebar in %s" % at,
+			"block %s centre y %.1f, the space's %.1f under a band of %.1f in %s, slack %.1f" % [block,
+			block.get_center().y, centre, band, window, slack])
 
 ## Goal, Total and the board-total-times-combo line are drawn wholly inside the sidebar at a won show's end after a combo pulse, at the show's own values and at long ones, in the harness and in the player's window at both window shapes.
 func test_the_score_lines_draw_inside_the_sidebar_at_a_won_show() -> void:

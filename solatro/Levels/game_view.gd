@@ -284,15 +284,20 @@ func _publish_board_inset() -> void:
 ## How far the board's slid space sits from the picture's centre, which the outcome is centred on.
 var _outcome_shift : Vector2 = Vector2.ZERO
 
-# THE OUTCOME STILL COVERS THE WHOLE PLAY AREA, so no board click gets through: only its title and
-# buttons move to the board's centre (a Label ignores its style's margins when it centres text, so
-# the title is a child). ⚠ Each is centred on its OWN MINIMUM SIZE: anchoring alone leaves it top-left.
+# THE OUTCOME STILL COVERS THE WHOLE PLAY AREA, so no board click gets through: its title (a child:
+# a centred Label ignores its style's margins) and the buttons under it are centred AS A PAIR over
+# the board's space. ⚠ Each is centred on its OWN MINIMUM SIZE: anchoring alone leaves it top-left.
 func _place_the_outcome() -> void:
 	if _outcome_buttons == null: return
-	for part : Control in [_outcome_title, _outcome_buttons] as Array[Control]:
+	var parts : Array[Control] = [_outcome_title, _outcome_buttons]
+	for part : Control in parts:
 		part.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
 		part.position += _outcome_shift
 	_outcome_buttons.position.y += CONTINUE_OFFSET_Y
+	var pair := _outcome_title.get_rect().merge(_outcome_buttons.get_rect())
+	var lift := pair.get_center().y - _outcome_title.get_rect().get_center().y
+	for part : Control in parts:
+		part.position.y -= lift
 
 # ⚠ THE BOARD'S RESERVE, NOT THE VISIBLE SPACE the map, the menu and a pile's aim read: it stays at
 # the COVERING scale because grid isolation leans on the overfill's slack, so the board sits ~2 px

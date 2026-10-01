@@ -353,6 +353,23 @@ func _report_the_outcome_buttons(main: Main, view: GameView) -> void:
 			+ "hud_undo_up=%s") % [view.win_screen.visible, ", ".join(drawn),
 			(to_pixels * view.hud_container.container_rect().end).x, focus_label,
 			view.undo_button.is_visible_in_tree()])
+	var picture : WallPicture = main._pictures[&"game"]
+	var block := _drawn_rect(picture, view._outcome_title).merge(
+			_drawn_rect(picture, view._outcome_buttons))
+	var sidebar := to_pixels * view.hud_container.published_rect()
+	print("SIDEBAR_SNAPSHOT outcome_block title=%s buttons=%s block=%s centre=%s sidebar=%s window=%s" % [
+			_drawn_rect(picture, view._outcome_title), _drawn_rect(picture, view._outcome_buttons),
+			block, block.get_center(), sidebar, to_pixels * Rect2(Vector2.ZERO, window)])
+
+## Where `control`, drawn in `picture`'s own canvas, lands in the capture's pixels.
+func _drawn_rect(picture: WallPicture, control: Control) -> Rect2:
+	var canvas := control.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, control.size)
+	var texels := Vector2(picture.viewport.size) / picture.viewport.get_visible_rect().size
+	var sprite : Sprite2D = picture.get_node(^"%Screen")
+	var to_pixels := get_viewport().get_final_transform() * sprite.get_global_transform_with_canvas()
+	var half := Vector2(picture.viewport.size) * 0.5
+	var start := to_pixels * (canvas.position * texels - half)
+	return Rect2(start, to_pixels * (canvas.end * texels - half) - start)
 
 # The Goal wears its met state the instant the total reaches it, one beat before the show ends --
 # too short to photograph from a real placement, so the goal is dropped TO the settled board's
