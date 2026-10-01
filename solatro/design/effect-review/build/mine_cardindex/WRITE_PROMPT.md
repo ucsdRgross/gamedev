@@ -33,7 +33,8 @@ name promises, option (a) offers the rename, worded exactly:
     Renames Q1234 (Old Name): <that effect's recommended or approved option, restated in one line>
 
 The owner choosing it means that existing effect wears this name; nothing else changes. Prefer an
-approved effect, then an unanswered one; never a rejected one (`ruling` = `rejected`). Options (b)
+approved effect, then an unanswered one; never a rejected one (`ruling` = `rejected`), and never
+one another AE row already offers (grep `Renames Q<id>` under `build/generated/`). Options (b)
 and (c) are then new effects for the same name, so the owner can decline the rename and keep the
 concept. When nothing fits, all three options are new.
 
@@ -103,6 +104,13 @@ a level-2 addition.
 
 - **Undo rewinds up to 25 placements, scores included** (`Levels/game.gd`, `undo_cap`). A chance
   the player could re-roll by undoing must be "drawn from the show's seed", said in the head.
+  ⚠ Undo also crosses an Entrance refill, so anything revealed in answer to a player's choice (a
+  guess, a hit or miss, a peek) can be read and undone for free. Unruled; do not lean on a wrong
+  guess's cost as the card's only tension.
+- **Only placement, move and removal re-score a line** (`Levels/game.gd`,
+  `_broadcast_board_mutation`). A rank, suit or talent change touches nothing.
+- **A covered card does not fire.** An effect on a card that something is placed on must sit on
+  top (put the other card beneath it) or say it works while covered.
 - **The default stacking rule** allows a card one rank apart on a DIFFERENT suit
   (`Cards/Skills/Rules/skill_placer_og_lower.gd`); any other stack needs "whatever the stacking
   rules say".
