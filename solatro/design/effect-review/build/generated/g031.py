@@ -130,17 +130,17 @@ ROWS = [
  'a'),
 
 ('CI0019', 'Library Card', 'AE1', 'skill',
- 'Borrow from the pile, and bring it back.',
- 'Cue, once per Entrance refill: borrow a card from the discard pile into an empty Entrance slot; when a line it is in scores, it goes back to the discard pile and its cell is empty again',
- 'As (a), but the borrowed card may stay until the next Entrance refill, when it goes back to the discard pile from wherever it is',
- 'As (a), borrowing the top card of the discard pile automatically at each Entrance refill',
+ 'A library lends for a while, and what is borrowed comes back; here what is borrowed is a mark.',
+ "Cue, once per Entrance refill: a card waiting in the Entrance borrows an uncovered mark of its grid you choose, and wherever on its grid that card is placed this refill it is matched against the borrowed mark instead of its own cell's, the mark staying where it is",
+ "As (a), and a card that hits the borrowed mark brings it back: the borrowed mark moves under that card and the card's own cell mark goes where the borrowed one was",
+ 'As (a), each cue lending to two cards waiting in the Entrance, each borrowing a different mark',
  'a'),
 
 ('CI0020', 'Overdue Notice', 'AE1', 'skill',
  'Anything kept too long comes back with a fine.',
+ "Renames Q0607 (Garden Solitaire): A card in no complete line gains +1 rank at each Entrance refill; when a line through it completes it is harvested: the ranks it gained are paid as flat points into that line's bucket and its rank returns to printed",
  'At each Entrance refill, the card that has sat longest in the discard pile goes back to the bottom of the stock you choose and pays a step of fine into the special bucket',
- 'As (a), and its fine is a step for every Entrance refill it sat in the discard pile',
- 'At show start, every card that sat in the discard pile through the whole last show goes back to the stocks, and each pays a step of fine into the special bucket',
+ 'As (a), and a line in which every card but the last one placed has grown adds +1 to the combo',
  'a'),
 
 ('CI0021', 'Credit Card', 'AE1', 'skill',
@@ -215,9 +215,9 @@ ROWS = [
 
 ('CI0031', 'Key Card', 'AE1', 'skill',
  'Opens what is locked.',
+ "Renames Q0188 (The Fourth Ring): Unlocks one additional grid, and the show's goal rises by the fraction it adds",
  'Cue, once per Entrance refill: open one covered card on its grid: it is spotlit for the rest of the refill',
- 'Cue, once per Entrance refill: one empty Entrance slot is unlocked, and its stock turns up its next card now instead of waiting for the refill',
- 'Cue, once per run: unlock the next grid for this show; it and every card on it leave to the discard pile when the show ends',
+ 'As (b), opening every covered card in its lines at once',
  'a'),
 
 ('CI0032', 'Boarding Pass', 'AE1', 'skill',
@@ -269,8 +269,8 @@ LEVEL2 = {
  'CI0016': ('Name two game days', 'Lines through its cell are not halved before game day', 'A record line through its cell also pays again into the special bucket'),
  'CI0017': ('Redeeming costs only what the pawn paid', 'A forfeited card goes to the bottom of a stock instead of leaving the deck', 'The price never rises'),
  'CI0018': 'Contacts that score while sitting on a mark they match pay double commission',
- 'CI0019': 'It borrows two cards per refill instead of one',
- 'CI0020': ('It sends back two cards per refill', 'It sends back two cards per refill', 'They go back to the tops of the stocks'),
+ 'CI0019': "The card may be matched against both the borrowed mark and its own cell's mark",
+ 'CI0020': ('A growing card whose rank reaches the rank printed on its mark counts as matching it on rank from then on', 'The returned card goes to the top of the stock you choose instead of the bottom', 'A growing card whose rank reaches the rank printed on its mark counts as matching it on rank from then on'),
  'CI0021': 'Charges on lines through its cell carry no interest',
  'CI0022': 'Each point it spends also pays a step into the special bucket',
  'CI0023': 'Lines through its cell count double on the report',
@@ -281,7 +281,7 @@ LEVEL2 = {
  'CI0028': 'Marks in its lines stay face up and still pay the face-down bonus',
  'CI0029': 'Ingredients anywhere in its lines count as one line',
  'CI0030': ('It also fires on any placement that lands a card on a mark it matches', 'Lines through its cell punch twice', 'Lines through its cell count as two'),
- 'CI0031': ('An opened card sitting on a mark it matches stays spotlit until a line through it scores', 'It may unlock a slot that is not empty, swapping its card for the next of its stock', 'The unlocked grid deals its marks from the cards of the stock you choose'),
+ 'CI0031': ("The grid it opens copies this grid's matched marks, so what you have already aimed at counts there too", 'An opened card sitting on a mark it matches stays spotlit until a line through it scores', 'An opened card stays spotlit for the rest of the show'),
  'CI0032': 'Its flight may land on top of a card, stacking whatever the rules say',
  'CI0033': 'A drawn winner in its lines also pays its match bonus again',
  'CI0034': ('Cards in its lines are fined after two refills, not three', 'A towed card goes to the top of its stock instead of the bottom', 'A towed card goes to the top of its stock instead of the bottom'),
@@ -290,7 +290,6 @@ LEVEL2 = {
 
 # eid -> the flag the owner sees
 FLAGS = {
- 'CI0031': '(c) opens a second grid for one show: a normal run plays one grid, so it asks whether a card may do that',
- 'CI0019': 'every option borrows from the discard pile, which nothing fills by default, and the family rule is not to make such an option the default',
- 'CI0020': 'every option waits on cards in the discard pile, and (c) on a pile that persists between shows, which the code does not do',
+ 'CI0031': '(b) and (c) open covered cards, which need a stacking effect; (a) asks, as Q0188 does, whether a card may open a second grid',
+ 'CI0020': '(b) waits on cards in the discard pile, which nothing fills by default',
 }

@@ -144,11 +144,11 @@ ROWS = [
  'b'),
 
 ('CI1058', 'Helmet', 'AE10', 'stamp',
- 'A helmet keeps its wearer from being knocked down a peg; here a peg is a rank.',
+ 'A helmet keeps its wearer from being knocked down a peg; here a peg is a rank in (a) and a class of poker hand in (b) and (c).',
  'Renames Q1564 (The Umbrella): The wearer and its orthogonal neighbours ignore debuffs',
- 'As (a), and every rank a blow would have taken from the wearer or a neighbour is paid into the special bucket instead',
- "No effect or hazard can change the wearer's rank, suit, talent or hat, for better or worse",
- 'a'),
+ "A line through the wearer's cell that would score as High Card scores as One Pair instead",
+ 'As (b), for every line through a card orthogonally next to the wearer as well',
+ 'b'),
 
 ('CI1059', 'Magic Wand', 'AE10', 'stamp',
  "A wand casts its spell on another; here the spell is the wearer's own talent, lent to the card it points at.",
@@ -306,10 +306,10 @@ LEVEL2 = {
  'CI1055': 'It strikes at cards placed diagonally next to it too',
  'CI1056': ('It absorbs the first two hostile effects', 'Its shield may be raised or lowered at each placement, not only at each refill', 'Its shield may be raised or lowered at each placement, not only at each refill'),
  'CI1057': ('Every cell on its grid counts as adjacent to it', 'It may aim at a flat diagonal of its grid as well as a row or column', 'It may aim at a flat diagonal of its grid as well as a row or column'),
- 'CI1058': ('It shelters diagonal neighbours too', 'It shelters diagonal neighbours too, each blow paid the same way', 'Nor can those of the cards orthogonally next to it be changed'),
+ 'CI1058': ('It shelters diagonal neighbours too', 'A line through its cell that would score as One Pair scores as Two Pair instead', 'A line it shelters that would score as One Pair scores as Two Pair instead'),
  'CI1059': 'A card it points at that sits on a mark it matches fires the lent talent at level 2',
  'CI1060': 'A charge comes back each time a line through its cell scores',
- 'CI1061': ('It also rules while it is the highest-ranked card of any line through its cell', 'Every other talent in a line it rules fires at level 2 too', 'It also rules while it is the highest-ranked card of any line through its cell'),
+ 'CI1061': ('It also rules while it is the highest-ranked card of any line through its cell', 'It also rules a line in which it ties for the highest rank', 'It also rules while it is the highest-ranked card of any line through its cell'),
  'CI1062': ("Its wearer's hat match also pays the talent mult", 'The joke lands in Two Pair too', 'The joke lands in One Pair too'),
  'CI1063': 'The plundered talent fires at level 2 as well, as if its ship sat on its mark',
  'CI1064': ('It returns to the stock you choose', 'You choose which later Entrance refill it comes back at', 'You choose which later Entrance refill it comes back at'),
@@ -330,7 +330,7 @@ LEVEL2 = {
 
 # eid -> the flag the owner sees
 FLAGS = {
- 'CI1058': 'it does something only where an effect or hazard lowers or changes a card; the village hazards Goblin, Ogre (b) and Mosquito are the ones that do',
+ 'CI1058': '(a) does something only where an effect or hazard debuffs a card; the village hazards Goblin, Ogre (b) and Mosquito are the ones that do',
  'CI1051': 'every option makes a card carrying the Egg talent, which hatches when a line through it scores, so it depends on Egg (CI0913, Q0501) being kept',
  'CI1052': 'every option gives the Milk talent, so it depends on Milk (CI0914) being kept',
 }

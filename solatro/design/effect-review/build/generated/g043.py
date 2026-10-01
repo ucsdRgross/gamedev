@@ -148,7 +148,7 @@ ROWS = [
  'Renames Q0507 (Marotte), a stamp: When destroyed, a rank-1 copy with the same skill and no stamp survives in its place',
  'When a line through it scores, the Bone is what is left: each other card of that line loses 1 rank for the show, to no lower than 1, and the Bone gains the ranks lost, up to King',
  'A Bone in the discard pile is dug up: at each Entrance refill it returns to the top of the stock you choose',
- 'a'),
+ 'b'),
 
 ('CI0922', 'Sand', 'AE9', 'type',
  'Heat sand and it turns to glass.',

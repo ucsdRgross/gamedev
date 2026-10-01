@@ -34,7 +34,7 @@ ROWS = [
 ('CI0605', 'Round the Board', 'AE6', 'skill',
  "After Monopoly's Pass Go: collect your salary every time you go round.",
  'While it is on the board, each card an effect sends back into a stock passes Go and collects a step of salary into the special bucket',
- 'As (a), the salary paid to the card itself: +1 rank for the run each time it passes Go',
+ 'When it turns up in the Entrance you may pass Go instead of placing it: it goes to the bottom of the stock you choose and collects its salary itself, +1 rank for the run, and its slot stays empty this refill',
  'When it turns up in the Entrance you may pass Go instead of placing it: it goes to the bottom of the stock you choose, adds +1 to the combo and pays a step into the special bucket, and its slot stays empty this refill',
  'c'),
 
@@ -242,5 +242,5 @@ LEVEL2 = {
 
 # eid -> the flag the owner sees
 FLAGS = {
- 'CI0605': '(c) stands alone; (a) and (b) pay only when another effect sends a card back into a stock, which many family-AE cards do (Overdue Notice, Receipt, Stand, Fifty-Two Pickup) and few live ones',
+ 'CI0605': '(a) pays only when another effect sends a card back into a stock, which many family-AE cards do (Overdue Notice, Receipt, Stand, Fifty-Two Pickup) and few live ones',
 }

@@ -88,11 +88,11 @@ ROWS = [
  'b'),
 
 ('CI0642', 'Block Tower', 'AE6', 'skill',
- "After the game Jenga: pull a block from low in the tower, set it on top, and hope the tower stands; the fall in (b) is drawn from the show's seed, so Undo cannot pull again.",
+ "After the game Jenga: pull a block from low in the tower, set it on top, and hope the tower stands; in (b) and (c) the tower is a column of the grid, and the fall in (b) is drawn from the show's seed, so Undo cannot pull again.",
  'Renames Q0320 (Jenga card): Clicking a buried card moves it to the top of the next-smallest stack, leaving a gap; too many gaps and this card is discarded',
- "Cue, once per Entrance refill: pull a covered card from a stack on its grid and set it on top of that stack, every card above it dropping one height and every complete line through the stack scoring, the pull paying a step into the special bucket for every pull this show; the tower falls on a chance drawn from the show's seed, one in ten for every pull so far, sending that stack to the discard pile",
+ "Cue, once per Entrance refill: pull a card that is in no complete line out of a column of its grid and set it in an empty cell of that column above it, the pull paying a step into the special bucket for every pull this show; the tower falls on a chance drawn from the show's seed, one in ten for every pull so far, sending every card of that column to the bottom of its stock",
  'As (b), with no chance of a fall, but each pull costs the pulled card 1 rank for the show',
- 'a'),
+ 'b'),
 
 ('CI0643', 'Mystery Face', 'AE6', 'skill',
  "After the game Guess Who?: one face on the board is the mystery card, drawn from the show's seed and hidden from you; each question flips down the faces it rules out, and the card that finds it is paid.",
@@ -242,5 +242,5 @@ LEVEL2 = {
 
 # eid -> the flag the owner sees
 FLAGS = {
- 'CI0642': '(b) and (c), like Q0320, need a stack to pull from, and a placed card cannot normally be stacked on: in a run with no stacking effect every option does nothing',
+ 'CI0642': '(a), like Q0320, needs a stack to pull from, which needs a stacking effect',
 }

@@ -69,16 +69,16 @@ ROWS = [
 ('CI0710', 'Doubles', 'AE7', 'skill',
  'Both dice the same, and you go again, until a third doubles sends you to jail; here doubles are two cards of one rank placed one after the other.',
  'A card placed in its lines that shares its rank with the card placed just before it is doubles: every line it completes pays again into its bucket, but a third doubles running sends this card to jail, its talent silent until the next Entrance refill',
- 'As (a), and doubles go again: the slot the doubles came from turns up the next card of its stock at once',
+ 'As (a), and doubles go again: the next card placed after doubles, whatever its rank, pays every line it completes into its bucket again too',
  'As (a), with no jail',
  'a'),
 
 ('CI0711', 'Loaded Die', 'AE7', 'skill',
- 'A die weighted to land on one face: a chance that is no chance at all, until somebody notices.',
+ "A die weighted to land on one face: a chance that is no chance at all, until somebody notices; its own rolls in (b) and (c) are drawn from the show's seed, so Undo cannot roll again.",
  "Renames Q0836 (The Prepared Deck): Cue: fix the next probability check's result now, before you know what it will be used for",
- 'Once per Entrance refill, a roll or flip drawn for an effect on its grid lands as you choose; load a second in the same refill and you are caught: this card goes to the discard pile, its cell empty again',
- 'As (b), the die loaded once, when it is placed, toward an outcome you name: every roll or flip on its grid lands there, good or bad, with no catching',
- 'a'),
+ "When a line through its cell scores, it rolls and pays that many steps into that line's bucket; once per Entrance refill you may load the roll to a six, and loading a second in the same refill gets you caught: its talent falls silent for the rest of the show",
+ 'As (b), its loading reaching every roll or flip drawn for an effect on its grid as well',
+ 'b'),
 
 ('CI0712', 'Critical Hit', 'AE7', 'skill',
  "A natural twenty: the best roll there is, and the hit lands twice as hard; its roll is drawn from the show's seed, so Undo cannot roll it again.",
@@ -106,7 +106,7 @@ ROWS = [
  "Renames Q1557 (The Rabbit's Foot): Every probability check on an orthogonally adjacent card succeeds automatically",
  'Every coin flipped for an effect on its grid comes up the way that effect wants, and each flip it fixes pays a step into the special bucket',
  'Cue, after a line through its cell scores: flip the trick coin on it, heads, and that line pays again into its bucket, and each flip this show adds one in six to the chance that the table catches you and this card goes to the discard pile',
- 'a'),
+ 'c'),
 
 ('CI0716', 'Pawn v2', 'AE7', 'skill',
  'The smallest chess piece, which marches up the board and, reaching the far side, becomes a Queen; the far side here is the top row.',
@@ -146,7 +146,7 @@ ROWS = [
 ('CI0721', 'King v2', 'AE7', 'skill',
  "The chess piece that must never be taken; the piece, not the card's rank, which stays its own.",
  'Renames Q1395 (Room To Work): This card scores a step for every empty cell adjacent to it, and loses a step for every occupied one',
- 'No effect or hazard can move, cover or remove it, and each line through its cell pays a step into its bucket for every card of its suit among the eight cells around it, its guard',
+ 'Each line through its cell pays a step into its bucket for every card of its suit among the eight cells around it, its guard, and a King hemmed in on all eight sides with no card of its suit among them is checkmated: its talent falls silent for the rest of the show',
  "An effect or hazard that would move, remove or debuff it falls on a card of the eight cells around it instead, you choose which, and that card's rank is paid into the special bucket",
  'b'),
 
@@ -154,7 +154,7 @@ ROWS = [
  'The one chess move in which two pieces go at once, the King and a Rook swapping past each other.',
  'Cue, once per show, when a card sits at one end of its row with at least two cells between it and this card, all empty: castle: this card moves two cells toward it and that card jumps to the cell this card passed over, and every complete line either lands in scores',
  'As (a), castling with the card at either end of its row or of its column',
- 'As (a), and once castled both are safe: for the rest of the show no effect or hazard can move or remove either',
+ 'As (a), castling once per Entrance refill instead of once per show',
  'a'),
 
 ('CI0723', 'Checkmate', 'AE7', 'skill',
@@ -226,7 +226,7 @@ LEVEL2 = {
  'CI0708': 'Once per Entrance refill you may roll a failed check again',
  'CI0709': 'A pair of the rank its mark shows counts as snake eyes too',
  'CI0710': 'Doubles may also be a card of the suit of the card placed just before it',
- 'CI0711': ('The fixed result also applies to the check after it', 'It is never caught while it sits on a mark it matches', 'It loads every roll and flip for cards in its lines on any grid, and you may name a new outcome at each Entrance refill'),
+ 'CI0711': ('The fixed result also applies to the check after it', 'It is never caught while it sits on a mark it matches', 'It is never caught while it sits on a mark it matches'),
  'CI0712': ('Triggers from every card in its lines may crit too', 'A critical hit in its lines also scores every complete line through that card again', 'A critical hit in its lines also scores every complete line through that card again'),
  'CI0713': None,
  'CI0714': ('The line that does not come up pays a step into the special bucket each time it scores', 'The card placed in the cell that did not come up counts as hitting its mark on rank', 'The line that does not come up pays a step into the special bucket each time it scores'),
@@ -250,7 +250,7 @@ LEVEL2 = {
 
 # eid -> the flag the owner sees
 FLAGS = {
- 'CI0711': '(b) and (c) pay only in a deck that rolls or flips: dice, coins, Roulette, Wheel of Fortune and the live chance cards; (a) is the live cue',
- 'CI0715': '(b) and (c) pay only in a deck that rolls or flips: dice, coins, Roulette, Wheel of Fortune and the live chance cards',
+ 'CI0711': '(a) and the reach of (c) pay only in a deck that rolls or flips: dice, coins, Roulette, Wheel of Fortune and the live chance cards',
+ 'CI0715': '(a) and (b) pay only in a deck that rolls or flips: dice, coins, Roulette, Wheel of Fortune and the live chance cards; (c) flips its own coin',
  'CI0728': 'the hop over a neighbour is Q0336, offered to Jumping Jack; this one jumps away from a line it has just scored, breaking that line to reach another, so it is a reaction with a cost rather than a placement permission',
 }

@@ -116,11 +116,11 @@ ROWS = [
  'a'),
 
 ('CI0317', 'Defuse', 'AE3', 'consumable',
- 'Stops a bomb going off, and lets you hide it back in the deck wherever you like.',
+ 'Stops a bomb going off; in (a) the bomb is your own, set in an empty cell.',
+ 'Consumable: set a bomb in an empty cell of its grid: at the second Entrance refill from now it goes off, each card orthogonally next to that cell paying its rank into the special bucket, unless a card has been placed there first, which defuses it and pays its own rank into the special bucket',
  'Consumable: spend it as an effect or hazard is about to discard or destroy cards: nothing is lost, and the card that set it off, if there is one, leaves the Entrance or its cell for the bottom of its stock',
- 'As (a), the card that set it off going into any stock at the depth you choose, so you decide where and when it goes off next',
- 'As (a), the card that set it off staying where it is with its fuse held: you set it off by cue at any later Entrance refill of the show',
- 'b'),
+ 'As (b), the card that set it off going into any stock at the depth you choose, so you decide where and when it goes off next',
+ 'a'),
 
 ('CI0318', 'Nope', 'AE3', 'skill',
  'Stops whatever was just played from happening.',
@@ -172,6 +172,6 @@ LEVEL2 = {
 FLAGS = {
  'CI0302': 'Its plainest readings are live already: Shortcut skips a rank and The Scry skips a stock card; (b) is the one new idea',
  'CI0312': 'a lie here is a false label on a real card of yours, not a fake card: you ruled that a fake is a ghost and that there is no hidden-fake system; The Gaff (Q0875) and The Dyed Coat (Q1632) already put false labels on real cards, and the Deck viewer makes the call a deduction rather than a coin flip',
- 'CI0317': 'Worth something only where an effect or hazard discards or destroys cards, as Powder Keg does',
+ 'CI0317': '(b) and (c) work only where an effect or hazard discards or destroys cards, as Powder Keg does',
  'CI0301': '(c) is your braindump line, "reverse card undoing the last action when played", made into what Undo cannot do, the points staying; it is a fifth take-back-and-rescore shape beside Ace of Spades, Card Shark, Fifty-Two Pickup and Eviction Notice',
 }

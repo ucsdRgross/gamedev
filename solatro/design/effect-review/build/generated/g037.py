@@ -60,10 +60,10 @@ ROWS = [
  'a'),
 
 ('CI0809', 'Counterspell', 'AE8', 'skill',
- 'The answer held back in hand: it cancels a spell as it is cast.',
+ 'The answer held back in hand: it cancels a spell as it is cast; in (b) and (c) the spell is a hand about to be paid.',
  'Renames Q0544 (The Calm Voice): Once per run, negate a disaster or boss effect, and the next boss effect of the same kind is negated too',
- 'While it waits in the Entrance this refill you may spend it to counter an effect or hazard as it fires: that does nothing this time, and this card goes to the discard pile, back in the deck next show',
- 'As (b), and it replaces itself: its slot turns up the next card of its stock at once',
+ 'While it waits in the Entrance this refill you may spend it as a line scores: the hand is countered: that line is read with this card in place of one card of it, you choose which, and pays that hand instead, this card going to the discard pile, back in the deck next show',
+ 'As (b), but the counter does not spend it: it counters once and stays waiting in its slot, to be placed as usual',
  'b'),
 
 ('CI0810', 'Trap Card v2', 'AE8', 'skill',
@@ -115,7 +115,7 @@ LEVEL2 = {
 # eid -> the flag the owner sees
 FLAGS = {
  'CI0805': 'Protection is well covered live (Iron Body, Kuroko, The Mime, Digital), so the rename is the recommendation; (c) is The Sweet Tooth on one card',
- 'CI0809': "Nope, Defuse and Counterspell all cancel, split by where they act from: the grid by cue, a consumable, the Entrance; its window is its own refill, since the Entrance refills only when every slot is empty; (a) carries The Calm Voice's own level 2, which is a count",
+ 'CI0809': "(a) carries The Calm Voice's own level 2, which is a count; (b) and (c) need the card to be waiting in the Entrance when the line scores",
  'CI0812': 'the default stacking rule already allows a card one rank apart on a different suit, so (b) is that rule plus the unlock; (a) is the stack the default forbids',
  'CI0811': 'lifting the powered card takes it out of its height-0 lines, so the power reaches only talents that fire off something other than those lines; the alternative is the shared cell of The Contortionist (Q0296), which is then a near-duplicate',
 }

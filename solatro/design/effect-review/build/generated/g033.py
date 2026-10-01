@@ -11,9 +11,9 @@ ROWS = [
  'b'),
 
 ('CI0074', 'Prescription', 'AE1', 'consumable',
- 'The cure made out for one complaint.',
+ 'The cure made out for one complaint, with refills.',
+ 'Consumable with three refills: at each of the next three Entrance refills, one card waiting in the Entrance you choose takes its dose: its rank moves one up or one down, your choice, for the show',
  'Consumable: name a debuff or status; one card you choose sheds it and cannot carry it again this run',
- 'Consumable, three refills: at each of the next three Entrance refills, the card you name sheds one debuff or status and pays a step into the special bucket for the dose',
  'Consumable: name a debuff or status; every card on the board carrying it sheds it and gains +1 rank for the show as it recovers',
  'a'),
 
@@ -78,7 +78,7 @@ ROWS = [
  'Renames Q0987 (The Shift): Cue: change every card in one line to the class of the card you point at, for the rest of the show',
  "Every card in its lines also counts as this card's class, keeping its own, for any effect that counts a class",
  'Cue, once per Entrance refill: this card takes the class of any card in its lines for the show, and a line through its cell holding three or more of that class adds +1 to the combo',
- 'a'),
+ 'c'),
 
 ('CI0084', 'Wanted Poster', 'AE1', 'skill',
  'A reward for the card that gets cornered.',
@@ -201,9 +201,9 @@ ROWS = [
 
 ('CI0102', 'Lost and Found', 'AE1', 'skill',
  'What was lost turns up where it was left.',
+ 'A card placed in its lines on the mark that was copied from that very card is found where it was left: each line it completes pays its hand again into its bucket',
  'When a card on its grid goes to the discard pile, its cell keeps a claim ticket: if the cell is still empty at the next Entrance refill, the card is returned to it, and every complete line through it scores again',
- 'As (a), for a card leaving its lines for anywhere, the discard pile, a stock or another cell',
- 'Cue, once per Entrance refill: the card most recently sent from its grid to the discard pile returns to its old cell, or to the empty cell you choose if that one is taken',
+ 'As (b), for a card leaving its lines for anywhere, the discard pile, a stock or another cell',
  'a'),
 
 ('CI0103', 'Rookie Card', 'AE1', 'skill',
@@ -272,7 +272,7 @@ LEVEL2 = {
  'CI0098': ('It may be posted on top of a card, stacking whatever the rules say', 'It may be readdressed at each Entrance refill', 'Returned, it may go straight onto an empty cell whose mark it matches instead'),
  'CI0100': ('A card placed next to it on a mark that card matches does not wake it', 'A card on a mark it matches may be placed next to it', 'A card placed next to it on a mark that card matches does not wake it'),
  'CI0101': ('A card on a mark it matches may share a rank in its row', 'A card on a mark it matches may share a rank in its row', 'A card on a mark it matches may be placed in its lines whatever suit was placed there this refill'),
- 'CI0102': 'A returned card may come back to any empty cell of its grid instead',
+ 'CI0102': ('A card placed on the mark copied from any card of its own rank and suit is found too', 'A returned card may come back to any empty cell of its grid instead', 'A returned card may come back to any empty cell of its grid instead'),
  'CI0103': ('A first that scores through its cell adds +2 instead of +1', 'Rookies in its lines stay rookies for their second show as well', "A card's first line through its cell pays its rank into every bucket"),
  'CI0104': 'Once per Entrance refill you may change the sign to the suit of any card in its lines',
  'CI0105': 'A caught card that sits on a mark it matches talks its way out: it stays, as its printed card',
@@ -282,8 +282,8 @@ LEVEL2 = {
 
 # eid -> the flag the owner sees
 FLAGS = {
- 'CI0074': 'Worth something only where a hazard or another effect hands out debuffs or statuses',
- 'CI0083': 'Worth something only alongside effects that count a class, such as Membership Card',
- 'CI0102': 'worth something only alongside effects and hazards that send cards from the grid to the discard pile; nothing does by default',
+ 'CI0074': '(b) and (c) work only where a hazard or another effect hands out debuffs or statuses',
+ 'CI0083': '(a) and (b) work only alongside effects that count a class, such as Membership Card; (c) counts the class itself',
+ 'CI0102': '(b) and (c) work only alongside effects and hazards that send cards off the grid; nothing does by default',
  'CI0082': "(a) carries Dedi's Mercy's own level 2, which is a count",
 }

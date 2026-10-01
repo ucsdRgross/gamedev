@@ -249,10 +249,10 @@ ROWS = [
  'b'),
 
 ('CI0071', 'Permission Slip', 'AE1', 'skill',
- 'Nobody leaves without a signature.',
+ 'A signed slip lets a card go where it otherwise may not, and nobody leaves without one.',
+ 'Cue, once per Entrance refill: sign a slip for a card in its row or column that is in no complete line: it goes on a trip to any empty cell of its grid, every complete line it lands in scoring, and at the next Entrance refill it comes home to its old cell if that cell is still empty, every complete line it lands in scoring',
  'No card in its row or column leaves the board without its signature: you choose each time, a refused card stays put, and a signed one pays its rank into the special bucket as it goes',
- 'As (a), for its whole grid',
- 'As (a), and a signed card goes on its trip to the top of the stock you choose instead of wherever it was going',
+ 'As (b), and a signed card goes on its trip to the top of the stock you choose instead of wherever it was going',
  'a'),
 
 ('CI0072', 'Detention Slip', 'AE1', 'hazard',
@@ -300,11 +300,11 @@ LEVEL2 = {
  'CI0068': 'A card may be slipped in at any height of a stack, not only underneath',
  'CI0069': ('The VIP may come from any depth of its stock, seen', 'Once per Entrance refill', 'Aces are VIPs too'),
  'CI0070': 'It comes back after the next placement rather than the next refill',
- 'CI0071': "Every complete line through a signed card's cell scores once more before it goes",
+ 'CI0071': ('It may sign a slip for any card of its grid that is in no complete line', "Every complete line through a signed card's cell scores once more before it goes", "Every complete line through a signed card's cell scores once more before it goes"),
  'CI0072': None,
 }
 
 # eid -> the flag the owner sees
 FLAGS = {
- 'CI0071': 'A refusal matters only against hazards and forced removals, since the player chooses every other removal; most of its value is the payout',
+ 'CI0071': '(b) and (c) refuse only hazards and forced removals, and pay only when an effect removes a card',
 }

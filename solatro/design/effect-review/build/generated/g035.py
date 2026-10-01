@@ -40,8 +40,8 @@ ROWS = [
 
 ('CI0229', 'Jack and the Beanstalk', 'AE2', 'skill',
  "The boy who climbed a beanstalk to the giant's castle, and had to cut it down behind him.",
- 'At each Entrance refill a beanstalk grows under it: the top card of the stock you choose is slipped in beneath it, lifting it one height, until you cue to chop the stalk down, which sends every card beneath it to the discard pile, each paying its rank into the special bucket',
- 'As (a), and the giant lives at the top: a stalk of ten cards, Jack included, is the castle, which pays its hand into all three buckets, and then the giant pulls it down: every card beneath Jack goes to the discard pile',
+ 'At each Entrance refill a beanstalk grows under it: the top card of the stock you choose is slipped in beneath it, lifting it one height, and every complete line through its cell scores again with the new card, until the stalk stands five high, Jack included, or you cue to chop it down, which sends every card beneath it to the discard pile, each paying its rank into the special bucket',
+ 'As (a), and the giant lives at the top: a stalk five high is the castle, which pays its hand into all three buckets, and then the giant pulls it down: every card beneath Jack goes to the discard pile',
  'As (a), but the stalk grows only when you feed it: once per Entrance refill a card may be placed beneath it instead of onto an empty cell',
  'c'),
 
@@ -124,7 +124,7 @@ ROWS = [
 
 ('CI0241', 'Zero', 'AE2', 'rank',
  'The number before one; at level 1 it sits just below the Ace in a straight, pairs with other Zeros, and pays nothing wherever a rank is paid.',
- 'Nothing counts as a Zero: one empty cell in each line through its cell stands in as a Zero, so the line scores with four cards and a hole',
+ 'Starting from zero: when a line through its cell scores, its hand is paid again into one bucket of its grid still at 0, you choose which',
  'It holds a place: when its row scores, the card on its left pays ten times its rank into the row bucket, as an Ace before a Zero reads ten',
  'When a line through its cell scores, every bucket of its grid still at 0 is paid a step, so nothing stays at nothing',
  'c'),
@@ -147,7 +147,7 @@ ROWS = [
  'A card worth one half; (a) is the live Half Card whole, with its own level 2, and for (b) and (c) level 1 sits just below the Ace in a straight, above a Zero if there is one, so Half, A, 2, 3, 4 is one, and it pairs with other Halves.',
  'Renames Q0298 (The Half Card): Half rank and half size: it shares a cell with any card, and the pair melds as whichever of the two is more useful',
  'Half and half: each line through its cell pays half its hand again into a second bucket you choose',
- 'It meets you halfway: each line through its cell scores once early, at three cards, paying half of the hand those three make into its bucket',
+ "Halves: when a line through its cell scores, one card of that line you choose loses half its rank for the show, rounded down, and pays the half it lost into that line's bucket",
  'a'),
 
 ('CI0245', 'Table Flip', 'AE2', 'skill',
@@ -158,11 +158,11 @@ ROWS = [
  'a'),
 
 ('CI0246', 'Magic Trick', 'AE2', 'skill',
- 'Pick one of these two cards: it was always going to be that one.',
+ "Pick one of these two cards: it was always going to be that one; the two are drawn from the show's seed, so Undo cannot draw again.",
  'Renames Q0500 (Double-Sided), a type: This card can be flipped, and the two faces merge into one combined card if it ever scores on both',
- 'Each time it is dealt to the Entrance it shows two cards of your deck drawn at random from the stocks, which stay where they are, and placed, it becomes your choice of the two, rank and suit, for the show',
- 'As (b), and it was a force: the card you did not choose, if it is in a stock, rises to the top of that stock',
- 'c'),
+ 'Each time it is dealt to the Entrance it shows two cards of your deck drawn at random from the stocks: you pick one, and it was always going to be that one: it rises to the top of its stock',
+ 'As (b), and the card you did not pick is lost in the shuffle: it goes to the bottom of its stock',
+ 'b'),
 ]
 
 # eid -> level 2: a str, a 3-tuple, "SUIT", "RANK", or None
@@ -175,7 +175,7 @@ LEVEL2 = {
  'CI0229': "Each line it scores in pays a step into that line's bucket for every card beneath it",
  'CI0230': 'She chooses the head: any other card in that line, not only the highest',
  'CI0231': 'RANK',
- 'CI0232': ('A card of equal rank does not take the hill: the line still pays double', "A card it pushes down pays the rank it lost into that line's bucket", 'Each card beneath it adds a step to every line it scores in'),
+ 'CI0232': ('A card of equal rank does not take the hill: the line still pays double', "A card it pushes down pays the rank it lost into that line's bucket", 'A card at its own height does not take the hill: its lines still pay double'),
  'CI0233': 'The card it crowns counts as hitting its own mark on rank',
  'CI0234': ('A face card that bows out from a mark it matches goes to the top of the stock you choose instead', 'A face card that bows out from a mark it matches goes to the top of the stock you choose instead', 'Face cards sitting on marks they match keep their rank and still pay the step'),
  'CI0235': 'It may hold its bite and is paid all the same',
@@ -195,11 +195,8 @@ LEVEL2 = {
 # eid -> the flag the owner sees
 FLAGS = {
  'CI0245': '(a) is your sentence, "cards surrounding switch to opposite positions", made precise; Turntable (Q0329) flips the grid over an axis as a consumable, this one turns it through the placed card',
- 'CI0241': '(a) is Skip (b), a line through its cell scoring at four cards, with the hole named a Zero; keep one of them',
  'CI0242': 'its level 1, a number taken off the line it is in, is the approved Deficit Rank (Q0050), so (b) and (c) are answers to Q1742 (Level 2 of Q0050) under this name rather than a new rank; take (a), or fold (b) and (c) into Q1742',
- 'CI0244': "(c) is the family's fourth line-scores-short option beside Skip (b), Doctor's Note (c) and Zero (a), and The Courier (Q0202) and Four Fingers (Q0108) hold the shape live",
  'CI0228': 'Q0336 can wear one name only, and Double Jump in the checkers class will offer it as well; (c) is bounded by its eight neighbours, so the order you fill them is the puzzle, while (b) pays at every refill once the nine cells are full',
- 'CI0229': '(a) is a re-score engine as well as a stalk: each card slipped beneath Jack takes his height-0 cell, so every complete row, column and diagonal through it scores again at every refill, and again when the chop drops him back; (c) makes the growth a placement you choose instead',
- 'CI0246': '(b) is Double-Sided (a), either face may be played, with the faces redrawn at each deal; the force in (c) is the new part',
+ 'CI0229': '(a) and (b) re-score every complete line through its cell as each card slips in, at most four times before the stalk tops out; (c) makes each growth a placement you spend',
  'CI0225': '(c) is worth something only alongside effects that count a class, as Name Tag was flagged; (a) and (b) are the live question, a rank match firing suit effects that the board plan otherwise gates on a suit match',
 }
