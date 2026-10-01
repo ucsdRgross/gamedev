@@ -121,6 +121,20 @@ packs. The per-mod ledger is `mine_mods/chunkNN.out.tsv`; the keep-list is `mine
 | **Combolands** (Crux Games) — no official wiki; combolands.site, combolands.wiki, combolandsguide.wiki and the Steam guides they cite | a roguelike grid citybuilder: buildings are cards, placement against terrain and tagged neighbours fires score chains; adjacent vs range targeting; "when triggered" buildings need another building to fire them; walls score only when an enclosure is fully closed; railways make everything they touch adjacent. Four shapes added: the crop cycle, the production line, the enclosure, the rail line |
 | **Zoominoes** (Starlight Games) — no wiki; Steam page and launch reviews | a tile roguelike: animal tiles carry a value, one of four colours and a land/sky/sea type; a tile may only be placed adjacent to one sharing its colour or type; chains multiply; snacks upgrade tiles, souvenirs are passive modifiers. Its rare abilities (play the whole hand at once, cover the ring of cells around a tile, buff the undrawn deck) already have questions; the connection rule is added as The Kinship Rule |
 
+## Wave 7 — the card index: cards by name, not by mechanic
+
+**`CI0001` onward, rendered as family AE.** Earlier waves mined mechanics that fit the grid; this
+one mines recognisable cards, keeps only each card's name and idea, and writes an effect that fits
+(`mine_cardindex/WRITE_PROMPT.md`). The mining records and the keep-list with every drop's reason
+live in `mine_cardindex/`.
+
+| Source | Outcome |
+|---|---|
+| **Arthur Lloyd, the Human Card Index** — Genii Magicpedia's Arthur Lloyd page; a Potter & Potter auction lot and a Harding University student paper, read only as search excerpts (both refused a fetch) | 19 cards the sources tie to his act (a bingo card, a meal ticket, a rain check, a coat-check ticket, a marriage certificate…), widened to 159 everyday cards, tickets and slips; `everyday.tsv` |
+| **Card, board, dice, casino and party games** — written from general knowledge, not a crawl | the famous cards, calls, pieces and spaces a general audience knows by name; `games.py` |
+| **Stacklands** — the Fandom wiki's Cardopedia through its MediaWiki API (the page fetches and wiki.gg refuse scripts) | 520 cards; the base-game basics kept, equipment as stamps, the 212 recipe cards asked once as Idea; `stacklands.tsv` |
+| **Dungeons & Degenerate Gamblers** — the wiki's Cards page (already in `mine_mods/extra/`) | 190 cards, read this time for names: idioms, borrowed cards from other games, strange ranks (zero, negative, pi, half); `degenerate_gamblers.tsv` |
+
 ## Deliberately not mined
 
 | Source | Why |
