@@ -4,6 +4,24 @@ Add new items here; **delete an item when it lands**, recording the regression-c
 ARCHITECTURE_REVIEW.md rather than keeping a log here. Current-state facts live in
 ARCHITECTURE_REVIEW.md; done-work history lives in git.
 
+## Next, in the owner's order
+
+After the playtest-fixes stream closes (`HANDOFF_playtest_fixes.md`). Owner: "prioritize the existing
+todo after closing to merge all branches, including the new cloud linux branch, then the todo step
+to migrate everything related to claude and solatro to new showitaire repo so we stop cloning entire
+gamedev repo every time we create a branch. and any other related todo.md that is relevant to goal
+of new repo split from gamedev. then we can review remaining todo again when done and decide what
+task to do next."
+
+1. **Merge every branch into `main`** (`/merge-branches`): `combine-sidebar-boardplan`,
+   `board-plan`, `sidebar`, `test-speed`, `card-index`, `effect-levels`, `p73-wip`, the detached
+   `gamedev-baseline`, and the cloud Linux branch `origin/claude/combine-cloud-test` (it contains
+   `origin/claude/godot-cloud-test`). Measure first which of them main does not already hold.
+2. **The Showitaire repo split** - the first item under "Planned by the owner" below, with every
+   item here that serves it: the worldgen heavy images, the docs that name `gamedev`, and the
+   whole-repo comment sweep that waits for the split (§ Doc hygiene backlog).
+3. **Review what is left of this file with the owner** and pick the next task.
+
 ## Planned by the owner — notes to design in a later session
 
 Recorded so they are not forgotten; none is designed yet. Each goes through `/flowchart-design`
