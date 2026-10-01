@@ -27,6 +27,12 @@ feature.
 - The overseer looks at the evidence (frames, numbers) itself, then asks the owner the one
   question the measurement raised, with a shot per option when it is a look.
 - Keep "the docs say X" apart from "I measured X here" (CLAUDE.md rule 6).
+- **A rewrite meant to change nothing but speed is measured by a shadow comparison**: the brief
+  asks for the old body kept beside the new one for the filtered runs, an error on any difference
+  in the answer or the side effects, the comparison count reported (non-zero, item 5 of
+  [[tests-that-prove-nothing]]) and the scratch removed before the verdict run, proved by a grep
+  of its name coming back empty. Measured: 15731 comparisons found 28 differences a reading of
+  the code had not - a cache stale where the live scan was fresh, itself a shipped defect.
 - ⚠ **A read-only recon's claim about RUNTIME behaviour is a reading of code, not a measurement** -
   write it into the brief as "traced, not measured". Measured: a recon said an opaque backdrop "is
   the ONLY thing keeping the map inert"; under it the wheel still zoomed the map and the first

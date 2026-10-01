@@ -56,6 +56,11 @@ A green suite is the weakest evidence there is. Every test below passed review w
     pushed the reverse twice on one branch. ⚠ **After a pad route, assert the FOCUS OWNER in the
     viewport the pad moves on next** - two rows asserted only the state change and both features
     stranded the pad ([[godot-key-events-no-bubble]]).
+    ⚠ **A wheel notch is a press AND a release.** Godot's viewport keeps mouse focus from any button
+    press until its release, the wheel's included, so a pushed press alone sends the NEXT click to
+    the control under the notch, not to what the pointer is over. Push both, as `_push_wheel_notch`
+    does. Measured (4.7.2, Windows): a harness's press-only notches sent a Deck click to the list
+    behind it; the platform sends the release.
 12. **The test SETS UP the very condition whose absence is the bug.** Measured: a "no cut-off grid
     at rest" test called the centring routine itself before measuring — the one call the resting
     product never made — so it could not see that nothing positioned the view at startup. **A test

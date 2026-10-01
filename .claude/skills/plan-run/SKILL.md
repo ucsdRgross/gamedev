@@ -226,7 +226,8 @@ For **every new test**, not only for bug fixes. The implementer's definition bin
 [[tests-that-prove-nothing]] (its end) carries the procedure. Refuse a report without the red and
 the green observation and their per-suite counts, with a red that failed checks other than the
 expected ones (a mutant's, when HEAD cannot run the test), or with an existing test adjusted to
-green after a fix turned it red.
+green after a fix turned it red. A rewrite that claims to change nothing has no red: refuse it
+without the shadow comparison's count and zero-difference line ([[brief-premise-is-a-hypothesis]]).
 
 ## The ways a test passes while proving nothing
 
