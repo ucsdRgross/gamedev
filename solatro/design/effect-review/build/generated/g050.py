@@ -11,7 +11,7 @@ ROWS = [
  'b'),
 
 ('CI1102', 'The Prop Trunk', 'AE11', 'structure',
- 'Why a circus deck holds an Exploding Kitten: the frame for the cards from everywhere.',
+ 'Why a circus deck holds a Powder Keg: the frame for the cards from everywhere.',
  "They are props: every card of this family is billed as a prop pulled from the troupe's trunk, and keeps its real-world name",
  'They are the Human Card Index act: a performer who produces any card called for, so each card is billed by its real-world name and the act is the reason it is here',
  'No frame: the cards carry their real-world names, and the circus is only the stage they are played on',

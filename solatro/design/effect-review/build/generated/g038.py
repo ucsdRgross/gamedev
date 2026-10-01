@@ -255,8 +255,8 @@ ROWS = [
  'At each Entrance refill the marks of its own row float one cell along it, the last round to the first, covered or not, and each card that finds itself over a mark it matches is paid that match',
  'b'),
 
-('CI0437', 'Whack-a-Mole', 'AE4', 'skill',
- 'Moles pop up out of their holes, and you hit each one before it ducks back down.',
+('CI0437', 'Bop the Mole', 'AE4', 'skill',
+ 'After the arcade game Whac-A-Mole: moles pop up out of their holes, and you hit each one before it ducks back down.',
  "At each Entrance refill a mole pops up: one uncovered mark of its grid, chosen at random, stands in its cell as a card until the next refill, completing and scoring lines as a card would, and a card placed on it while it is up whacks it, paying the mole's rank into the special bucket",
  'As (a), and any prop that crosses a mole whacks it as well, paying the same and sending it back down',
  'As (a), but faster: a new mole pops up after every placement and the last one ducks, so each is up for one placement only',

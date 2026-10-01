@@ -24,8 +24,8 @@ ROWS = [
  'When placed, name a card in its row or column: that card draws two, the top cards of two stocks you choose stacking onto it, whatever the stacking rules say',
  'c'),
 
-('CI0304', 'Wild Draw Four', 'AE3', 'skill',
- 'Names the suit in play and makes whoever is next pick up four.',
+('CI0304', 'Draw Four', 'AE3', 'skill',
+ "After Uno's Wild Draw Four: names the suit in play and makes whoever is next pick up four.",
  'When placed, name a suit: it takes that suit for the show, and the next Entrance refill deals four extra cards, which take that suit for the show too',
  'When placed, name a suit: it takes that suit and draws four, the top four cards of the stock it came from stacking onto it and taking that suit for the show, whatever the stacking rules say, so a stack of five scores at once',
  'As (b), drawing the top card of each of the other four stocks instead',
@@ -108,8 +108,8 @@ ROWS = [
  'As (a), and the family moves in together first: when its third member is placed, the other two may each move to an empty cell orthogonally next to it, and every complete line they arrive in scores',
  'c'),
 
-('CI0316', 'Exploding Kitten', 'AE3', 'skill',
- 'The bomb hidden in the deck: turn it up and it goes off.',
+('CI0316', 'Powder Keg', 'AE3', 'skill',
+ "After the Exploding Kittens card game's kitten: the bomb hidden in the deck: turn it up and it goes off.",
  'When it turns up in the Entrance it explodes: every card in the column above its slot goes to the discard pile, paying its rank into the column bucket, their cells are empty again, and once it has gone off it is an ordinary card for the rest of the show; stopped before it goes off, it is still live',
  'As (a), with the blast taking the other four Entrance cards instead, each paying its rank into the special bucket',
  'As (a), but placed first of its refill the blast waits and goes off where it lands: its four orthogonal neighbours go to the discard pile instead, paying their ranks into the special bucket, their cells empty again',
@@ -172,6 +172,6 @@ LEVEL2 = {
 FLAGS = {
  'CI0302': 'Its plainest readings are live already: Shortcut skips a rank and The Scry skips a stock card; (b) is the one new idea',
  'CI0312': 'a lie here is a false label on a real card of yours, not a fake card: you ruled that a fake is a ghost and that there is no hidden-fake system; The Gaff (Q0875) and The Dyed Coat (Q1632) already put false labels on real cards, and the Deck viewer makes the call a deduction rather than a coin flip',
- 'CI0317': 'Worth something only where an effect or hazard discards or destroys cards, as Exploding Kitten does',
+ 'CI0317': 'Worth something only where an effect or hazard discards or destroys cards, as Powder Keg does',
  'CI0301': '(c) is your braindump line, "reverse card undoing the last action when played", made into what Undo cannot do, the points staying; it is a fifth take-back-and-rescore shape beside Ace of Spades, Card Shark, Fifty-Two Pickup and Eviction Notice',
 }
