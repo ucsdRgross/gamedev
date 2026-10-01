@@ -10846,14 +10846,14 @@ func test_the_possible_cards_group_each_kind_under_its_own_header() -> void:
 			if parts.any(func(data: CardData) -> bool: return PartIcon.kind_of(data) == kind):
 				kinds.append(kind)
 		check(kinds == PartIcon.KINDS.keys(), "sanity: the pack offers every kind of part", str(kinds))
-		if _check_the_groups(list, parts, kinds):
-			for press : Callable in [_tap_key.bind(KEY_DOWN), _tap_pad.bind(JOY_BUTTON_DPAD_DOWN)]:
-				await _check_down_walks_every_group(list, kinds, press)
+		_check_the_groups(list, parts, kinds)
+		for press : Callable in [_tap_key.bind(KEY_DOWN), _tap_pad.bind(JOY_BUTTON_DPAD_DOWN)]:
+			await _check_down_walks_every_group(list, kinds, press)
 		await _close_the_open_viewer()
 	await _end_main_fixture()
 
-## Checks the list's children against `kinds`, one header and its group each; whether the list was grouped at all, so a walk through its groups means something.
-func _check_the_groups(list: DeckViewer, parts: Array[CardData], kinds: Array[StringName]) -> bool:
+## Checks the list's children against `kinds`, one header and its group each, and the height the list is sized by.
+func _check_the_groups(list: DeckViewer, parts: Array[CardData], kinds: Array[StringName]) -> void:
 	var headers : Array[Label] = []
 	var groups : Array[Array] = []
 	for child : Node in list.flow_container.get_children():
@@ -10865,7 +10865,6 @@ func _check_the_groups(list: DeckViewer, parts: Array[CardData], kinds: Array[St
 	check(headers.size() == kinds.size() and list.flow_container.get_child(0) is Label,
 			"the list opens with a header, and there is one header for each kind the pack offers",
 			"%d headers, %d kinds" % [headers.size(), kinds.size()])
-	if headers.size() != kinds.size(): return false
 	var gap := float(PlayArea.viewer_separation_px())
 	var cell := (list.cards().controls[0] as Control).size
 	var grid_right := 0.0
@@ -10875,6 +10874,10 @@ func _check_the_groups(list: DeckViewer, parts: Array[CardData], kinds: Array[St
 	for child : Control in list.flow_container.get_children():
 		bottom = maxf(bottom, child.get_rect().end.y)
 	var columns := roundi((grid_right + gap) / (cell.x + gap))
+	check(is_equal_approx(list.cards().fit_rows(columns), bottom),
+			"the list is sized by the height it lays out to at %d columns" % columns,
+			"%.1f vs %.1f" % [list.cards().fit_rows(columns), bottom])
+	if headers.size() != kinds.size(): return
 	var above := -INF
 	for index : int in kinds.size():
 		var header := headers[index]
@@ -10907,10 +10910,6 @@ func _check_the_groups(list: DeckViewer, parts: Array[CardData], kinds: Array[St
 				"header %.1f-%.1f, group from %.1f, the group before ends %.1f, gap %.1f" % [
 				header.position.y, header.get_rect().end.y, group_top, above, gap])
 		above = group_bottom
-	check(is_equal_approx(list.cards().fit_rows(columns), bottom),
-			"the list is sized by the height it lays out to at %d columns" % columns,
-			"%.1f vs %.1f" % [list.cards().fit_rows(columns), bottom])
-	return true
 
 ## Walks down from the list's first cell by `press` until the focus stops, checking every landing is a cell and every group is reached in order.
 func _check_down_walks_every_group(list: DeckViewer, kinds: Array[StringName], press: Callable) -> void:

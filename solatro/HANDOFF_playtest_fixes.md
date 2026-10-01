@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P84 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
-by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P84): `ALL 51 SUITES: 9607 CHECKS PASSED` (BOARD FUZZ 361, SIDEBAR 4178), ~15 min with
+**State:** P1-P87 (P66 closed without code), P64b-4, P58a-c and P58e done except the rows marked otherwise (P62 closed, P45 without code), each red-then-green,
+by eye where it draws, Fable-reviewed, one verified step per commit. Last full gate (P87's review follow-up): `ALL 51 SUITES: 9727 CHECKS PASSED` (BOARD FUZZ 353, SIDEBAR 4265/4267, UI VIEWERS 177, PALETTE 51, WALL PAUSE 71/72), ~15 min with
 `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order:
-P85-P90 (review round 4's comments), the close. Review round 4 answered: 9 approved, 8 comments. Then P91, P92-P95 (the measured placement lag). Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
+P88-P90 (review round 4's comments), P91, P92-P95 (the measured placement lag), then a round-5 review of only the shots P85-P91 changed, the close. Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
@@ -580,13 +580,14 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 - TOOLING, .claude/hooks/commit-gate.ps1: it blames a commit for duplicate pairs already on HEAD (test_sidebar 959/1114 and 2150/2210 blocked P73, which created neither) - it should report only pairs the staged diff creates; and its [dup-ok] check reads the command line, not a `-F` message file.
 - sidebar_snapshot's score_line_pulse still is staged on the random deal (placements until one registers a new combo class, Tests/Visual/sidebar_snapshot.gd _shoot_the_score_line_pulse ~581): 1 of 2 runs on the P83 tree wrote no PNG, so `review.py shoot` fails the round. COUNT 1. Measure before naming a cause.
 - NEW on the P87 tree, 1 of 2 overseer gates: GRID LAYOUT "TP-85: caught mid-growth, the row is PART WAY to its new height -- it eases rather than snapping" - a mid-ease sample; green in the rerun and 139/139 alone; the box had another session working during the red gate (CLAUDE.md edited mid-run). P87 touches the possible-cards list and a palette role - no board reach traced. COUNT 1. Measure before naming a cause.
+- WALL PAUSE's count moves 71 <-> 72 on unchanged code (72 in 1 of 8 gates on 2026-09-30): "the world generator finished before the reveal at scale ... freed its Main" is emitted a timing-dependent number of times - a per-suite count that varies is the only trace (tests-that-prove-nothing item 20); never red. Measure before naming a cause.
 - AFTER THE MERGE (owner: "After the merge"): GDScript lines where a `\` continuation was collapsed into one line, a space then 2+ tabs where the break was - 19 on this branch, 24 on main, partly different sets (`git grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`). Once this branch is in main, split them all on a fresh branch off main, one commit, parse-checked by the logic tier.
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
 1. DONE - review round 4 answered (RULINGS). Visual review round 4 = P58d: re-shoot AFTER (`py solatro/visual-review/review.py shoot`; BEFORE is already on 9d7d1f2f), re-read every shot P83 changes (the band) and menu_focused_by_keys, rewrite those seen fields, then park: `npm --prefix designloop run watch -- visual-review/solatro`. The owner reviews with `npm --prefix designloop start` -> http://localhost:5273/visual-review/solatro/ (Box B: put Node on PATH first, machine-profiles). Every reject/comment becomes a step, the owner's words verbatim as its brief.
 2. DONE - the placement-lag profiling (measured; solatro/todo.md § Performance; harness Tests/Visual/placement_lag_probe.tscn).
-3. P85-P90, review round 4's comments, in order (each gated, by eye where it draws; re-shoot and review the shots they change as round 5, only those).
+3. P88-P90 (P85-P87 done), review round 4's comments, in order (each gated, by eye where it draws; re-shoot and review the shots they change as round 5, only those).
 4. P91 (the spotlight circle as wide as the card, owner's ask after round 4).
 5. P92-P95, the placement-lag fixes, one per gate, each re-measured with the probe (Fable checked the options: none is an owner decision).
 6. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor.

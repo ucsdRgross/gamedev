@@ -16,28 +16,24 @@ func get_possible_types() -> Array[CardModifierType]
 ## Number of cards a pack of this booster generates.
 func get_frame() -> int: return 5
 
-## Open this pack on a map node: show the generated cards in a take-all ChoiceViewer
-## (choose=0 = forced pickup; extra picks come later from modifiers) with the shared free-reroll
-## pool from settings. The caller wires the viewer's `confirmed` signal to actually add the cards
-## to the deck.
+## Opens this pack on a map node as a take-all ChoiceViewer (choose 0 is a forced pickup) with the shared free-reroll pool from settings; the caller wires `confirmed` to add the cards to the deck.
 func on_map_picked(parent: Node) -> ChoiceViewer:
 	var choices : int = get_frame()
 	var choose : int = 0
 	var rerolls : int = SettingsManager.settings.booster_reroll_pool
 	return await ChoiceViewer.add_to_scene(parent, create_one_choice, choices, choose, rerolls)
 
-## E8: one pool gather = call the pool getter, then AWAIT its on_get_possible_* broadcast,
-## so async mods finish editing the pool BEFORE anything picks from or lists it (the old
-## fire-and-forget dispatch was a latent race: a slow mod's edits could land after the
-## pick and silently do nothing). Returns the pool (the getter's array, post-edit).
+# ⚠ THE BROADCAST IS AWAITED so an async mod finishes editing the pool BEFORE anything picks from or
+# lists it; an edit landing after the pick would silently do nothing.
+## One pool gather: the getter's array after every mod's `hook` has edited it.
 func _gather(getter: Callable, hook: StringName) -> Array:
 	var pool : Array = getter.call()
 	if api: await api.run_all_mods(hook, pool)
 	return pool
 
-## Generate one pack card. Rank + suit are always rolled; stamp/skill/type are luck-gated
-## (RunManager.luck grows with fame), which also keeps empty pools safe (no pick_random
-## on an empty array).
+# TYPE IS NEVER LEFT NULL: every card gets the pool's first type (TypePaper, as the starter decks do)
+# and luck upgrades it to a random pool type.
+## Generates one pack card: rank and suit always rolled, stamp, skill and type gated by RunManager.luck, which grows with fame.
 func create_one_choice() -> CardData:
 	var data := CardData.new()
 	var possible_ranks : Array = await _gather(get_possible_ranks, &"on_get_possible_ranks")
@@ -52,8 +48,6 @@ func create_one_choice() -> CardData:
 		var possible_skills : Array = await _gather(get_possible_skills, &"on_get_possible_skills")
 		if possible_skills:
 			data.with_skill(possible_skills.pick_random() as CardModifierSkill)
-	# Type is NOT luck-gated to null: every card gets a base type (first pool entry, e.g.
-	# TypePaper) like the starter decks, and luck upgrades it to a random pool type.
 	var possible_types : Array = await _gather(get_possible_types, &"on_get_possible_types")
 	if possible_types:
 		if _lucky():
@@ -65,7 +59,7 @@ func create_one_choice() -> CardData:
 func _lucky() -> bool:
 	return randf() < RunManager.luck()
 
-## Every component this pack could roll, as one preview card each, in create_one_choice's own type/stamp/skill/suit/rank order — the map node hover panel lists these.
+## Every component this pack could roll, as one preview card each; the possible-cards list groups them by kind itself.
 func get_possible_preview_cards() -> Array[CardData]:
 	var possible_ranks : Array = await _gather(get_possible_ranks, &"on_get_possible_ranks")
 	var possible_suits : Array = await _gather(get_possible_suits, &"on_get_possible_suits")

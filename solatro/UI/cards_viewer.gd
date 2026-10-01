@@ -29,7 +29,6 @@ func populate_parts(cards: Array[CardData], on_inspect: Callable) -> void:
 	var icons : Array[PartIcon] = []
 	for kind : StringName in PartIcon.KINDS:
 		var group := cards.filter(func(data: CardData) -> bool: return PartIcon.kind_of(data) == kind)
-		if group.is_empty(): continue
 		var header := Label.new()
 		header.text = TRANSLATION.find(PartIcon.KINDS[kind])
 		_container.add_child(header)
