@@ -28,19 +28,22 @@ A cloud session that starts on a branch without it can run
 
 ## State
 
-- Verified: import, `fx_snapshot` (21 PNGs, looked right: fire ladder, light layer), and
-  `worldgen/tests/native_ab_test.tscn` PASS bit-identical on Linux with the native `.so` loaded.
-- Full `solatro/Tests/all_tests.tscn` in the cloud: 3966 passed, 11 failed, exit 134 at
-  teardown, ~7 min. Run BEFORE the native `.so` existed; not re-run since.
-  Failures were geometry/pixel checks (OUTLINE rig, PIXELS mask-vs-face, GRID LAYOUT 39 px and
-  10.8 px offsets, GRID VIEW framing) plus two OUTLINE checks that `card_visual.tscn` has no
-  ShaderMaterial. Hypothesis, UNVERIFIED: virtual-display size or llvmpipe, not real regressions.
+- Verified: import, `fx_snapshot` (21 PNGs, looked right), and `worldgen/tests/native_ab_test.tscn`
+  PASS bit-identical on Linux with the native `.so` loaded.
+- Branch `claude/combine-cloud-test` = `combine-sidebar-boardplan` + this tooling. Full
+  `solatro/Tests/all_tests.tscn` in the cloud: 51 suites, 9673 passed, 6 failed, ~17 min (budget a
+  40 min background timeout; a 10 min one kills it). Clean exit, no teardown abort.
+- The only failures are `PLAN VISUALS` TP-63 (held-card lighting, two grids). Documented
+  intermittent in `solatro/HANDOFF_playtest_fixes.md`, and reproduced 2 of 2 alone here
+  (`... all_tests.tscn -- plan`, 2 checks), so the cloud's slow software-GL frames make it near-deterministic.
+  Its documented lead: `settle_on` accepts one unchanged frame after the second grid is added.
+- On `main`, GRID LAYOUT / GRID VIEW / OUTLINE / PIXELS failed; all pass on the combine branch
+  (`main` is 608 commits behind it), so they were stale-baseline, not cloud, failures.
 
 ## Open
 
-1. Settle whether the 11 are environmental: run the same suite on a Windows box, diff failure
-   lists; or retry in the cloud with a window size matching the project's base resolution.
-2. Investigate the exit 134 at teardown.
-3. `HEADLESS_TESTING.md` cites `Tools/run_tests.py`, which does not exist in the repo.
-4. Optionally make `cloud_setup.sh` a SessionStart hook (`session-start-hook` skill). Not done.
-5. Newest Godot release unconfirmed (API calls blocked by the proxy); 4.7.2 is what the project pins.
+1. Fix or harden TP-63's `settle_on` (see above); it is the cloud's one red row.
+2. `solatro/project.godot` is reordered by every import (`ui_focus_*` move) and two `.gd.uid` files
+   appear; do not commit them.
+3. Optionally make `cloud_setup.sh` a SessionStart hook (`session-start-hook` skill). Not done.
+4. Newest Godot release unconfirmed (API calls blocked by the proxy); 4.7.2 is what the project pins.
