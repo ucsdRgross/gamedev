@@ -80,6 +80,13 @@ Overdue Notice, Bookmark, Time Card), and several re-score a line when a card re
 another clock of that kind; reach for a different mechanism. The Undo button exists, so "take back
 a placement" alone is not an effect.
 
+Four cards already score a line, remove a card of it, and score it again when the cell refills
+(Ace of Spades, Card Shark, Fifty-Two Pickup, Eviction Notice), and three give a sixth placement
+beside the five in the Entrance (VIP Pass, Key Card, Dummy). Both shapes are used up too.
+
+An effect that needs the discard pile to hold cards does nothing in a run with no discarder: do
+not make it the default.
+
 ## Slots and level 2
 
 `suit`, `rank`, `type`, `stamp`, `skill`, `consumable`, `hazard`, `structure`, `status`. Most
