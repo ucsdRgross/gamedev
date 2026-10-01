@@ -2,7 +2,7 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P90 done (P66, P88 closed without code; P62 closed; P45 without code), each red-then-green, by eye where it draws, Fable-reviewed, one verified step per commit. Review round 4 answered and every comment landed (P85-P90). P91 (the spotlight) and its review follow-up are committed (62a38609, b86da4c3); P92a and P92b too (a711b4ce, e07c1235 - the implementer cache notices a modifier attach; the legality walk reads it: 14.8 -> 3.1 ms at pickup, 17.8 -> 4.3 at commit). Last full gate (e07c1235): `ALL 51 SUITES: 10012 CHECKS PASSED` (MODS 65, SUIT PROPS 23, SIDEBAR 4502, VISUAL LAYERS 230, UI VIEWERS 177, PALETTE 51, WALL PAUSE 71/72, BOARD FUZZ random), ~15 min with `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order: review round 5 (only the shots P85-P91 changed), the close. P93-P95 left the stream for solatro/todo.md (forty-fifth round). Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
+**State:** P1-P90 done (P66, P88 closed without code; P62 closed; P45 without code), each red-then-green, by eye where it draws, Fable-reviewed, one verified step per commit. Review round 4 answered and every comment landed (P85-P90). P91 (the spotlight) and its review follow-up are committed (62a38609, b86da4c3); P92a and P92b too (a711b4ce, e07c1235 - the implementer cache notices a modifier attach; the legality walk reads it: 14.8 -> 3.1 ms at pickup, 17.8 -> 4.3 at commit). Last full gate (e07c1235): `ALL 51 SUITES: 10012 CHECKS PASSED` (MODS 65, SUIT PROPS 23, SIDEBAR 4502, VISUAL LAYERS 230, UI VIEWERS 177, PALETTE 51, WALL PAUSE 71/72, BOARD FUZZ random), ~15 min with `-- --timeout 1800`; 19 placeholder warnings, 24 resources + 1150 ObjectDB. Pending, in order: review round 5 (SHOT, fed7610d, 13 shots - waiting on the owner's verdicts), P96 (a Deck click on a scrolled possible-cards list; found by the shots, queued at the end), the close. P93-P95 left the stream for solatro/todo.md (forty-fifth round). Gate at the stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
 solatro/design/board-plan/DESIGN.md, solatro/PICTURE_WALL.md
@@ -387,6 +387,9 @@ Finished rows carry only their commits: each commit message holds that step's me
   description: 'Game.save_state''s second, debug-only snapshot (4-9 ms a commit in debug builds). _debug_commit (game.gd ~600) takes a fresh to_saveable(); append save_history.back() instead - entries are immutable by contract (run_manager.gd ~143), every reader duplicates before use, and _resume_show already shares them. Update the two ''FRESH to_saveable() duplicate'' comments (test_leak_canary.gd ~188, leak_holder_probe.gd ~140). plan-implementer-sonnet.'
   status: closed
   evidence: 'Not built - left as a todo by the forty-fifth round (solatro/todo.md, Performance).'
+- id: P96
+  description: 'Found by the round-5 shots: with a pack''s possible-cards list wheel-scrolled to its end and a card stuck, a real click on the sidebar''s Deck button closes the list and opens no deck (3 of 3 runs; unscrolled the same click opens the deck over the list - twenty-fifth round, "Open over the list"). And, measured once: wheel notches pushed faster than the list scrolls run past its end and zoom the map underneath (Viewer paths 9: the wheel scrolls the viewer, never the screen beneath). Cause open - measure first. Logs: the session scratchpad r5/side3-5.log. plan-implementer (medium).'
+  status: pending
 - id: P80
   description: The listed PlayArea._deal_next_mark freed-instance SCRIPT ERROR (x20-x25 per run, play_area.gd ~2409, during the WALL FOCUS / WALL TRANSITION soaks) is past its three-failure budget - find the writer that frees the board (or its Main) while the plan-mark deal is still stepping, and make the deal end with its owner; measure first (the deal is released at go-live; P64b-3b round 2 rests the board focus on every game went_live - check whether it moved the frequency).
   status: done
@@ -602,8 +605,9 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 
 ## Next up
 (Thirty-sixth round: a NEW task goes to the END of this list.)
-1. Review round 5: register ONLY shots with no approve (solatro/visual-review/README.md step 1) - the viewers after P85/P87 (deck_over_chooser, deck_viewer, pack_chooser + a 13-card chooser, possible_cards), win_overlay (P89), menu_top + the picker at 600x1000 (P90), the game spotlight on a zoomed board + the two tool shots (P91); BEFORE = `shoot --base 60487c13` (round 4's tree); write every seen from the pixels; park on the watch (the owner may also answer in chat - read review.json).
-2. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor. After the close (forty-fifth round, solatro/todo.md's first section): merge every branch into main, the Showitaire repo split, then a review of todo.md with the owner. Owner questions for the close: the unused hoop formation (Open bugs), the P13 / P44 carried questions.
+1. Review round 5 is SHOT (fed7610d; 13 shots, every seen written): read the owner's verdicts (solatro/visual-review/review.json, or chat - a verdict told in chat is a handback); every reject or comment is an implementer step with the comment verbatim; a commented shot is reshot and shown again.
+2. P96 (the Deck click on a wheel-scrolled possible-cards list) - medium implementer, its own gate.
+3. READY FOR CLOSING, then the close per /plan-run in a NEW session at or above the reviewer floor. After the close (forty-fifth round, solatro/todo.md's first section): merge every branch into main, the Showitaire repo split, then a review of todo.md with the owner. Owner questions for the close: the unused hoop formation (Open bugs), the P13 / P44 carried questions.
 
 ### Opening prompt for the next session (paste as is)
 
