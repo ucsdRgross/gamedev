@@ -23,14 +23,21 @@ func populate(cards: Array[CardData], on_inspect := Callable()) -> ControlCard:
 		_list(ControlCard.add_child_control_card(_container, data, _context), data)
 	return controls[0] if controls else null
 
-## Fill the container with one PartIcon per partial card, every icon in the one cell the list's parts and labels need; `on_inspect(card)` fires on hover AND focus.
+## Fill the container with one PartIcon per partial card, grouped by kind under each kind's header, every icon in the one cell the list's parts and labels need; `on_inspect(card)` fires on hover AND focus.
 func populate_parts(cards: Array[CardData], on_inspect: Callable) -> void:
 	_on_inspect = on_inspect
 	var icons : Array[PartIcon] = []
-	for data : CardData in cards:
-		var icon := PartIcon.add_child_part_icon(_container, data)
-		icons.append(icon)
-		_list(icon, data)
+	for kind : StringName in PartIcon.KINDS:
+		var group := cards.filter(func(data: CardData) -> bool: return PartIcon.kind_of(data) == kind)
+		if group.is_empty(): continue
+		var header := Label.new()
+		header.text = TRANSLATION.find(PartIcon.KINDS[kind])
+		_container.add_child(header)
+		_headers[header] = group.size()
+		for data : CardData in group:
+			var icon := PartIcon.add_child_part_icon(_container, data)
+			icons.append(icon)
+			_list(icon, data)
 	var cell := PartIcon.cell_of(icons)
 	for icon : PartIcon in icons:
 		icon.fit(cell)
@@ -61,6 +68,23 @@ func row_px(columns: int) -> float:
 func column_px(rows: int) -> float:
 	var gap := (_container as Control).get_theme_constant(&"v_separation")
 	return rows * item_px.y + (rows - 1) * gap
+
+## Each group's header in a parts list, to how many parts it heads; empty for a list of cards.
+var _headers : Dictionary[Label, int] = {}
+
+# A HEADER ONE ROW WIDE takes a line of its own, so each group starts a row of its own under it and
+# the columns stay the card's width.
+## Stretches every header across `columns` cells and returns the height the whole list then takes.
+func fit_rows(columns: int) -> float:
+	if _headers.is_empty(): return column_px(ceili(float(controls.size()) / columns))
+	var gap := (_container as Control).get_theme_constant(&"v_separation")
+	var rows := 0
+	var headers_px := 0.0
+	for header : Label in _headers:
+		header.custom_minimum_size.x = row_px(columns)
+		rows += ceili(float(_headers[header]) / columns)
+		headers_px += header.get_combined_minimum_size().y + gap
+	return headers_px + column_px(rows)
 
 ## The callback `populate()` wired, kept so a list that has been re-sized can publish through it again.
 var _on_inspect : Callable = Callable()

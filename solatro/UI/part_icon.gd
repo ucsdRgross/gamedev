@@ -21,13 +21,26 @@ static func add_child_part_icon(parent: Node, part_data: CardData) -> PartIcon:
 	parent.add_child(icon)
 	return icon
 
-## The one part `card` carries, in the order a pack lists them.
-static func part_of(card: CardData) -> Resource:
-	var carried : Array[Resource] = []
-	for part : Resource in [card.type, card.stamp, card.skill, card.suit, card.rank]:
-		if part: carried.append(part)
+## Each kind of part, keyed by its CardData field, in the order a pack's list groups them, to the locale key of its group's header.
+const KINDS : Dictionary[StringName, StringName] = {
+	&"type": &"PART_KIND_TYPE",
+	&"skill": &"PART_KIND_SKILL",
+	&"stamp": &"PART_KIND_STAMP",
+	&"suit": &"PART_KIND_SUIT",
+	&"rank": &"PART_KIND_RANK",
+}
+
+## The kind of the one part `card` carries.
+static func kind_of(card: CardData) -> StringName:
+	var carried : Array[StringName] = []
+	for kind : StringName in KINDS:
+		if card.get(kind): carried.append(kind)
 	assert(carried.size() == 1, "a listed part is a card carrying exactly one part")
 	return carried[0]
+
+## The one part `card` carries.
+static func part_of(card: CardData) -> Resource:
+	return card.get(kind_of(card))
 
 # A focus stop and a pointer target like a listed card, so the list's hover, click and key rules
 # reach it unchanged; the art and the label stay out of the pointer's way.
@@ -41,7 +54,8 @@ func _ready() -> void:
 	_label.text = part.call(&"get_str")
 	_art.polygon = PackedVector2Array([Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, Vector2.DOWN])
 	part.call(&"set_texture", _art)
-	CardOutline.fill_texture(_art)
+	if data.rank: CardOutline.fill_palette(_art, PaletteDB.ROLES.part_rank_fill)
+	else: CardOutline.fill_texture(_art)
 	CardOutline.set_rim(_art, CardOutline.STYLE, CardVisual.CARD_SIZE)
 # THE PART'S OWN FRAMING SAYS HOW BIG IT IS: every sheet frames through CardOutline.frame_polygon,
 # whose UVs span the frame plus its rim in source texels, which are art units.

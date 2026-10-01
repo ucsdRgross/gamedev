@@ -148,8 +148,7 @@ func fit_beside(remaining: Rect2) -> void:
 	var frame := 2.0 * Vector2.ONE * PlayArea.viewer_separation_px()
 	var inner := window - frame - frame
 	var columns := _whole_columns(inner.x)
-	CardsViewer.bar_in_the_frame(_scroll, _card_margin,
-			_cards.column_px(ceili(float(_cards.controls.size()) / columns)) > inner.y)
+	CardsViewer.bar_in_the_frame(_scroll, _card_margin, _cards.fit_rows(columns) > inner.y)
 	var spare := floori(inner.x - _cards.row_px(columns))
 	margin_container.add_theme_constant_override(&"margin_left", left + floori(spare / 2.0))
 	margin_container.add_theme_constant_override(&"margin_right", right + spare - floori(spare / 2.0))

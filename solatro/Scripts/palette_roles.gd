@@ -54,6 +54,8 @@ extends Resource
 @export_range(0, 255, 1) var deck_picker : int = 27
 ## A viewer's X tab, solid so nothing behind it shows through.
 @export_range(0, 255, 1) var close_tab : int = 23
+## A rank numeral's fill on a pack's possible-cards icon: the cream of a Paper card's face, never the outline's ink.
+@export_range(0, 255, 1) var part_rank_fill : int = 31
 
 @export_group("The board plan")
 ## The outline a focused card and an element matching the mark under a held card both wear.
@@ -83,6 +85,7 @@ const ROLE_NAMES : Array[StringName] = [
 	&"ball_gloss",
 	&"hud_background", &"viewer_deck", &"viewer_discard", &"viewer_rules",
 	&"viewer_possible_cards", &"viewer_pack", &"viewer_inspect", &"deck_picker", &"close_tab",
+	&"part_rank_fill",
 	&"goal_met",
 	&"match_rim", &"match_rim_active",
 	&"selected_rim",

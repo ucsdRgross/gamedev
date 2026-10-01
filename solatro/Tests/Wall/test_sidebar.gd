@@ -336,6 +336,8 @@ func _ready() -> void:
 	await test_every_new_button_is_written_in_the_locale()
 	await test_a_pack_lists_its_possible_cards_on_the_first_pick_only()
 	await test_the_possible_cards_list_every_part_as_an_icon_and_no_card()
+	await test_the_possible_cards_group_each_kind_under_its_own_header()
+	await test_a_possible_rank_is_filled_in_its_own_role_not_the_outlines_ink()
 	await test_a_possible_part_is_described_by_its_name_on_a_card_preview()
 	await test_travelling_lets_a_pack_list_itself_again()
 	await test_no_name_popup_shows_on_the_board()
@@ -10829,6 +10831,148 @@ func test_the_possible_cards_list_every_part_as_an_icon_and_no_card() -> void:
 					"%s in %s" % [drawn, icon._art_box.size])
 		await _close_the_open_viewer()
 	await _end_main_fixture()
+
+## A pack's possible cards group each kind in the kinds' fixed order under its own left-aligned header one row wide, a card gap under it and under the group before; the list is sized by the height it lays out to, and the keys and d-pad walk down through every group, never onto a header.
+func test_the_possible_cards_group_each_kind_under_its_own_header() -> void:
+	await _start_map_fixture()
+	var pack := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	await _select_map_node_and_settle(pack)
+	var list := DeckViewer._open
+	check(is_instance_valid(list), "sanity: the first pick of a pack listed its possible cards")
+	if is_instance_valid(list):
+		var parts := await _booster_of(pack).get_possible_preview_cards()
+		var kinds : Array[StringName] = []
+		for kind : StringName in PartIcon.KINDS:
+			if parts.any(func(data: CardData) -> bool: return PartIcon.kind_of(data) == kind):
+				kinds.append(kind)
+		check(kinds == PartIcon.KINDS.keys(), "sanity: the pack offers every kind of part", str(kinds))
+		if _check_the_groups(list, parts, kinds):
+			for press : Callable in [_tap_key.bind(KEY_DOWN), _tap_pad.bind(JOY_BUTTON_DPAD_DOWN)]:
+				await _check_down_walks_every_group(list, kinds, press)
+		await _close_the_open_viewer()
+	await _end_main_fixture()
+
+## Checks the list's children against `kinds`, one header and its group each; whether the list was grouped at all, so a walk through its groups means something.
+func _check_the_groups(list: DeckViewer, parts: Array[CardData], kinds: Array[StringName]) -> bool:
+	var headers : Array[Label] = []
+	var groups : Array[Array] = []
+	for child : Node in list.flow_container.get_children():
+		if child is Label:
+			headers.append(child as Label)
+			groups.append([])
+		elif not groups.is_empty():
+			(groups.back() as Array).append(child)
+	check(headers.size() == kinds.size() and list.flow_container.get_child(0) is Label,
+			"the list opens with a header, and there is one header for each kind the pack offers",
+			"%d headers, %d kinds" % [headers.size(), kinds.size()])
+	if headers.size() != kinds.size(): return false
+	var gap := float(PlayArea.viewer_separation_px())
+	var cell := (list.cards().controls[0] as Control).size
+	var grid_right := 0.0
+	var bottom := 0.0
+	for icon : Control in list.cards().controls:
+		grid_right = maxf(grid_right, icon.get_rect().end.x)
+	for child : Control in list.flow_container.get_children():
+		bottom = maxf(bottom, child.get_rect().end.y)
+	var columns := roundi((grid_right + gap) / (cell.x + gap))
+	var above := -INF
+	for index : int in kinds.size():
+		var header := headers[index]
+		var group : Array = groups[index]
+		var key := PartIcon.KINDS[kinds[index]]
+		check(header.text == TRANSLATION.find(key) and header.text != String(key),
+				"group %d is headed by its kind's locale key, in the kinds' fixed order" % index,
+				"'%s' for %s" % [header.text, kinds[index]])
+		check(group.size() == parts.filter(func(data: CardData) -> bool:
+				return PartIcon.kind_of(data) == kinds[index]).size() and group.all(
+				func(icon: Control) -> bool: return PartIcon.kind_of((icon as PartIcon).data) == kinds[index]),
+				"...and holds every %s part and nothing else" % kinds[index], "%d listed" % group.size())
+		var first : Control = group[0]
+		check(header.focus_mode == Control.FOCUS_NONE
+				and header.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT
+				and header.position.x == 0.0 and first.position.x == 0.0,
+				"...its header unfocusable and left-aligned at the grid's left edge, its group opening a row",
+				"header x %.1f, first cell x %.1f" % [header.position.x, first.position.x])
+		check(is_equal_approx(header.size.x, grid_right),
+				"...its header one row of the grid wide, so no cell shares its line",
+				"%.1f vs %.1f" % [header.size.x, grid_right])
+		var group_top := first.position.y
+		var group_bottom := 0.0
+		for icon : Control in group:
+			group_top = minf(group_top, icon.position.y)
+			group_bottom = maxf(group_bottom, icon.get_rect().end.y)
+		check(is_equal_approx(group_top, header.get_rect().end.y + gap)
+				and (index == 0 or is_equal_approx(header.position.y, above + gap)),
+				"...one card gap under its header, its header one card gap under the group before",
+				"header %.1f-%.1f, group from %.1f, the group before ends %.1f, gap %.1f" % [
+				header.position.y, header.get_rect().end.y, group_top, above, gap])
+		above = group_bottom
+	check(is_equal_approx(list.cards().fit_rows(columns), bottom),
+			"the list is sized by the height it lays out to at %d columns" % columns,
+			"%.1f vs %.1f" % [list.cards().fit_rows(columns), bottom])
+	return true
+
+## Walks down from the list's first cell by `press` until the focus stops, checking every landing is a cell and every group is reached in order.
+func _check_down_walks_every_group(list: DeckViewer, kinds: Array[StringName], press: Callable) -> void:
+	var controls := list.cards().controls
+	controls[0].grab_focus()
+	await get_tree().process_frame
+	var reached : Array[StringName] = [PartIcon.kind_of((controls[0] as PartIcon).data)]
+	for step : int in controls.size():
+		var from := _booted_viewport.gui_get_focus_owner()
+		await press.call()
+		var landed := _booted_viewport.gui_get_focus_owner()
+		if landed == from: break
+		check(landed is PartIcon and controls.has(landed), "a press down lands on a listed cell, never a header",
+				str(landed))
+		if not landed is PartIcon: return
+		var kind := PartIcon.kind_of((landed as PartIcon).data)
+		if reached.back() != kind: reached.append(kind)
+	check(reached == kinds, "...and walks down through every group in order", str(reached))
+
+## A possible rank's numeral is drawn in the cream role it is filled with, not the ink its outline shares, read off the window's pixels on every texel of its silhouette.
+func test_a_possible_rank_is_filled_in_its_own_role_not_the_outlines_ink() -> void:
+	await _start_map_fixture()
+	await _select_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	var list := DeckViewer._open
+	check(is_instance_valid(list), "sanity: the first pick of a pack listed its possible cards")
+	if is_instance_valid(list):
+		var ranks := list.cards().controls.filter(
+				func(icon: PartIcon) -> bool: return icon.data.rank != null)
+		var icon : PartIcon = ranks[0]
+		icon.grab_focus()
+		_booted_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+# A SubViewport carries its own filter, defaulting to linear, which blends each texel a quarter into
+# its neighbour at the list's two pixels a texel; the player's window draws nearest (test_pixels.gd).
+		_booted_viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+		await await_drawn_frames(RANK_SCROLL_FRAMES)
+		var window := _booted_viewport.get_texture().get_image()
+		var scroll_rect := _drawn_in_window(_booted_viewport, list._scroll)
+		check(scroll_rect.encloses(_drawn_in_window(_booted_viewport, icon)),
+				"sanity: the rank icon is scrolled wholly into view", str(scroll_rect))
+		var sheet := PipRankNumeral.RANK_TEXTURE.get_image()
+		var frame := CardModifier.frame_rect(PipRankNumeral.RANK_TEXTURE, PipRankNumeral.H_FRAMES,
+				PipRankNumeral.V_FRAMES, int(icon.data.rank.value) - 1)
+		var to_window := _booted_viewport.get_final_transform() * icon._art.get_global_transform_with_canvas()
+		var wanted := PaletteDB.ROLES.color_of(&"part_rank_fill")
+		var body := 0
+		var off : Array[String] = []
+		for y : int in int(frame.size.y):
+			for x : int in int(frame.size.x):
+				if sheet.get_pixelv(Vector2i(frame.position) + Vector2i(x, y)).a < 0.5: continue
+				body += 1
+				var at := to_window * (Vector2(x, y) + Vector2.ONE * (CardOutline.WIDTH + 0.5))
+				var seen := window.get_pixelv(Vector2i(at))
+				if _colour_distance(seen, wanted) >= OPAQUE_COLOUR_TOLERANCE:
+					off.append("%s at %s" % [seen, at])
+		check(body > 0 and off.is_empty(),
+				"every texel of the rank numeral is drawn in part_rank_fill, not the outline's ink",
+				"%d of %d off %s: %s" % [off.size(), body, wanted, off.slice(0, 3)])
+		await _close_the_open_viewer()
+	await _end_main_fixture()
+
+## Frames a focus-followed scroll takes to bring the last group into view and draw it.
+const RANK_SCROLL_FRAMES := 30
 
 ## Hovered, focused by keys or by the d-pad, or stuck by a click or an accept, a listed part is described in the sidebar by its own name and a description that is never empty, previewed on a card with a body -- and so is every other part in the list.
 func test_a_possible_part_is_described_by_its_name_on_a_card_preview() -> void:
