@@ -243,11 +243,9 @@ func update_visual() -> void:
 			suit.hide()
 			CardOutline.fill_texture(rank)
 
-		if data.type:
-			data.type.set_texture(type)
-			type.show()
-		else: type.hide()
-			
+		if data.type: data.type.set_texture(type)
+		else: _frame_type(BLANK_CARD_FRAME)
+
 		if data.stamp:
 			data.stamp.set_texture(stamp)
 			stamp.show()
@@ -269,15 +267,15 @@ func update_visual() -> void:
 		suit.hide()
 		art.hide()
 
-		CardOutline.frame_polygon(
-			type,CardModifierType.TYPE_TEXTURE,
-			CardModifierType.H_FRAMES,
-			CardModifierType.V_FRAMES,
-			CARD_BACK_FRAME if showing_back() else BLANK_CARD_FRAME)
-		CardOutline.fill_texture(type)
-		type.show()
+		_frame_type(CARD_BACK_FRAME if showing_back() else BLANK_CARD_FRAME)
+	type.show()
 	_hold_mark_back()
 	_push_outline_ink()
+
+func _frame_type(frame: int) -> void:
+	CardOutline.frame_polygon(type, CardModifierType.TYPE_TEXTURE, CardModifierType.H_FRAMES,
+			CardModifierType.V_FRAMES, frame)
+	CardOutline.fill_texture(type)
 
 # A MARK IS PRINTED ON THE CELL'S OWN ZONE CARD, so it rides the polygons a played card's rank and
 # suit ride. Held back rather than redrawn: the opening reveal deals a cell by letting its printed

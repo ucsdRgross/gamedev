@@ -175,6 +175,7 @@ func _ready() -> void:
 	await test_swapping_viewers_falls_back_to_what_the_viewer_covered()
 	await test_the_deck_viewer_publishes_into_the_sidebar()
 	await test_the_rules_and_discard_viewers_publish_into_the_sidebar()
+	await test_every_rules_viewer_card_draws_a_card_face()
 	await test_the_choice_viewer_publishes_into_the_sidebar()
 	await test_a_reroll_moves_the_sidebar_onto_the_replacement()
 	await test_the_choice_viewers_pack_lies_below_the_band_at_a_top_window()
@@ -5665,6 +5666,25 @@ func test_the_rules_and_discard_viewers_publish_into_the_sidebar() -> void:
 	state.discard_deck.append(stocked[0])
 	state.discard_deck.append(stocked[1])
 	await _check_viewer_publishes(_container.discard_ui.get_node(^"Button") as Button, "discard")
+	await _end_main_fixture()
+
+## Every card the Rules viewer lists draws a card face, the grid creator's typeless card the blank one.
+func test_every_rules_viewer_card_draws_a_card_face() -> void:
+	await _start_game_fixture()
+	var cards := await _open_viewer_cards(_container.rules_ui.get_node(^"Button") as Button)
+	var bodiless := 0
+	var typeless_frames : Array[Vector2] = []
+	for card : ControlCard in cards:
+		if not card.child.type.visible: bodiless += 1
+		if card.child.data.type == null: typeless_frames.append(_type_frame_origin(card.child))
+	check(not typeless_frames.is_empty(),
+			"sanity: the rules row lists the grid creator's typeless card", "%d listed" % cards.size())
+	check(bodiless == 0, "every rules viewer card draws its face, none a bare mark",
+			"%d of %d bodiless" % [bodiless, cards.size()])
+	var blank := _sheet_frame_origin(CardVisual.BLANK_CARD_FRAME)
+	check(typeless_frames.all(func(origin: Vector2) -> bool: return origin == blank),
+			"...and a card with no type draws the blank card frame",
+			"%s vs %s" % [typeless_frames, blank])
 	await _end_main_fixture()
 
 # The space a viewer's cards belong in, in the PICTURE's own space: what `local_rect_beside()`
