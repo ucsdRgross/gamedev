@@ -344,12 +344,6 @@ static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
 	var root_hi := maxf((-b - sq) / (2.0 * a), (-b + sq) / (2.0 * a))
 	return maxf(root_hi, 0.0) if a > 0.0 else (root_lo if root_lo > 0.0 else 0.0)
 
-#The all-grids view's gap between two grids, measured the way the isolating buffer is -- cell block
-#to cell block, each panel's score gutters inside it. Fixed rather than derived: with every grid in
-#frame at once there is nothing to isolate, and the ruling asks for the grids close.
-static func overview_grid_gap_px(settings_res: PlayerSettings) -> float:
-	return CardVisual.CARD_SIZE.x * settings_res.card_scale * settings_res.grid_overview_gap_cards
-
 #Does buffer `buffer` isolate a FOCUSED grid's neighbours? Reads `grid_position_size_px()` at the
 #candidate buffer for the picture's own width and height, so this can never disagree with the thing
 #it is certifying; the only math left here is the isolation check itself.
@@ -373,7 +367,7 @@ static func _isolates_at_buffer(settings_res: PlayerSettings, buffer: float) -> 
 
 #⚠ THE PICTURE IS SIZED FOR THE FOCUSED VIEW ALONE (owner ruling). The edge margin and the gap a
 #player sees between two grids are one quantity only while focused: inside this same picture the
-#overview draws `overview_grid_gap_px()` instead and the set centres in what is left.
+#overview draws the score gutters alone instead and the set centres in what is left.
 
 #The OVERVIEW camera rests on this whole span — every grid the picture holds fits inside it at
 #once, which is what lets zooming out show them all. FOCUSED reuses the same span: isolation comes
@@ -1216,10 +1210,6 @@ func overview_board_zoom() -> float:
 	var count := grid_container.get_child_count()
 	if count == 0 or size.x <= 0.0 or size.y <= 0.0: return DEFAULT_BOARD_ZOOM
 	var settings_res := PlayArea.settings()
-	var gutters := _grid_gutters()
-#THE SEPARATION THE CONTAINER ACTUALLY GETS, not the gap: each panel already carries its score
-#gutters, and the gap is measured cell block to cell block, so the gutters sit INSIDE it.
-	var sep := roundi(maxf(overview_grid_gap_px(settings_res) - gutters.x - gutters.y, 0.0))
 	var block_h := 0.0
 	var gutter_h := 0.0
 	for gi : int in count:
@@ -1231,7 +1221,9 @@ func overview_board_zoom() -> float:
 #summed here. A sum of the panels missed whatever else the box adds, and the set drew 5.2 px wider
 #than the window it was fitted to (measured).
 	var was := grid_container.get_theme_constant(&"separation")
-	grid_container.add_theme_constant_override("separation", sep)
+#THE OVERVIEW ADDS NO SEPARATION: each panel already carries its score gutters, and those two
+#gutters are the whole gap.
+	grid_container.add_theme_constant_override("separation", 0)
 	var wide := grid_container.get_combined_minimum_size().x
 	grid_container.add_theme_constant_override("separation", was)
 #⚠ THE FIT IS EXACT AND IDEMPOTENT: the set's authored width at the fit is the window's width, to
@@ -3136,11 +3128,12 @@ func _grid_gutters() -> Vector2:
 				- (cells.global_position.x / z + cells.size.x))
 	return Vector2(left, right)
 
-## The gap this MODE is laid out with: the overview's small fixed one, or the buffer that carries a focused grid's neighbours out of frame.
+## The gap this MODE is laid out with: the overview's two score gutters, or the buffer that carries a focused grid's neighbours out of frame.
 func _grid_gap_target() -> float:
-	var settings_res := PlayArea.settings()
-	return overview_grid_gap_px(settings_res) if view_mode == ViewMode.OVERVIEW \
-			else isolating_grid_buffer_px(settings_res)
+	if view_mode == ViewMode.OVERVIEW:
+		var gutters := _grid_gutters()
+		return gutters.x + gutters.y
+	return isolating_grid_buffer_px(PlayArea.settings())
 
 ## The gap the board is DRAWN with this frame: it eases toward `_grid_gap_target()` on the pan clock.
 var _drawn_grid_gap : float = 0.0

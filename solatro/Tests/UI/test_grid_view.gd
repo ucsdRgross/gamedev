@@ -1001,23 +1001,17 @@ func _settle_grid_gap(view: GameView) -> void:
 		if is_equal_approx(now, last): return
 		last = now
 
-#The overview draws neighbouring grids one small fixed gap apart with the set centred; focusing puts
-#the isolating buffer back. Every switch is made the way a player makes it, and the multi-grid part
-#mounts in the picture's own SubViewport -- the suite's root window is narrower.
+#The overview draws neighbouring grids their two score gutters apart with the set centred; focusing
+#puts the isolating buffer back. Every switch is made the way a player makes it, and the multi-grid
+#part mounts in the picture's own SubViewport -- the suite's root window is narrower.
 func run_the_overview_draws_the_grids_close_test() -> void:
 	behavior_section("THE OVERVIEW DRAWS THE GRIDS CLOSE")
 	var st := SettingsManager.settings
-	var asked := PlayArea.overview_grid_gap_px(st)
 	var buffer := PlayArea.isolating_grid_buffer_px(st)
 	var design := PlayArea.game_picture_design_size(st)
-#⚠ THE GAP THE BOARD CAN ACTUALLY DRAW, NOT THE ONE ASKED FOR: it is measured cell block to cell
-#block with each panel's score gutters INSIDE it, so their combined width is its floor. Read off
-#the board being measured, because a gutter's width comes from the score labels on it.
-	var gap := asked
-	check(asked < buffer,
-			"precondition: the overview's fixed gap is smaller than the isolating buffer, so the "
-			+ "two views can be told apart at all",
-			"gap %.1f px, buffer %.1f px" % [gap, buffer])
+#⚠ THE GAP IS THE TWO SCORE GUTTERS, measured cell block to cell block with each panel's gutters
+#INSIDE it. Read off the board being measured: a gutter's width comes from the labels on it.
+	var gap := 0.0
 
 	for count : int in [2, 3]:
 		var picture_vp := SubViewport.new()
@@ -1027,16 +1021,20 @@ func run_the_overview_draws_the_grids_close_test() -> void:
 		var mpa := many.play_area
 		await _settle_layout(many)
 		await _settle_grid_gap(many)
-		gap = maxf(asked, mpa._grid_gutters().x + mpa._grid_gutters().y)
+		gap = mpa._grid_gutters().x + mpa._grid_gutters().y
+		check(gap < buffer,
+				"precondition: the overview's gap is smaller than the isolating buffer, so the two "
+				+ "views can be told apart at all",
+				"gap %.1f px, buffer %.1f px" % [gap, buffer])
 		check(mpa.view_mode == PlayArea.ViewMode.OVERVIEW,
 				"precondition: a %d-grid show opens in the all-grids view" % count,
 				"mode %d" % mpa.view_mode)
 		for gi : int in count - 1:
 			check(absf(_drawn_grid_gap(mpa, gi) - gap) <= 1.0,
-					"on a %d-grid board the overview draws grid %d and grid %d the small gap apart, "
-					% [count, gi, gi + 1] + "not the isolating buffer",
-					"drawn %.1f px, asked %.1f px, floor %.1f px, buffer %.1f px"
-					% [_drawn_grid_gap(mpa, gi), asked, gap, buffer])
+					"on a %d-grid board the overview draws grid %d and grid %d their two score "
+					% [count, gi, gi + 1] + "gutters apart, not the isolating buffer",
+					"drawn %.1f px, gutters %.1f px, buffer %.1f px"
+					% [_drawn_grid_gap(mpa, gi), gap, buffer])
 		_check_the_set_centred(mpa, "the overview's %d-grid set" % count)
 		await _tear_down(many)
 		picture_vp.queue_free()
@@ -1046,10 +1044,10 @@ func run_the_overview_draws_the_grids_close_test() -> void:
 	var pa := view.play_area
 	await _settle_layout(view)
 	await _settle_grid_gap(view)
-	gap = maxf(asked, pa._grid_gutters().x + pa._grid_gutters().y)
+	gap = pa._grid_gutters().x + pa._grid_gutters().y
 	check(absf(_drawn_grid_gap(pa, 0) - gap) <= 1.0,
-			"precondition: this board opens on the small gap, which rests on the gutter floor",
-			"drawn %.1f px, fixed %.1f px" % [_drawn_grid_gap(pa, 0), gap])
+			"precondition: this board opens on the small gap, the two score gutters",
+			"drawn %.1f px, gutters %.1f px" % [_drawn_grid_gap(pa, 0), gap])
 
 	_click(pa, _cell_control(pa, 1))
 	await _settle_layout(view)
@@ -1070,7 +1068,7 @@ func run_the_overview_draws_the_grids_close_test() -> void:
 	check(absf(_drawn_grid_gap(pa, 0) - gap) <= 1.0,
 			"...and the drawn gap comes back to the small one -- the switch goes both ways, not "
 			+ "once",
-			"drawn %.1f px, asked %.1f px, floor %.1f px" % [_drawn_grid_gap(pa, 0), asked, gap])
+			"drawn %.1f px, gutters %.1f px" % [_drawn_grid_gap(pa, 0), gap])
 
 	pa._unhandled_input(_action(&"wall_forward"))
 	await _settle_layout(view)
@@ -3678,13 +3676,12 @@ func run_the_overview_fits_the_set_it_has_test() -> void:
 		picture_vp.queue_free()
 		await get_tree().process_frame
 
-#R8'S FLOOR, RE-CHECKED AGAINST THE ONE-CARD GAP. The gap is measured cell block to cell block with
-#each panel's score gutters INSIDE it, so the gutters are its floor: asked for less, the container's
-#separation clamps to zero and the labels of two neighbours sit edge to edge.
+#THE OVERVIEW GAP IS THE SCORE GUTTERS' WIDTH (owner ruling): measured cell block to cell block with
+#each panel's gutters INSIDE it, so the container adds no separation and the labels of two
+#neighbours sit edge to edge.
 func run_the_overview_gap_cannot_go_below_the_score_gutters_test() -> void:
 	behavior_section("THE OVERVIEW GAP CANNOT GO BELOW THE SCORE GUTTERS")
 	var st := SettingsManager.settings
-	var asked := PlayArea.overview_grid_gap_px(st)
 	var design := PlayArea.game_picture_design_size(st)
 	var picture_vp := SubViewport.new()
 	picture_vp.size = design
@@ -3695,16 +3692,10 @@ func run_the_overview_gap_cannot_go_below_the_score_gutters_test() -> void:
 	await _settle_grid_gap(view)
 	var gutters := pa._grid_gutters()
 	var floor_px := gutters.x + gutters.y
-	check(asked < floor_px,
-			"precondition: one card width is BELOW the two score gutters, so the floor is the "
-			+ "thing being measured",
-			"asked %.1f px, gutters %.1f + %.1f = %.1f px"
-			% [asked, gutters.x, gutters.y, floor_px])
 	check(absf(_drawn_grid_gap(pa, 0) - floor_px) <= 1.0,
-			"the drawn gap rests ON the gutter floor, not on the smaller number asked for: the "
-			+ "container's separation is clamped to zero and the two label columns meet",
-			"drawn %.1f px, asked %.1f px, floor %.1f px"
-			% [_drawn_grid_gap(pa, 0), asked, floor_px])
+			"the drawn gap is exactly the two score gutters: the two label columns meet",
+			"drawn %.1f px, gutters %.1f + %.1f = %.1f px"
+			% [_drawn_grid_gap(pa, 0), gutters.x, gutters.y, floor_px])
 	check(pa.grid_container.get_theme_constant(&"separation") == 0,
 			"...which is exactly a separation of zero between the panels",
 			"separation %d" % pa.grid_container.get_theme_constant(&"separation"))

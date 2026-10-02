@@ -111,7 +111,7 @@ start** (`Q6`=a).
 - 2 grids: placed so the exact centre of the picture is the **buffer between them**.
 - 3 grids: the middle grid sits exactly where a single grid would.
 
-The centring is the contract. ⚠ **The buffer is DERIVED, not a knob** — `PlayArea.isolating_grid_buffer_px()` solves for the value at which a focused grid isolates its neighbours, and it is the picture's edge margin too. The stored `grid_buffer_px` setting is gone. ⚠ **The OVERVIEW no longer draws that buffer** (playtest ruling): it spaces the grids by `grid_overview_gap_cards` and centres the set, while the picture keeps the derived size above.
+The centring is the contract. ⚠ **The buffer is DERIVED, not a knob** — `PlayArea.isolating_grid_buffer_px()` solves for the value at which a focused grid isolates its neighbours, and it is the picture's edge margin too. The stored `grid_buffer_px` setting is gone. ⚠ **The OVERVIEW no longer draws that buffer** (playtest ruling): it spaces the grids by their two score gutters and centres the set, while the picture keeps the derived size above.
 
 ### 1.3 Grid shape (`Q10`)
 

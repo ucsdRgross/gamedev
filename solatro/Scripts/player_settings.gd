@@ -578,15 +578,6 @@ enum SeparationMode {
 	set(value):
 		grid_align_rows_globally = value
 		settings_changed.emit()
-#Measured cell block to cell block, so each panel's score gutters sit INSIDE it. Their combined
-#width (88 px at the shipped font) is the floor: below it the neighbouring grids' labels touch and
-#the gap stops shrinking.
-
-## The gap between two neighbouring grids in the all-grids view, in card widths.
-@export var grid_overview_gap_cards : float = 1.0:
-	set(value):
-		grid_overview_gap_cards = maxf(value, 0.0)
-		settings_changed.emit()
 #Its OWN vertical scroll, independent of the board's, covers whatever a deep stack adds past this.
 
 ## The pinned Entrance strip's height, as a multiple of one card's height.

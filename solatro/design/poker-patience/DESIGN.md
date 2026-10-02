@@ -1608,8 +1608,8 @@ isolates its neighbours.
 
 ⚠ **THE ONE-NUMBER RULE IS OVERTURNED FOR THE OVERVIEW by the first playtest's ruling** — it still
 sizes the picture, and it is still what a FOCUSED grid's neighbours are pushed out by, but the
-all-grids view draws the grids a small fixed gap apart (`PlayArea.overview_grid_gap_px()`, the knob
-`grid_overview_gap_cards`) with the set centred in the picture. Only what is DRAWN differs; the
+all-grids view draws the grids their two score gutters apart, no knob, with the set centred in the
+picture. Only what is DRAWN differs; the
 picture's own size is the focused view's in both.
 
 ⚠ **`H24` is the case the current cap hides.** `Q7` caps grids at 3 today, so "more than 3 grids"
