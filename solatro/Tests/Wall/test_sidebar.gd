@@ -205,6 +205,7 @@ func _ready() -> void:
 	await test_the_deck_button_toggles_by_mouse_while_its_viewer_is_open()
 	await test_the_deck_button_toggles_by_pad_while_its_viewer_is_open()
 	await test_a_cancel_from_a_sticky_description_leaves_the_focus_in_the_sidebar()
+	await test_a_right_click_over_a_stuck_deck_viewer_card_cancels_as_esc_does()
 	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_mouse()
 	await test_an_undo_under_an_open_viewer_rests_no_board_card_by_keys()
 	await test_right_off_the_sidebar_never_reaches_the_board_behind_an_empty_viewer()
@@ -221,6 +222,7 @@ func _ready() -> void:
 	await test_every_route_leaves_the_chooser_and_comes_back_to_it_in_progress()
 	await test_the_choosers_deck_button_opens_over_it_and_closing_returns_to_it()
 	await test_closing_the_deck_viewer_over_the_chooser_gives_back_its_stuck_card()
+	await test_a_right_click_over_a_stuck_chooser_card_lets_it_go_as_esc_does()
 	await test_the_choosers_deck_button_stays_up_and_closes_its_open_deck()
 	await test_the_description_row_sits_under_the_band_above_the_described_card()
 	await test_the_choosers_deck_button_reads_close_deck_while_its_deck_is_open()
@@ -3664,10 +3666,10 @@ func test_a_new_entry_frees_the_visual_it_replaces() -> void:
 
 # A real click, pushed where the hover already is: press and release at the same point, one frame
 # apart, so `_on_gui_input` sees the hovered control still focused under the button.
-func _click(at: Vector2, viewport: SubViewport) -> void:
-	_push_mouse_button(at, viewport, true)
+func _click(at: Vector2, viewport: SubViewport, button := MOUSE_BUTTON_LEFT) -> void:
+	_push_mouse_button(at, viewport, true, 0, button)
 	await get_tree().process_frame
-	_push_mouse_button(at, viewport, false)
+	_push_mouse_button(at, viewport, false, 0, button)
 	await get_tree().process_frame
 
 # A real click on a button, in the viewport it is drawn in, answering whether it pressed: a hidden,
@@ -3746,9 +3748,10 @@ func _second_button_press(at: Vector2, viewport: SubViewport = null) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-func _push_mouse_button(at: Vector2, viewport: SubViewport, pressed: bool, device := 0) -> void:
+func _push_mouse_button(at: Vector2, viewport: SubViewport, pressed: bool, device := 0,
+		button := MOUSE_BUTTON_LEFT) -> void:
 	var event := InputEventMouseButton.new()
-	event.button_index = MOUSE_BUTTON_LEFT
+	event.button_index = button
 	event.pressed = pressed
 	event.position = at
 	event.global_position = at
@@ -6292,6 +6295,25 @@ func test_a_cancel_from_a_sticky_description_leaves_the_focus_in_the_sidebar() -
 				"...and the focus is in the sidebar, where the player can act", str(landed))
 	await _end_main_fixture()
 
+## A right-click over the stuck card is the same cancel as Esc, letting it go and closing the viewer together.
+func test_a_right_click_over_a_stuck_deck_viewer_card_cancels_as_esc_does() -> void:
+	await _start_game_fixture()
+	_container.show_hud()
+	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+	check(not cards.is_empty(), "the deck viewer lists cards", str(cards.size()))
+	if not cards.is_empty():
+		await _click(cards[0].get_global_rect().get_center(), _booted_viewport)
+		check(_container.is_locked(), "sanity: the left click stuck the card")
+		await _click(cards[0].get_global_rect().get_center(), _booted_viewport, MOUSE_BUTTON_RIGHT)
+		check(not is_instance_valid(DeckViewer._open) or DeckViewer._open.is_queued_for_deletion(),
+				"a right-click over the stuck card closes the viewer, as Esc does")
+		check(not _container.is_locked() and not _container.showing_description(),
+				"...letting the card go: no lock and no card description left standing")
+		var landed := _booted_viewport.gui_get_focus_owner()
+		check(landed != null and _container.is_ancestor_of(landed),
+				"...and the focus is in the sidebar, as Esc leaves it", str(landed))
+	await _end_main_fixture()
+
 # An open viewer is the focus: the rebuild an Undo ends in must not rest the board's focus on a
 # card under it, which the booted viewport's own focus owner cannot see.
 func _check_the_board_is_not_the_focus(route: String) -> void:
@@ -7164,6 +7186,27 @@ func test_closing_the_deck_viewer_over_the_chooser_gives_back_its_stuck_card() -
 					"...and the chooser still holds it stuck, Take held as before (%s)" % close[0])
 			check(_map.selection_deck_button.is_visible_in_tree(),
 					"...its Deck button still beside it (%s)" % close[0])
+		chooser.queue_free()
+	await _end_main_fixture()
+
+## A right-click over the chooser's stuck card lets it go as Esc does, and one with nothing stuck leaves the pack up: Take alone finishes it.
+func test_a_right_click_over_a_stuck_chooser_card_lets_it_go_as_esc_does() -> void:
+	var chooser := await _open_the_chooser_with_pictures_behind_and_ahead()
+	check(chooser != null, "sanity: arriving on a pack opened its chooser")
+	if chooser != null:
+		var card := chooser.cards().controls[0]
+		await _click(card.get_global_rect().get_center(), _booted_viewport)
+		check(_container.is_locked() and chooser.cards().sticky != null
+				and chooser.confirm_button.disabled,
+				"sanity: the left click stuck a chosen card, Take held")
+		await _click(card.get_global_rect().get_center(), _booted_viewport, MOUSE_BUTTON_RIGHT)
+		check(chooser.cards().sticky == null and not _container.is_locked(),
+				"a right-click over the stuck card lets it go, as Esc does")
+		check(_chooser_is_up(chooser) and not chooser.confirm_button.disabled,
+				"...and the pack stays up with Take back within reach")
+		await _click(card.get_global_rect().get_center(), _booted_viewport, MOUSE_BUTTON_RIGHT)
+		check(_chooser_is_up(chooser) and chooser.cards().sticky == null,
+				"a right-click with nothing stuck leaves the pack up and sticks nothing")
 		chooser.queue_free()
 	await _end_main_fixture()
 

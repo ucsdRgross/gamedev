@@ -125,10 +125,13 @@ func _leave_highlight() -> void:
 	if _hovering <= 0: highlight_left.emit()
 
 # A CLICK IS WHAT MAKES A DESCRIPTION STAY, and it is taken here so it never reaches the catcher
-# behind the list, which reads a click anywhere else as "close".
+# behind the list, which reads a click anywhere else as "close". The second button over the stuck
+# card lets it go, as a cancel does, and is left to the catcher, so a deck viewer still closes.
 func _on_card_gui_input(event: InputEvent, data: CardData, control: Control) -> void:
 	var button := event as InputEventMouseButton
-	if button == null or button.button_index != MOUSE_BUTTON_LEFT or not button.pressed: return
+	if button == null or not button.pressed: return
+	if button.button_index == MOUSE_BUTTON_RIGHT and data == sticky: unstick()
+	if button.button_index != MOUSE_BUTTON_LEFT: return
 	control.accept_event()
 	control.grab_focus()
 	stick_to(data)
