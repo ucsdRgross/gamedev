@@ -26,6 +26,8 @@ const THRESHOLD_MARGIN_PX := 2.0
 const BARE_BOARD_CORNER_PX := 24.0
 ## How far past the picture's far corner a release lands to be off the window altogether.
 const OFF_WINDOW_PX := 80.0
+## A resize off the fixture's 16:9 that still leaves the board wider than its window, so the re-fit has a grid to centre.
+const RESIZED_WINDOW := Vector2i(1024, 768)
 
 var _viewport : SubViewport = null
 var _main : Main = null
@@ -93,6 +95,7 @@ func _ready() -> void:
 	await test_a_cancel_ends_a_latched_drag_pan()
 	await test_a_cancel_that_steps_out_lands_first_and_is_superseded()
 	await test_a_drag_pan_release_lands_on_the_grid_nearest_the_centre()
+	await test_a_drag_pan_landing_focuses_its_grid_and_a_resize_keeps_it()
 	await test_a_drag_pan_release_focuses_an_entrance_card()
 	await test_a_key_pan_leaves_the_focus_where_it_was()
 	behavior_section("THE CANCEL LADDER STEPS OUT ONE LEVEL PER PRESS")
@@ -1880,6 +1883,51 @@ func test_a_drag_pan_release_lands_on_the_grid_nearest_the_centre() -> void:
 			"...and the board comes to rest with that grid centred, not wherever the pointer left "
 			+ "it", "nearest %d, %.2f px off centre"
 			% [_nearest_drawn_grid(), _grid_off_centre_px(1)])
+	await _end_fixture()
+
+#THE LANDING FOCUSES THE GRID IT LANDS ON, as an arrow crossing into it does, so a later re-fit
+#keeps that grid: the sidebar's reserve re-fits the board at the FOCUSED grid (owner ruling).
+func test_a_drag_pan_landing_focuses_its_grid_and_a_resize_keeps_it() -> void:
+	await _start_fixture_grids(2)
+	_pa.focus_grid(0)
+	await _settle_layout()
+	var from := _bare_board_point()
+	check(_pa.focused_grid == 0 and from != Vector2.INF,
+			"precondition: grid 0 of two is focused, with a point on no card to press",
+			"focused %d, at %s" % [_pa.focused_grid, from])
+	if from == Vector2.INF:
+		await _end_fixture()
+		return
+	var travel := -_pa.grid_pitch_px() * 0.75 * _pa.drawn_zoom
+	await _begin_pan(from, travel)
+	await _frames(2)
+	check(_nearest_drawn_grid() == 1,
+			"precondition: the drag carried grid 1 nearest the middle of the window",
+			"nearest %d" % _nearest_drawn_grid())
+	await _push(_mouse_button(from + Vector2(travel, 0.0), false), _picture_viewport)
+	await _frames(2)
+	check(_pa.view_mode == PlayArea.ViewMode.FOCUSED and _pa.focused_grid == 1
+			and _pa.pan_grid == 1,
+			"a drag pan that lands on grid 1 FOCUSES it, as an arrow crossing into it does",
+			"mode %d, focused %d, pan_grid %d" % [_pa.view_mode, _pa.focused_grid, _pa.pan_grid])
+	await _settle_layout()
+	await _settle_scroll_x()
+	var inset := _pa.board_inset_left
+	_viewport.size = RESIZED_WINDOW
+	await _settle_layout()
+	await _settle_scroll_x()
+	check(not is_equal_approx(_pa.board_inset_left, inset),
+			"precondition: the resize changed the sidebar's reserve, so the board re-fitted",
+			"board_inset_left %.2f -> %.2f" % [inset, _pa.board_inset_left])
+	var bar := _pa.scroll_container.get_h_scroll_bar()
+	check(bar.max_value - bar.page > 0.0,
+			"precondition: the resized board is still wider than its window, so a grid can be centred",
+			"range %.1f" % (bar.max_value - bar.page))
+	check(_pa.focused_grid == 1 and _nearest_drawn_grid() == 1
+			and _grid_off_centre_px(1) <= 1.0,
+			"...and a later resize keeps grid 1 centred, never jumping back to grid 0",
+			"focused %d, nearest %d, grid 1 %.2f px off centre"
+			% [_pa.focused_grid, _nearest_drawn_grid(), _grid_off_centre_px(1)])
 	await _end_fixture()
 
 #A DRAG PAN IS A POINTER GESTURE AND THE POINTER ENDS IT, so the release hands the keyboard a

@@ -2082,8 +2082,8 @@ func grab_cards(datas:Array[CardData]) -> void:
 #and bare motion went on panning until a later click fell through: the pan became a toggle.
 
 #`lands_on_a_grid` is true for a gesture that TRAVELLED carrying no card -- a drag pan, which the
-#owner's rule ends on the grid nearest the middle of the window, as Left and Right do -- and for a
-#CANCEL, which ends a latched pan the same way rather than leaving the board between two grids.
+#owner's rule ends FOCUSED on the grid nearest the middle of the window, as an arrow crossing does --
+#and for a CANCEL, which ends a latched pan the same way rather than between two grids.
 func _end_the_content_drag(lands_on_a_grid: bool, release_x: float) -> void:
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth or not smooth.input_handler.content_dragging: return
@@ -2095,7 +2095,9 @@ func _end_the_content_drag(lands_on_a_grid: bool, release_x: float) -> void:
 
 	var target := _entrance_stop_nearest(release_x)
 	if target: target.grab_focus()
-	pan_to_grid(_grid_nearest_the_window_centre())
+	var landing := _grid_nearest_the_window_centre()
+	if view_mode == ViewMode.FOCUSED: focus_grid(landing)
+	else: pan_to_grid(landing)
 
 #The Entrance CARD nearest `x`, or the leftmost when `x` is not finite; null while the Entrance is
 #empty, between the last placement and the refill, which neither a drag pan nor an arrow waits out.
