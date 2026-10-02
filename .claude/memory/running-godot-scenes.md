@@ -73,9 +73,9 @@ across identical code it went 17, then 1, then 1 — so **diff the per-suite ban
   printing `NO SUITE BANNER`, which vanished on serialising. **A failure observed while two runs
   overlapped is not evidence.** Check for live Godot processes before starting, including before a
   background batch. The converse trap is under "Diagnosing" below.
-  ⚠ **Two SESSIONS on one box share `user://` through `%APPDATA%`** — export a private
-  `APPDATA` per session. Measured: two shared runs truncated each other's logs and pushed a full
-  run past the wrapper's timeout.
+  ⚠ **Two SESSIONS on one box share `user://` through `%APPDATA%`** (on Linux,
+  `$XDG_DATA_HOME`) — export a private one per session. Measured: two shared runs truncated
+  each other's logs and pushed a full run past the wrapper's timeout.
 - **Check no editor has the project open** — list Godot processes and inspect `MainWindowTitle`.
   See [[godot-editor-disk-sync]] for what you may and may not shut down. If the editor is open, write
   the code and ask the owner — the rule is their unsaved work. Do not defend it with "it hangs":

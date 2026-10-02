@@ -88,13 +88,17 @@ A green suite is the weakest evidence there is. Every test below passed review w
 
 15. **A FILTERED run read as a full one.** `--filter` and `--logic` void the suite count, the only
     load-failure detector, so only the full unfiltered windowed run is a verdict —
-    [[running-godot-scenes]].
+    [[running-godot-scenes]]. A filter that names no suite runs 0 checks — read the
+    banner's suite count before its colour.
 
 16. **A settle that waits N process frames.** Two can land inside one physics tick, so the value
     has not moved yet (1 failure in 4 runs); and N frames is a frame-rate-dependent TIME — 30
     frames measured 45 ms on a box running the windowed suite at ~660 fps, under the 50 ms a
     delta-integrated scroll needed for its first whole pixel, so a check green for months went red
-    on identical bytes. Await `physics_frame`, summed delta, or the moved value itself. Same shape:
+    on identical bytes. Await `physics_frame`, summed delta, or the moved value itself. A settle that
+    accepts ONE unchanged process frame is the same trap: a frame with no physics tick reads as
+    still while a physics-driven node is mid-move (a click aimed 209 px off a card, ~1 run in 3 on
+    software GL). Same shape:
     a `queue_free`d node stays a child, and a container's extent lags, until the frame ends.
 
 17. **A test defined but never registered in `_ready`.** It never runs and cannot fail. Solatro's
