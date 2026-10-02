@@ -28,7 +28,6 @@ Docs describing them live in `archive/` and are not maintained.
 | [VFX.md](VFX.md) | **Read FIRST for any fire / juggling / prop-art / outline / FX-shader work.** The map, the runbook, the backlog and the known bugs; the rules themselves are ARCHITECTURE_REVIEW §4g/§4h/§4j. |
 | [PICTURE_WALL.md](PICTURE_WALL.md) | **Read FIRST for any wall / picture / transition / overlay work.** The map, the WIRING CONTRACT (this subsystem's one recurring defect is a component nothing calls), and the landmines. `design/picture-wall/DESIGN.md` stays the authority on behaviour, cited by question id. |
 | [FX_HANDOFF.md](FX_HANDOFF.md) | The fire/FX-performance stream. §0d.10 prices every remaining lever and lists the things that look like levers and measure as none. |
-| [HANDOFF_spotlight.md](HANDOFF_spotlight.md) | The spotlight mechanic + visuals: status ledger, open bugs, what is still owed. |
 | [PERFORMANCE.md](PERFORMANCE.md) | The optimisation survey — the measured baseline, what each instrument is blind to, every angle with an honest price, and the ⛔ list. A map of angles, not an open task. |
 | [LAYERING.md](LAYERING.md) | Board draw order (all-structural, no `z_index`). |
 | [HEADLESS_TESTING.md](HEADLESS_TESTING.md) | Test-environment traps. **Read before debugging a "hanging" test.** |

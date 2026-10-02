@@ -2037,7 +2037,7 @@ of dropping it.
 them**: the three ROTATED ones (§1b) plus `09_embers` (randomised particles, by design).
 ⚠ **`10_light_layer` was a FIFTH and nobody had noticed** — upright, and the worst of the set at 8.1%
 of the frame. It is now FIXED (§1b) and back in the diff. Its late discovery still matters:
-HANDOFF_spotlight's G3.3 pass had explained that exact panel's difference as the 38x52 art refactor,
+The spotlight stream's G3.3 pass had explained that exact panel's difference as the 38x52 art refactor,
 "verified by eye", which a panel moving 78k px between two runs of ONE unchanged build could not
 support — that claim is now re-testable. Two stale retired-build panels still pad `fx_snapshots`
 (§8c).

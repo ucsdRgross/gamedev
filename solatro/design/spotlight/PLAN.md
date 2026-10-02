@@ -80,16 +80,15 @@ either function.**
 ### The opening prompt for a fresh session
 
 Paste this verbatim, at any point in the stream. **It carries no phase, no step number and no
-status** — those live in `solatro/HANDOFF_spotlight.md`, which is the one place they are current.
+status**. Every step S1–S18 is done; what is still open is in `solatro/todo.md`.
 A prompt that names a phase is wrong the moment that phase lands.
 
 ```
 Implement solatro/design/spotlight/PLAN.md.
 
-Read PLAN.md, then solatro/HANDOFF_spotlight.md; together they are self-contained.
+Read PLAN.md, then the Spotlight items in solatro/todo.md.
 PLAN.md is the immutable specification (what each step IS, section 0b for dependencies,
-sections 2-5 for the steps and their gates). HANDOFF_spotlight.md is the live status
-ledger - id / status / evidence / notes, and nothing else.
+sections 2-5 for the steps and their gates).
 solatro/design/spotlight/DESIGN.md is the authority on behaviour: where it and the plan
 disagree, the design wins and the plan is wrong. That is not a tie broken by whichever
 is more specific.
@@ -134,10 +133,8 @@ re-attributed to the previous step, so the gap protocol's stale-step report then
 steps. `designloop/src/gaps.mjs` `planSteps()` matches `**Sn — title**` at the start of a line, or a
 bare `id: Sn` inside YAML. Nothing else.
 
-**Progress lives in `solatro/HANDOFF_spotlight.md`, not here.** That file is this stream's live
-journal — one YAML task per step, with `status`, `evidence` and `notes` — and `/handoff` owns it. It
-uses the `id: Sn` form, which `planSteps()` also reads, so the stale-step report keeps working from
-either document. **This plan is a specification and does not change as work proceeds**; a spec that
+**Progress is not tracked here:** every step is done, and what is open is in `solatro/todo.md`.
+**This plan is a specification and does not change as work proceeds**; a spec that
 accumulates ticks stops being diffable.
 
 ### Dependencies — what actually blocks what
@@ -665,4 +662,4 @@ exists (`DESIGN.md` §1.6 fact 1).
 2. **Never run Godot while the owner's editor is open** (`Get-Process *odot*`).
 3. **Verify visuals by eye.** Render, look at the PNG, describe what it shows — or say UNVERIFIED.
 4. **Type every array element and every for-loop variable** — warnings are errors.
-5. **`/handoff`** — this spans more than one session; keep `solatro/HANDOFF_spotlight.md` current.
+5. **`/handoff`** — this spans more than one session; keep a `solatro/HANDOFF_<topic>.md` current.

@@ -353,7 +353,16 @@ written when a run stalls or fails.
   code comments cite its question IDs (`Q85`, `Q96`) and its three gap files.
 - ⬜ **Spotlight: answer GAP-010 / GAP-011** (overrun banking; emptied-section hooks —
   `design/spotlight/gaps/`), **judge G2.2** (rank-glyph readability), **pick
-  `spotlight_separation_mode`**. Status ledger: HANDOFF_spotlight.md.
+  `spotlight_separation_mode`**. Phases 1–4 are built; these are what is left.
+  - **G2.2 is the owner's alone:** judge on the tool's scenario `S15` or on `reveal_shot`'s
+    `user://reveal_shots/02_open_full.png` — the rank glyph must stay legible under the circle.
+  - **The separation mode:** `CARD_HEIGHT` (pitch = one card) vs `JUMP_ADJUSTED` (card − separation
+    − jump rise); `reveal_shot` captures both.
+  - **The GAP-006 per-section pulse is untuned:** at shipped pacing the whole cycle is 1–3 frames.
+    Judge it on the tool's `S17` preset with `play` on; the knobs are `spotlight_hold_fraction` and
+    the two dim fractions, and `spotlight_dim_target = 0` turns the dim off, keeping every light.
+  - **The log-parsing subagent** (owner: *"should only be used for massive logs such as recording an
+    entire playthrough from start to lose/win"*); `EventLog.summary()` serves ordinary captures.
 - ⬜ **Comparator buckets: a BALANCE call and one UX call.** ⚠ **Not a functionality question —
   the functionality is tested.** PLAN §6's six meld checks run through a real `Game`, stacking
   routes through its own hooks with GATE 8 asserting the isolation both ways, and the five authored
@@ -681,7 +690,9 @@ before and after each fix, same session, same box. Three fixes are sized and not
   survive a copy uses real suits.
 - Background-save robustness at scale unverified (large history serialize on a worker thread) —
   watch the console; the history cap bounds it.
-- **PIXELS `test_the_card_mask_is_the_card_the_player_sees` WAS GREEN but PINNED, not fixed.** The
+- **PIXELS `test_the_card_mask_is_the_card_the_player_sees` WAS GREEN but PINNED, not fixed.** While
+  the idle rig animation is off the check runs the REST POSE ONLY and asserts exact agreement; the
+  band below is what returns if the idle is re-enabled (`test_pixels.gd` says how). The
   check no longer demands exact cell agreement — that bar was unachievable and passed at rest by
   alignment. It asserts a band around the outline: **edges ≤ 1.7 FX cells** (the fraction is the
   32-slot wedge index, whose quantization is angular; measured worst 1.50) and **corner bite ≤ 2.6

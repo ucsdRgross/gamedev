@@ -2094,9 +2094,9 @@ Sharp edges:
 ## 9. THE SPOTLIGHT — the defects, and the seam each one hid in
 
 Fifteen defects were found and fixed while finishing the spotlight stream. **Every one of them was
-green in the suite when it shipped**, and most were found by the owner LOOKING at the screen. They are
-recorded here rather than in `HANDOFF_spotlight.md` because that file is status, not history — but the
-*shapes* below recur, and each is a check worth writing before trusting a similar claim.
+green in the suite when it shipped**, and most were found by the owner LOOKING at the screen. The
+*shapes* below recur, and each is a check worth writing before trusting a similar claim. The spec is
+`design/spotlight/`; what is still open is in `todo.md`.
 
 ### 9a. Two representations of one fact (the stream's dominant shape)
 
@@ -2153,8 +2153,9 @@ ordering enforced between them.
 - **The row opening overshot by the container's `separation`.** The test compared the STRIP's growth,
   which ignores the inter-row gap by construction; it now asserts the resulting **row pitch**.
 - **`test_the_card_mask_is_the_card_the_player_sees` demanded exact agreement** between a 24-gon mask
-  and a bilinearly-skinned texture's alpha — unachievable, and passing at rest only by alignment. Now a
-  measured band; see `todo.md` for the two model approximations it pins.
+  and a bilinearly-skinned texture's alpha — unachievable, and passing at rest only by alignment. Now
+  rest-pose-only and exact while the idle rig is off, with a measured band for the deformed poses;
+  see `todo.md` for the two model approximations it pins.
 
 ### 9e. Rendering that never reached a pixel
 
