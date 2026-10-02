@@ -1,16 +1,9 @@
+# CARDS ALIVE AGAINST CARDS REACHABLE from a legitimate owner (run doc, live game, open viewers): a
+# sustained excess is something holding dropped cards, and push_error's histogram of the unreachable
+# by stage and modifier class names it. Debug builds only; knobs are player_settings' leak_sentinel_*.
 extends Node
-## Debug-build playtest leak sentinel (2026-07-18 leak rework, workstream B). At quiescent
-## moments (map entry / show exit via request_check, plus a slow timer — never mid-act) it
-## prunes CardData.sentinel_registry, counts the cards still alive, and counts the cards
-## REACHABLE from every legitimate owner (run doc, live game, open viewers). A sustained
-## excess of alive over reachable means something is holding dropped cards — push_error
-## prints the counts plus a histogram of the unreachable cards by stage and modifier
-## classes, which is what NAMES the leak source. Tunables live in player_settings.gd
-## (leak_sentinel_*). Idle in release builds and under the test runner (suites abandon
-## cards on purpose; the LEAK CANARY suite drives tick() directly instead).
 
-## Set true by the test runner (TestLog.begin) — suites deliberately abandon cards, so the
-## sentinel's own timer/hooks stay quiet there (the LEAK CANARY suite drives tick() itself).
+## Set by the test runner: suites abandon cards on purpose, so the timer and hooks stay quiet there.
 static var test_mode : bool = false
 
 var _strikes : int = 0
@@ -28,15 +21,14 @@ func _ready() -> void:
 	SettingsManager.settings.settings_changed.connect(func() -> void:
 		if _timer: _timer.wait_time = maxf(SettingsManager.settings.leak_sentinel_interval, 1.0))
 
+# Never mid-act: a resolving submit holds transient copies that are not leaks.
 func _on_timer() -> void:
 	if not _enabled(): return
-	# never mid-act: a resolving submit holds transient copies that are not leaks
 	var game : Game = CardEnvironment.get_current_game()
 	if game and game.processing: return
 	tick()
 
-## Quiescent-moment hook (map entry, show exit): check after the drops settle (two idle
-## frames), skipping like the timer does when a game is still resolving.
+## Checks at map entry and show exit once the drops settle, skipped like the timer while a game resolves.
 func request_check() -> void:
 	if not _enabled(): return
 	await get_tree().process_frame
@@ -49,8 +41,7 @@ func _enabled() -> bool:
 	return OS.is_debug_build() and not test_mode \
 			and SettingsManager.settings.leak_sentinel_enabled
 
-## One full check (public so the LEAK CANARY suite can drive the strike logic directly).
-## Returns the unreachable-card count.
+## One full check, returning the unreachable-card count; public so the LEAK CANARY suite drives the strikes.
 func tick() -> int:
 	var alive := _alive_cards()
 	var reachable := _reachable_set()
@@ -70,9 +61,7 @@ func tick() -> int:
 		_strikes = 0
 	return unreachable.size()
 
-## Prune dead registry weakrefs without a full check. The LEAK CANARY suite calls this
-## before each object count so benign registry growth (one WeakRef per card ever built,
-## normally pruned on the sentinel's own ticks) can't fail its growth assertions.
+## Prunes dead registry weakrefs, so LEAK CANARY's object counts never see one WeakRef per card ever built.
 func prune() -> void:
 	var _alive := _alive_cards()
 
@@ -91,24 +80,24 @@ func _alive_cards() -> Array[CardData]:
 # Every card reachable from a legitimate owner, as a Dictionary set.
 func _reachable_set() -> Dictionary[CardData, bool]:
 	var seen : Dictionary[CardData, bool] = {}
-	# 1. the run document (Main.save_info always mirrors RunManager.run, but root both)
+# 1. the run document (Main.save_info always mirrors RunManager.run, but root both)
 	_add_run_state(seen, Main.save_info)
 	_add_run_state(seen, RunManager.run)
-	# 2. RunManager's serialization-ready cached copies + any queued background payload
+# 2. RunManager's serialization-ready cached copies + any queued background payload
 	_add_cards(seen, RunManager._saveable_deck)
 	_add_cards(seen, RunManager._saveable_rules)
 	if RunManager._saver_mutex != null:
 		RunManager._saver_mutex.lock()
 		_add_run_state(seen, RunManager._pending_payload)
 		RunManager._saver_mutex.unlock()
-	# 3. the live environment: board collections + undo history + the fallback Deck
+# 3. the live environment: board collections + undo history + the fallback Deck
 	var game : Game = CardEnvironment.get_current_game()
 	if game:
 		_add_cards(seen, game.state.all_card_datas())
 		for snap : GameData in game.save_history:
 			_add_cards(seen, snap.all_card_datas())
-		# The debug rewind's own snapshots are full board duplicates and a real owner. Without
-		# them the first commit of every show reports a whole board as leaked.
+# The debug rewind's own snapshots are full board duplicates and a real owner. Without
+# them the first commit of every show reports a whole board as leaked.
 		for snap : GameData in game.debug_snapshots():
 			_add_cards(seen, snap.all_card_datas())
 		if game.deck:
@@ -117,7 +106,7 @@ func _reachable_set() -> Dictionary[CardData, bool]:
 	elif CardEnvironment.CURRENT:
 		for collection : Variant in CardEnvironment.CURRENT.get_card_collections():
 			_add_collection(seen, collection)
-	# 4. open UI owners (viewers/pickers list live or preview decks)
+# 4. open UI owners (viewers/pickers list live or preview decks)
 	_scan_ui(seen, get_tree().root)
 	return seen
 
@@ -151,8 +140,6 @@ func _scan_ui(seen: Dictionary[CardData, bool], node: Node) -> void:
 			_add_cards(seen, entry["cards"] as Array[CardData])
 		if picker._rules_built:
 			_add_cards(seen, picker._deck.get_rules())
-	elif node is MapHoverPanel:
-		_add_cards(seen, (node as MapHoverPanel)._preview_cards)
 	elif node is ChoiceViewer:
 		var viewer : ChoiceViewer = node
 		if viewer.data:
