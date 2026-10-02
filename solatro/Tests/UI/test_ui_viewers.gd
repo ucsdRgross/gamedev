@@ -1024,25 +1024,29 @@ func test_pack_click_selects() -> void:
 	viewer.queue_free()
 	await get_tree().process_frame
 
-## Take adds the WHOLE pack whatever is picked: the pick is what the player is pointing at, never what they get.
+## Take adds the WHOLE pack whatever the pointer last described: the highlight is what the player is pointing at, never what they get.
 func test_take_ignores_the_selection() -> void:
-	for pick : int in [-1, 1]:
-		var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(self, _card, 5, 0)
-		await get_tree().process_frame
-		await get_tree().process_frame
-		if pick >= 0: _click(viewer._cards.controls[pick])
-		await get_tree().process_frame
-		check(viewer.confirm_button.disabled == (pick >= 0),
-				"Take is live with nothing picked, and held behind a sticky description with %s"
-						% ("a card picked" if pick >= 0 else "nothing picked"))
-		viewer._cards.unstick()
-		await get_tree().process_frame
-		var got : Array[CardData] = []
-		viewer.confirmed.connect(func(taken: Array[CardData]) -> void: got.assign(taken))
-		viewer.confirm_button.pressed.emit()
-		check(got.size() == 5, "Take adds all 5 cards with %s picked"
-				% ("a card" if pick >= 0 else "nothing"), str(got.size()))
-		await get_tree().process_frame
+	var viewer : ChoiceViewer = await ChoiceViewer.add_to_scene(_focus_window, _card, 5, 0)
+	await get_tree().process_frame
+	viewer.fit_beside(_focus_window.get_visible_rect())
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var described : Array[String] = []
+	viewer.info_requested.connect(func(entry: InfoEntry) -> void:
+		described.append(entry.title)
+		if entry.visual: entry.visual.queue_free())
+	var got : Array[CardData] = []
+	viewer.confirmed.connect(func(taken: Array[CardData]) -> void: got.assign(taken))
+	_bring_the_focus_window_under_the_pointer()
+	var hovered : ControlCard = viewer._cards.controls[1]
+	await _move_pointer_onto(hovered)
+	check(not described.is_empty() and viewer._cards.sticky == null,
+			"sanity: the pointer describes a listed card and sticks nothing", str(described.size()))
+	await _click_through_the_viewport(viewer.confirm_button)
+	check(got.size() == 5, "a real click on Take adds all 5 cards, not the described one", str(got.size()))
+	await _take_the_pointer_and_the_focus_window_away()
+	if is_instance_valid(viewer): viewer.queue_free()
+	await get_tree().process_frame
 
 func test_partial_card_rendering() -> void:
 # Rank-only (suitless) preview cards must render uncolored; suit-only (rankless)
