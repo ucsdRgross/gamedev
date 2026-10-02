@@ -67,6 +67,7 @@ func _ready() -> void:
 	await run_the_overview_view_and_cursor_agree_after_a_removal_test()
 # ⚠ THE TOUCH TESTS GO LAST: a touch leaves no hover behind, and the mouse paths above need one.
 	await run_a_swipe_fires_once_test()
+	await run_every_focused_pan_focuses_the_grid_it_lands_on_test()
 	await run_a_drag_on_a_card_places_and_on_the_board_pans_test()
 	await run_the_game_picture_fits_exactly_three_grids_test()
 	await run_the_render_target_never_exceeds_the_clamp_test()
@@ -2049,6 +2050,52 @@ func run_a_swipe_fires_once_test() -> void:
 	check(pa.pan_grid == 0,
 			"swiping the other way pans one grid back, once",
 			"pan_grid %d" % pa.pan_grid)
+	await _tear_down(view)
+	picture_vp.queue_free()
+
+# THE GRID IN VIEW IS THE FOCUSED GRID: on a FOCUSED board a pan key and a swipe each land FOCUSED
+# on the grid they carry into view, as a drag pan does (owner ruling).
+func run_every_focused_pan_focuses_the_grid_it_lands_on_test() -> void:
+	behavior_section("EVERY FOCUSED PAN FOCUSES THE GRID IT LANDS ON")
+	var picture_vp := SubViewport.new()
+	picture_vp.size = PlayArea.game_picture_design_size(SettingsManager.settings)
+	add_child(picture_vp)
+	var view := await _stand_up_grids(2, picture_vp)
+	var pa := view.play_area
+	pa.focus_grid(0)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and pa.focused_grid == 0,
+			"precondition: grid 0 of two is focused",
+			"mode %d, focused %d" % [pa.view_mode, pa.focused_grid])
+
+	for pressed : bool in [true, false]:
+		var key := InputEventKey.new()
+		key.keycode = KEY_PERIOD
+		key.pressed = pressed
+		picture_vp.push_input(key)
+		await get_tree().process_frame
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and pa.focused_grid == 1
+			and pa.pan_grid == 1,
+			"a real grid_pan_right key on a FOCUSED board lands FOCUSED on grid 1",
+			"mode %d, focused %d, pan_grid %d" % [pa.view_mode, pa.focused_grid, pa.pan_grid])
+
+	pa.focus_grid(0)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	var from := _bare_point(pa)
+	check(pa.focused_grid == 0 and pa._card_control_at(from) == null,
+			"precondition: grid 0 is focused again, and the swipe starts on BARE BOARD",
+			"focused %d, at %s" % [pa.focused_grid, from])
+	_swipe(pa, from, -pa._swipe_threshold_px() * 4.0, 6)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and pa.focused_grid == 1
+			and pa.pan_grid == 1,
+			"a swipe on a FOCUSED board lands FOCUSED on grid 1",
+			"mode %d, focused %d, pan_grid %d" % [pa.view_mode, pa.focused_grid, pa.pan_grid])
 	await _tear_down(view)
 	picture_vp.queue_free()
 

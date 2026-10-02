@@ -1448,7 +1448,13 @@ func pan_by_grids(step: int) -> void:
 	if target < 0 or target > last:
 		_bounce_board(step)
 		return
-	pan_to_grid(target)
+	_land_the_pan_on(target)
+
+#THE GRID IN VIEW IS THE FOCUSED GRID: a pan the player makes on a FOCUSED board focuses the grid it
+#lands on, whatever made it -- a key, a swipe or a drag. The overview's pan moves the view alone.
+func _land_the_pan_on(gi: int) -> void:
+	if view_mode == ViewMode.FOCUSED: focus_grid(gi)
+	else: pan_to_grid(gi)
 
 #Centre the view on grid `gi`.
 
@@ -2095,9 +2101,7 @@ func _end_the_content_drag(lands_on_a_grid: bool, release_x: float) -> void:
 
 	var target := _entrance_stop_nearest(release_x)
 	if target: target.grab_focus()
-	var landing := _grid_nearest_the_window_centre()
-	if view_mode == ViewMode.FOCUSED: focus_grid(landing)
-	else: pan_to_grid(landing)
+	_land_the_pan_on(_grid_nearest_the_window_centre())
 
 #The Entrance CARD nearest `x`, or the leftmost when `x` is not finite; null while the Entrance is
 #empty, between the last placement and the refill, which neither a drag pan nor an arrow waits out.

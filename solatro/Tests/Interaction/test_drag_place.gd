@@ -1445,37 +1445,31 @@ func test_a_drag_pickup_aims_at_the_grid_nearest_the_window_centre() -> void:
 			"home grid %d, slide %.3f" % [_pa.entrance_home_grid(), _pa._entrance_slide])
 	await _right_click(from, false)
 
-#MID-PAN: the board is heading for grid 1 while grid 0 is still the one in front of the player.
+#MID-PAN: a real pan key focuses grid 1, the grid it heads for, on the frame it is heard, while
+#grid 0 is still the grid in front of the player -- the one state where nearest and focused differ.
 	_pa.focus_grid(0)
 	await _settle_layout()
-	check(_pa.focused_grid == 0 and _nearest_drawn_grid() == 0,
-			"precondition: the board is focused on grid 0 and grid 0 is the grid in view",
-			"focused %d, nearest %d" % [_pa.focused_grid, _nearest_drawn_grid()])
-#⚠ ASKED ON THE FRAME THE PAN STARTS, BEFORE ANYTHING HAS MOVED. The board eases out, so it is past
-#the halfway point between the two grids within a handful of frames (measured: a pan key's own
-#press-and-release is already enough) and this is the only honest way to catch the state.
-	_pa.pan_by_grids(1)
-	check(_pa.pan_grid == 1 and _nearest_drawn_grid() == 0
+	from = _control_centre(_entrance_controls()[0])
+	await _push(_motion(from), _picture_viewport)
+	await _push(_motion(from), _picture_viewport)
+	await _push(_mouse_button(from, true), _picture_viewport)
+#⚠ THE KEY AND THE PICKUP'S TRAVEL ARRIVE ON ONE FRAME. The board eases out, so it is past the
+#halfway point within a handful of frames and the state this asks about is gone.
+	_picture_viewport.push_input(_key(KEY_PERIOD, true))
+	check(_pa.focused_grid == 1 and _nearest_drawn_grid() == 0
 			and _pa._grid_nearest_the_window_centre() == 0,
-			"the grid nearest the window's centre is read off where the board IS, not off the grid "
-			+ "a pan is heading for",
-			"pan_grid %d, drawn nearest %d, product says %d"
-			% [_pa.pan_grid, _nearest_drawn_grid(), _pa._grid_nearest_the_window_centre()])
-
-#THE PAN LANDED: grid 1 is now the grid in front of the player while grid 0 is still focused.
-	var waited := 0.0
-	while waited < 3.0 and _nearest_drawn_grid() != 1:
-		await get_tree().process_frame
-		waited += get_process_delta_time()
-	check(_nearest_drawn_grid() == 1 and _pa.focused_grid == 0,
-			"precondition: the pan carried grid 1 nearest the centre while the board is still "
-			+ "FOCUSED on grid 0",
-			"nearest %d, focused %d" % [_nearest_drawn_grid(), _pa.focused_grid])
-	var late : CardData = _pa.ui_data[_entrance_controls()[0]]
-	await _select_the_card_in_hand(late)
-	check(_pa.focused_grid == 1,
-			"...and a pickup now takes grid 1: nearest is geometry, not the grid that was focused",
+			"precondition: a real pan key focused grid 1 while grid 0 is still the grid in view",
+			"focused %d, drawn nearest %d, product says %d"
+			% [_pa.focused_grid, _nearest_drawn_grid(), _pa._grid_nearest_the_window_centre()])
+	var to := from + Vector2(_pa._swipe_threshold_px() * 3.0, 0.0)
+	_picture_viewport.push_input(_motion(from.lerp(to, 0.5)))
+	_picture_viewport.push_input(_motion(to))
+	await _frames(2)
+	check(_held_card() != null and _pa.focused_grid == 0,
+			"...and a drag pickup mid-pan takes grid 0: nearest is geometry, not the focused grid",
 			"focused %d, %s" % [_pa.focused_grid, _hand_str()])
+	await _push(_key(KEY_PERIOD, false), _picture_viewport)
+	await _end_drag(to)
 	await _settle_layout()
 	check(absf(_drawn_centre_x(_pa.upper_zone_right)
 			- _drawn_centre_x(_pa.scroll_container)) <= 1.0,
