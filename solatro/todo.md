@@ -262,6 +262,173 @@ written when a run stalls or fails.
   ⚠ The **exit-time** ObjectDB count is a different measure and **not** a regression: 4 before this
   work and 4 now.
 
+## Open bugs from the playtest-fixes stream
+
+The `combine-sidebar-boardplan` stream's residue. The heading starts `## Open bugs` so
+`gate.py --handoff solatro/todo.md` can match a failure against it. Every intermittent: measure
+before naming a cause; a third failure makes it a fix step (RULINGS_playtest_fixes.md, thirty-seventh
+round). Counts are failing runs of runs.
+
+**Owner questions**
+- OWNER QUESTION (R5 reading): a drag released off a legal cell puts the card back over its slot
+  but keeps it IN HAND (lifted, drop map lit) until placed or cancelled — "release anywhere else
+  returns it" was read as returns-to-slot, not drops-the-hold.
+- OWNER QUESTION: by keys, a transient (unsticky) game description survives overlay Back and is
+  re-shown on Forward over a card nothing is on, with no X. `HudContainer._entry_by_screen` says a
+  return re-shows; the second playtest (2) says an unsticky description closes when unhovered.
+- OWNER QUESTION: the game never applies a formation to hoops (`prop_layer.gd` ~518, `if kind == 0:
+  continue`), so `Cards/Props/Formations/hoop.tres` positions nothing — the round-3 "hoops should
+  be aligned horizontally" changed only it. Keep the hoop editor view, or wire the formation?
+- OWNER QUESTION: a wheel over the SIDEBAR zooms the map a step per notch while a viewer is up (the
+  sidebar is outside the viewer's catcher; with none up, unmeasured). Should it ever reach the picture?
+- OWNER QUESTION (P13, never answered): a map HOVER names the dot but no longer describes the node
+  in the sidebar; clicking the chosen chooser card keeps it chosen; a click on bare map leaves the
+  pick alone; the possible-cards viewer is translucent and sparse.
+- OWNER QUESTION (P44, never answered): a grid ADDED mid-show to a one-grid board waits for the
+  ordinary lift (a, built) or clears the commitment (b); a one-grid commitment is never lifted
+  (a, built) or lifts as before (b).
+- OWNER QUESTION: the picture-wall design DAG warns QR6's default (a) reaches nothing — Q76 is gated
+  `[QR6=b|c]`, Q77 `[QR6=b]`. Widen the gates or change the default.
+- A look for review round 4: at 600x1000, sidebar out, the portrait board's centre y is 383 against
+  the picture's 457; the formation editor's hoop group sits left of the stand-in card's centre.
+
+**Intermittent test failures**
+- VISUAL LAYERS "one frame after the section changes, no circle has SNAPPED to its new card": 3
+  implementer runs (P44, P58e-3, P70 trees). Lead, read not measured: `spotlight_director` advances
+  `b.t += delta / travel`, so one long frame can finish a whole travel.
+- PIXELS "fire brightens when its host is highlighted" (0.272 plain vs 0.250): 1 of 5 gates.
+  PIXELS "card_scale 1.5 ... the pip's rim is exactly 1 art unit": 1 of 2 gates.
+- GRID VIEW TP-138 "the board at rest is already where an explicit pan puts it" (-445.7 vs -443.3,
+  1 px bound): 1 of 5 runs.
+- GRID VIEW "3 grids, grid 1 reached by a click on it: it is centred in the board's window" (970.72
+  vs 971.87) and its "...Entrance is drawn under it": COUNT 2.
+- GRID VIEW TP-105 "a real grid_pan_right key press steps the view one grid" and "repeated
+  pan-right presses stop at the board's last grid", with UI PROPS "the row sweep never reverses
+  direction" and "hoop sweeps its row in ONE direction": 1 of 2 gates on a shared box. A different
+  TP-105 check failed 1 of 8 GridView runs (edge 316.000 vs 413.119).
+- GRID LAYOUT "TP-85: caught mid-growth, the row is PART WAY to its new height": 1 of 2 gates on a
+  shared box; 139/139 alone.
+- DRAG PLACE "...and bare motion afterwards moves the board not at all" (-836.74 -> -837.32),
+  "leaving the picture stops the slide exactly where it stood" and "the slide was caught part way
+  across": 1 of 2 runs. DRAG PLACE "precondition: the drag carried grid 1 nearest the middle of
+  the window while the board is still AIMED at grid 0": 1 slow gate (884 s vs ~555 s); 491/491
+  alone 3 of 3.
+- SIDEBAR "Close fix 2: a new run's map opens on the HUD, not the last run's pack description": 1
+  of 2 SIDEBAR-including runs, 0 of 8 alone.
+- SIDEBAR "sanity: a reachable node lies on the map outside the window" (a random map): COUNT 1.
+- SIDEBAR test_deck_from_a_stuck_possible_card_opens_over_the_list, its click-outside pass (7
+  checks from "a real click pressed the stuck card's Deck"): COUNT 1.
+- SIDEBAR "sanity: the picker opening at (1280, 720) is sampled mid-slide" (frames over ~100 ms in
+  a 0.25 s slide): COUNT 1.
+- SIDEBAR "the map shows on the window's bottom" (test_sidebar ~5858): 1 of 2 filtered runs.
+- SIDEBAR "with no sidebar the map's camera carries no shift at all" (-0.00051) and "the
+  container's own rect follows a real resize" (x -0.00384): exact compares against a derived float
+  (tests-that-prove-nothing item 19). COUNT 1 each.
+- WALL FOCUS test_focus_and_transition_signals_fire_during_real_navigation: 3 freed-instance
+  SCRIPT ERRORs in PlayArea during `hud_container.slide_to`, 2 of 4 filtered runs, 0 full gates.
+  Lead, unmeasured: the SIDEBAR wall-surface row writes `settings.base_delay`, and the setter
+  broadcasts to every live listener in the shared window.
+- LEAK CANARY "OBJECT_COUNT returns to baseline after 3 full simulated play sessions" fails ALONE
+  or in a small filter (growth 40, 40, 4, 32, all RefCounted) and passes in every full gate.
+- A teardown 0xC0000005 after the banner (THE ENGINE TERMINATED ABNORMALLY): COUNT 2, filtered runs.
+- A worldgen teardown abort 0xC000001D in `addons/worldgen/core/steps/rivers.gd` (a Main torn down
+  mid-generation): 1 abort + 1 post-banner SCRIPT ERROR in 5 Sidebar-including runs, 0 gates.
+- WALL PAUSE's count moves 71 <-> 72 on unchanged code (a timing-dependent emit); never red.
+- Gate totals move only through BOARD FUZZ (randomised): compare per-suite tables in
+  `logs/test/test_output_all.log`. Unexplained: before P15 SIDEBAR read 1391 full vs 1406 filtered.
+- A LEAKED LIVE BOARD between suites: a settings write in WALL FOCUS rebuilt a PlayArea another
+  suite left alive. Find the suite that does not free its Main/GameView.
+
+**Latent product defects** (traced from code, unmeasured unless stated)
+- GameView's `description_dismissed` handler nulls `play_area.locked_data` with no screen check: an
+  X on a MAP description strips the frozen board's lock marking while the game's locked entry
+  survives; `exit_accepted` likewise rests focus on a frozen cell.
+- Deck over the chooser, nothing stuck: an arrow off a deck card may land on Take under it; Take
+  closing the chooser frees the deck's stuck lock with its sticky left set.
+- A game pile opened (over = false) over the map's deck-over-list stack takes `DeckViewer._open`
+  and drops the list from `_open` and `_under`; a Possible cards press then opens a second list.
+- Freeing Main while the token walks onto a pack node leaks the chooser `_open_booster` is building
+  (RID and GL texture leaks, a PagedAllocator line; 1 of 5 runs). `sidebar_snapshot` leaks the
+  same way when it quits mid-travel (631 ObjectDB; 3 of 7 runs).
+- The wall drops input while a move is in flight (`Wall._unhandled_input`, `input_locked`), so
+  fingers lifted during a pinch-in's zoom-out never reach PinchTracker and every later pinch is
+  refused. Tests work around it.
+- A Down pressed within a pan's ease picks the Entrance stop from a mid-flight x.
+- Below ~1072 px wide (side layout) the deck over the chooser covers the Wall button's outboard
+  ~18 px; a click there closes the deck.
+- `PlayArea.set_card_zones` fills `data_ui` from `CardEnvironment.get_current_game()`: a rebuild of
+  board A while CURRENT is game B frees every A card a frame later. No caller today.
+- `CardsViewer._data_of` is filled only when populate gets an `on_inspect`; `modal_verdict`'s accept
+  reads it unguarded. Every input-receiving list passes one today.
+- A chooser of 11+ cards would show above/below a run deck opened over it (the deck window is the
+  space less margins; the chooser may grow full height). No pack offers 11+ today.
+- `WallOverlay._input` treats every visible Control under the pointer as a cancel target: a
+  right-click over the deck picker's Dim reaches the menu picture (nothing reads it today).
+- Measured: a Container resets its child's scale on every re-layout, so a score-line text change
+  during the combo pulse (`game_view.gd _on_combo_changed`) cuts the pulse short.
+- P12: mid-slide, the board window's white outline shows with bare board to its right.
+- P24: the travel destination renders full-size for ~35 frames — cost unmeasured.
+- P44: a re-parent mid-move lerps from a stale parent-space start; a dying view hears a re-emitted
+  went_live; `enter_game` while the camera flies AWAY from a live game picture starts a show then
+  freezes it.
+- `map.gd` shows literals that bypass TRANSLATION ("Tour complete!", "Continue tour", "Fame: %d");
+  `world_map_controller.gd` `_unhandled_input` types the wheel zoom factor 1.15.
+- A cold editor parse of `FxSpotlightStyle.circle_radius`'s derived default is unmeasured; saving
+  `spotlight_default.tres` from the inspector with that knob touched writes a literal and stops
+  the derivation.
+- An editor re-save of `Cards/card_visual.tscn` can drop `auto_calculate_length_and_angle = false`
+  from the leaf Arm_* bones (~48% slower suite); OUTLINE test_leaf_bones_do_not_auto_calculate
+  catches it. ~58 s of the full run (mostly SIDEBAR) is still slower than on bd8c9f81 — one run.
+- For when the glow ships in game (Box A): POLY 40 costs the card glow +1.56 ms (+40%) over POLY 24
+  on a window of glowing cards; the posed rig's busiest wedge slot sits exactly on
+  WEDGE_CANDIDATES (8), zero headroom — OUTLINE's posed row goes red first.
+
+**Tests, harnesses and tooling**
+- `Tests/Visual/plan_reveal_shot.gd` does not parse (~116 `draw_card()` with too few arguments).
+- `Tests/Visual/wall_frame_probe` (600x1000) draws every non-game wall-view picture as a flat brown
+  panel.
+- `prop_art_snapshot.tscn` emits four "previously freed ... TypedArray" teardown errors from
+  `prop_visual.gd` ~299.
+- `sidebar_snapshot` hung twice (after chooser_window, after description_follow; COUNT 2) — lead:
+  `_leave_the_map_and_come_back` awaits `slide_settled` with no timeout. Its score_line_pulse is
+  staged on the random deal, so 1 of 2 runs wrote no PNG and `review.py shoot` failed the round.
+- test_sidebar hang risks: `test_the_chooser_and_its_deck_are_hidden_in_wall_view_and_back_on_return`
+  waits in an unbounded `while` (~7547) — bound it; its deck-over-chooser focus check passes with
+  no focus owner at all. Eight bare `await RenderingServer.frame_post_draw` (~1550, 1571, 1587,
+  5340, 6849, 6850, 8118, 8119) belong on `await_drawn_frames`. `_await_the_menus_slide` (~7274)
+  checks nothing although its docstring says it must fail one.
+- P18: `fx_snapshot.gd`'s header says rotated panels are not reproducible while `_settle_poses`
+  says the cause is fixed — reconcile by measurement (`snapshot_diff.py` NOISY).
+- P23: no row covers a goal-met placement leaving the focus on Continue. P42: no row drives a
+  cancel over a viewer hosted on the map.
+- `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control whose only
+  producer (the auto-arm) is deleted — settle by `assert` plus a suite run.
+- `Tools/spotlight_tool.tscn` has an ext_resource at `user://settings.tres` (the PLAYER's
+  settings); it and `formation_editor.tscn` reference scripts as `res://tools/...`, and
+  `spotlight_tool.gd` ~10 loads `res://tools/spotlight_scenarios.json` — the folder is `Tools/`.
+  Its `-- --verify` under a fresh APPDATA exits 1 on `LeakSentinel: 10 CardData alive, 0
+  reachable` (the missing settings file's three errors appeared in one measurement, not the next).
+- `gate.py` writes its last-gate state after a red full run too; its Open-bugs match once missed
+  "GRID VIEW TP-138" and tagged it NEW.
+- Two hooks match command TEXT, not the action: `godot-needs-private-appdata.ps1` blocks a command
+  that only mentions `run_tests.py`, `block-source-rewrite.ps1` a `sed` whose text names a cmdlet.
+  `solatro/visual-review/status.agent.json` is rewritten by every shoot and tracked — gitignore it.
+- After the merge (owner): split the GDScript lines where a `\` continuation was collapsed (`git
+  grep -nP "\S \t{2,}\S" -- '*.gd' ':!*/addons/*'`; 19 here, 24 on main) on a fresh branch off main,
+  one commit, parse-checked by the logic tier.
+
+**Docs**
+- The rim-ink records (`design/board-plan/gaps/GAP-004.md`, `design/sidebar/ASSUMPTIONS.md` ~993)
+  carry no pointer to the seventeenth round.
+- The design records still quote the pre-P43 picture (1576x887, inset 394, 262.7, 733.808, the 27+8
+  band): `design/sidebar/{DESIGN,PLAN,TEST_PLAN,ASSUMPTIONS}.md`, sidebar gaps GAP-001/GAP-002,
+  `design/poker-patience/gaps/GAP-039.md`, `Tests/Visual/grid_zoom_shot.gd` ~214.
+- `design/card_size_outline/IMPACT.md` names `corner_notch`, `SHIPPED_CORNER_NOTCH`,
+  `notch_fraction` (removed) with file:line links that no longer hold them.
+- `design/picture-wall/DESIGN.md` ~150 and ~890 cite the map's deleted `ZOOM_MIN 0.5`.
+- `design/sidebar/DESIGN.md` "Info mode, as it exists" names `wall_info_mode`, `_on_info_toggled`,
+  `info_zoom_state`, `_apply_info_mode`, `_restore_info_mode_for` — none exists.
+
 ## Doc hygiene backlog (code comments — measured, not yet triaged)
 
 - ⬜ **`doc_check.py` scans code comments. Standing count over 334 source files (the combined
