@@ -935,6 +935,15 @@ func test_the_wall_editor_drives_every_knob_it_shows() -> void:
 	check(undriven.is_empty(),
 			"`knobs_this_preview_does_not_drive` is EMPTY when the editor is run (TP-120, Q186=a)",
 			"undriven: %s" % [undriven])
+	var containers : Array[Node] = editor.find_children("*", "HudContainer", true, false)
+	var inside_a_picture : Array[String] = []
+	for container : Node in containers:
+		if container.get_viewport() != editor.get_viewport():
+			inside_a_picture.append(str(editor.get_path_to(container)))
+	check(containers.size() == 1 and inside_a_picture.is_empty(),
+			"the tool hands its hosted screens the WALL's one container, as `Main` does -- no "
+			+ "screen builds a private sidebar inside its own picture",
+			"%d containers, inside a picture: %s" % [containers.size(), inside_a_picture])
 
 	editor.queue_free()
 	await get_tree().process_frame

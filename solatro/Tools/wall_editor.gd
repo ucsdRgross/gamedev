@@ -402,7 +402,7 @@ func _repack() -> void:
 		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 # NO owner
 		_pictures_root.add_child(wp)
-		wp.build(rect, _build_entry(by_id[rect.id]), _viewports_root, _live_screen(rect.id))
+		wp.build(rect, _build_entry(by_id[rect.id]), _viewports_root, _live_screen(rect.id, wp))
 		_preview_pictures[rect.id] = wp
 	_last_rects = rects
 # `Wall` records placement order here, which is what `wall_jump_N` counts by. Geometry is a
@@ -429,12 +429,14 @@ func _repack() -> void:
 
 # Freed with the rest of the preview by `_teardown_preview_pictures()` -> `WallPicture.teardown()`.
 
-## The real screen for `id`, so the tool shows the wall the way the game does rather than a grid of empty frames. `layout_default.tres` carries no `PackedScene` on any entry — the game's screens are reparented in by `Main` at runtime — so without this there is nothing to draw.
-func _live_screen(id: StringName) -> Node:
+## The real screen for `id`, handed the wall's container and its picture as `Main` hands them, so it draws no private sidebar. `layout_default.tres` carries no `PackedScene` on any entry, so without this there is nothing to draw.
+func _live_screen(id: StringName, wp: WallPicture) -> Node:
 	if use_placeholder_content or Engine.is_editor_hint(): return null
 	var scene : PackedScene = LIVE_SCREENS.get(id)
 	if scene == null: return null
 	var screen := scene.instantiate()
+	screen.set(&"hud_container", _container())
+	screen.set(&"wall_picture", wp)
 	_listen_for_info(screen)
 	return screen
 
@@ -465,9 +467,8 @@ func _container_side() -> String:
 	var band := "top" if HudContainer.container_is_top(window, preview_settings) else "side"
 	return "%s  %.0f x %.0f px" % [band, rect.size.x, rect.size.y]
 
-# A hosted screen keeps its own fallback container, so the lock a click makes in the game is made
-# here instead -- off the board's own `card_info()`, never a stand-in entry. Turning it back off is
-# the same dismissal the exit X performs.
+# The lock a click makes in the game, made from the panel -- off the board's own `card_info()`,
+# never a stand-in entry. Turning it back off is the same dismissal the exit X performs.
 func _apply_locked_description() -> void:
 	var container := _container()
 	if container == null: return

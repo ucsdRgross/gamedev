@@ -17,13 +17,12 @@ signal info_requested(entry: InfoEntry)
 @onready var _bottom_row: HFlowContainer = $Content/Main
 
 # Set by `Main` before this screen's picture is built, the same hand-over `Map.hud_container` gets.
-# A standalone fixture with no `Main` (`Tools/wall_editor.gd`'s preview) leaves it null and gets a
-# private container instead, the same fallback `GameView`/`Map` use.
+# A standalone fixture with no `Main` leaves it null and gets a private container instead.
 var hud_container : HudContainer = null
 
 # Set by `Main` alongside `hud_container`, before `build()` parents this screen into its
 # SubViewport -- lets `_apply_container_inset()` convert `hud_container`'s rects into this picture's
-# own space. Null only for `Tools/wall_editor.gd`'s preview, whose fallback `hud_container` already lives there.
+# own space.
 var wall_picture : WallPicture = null
 
 func _ready() -> void:
