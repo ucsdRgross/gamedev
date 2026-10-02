@@ -8366,23 +8366,20 @@ func test_a_game_viewer_left_open_across_back_changes_nothing_on_the_map() -> vo
 		check(is_instance_valid(game_viewer) and not game_viewer.is_queued_for_deletion(),
 				"sanity: Back left the game's viewer open behind the map (%s)" % route)
 		await _check_the_map_ignores_the_game_viewer(route)
-		if route == "an arrow":
-			var pack_picked : bool = _map.controller.selected() != null \
-					and _map.controller.selected().meta.get(MapNodeRoles.ROLE_KEY, "") == MapNodeRoles.ROLE_BOOSTER
-			var still_open := is_instance_valid(game_viewer) and not game_viewer.is_queued_for_deletion()
-			check(still_open != pack_picked,
-					"the arrow's pick closes the game's viewer exactly when it is a pack, whose possible cards open in its place",
-					"pack picked=%s viewer open=%s" % [pack_picked, still_open])
+		var left_open := is_instance_valid(game_viewer) and not game_viewer.is_queued_for_deletion()
+		check(left_open == (route == "an arrow"),
+				"only a viewer the map opens closes the game's: an arrow's pick of a node that is no pack leaves it open (%s)" % route,
+				"viewer open=%s" % left_open)
 		await _click_overlay(&"ForwardButton")
 		await _wait_out_the_move()
 		await get_tree().process_frame
 		check(_main._current_focus == &"game", "sanity: Forward went back to the show (%s)" % route,
 				str(_main._current_focus))
-		if is_instance_valid(game_viewer) and not game_viewer.is_queued_for_deletion():
+		if route == "an arrow":
 			check(_container.is_locked() and _exit_button().visible,
 					"Forward onto the viewer nothing closed finds its stuck card as it was left (%s)" % route)
 			await _tap_key(KEY_RIGHT)
-			check(game_viewer.cards().focus_is_inside(),
+			check(is_instance_valid(game_viewer) and game_viewer.cards().focus_is_inside(),
 					"...and an arrow there still walks that viewer (%s)" % route)
 		else:
 			check(_hud_is_up() and not _container.is_locked(),
@@ -8567,13 +8564,28 @@ func _check_the_map_ignores_the_game_viewer(route: String) -> void:
 					"...with the picked node described, no game card on the map's sidebar",
 					_panel.current_entry.title if _panel.current_entry else "none")
 		"an arrow":
+			var aimed := _aim_the_first_arrow_at_a_node_that_is_no_pack()
+			check(aimed != null, "sanity: the graph has a node whose first arrow picks a node that is no pack")
 			await _tap_key(KEY_DOWN)
-			check(_map.controller.selected() != null,
-					"the first arrow on the map picks a node")
+			check(aimed != null and _map.controller.selected() == aimed,
+					"the first arrow on the map picks the node it was aimed at, which is no pack")
 			check(_container.showing_description() and not _container.is_locked()
 					and _panel.current_entry.title == _map._info_for(_map.controller.selected()).title,
 					"...and the sidebar describes that node, no game card on the map's sidebar",
 					_panel.current_entry.title if _panel.current_entry else "none")
+
+# A PACK'S FIRST PICK OPENS ITS OWN VIEWER, which closes the game's, so an arrow's target is fixed
+# before the press: the token is set down where the first pick is no pack, or the row has two outcomes.
+func _aim_the_first_arrow_at_a_node_that_is_no_pack() -> WorldGraphNode:
+	var froms : Array = [_map.controller._current]
+	froms.append_array(_map.controller.map.overlay().nodes())
+	for from : WorldGraphNode in froms:
+		_map.controller._current = from
+		var nexts := _map.controller._sorted_next()
+		if not nexts.is_empty() and _booster_of(nexts[0]) == null:
+			_map.controller.refresh_visuals()
+			return nexts[0]
+	return null
 
 # Reached the way a player reaches it: a live show, Back to the map, then onto a pack node -- so
 # the stack holds a picture behind the map AND one ahead, and Back and Forward are both live.
