@@ -139,8 +139,8 @@ func start_run(new_run: RunState) -> void:
 	controller.start_run(new_run)
 
 # Node arrival dispatch: a game or the lap-target boss launches a show, a booster opens a take-all
-# pack, the lap-origin anchor is just a rest stop -- only the rest stop auto-selects its own next
-# hop (a booster or a show would otherwise race it for the chooser, measured).
+# pack. Neither picks the next hop: the map is the player's again only once the show or the pack
+# hands it back. No edge leads into the lap-origin anchor, so it is never arrived at.
 func _on_node_entered(node: WorldGraphNode) -> void:
 	name_popup.hide_name()
 	_packs_shown.clear()
@@ -149,9 +149,6 @@ func _on_node_entered(node: WorldGraphNode) -> void:
 		await _open_booster(node)
 	elif role == MapNodeRoles.ROLE_GAME or node == controller.lap_target():
 		_start_show(node)
-	else:
-		RunManager.save_run()
-		controller._auto_select_if_single()
 	_update_hud()
 
 # A game node (or the boss anchor): stash the goal + node for Game._ready (persisted, so
@@ -191,7 +188,10 @@ func _show_only_the_deck_button(deck_only: bool) -> void:
 	possible_cards_button.visible = false
 	selection_deck_button.visible = true
 
+# ⚠ THE LONE WAY ON IS PICKED ONCE THE CHOOSER HAS CLOSED, not here: Take's own aftermath, the
+# borrowed Deck row going and the close putting back what the chooser covered, would wipe it.
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
+	_chooser.highlight_cleared.connect(controller._auto_select_if_single)
 	_chooser = null
 	for card : CardData in cards:
 		Main.save_info.card_datas.append(card)
@@ -208,6 +208,7 @@ func returned_from_game() -> void:
 		_show_lap_summary()
 	else:
 		RunManager.save_run()
+		controller._auto_select_if_single()
 	_update_hud()
 
 # Lap complete: summary popup, then reverse direction and rescale goals on continue.

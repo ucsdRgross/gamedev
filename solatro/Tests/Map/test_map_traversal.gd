@@ -118,11 +118,8 @@ func test_forward_move_and_edge_states() -> void:
 	check(_line(1, 3).default_color == WorldMapController.HIGHLIGHT_COLOR,
 			"the remaining path is highlighted")
 	check(_ids(controller.next_nodes_of(_node(1))) == [3], "only the end remains reachable")
-# The controller only offers the decision -- Map calls it after its own arrival dispatch, so an
-# ordinary rest-stop arrival is simulated here the way Map's else-branch does.
-	controller._auto_select_if_single()
-	check(controller.selected() == _node(3),
-			"the single reachable node auto-selects on an ordinary arrival, no click")
+	check(controller.selected() == null,
+			"an arrival picks nothing, single way on or not: the node's show or pack owns the map first")
 
 func test_reach_end() -> void:
 	await controller.move_to(_node(3))
@@ -149,17 +146,9 @@ func test_lap_flip_and_reverse_move() -> void:
 	check(_ids(controller.next_nodes_of(_node(2))) == [0], "next step heads to the old start")
 	check(not _line(0, 1).visible or _line(0, 1).default_color == WorldMapController.HISTORY_COLOR,
 			"unreachable-but-traveled edges keep their history color")
-	controller._auto_select_if_single()
-	check(controller.selected() == _node(0),
-			"the single reachable node auto-selects on an ordinary arrival, no click")
 
-# Runs after test_lap_flip_and_reverse_move: reversed lap, token on node 2, next = [0] -- a single
-# reachable node, so it auto-selected on arrival already; re-pointed to clear that pick first so the
-# cycle below still demonstrates a fresh keyboard pick rather than a no-op re-select.
+# Runs after test_lap_flip_and_reverse_move: reversed lap, token on node 2, next = [0], nothing picked.
 func test_keyboard_selection() -> void:
-	check(controller.selected() == _node(0),
-			"the single reachable node auto-selected on arrival, no click")
-	controller.clear_selection()
 	var picked: Array[WorldGraphNode] = []
 	controller.node_selected.connect(func(n: WorldGraphNode) -> void: picked.append(n))
 	controller._cycle_selection(1)
@@ -175,7 +164,7 @@ func test_keyboard_selection() -> void:
 	check(controller.selected() == null, "the pick is dropped after travelling")
 
 # A separate two-node rig (0 -> 1, one edge) isolates the auto-select calls in _on_graph_populated
-# and in on_lap_completed from the move_to arrival case above.
+# and in on_lap_completed; the returns from a show and a pack are Map's, covered by the Sidebar suite.
 func test_auto_select_on_population_and_lap_flip() -> void:
 	var line_run := RunState.new()
 	line_run.world_seed = 998

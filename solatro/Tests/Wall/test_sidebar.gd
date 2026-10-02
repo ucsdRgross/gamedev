@@ -331,6 +331,7 @@ func _ready() -> void:
 	await test_a_finger_drag_pans_the_map()
 	await test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x()
 	await test_a_single_reachable_node_selects_itself_and_a_dismissal_drops_it_like_any_other_clear()
+	await test_a_pack_taken_at_a_node_with_one_way_on_hands_the_map_back_with_it_picked()
 	await test_up_inside_a_hosted_viewer_walks_the_viewer_not_the_x()
 	await test_selecting_a_node_by_key_describes_it()
 	behavior_section("THE MAP SIDEBAR: A BASIC VIEW, THEN A PICK WITH ITS OWN BUTTONS")
@@ -2928,11 +2929,17 @@ func _start_game_fixture(size := Vector2i(1280, 720), in_players_window := false
 # FIRST and still reach the board through the product's own route.
 func _enter_game_fixture() -> void:
 	await _main.enter_game()
+	_adopt_the_live_show()
+	await _await_the_opening_ease(_play_area)
+
+# `Main` builds a whole new `GameView` per show, so the fixture's cached board nodes are re-read off
+# the one that is live now.
+func _adopt_the_live_show() -> GameView:
 	var view := _main._pictures[&"game"].screen_root as GameView
 	CardEnvironment.CURRENT = view.game
 	_play_area = view.play_area
 	_game_viewport = _main._pictures[&"game"].viewport
-	await _await_the_opening_ease(_play_area)
+	return view
 
 func _end_main_fixture() -> void:
 	await _free_booted_main(_main.get_viewport(), _main)
@@ -3720,7 +3727,8 @@ func _drain_the_stocks(state: GameData) -> void:
 		stock.datas.clear()
 
 # The outcome screen builds Continue, so the click waits for it to be laid out, and then for the
-# hand-back move it starts to land on the map.
+# hand-back to land: `Main` lets go of the move before the sidebar slides back in, and the map
+# resolves the node it was played on only after that slide.
 func _continue_to_the_map(view: GameView) -> void:
 	var waited := 0.0
 	while waited < CARD_CONTROL_TIMEOUT_SEC and not (is_instance_valid(view._continue_button)
@@ -3730,9 +3738,10 @@ func _continue_to_the_map(view: GameView) -> void:
 	check(await _click_button(view._continue_button, _game_viewport),
 			"a real click on Continue pressed it")
 	while waited < CARD_CONTROL_TIMEOUT_SEC and (_main._current_focus != &"map"
-			or _main._move_in_flight):
+			or _main._move_in_flight or _container.slid_fraction() < 1.0):
 		await get_tree().process_frame
 		waited += get_process_delta_time()
+	await get_tree().process_frame
 
 # The cancel button a player presses: a real right press into the game picture's own viewport, so
 # the board reads it through the same handler that hears the left one.
@@ -4880,15 +4889,11 @@ func _wait_out_the_move() -> void:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 
-# The product's own way into the NEXT show: `Main` builds a whole new `GameView`, so the fixture's
-# cached board nodes are re-read off the one that is live now.
+# The product's own way into the NEXT show.
 func _restart_the_show() -> void:
 	await _wait_out_the_move()
 	await _main.enter_game()
-	var view := _main._pictures[&"game"].screen_root as GameView
-	CardEnvironment.CURRENT = view.game
-	_play_area = view.play_area
-	_game_viewport = _main._pictures[&"game"].viewport
+	_adopt_the_live_show()
 
 # The gate reads godot.log after the whole run, so an error raised inside one row's window is
 # heard here as the engine raises it, with what it said for the failure detail.
@@ -5451,6 +5456,7 @@ func test_a_finished_show_leaves_the_maps_own_wiring_alive() -> void:
 	var view := _main._pictures[&"game"].screen_root as GameView
 	await _end_the_show_by_its_button(view)
 	await _continue_to_the_map(view)
+	await _clear_any_auto_pick()
 	var map : Map = _main.map_scene
 	var camera : Camera2D = map.controller.camera
 	var before := camera.offset
@@ -10964,32 +10970,43 @@ func test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x() -> vo
 			str(_map.controller.selected()))
 	await _end_main_fixture()
 
-# A node with exactly one onward node needs no click. Measured: dismissal routes through the same
-# `show_hud()` a cancel does, so re-applying the pick there would re-select through a cancel too --
-# a dismissal drops the pick like any other clear; the next arrival/population/lap flip re-picks it.
+# A node with exactly one onward node needs no click, so a show won there hands the map back with
+# that node picked. Measured: dismissal routes through the same `show_hud()` a cancel does -- a
+# dismissal drops the pick like any other clear; the next return to the map re-picks it.
 func test_a_single_reachable_node_selects_itself_and_a_dismissal_drops_it_like_any_other_clear() -> void:
 	await _start_map_fixture()
 	var controller := _map.controller
-	var lone : WorldGraphNode = null
-	for n : WorldGraphNode in controller.map.overlay().nodes():
-		if controller.next_nodes_of(n).size() == 1:
-			lone = n
-			break
-	check(lone != null, "sanity: the generated map has a node with a single onward node")
-	if lone == null:
+	var played := _a_map_node_with_one_way_on(MapNodeRoles.ROLE_GAME)
+	check(played != null, "sanity: the generated map has a show with a single onward node")
+	if played == null:
 		await _end_main_fixture()
 		return
-	var only := controller.next_nodes_of(lone)[0]
-	controller._current = lone
-	controller.refresh_visuals()
-	controller._auto_select_if_single()
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var only := controller.next_nodes_of(played)[0]
+	await _select_map_node_and_settle(played)
+	check(await _click_button(_map.travel_button, _booted_viewport), "a real click on Travel pressed it")
+	await _await_map_arrival()
+	await _wait_out_the_move()
+	check(_main._current_focus == &"game", "sanity: arriving on the show entered it",
+			str(_main._current_focus))
+	if _main._current_focus != &"game":
+		await _end_main_fixture()
+		return
+	var view := _adopt_the_live_show()
+	await _await_the_opening_ease(_play_area)
+	await _end_the_show_by_its_button(view)
+	await _continue_to_the_map(view)
+	check(_main._current_focus == &"map" and controller.run.current_node_id == played.id,
+			"sanity: the won show handed back to the map, the token on the show's node",
+			"%s at %d" % [_main._current_focus, controller.run.current_node_id])
 	check(controller.selected() == only,
-			"the single reachable node auto-selects, no click")
+			"the map comes back from a won show with the single onward node picked, no click",
+			str(controller.selected()))
 	check(_map.travel_button.is_visible_in_tree(),
 			"...and Travel is live without a click")
-	check(_container.showing_description(), "...with its description on the sidebar")
+	check(_container.showing_description() and _panel.current_entry != null
+			and _panel.current_entry.title == _map._info_for(only).title,
+			"...with its description on the sidebar",
+			_panel.current_entry.title if _panel.current_entry else "none")
 	check(_container._shown_hosted_viewer() == null,
 			"...and NO viewer over the map: an auto-pick is not a request to read a pack",
 			"pack=%s" % str(_map._booster_of(only) != null))
@@ -11000,6 +11017,43 @@ func test_a_single_reachable_node_selects_itself_and_a_dismissal_drops_it_like_a
 	check(not _map.travel_button.is_visible_in_tree(),
 			"...so Travel goes with it")
 	check(_hud_is_up(), "...back to the basic HUD view")
+	await _end_main_fixture()
+
+# Take hands the map back with a lone onward node picked, but only once the chooser is gone: a pick
+# made while it still owns the map would put Travel beside a pack the player has not finished.
+func test_a_pack_taken_at_a_node_with_one_way_on_hands_the_map_back_with_it_picked() -> void:
+	await _start_map_fixture()
+	var controller := _map.controller
+	var pack := _a_map_node_with_one_way_on(MapNodeRoles.ROLE_BOOSTER)
+	check(pack != null, "sanity: the generated map has a talent pack with a single onward node")
+	if pack == null:
+		await _end_main_fixture()
+		return
+	var only := controller.next_nodes_of(pack)[0]
+	await _select_map_node_and_settle(pack)
+	await _close_the_open_viewer()
+	check(await _click_button(_map.travel_button, _booted_viewport), "a real click on Travel pressed it")
+	var chooser := await _await_the_chooser()
+	check(chooser != null, "sanity: arriving on the pack opened its chooser")
+	if chooser == null:
+		await _end_main_fixture()
+		return
+	check(controller.selected() == null and not _map.travel_button.is_visible_in_tree(),
+			"while the chooser owns the map nothing is picked and no Travel shows",
+			"%s travel=%s" % [controller.selected(), _map.travel_button.is_visible_in_tree()])
+	check(await _click_button(chooser.confirm_button, _booted_viewport),
+			"a real click on Take pressed it")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(not _map.chooser_is_up() and not is_instance_valid(chooser), "sanity: Take closed the chooser")
+	check(controller.selected() == only,
+			"the map comes back from a Take with the single onward node picked, no click",
+			str(controller.selected()))
+	check(_map.travel_button.is_visible_in_tree(), "...and Travel is live beside it")
+	check(_container.showing_description() and _panel.current_entry != null
+			and _panel.current_entry.title == _map._info_for(only).title,
+			"...with that node's description on the sidebar, not the HUD the chooser closed to",
+			_panel.current_entry.title if _panel.current_entry else "none")
 	await _end_main_fixture()
 
 # A HOSTED VIEWER HAS A FOCUS CHAIN OF ITS OWN -- the pack's cards, their Rerolls, Take all -- so an
@@ -11690,6 +11744,14 @@ func _popup_text(popup: MapNamePopup) -> String:
 func _a_map_node_with_role(role: String) -> WorldGraphNode:
 	for node : WorldGraphNode in _map.controller.map.overlay().nodes():
 		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == role:
+			return node
+	return null
+
+## A node of one kind that has exactly one onward node, so arriving there leaves a single way on.
+func _a_map_node_with_one_way_on(role: String) -> WorldGraphNode:
+	for node : WorldGraphNode in _map.controller.map.overlay().nodes():
+		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == role \
+				and _map.controller.next_nodes_of(node).size() == 1:
 			return node
 	return null
 
