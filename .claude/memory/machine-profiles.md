@@ -41,17 +41,18 @@ Other per-box notes:
 
 ## Cloud container (claude.ai/code session)
 
-Linux, no GPU: Godot renders through Mesa llvmpipe on a virtual display. Bootstrap with
-`bash .claude/tools/cloud_setup.sh`, then `source /opt/godot/env.sh` (gives `godot <args>`,
-which wraps `xvfb-run`; the Linux binary is already the console build). Resume from
-`HANDOFF_cloud_godot.md`.
+Linux, no GPU: Godot renders through Mesa llvmpipe on a virtual display. The container is
+ephemeral, so every session starts with `bash .claude/tools/cloud_setup.sh && source
+/opt/godot/env.sh` (~1 min; installs the pinned Godot, imports both projects, gives `godot <args>`,
+which wraps `xvfb-run`; the Linux binary is already the console build). Importing does not reorder
+`solatro/project.godot`.
 
-- Logic, importing, snapshot scenes (look at the PNGs) and `worldgen/tests/native_ab_test.tscn`
-  work. Perf numbers (`fx_cost`, GPU timer) mean nothing here, and pixel-exact checks can differ
-  from the daily drivers.
-- A full `Tests/all_tests.tscn` run takes ~7 min and aborts (exit 134) at teardown.
-- The gate runs here as `python3 .claude/tools/gate.py ...`; user:// is
-  `$XDG_DATA_HOME/godot/app_userdata/Solatro` (lowercase `godot`).
+- Logic, importing, snapshot scenes and `worldgen/tests/native_ab_test.tscn` work.
+  `godot --path solatro res://Tests/Visual/fx_snapshot.tscn` writes its PNGs under user://
+  `fx_snapshots/` — look at them. Perf numbers (`fx_cost`, GPU timer) mean nothing here.
+- The gate runs here: `gate.py` and `solatro/tools/run_tests.py` are OS-aware, user:// is
+  `$XDG_DATA_HOME/godot/app_userdata/Solatro` (lowercase `godot`). A full run takes ~18 min and
+  exits normally; a GREEN run's wrapper exits 1, the standing `resources still in use` line.
 - The worldgen extension has a committed Linux debug `.so`; rebuild recipe in
   `worldgen/worldgen_native/BUILD.md`.
 

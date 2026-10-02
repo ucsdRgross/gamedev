@@ -673,6 +673,9 @@ before and after each fix, same session, same box. Three fixes are sized and not
 ## Testing / infrastructure
 
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
+- Cloud sessions (optional): run `.claude/tools/cloud_setup.sh` from a SessionStart hook
+  (`session-start-hook` skill) instead of by hand.
+- Cloud: confirm the newest Godot release (the proxy blocked the API); the project pins 4.7.2.
 - `PipSuitTest.id` is a plain `var`, so `duplicate_deep` and a save do not carry it: a row of
   distinct test suits comes back from a snapshot as ONE suit and flushes. A fixture that must
   survive a copy uses real suits.
