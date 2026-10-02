@@ -610,13 +610,13 @@ Not covered - built on the reading given, to confirm: (1) opening a viewer by pa
 Overseer Opus 5.5; every reviewer Fable, read-only. Ground truth and every review ran on 69b975bb; no source file has changed since. IDs (A1, B1, T1, C1, F1) are this section's own.
 
 **Done:** 1 doc_check full (0 errors); 1a plan-auditor -> solatro/AUDIT.md (107 PASS, 0 FAIL); 2 adversarial-review, two passes (areas listed below); 6 /fx-verify (three LOOKS WRONG, each also read by the overseer).
-**Partly done:** 3 /code-review - the Fable finder reported (C1-C4); its ONE verifier over the 15 candidates (A1-A6, B1-B5, C1-C4) was dispatched and its verdicts were NOT received - re-dispatch it. 4 test-surface - pass A reported (T1-T11); pass B (test_drag_place, test_grid_view, test_sidebar's P85-P89/P96/P64 rows, test_wall_input/render/pause, test_pixels, test_outline) was dispatched and NOT received - re-dispatch it.
+**Partly done:** 3 /code-review - the Fable finder reported (C1-C4); its ONE verifier over the 15 candidates (A1-A6, B1-B5, C1-C4) was dispatched and its verdicts were NOT received - re-dispatch it. 4 test-surface - DONE in two passes (T1-T11, U1-U14); unread: test_sidebar's P64 / P64b-2a..2c hunks (d7936ddf, 4ae86508, 594589ca, 0c2b3979).
 **Not started:** 5 /simplify (four angles serially, as a Fable subagent; the Open bugs lines marked FOR /simplify are its input); 7 the fixes; the whole-file comment sweeps; 8 /docs; 9 consolidate-memory; 10 Reflect and record; 11 delete the temporary plan documents.
 
 **Resume here:**
 1. `git status` (expect the session-end handoff commit plus this one; the same not-yours files as the opening prompt names), then one gate for ground truth only if HEAD moved.
-2. Re-dispatch the verifier (every candidate below: CONFIRMED / REFUTED / PLAUSIBLE with the hop chain and the smallest red test; engine questions from the docs) and test-surface pass B, both read-only, no Godot; then /simplify.
-3. Item 7: every finding is a claim - an implementer reproduces it RED first, one fix at a time, a full gate between, "touch only the comments this fix changes". Suggested order: A1, B1, A2 (+B2 if A2 reproduces), A6, then F2/F3/F1 (measure the cause first), then the test repairs T1-T7 (each proven with its mutant; test-only repairs in different suites may share one gate), then C-items the verifier upholds. The fix commits get their own adversarial pass.
+2. Re-dispatch the verifier (every candidate below: CONFIRMED / REFUTED / PLAUSIBLE with the hop chain and the smallest red test; engine questions from the docs), read-only, no Godot; then /simplify.
+3. Item 7: every finding is a claim - an implementer reproduces it RED first, one fix at a time, a full gate between, "touch only the comments this fix changes". Suggested order: A1, B1, A2 (+B2 if A2 reproduces), A6, then F2/F3/F1 (measure the cause first), then the test repairs T1-T7 and U1-U6 (each proven with its mutant; test-only repairs in different suites may share one gate), then C-items the verifier upholds. The fix commits get their own adversarial pass.
 4. Owner questions gathered so far (lettered options when asked): B4 (which grid a resize keeps after a Left/Right pan); B5 (does the ninth round's "fresh show only" cover a show resumed from disk after a relaunch); A6 (does the twentieth round's return-to-fit cover a wheel during the walk); plus the four already under Next up.
 5. For /docs (from the audit): prune the Open bugs lines the audit lists as stale (AUDIT.md's last section); P91's row misnames the glow styles; P52 and P41 (2) are superseded by P64 and the ledger should say so; the Open bugs mention of HudContainer.resize_preview is stale (no such function).
 
@@ -669,6 +669,24 @@ SUSPECTED
 - T10 test_sidebar.gd:2183-2189 _zoom_the_map_under_a_viewer: press-only wheel via main.wall._unhandled_input (fixture only).
 - T11 unbounded waits added by the stream: test_sidebar `while _map.controller._moving`, `while view._combo_tween.is_running()`, `while main._current_focus != &"start_menu"` x3; test_wall_focus `while main._move_in_flight` x4.
 Item 14: none (191 funcs grepped). Item 17: none. Listed: test_sidebar.gd:8216-8233 still branches (confirmed). P92a/b rows sound (epoch mutant goes red).
+
+### Item 4 test-surface review, pass B (read: test_drag_place, test_grid_view, test_wall_input/pause/render, test_outline, test_pixels stream diffs; test_sidebar hunks of 39241dc3, 67449ddb, 52934da9, 2367ee91, 336b4a98)
+CONFIRMED (claims; each has a mutant)
+- U1 test_drag_place.gd:1810 test_a_cancel_that_steps_out_lands_first_and_is_superseded - items 3 + 6: the pan lands on grid 1 and resting_grid() in OVERVIEW is also 1 on the three-grid fixture (play_area.gd:1139-1144), so :1832 compares two values that coincide. Mutant: drop the step-out's rest_board() call.
+- U2 test_grid_view.gd:1005 run_the_overview_draws_the_grids_close_test (:1028, :1047) - items 6 + 3: expected gap = maxf(asked, the two gutters) and the floor wins on this board, so the one-card-width knob never reaches the measured number. Mutant: PlayArea.overview_grid_gap_px returns half a card width.
+- U3 test_grid_view.gd:2168 run_the_overview_view_and_cursor_agree_after_a_removal_test (:2203) - item 5: the two surviving neighbours are equidistant by construction, so `a < b or is_equal_approx(a, b)` is always true. Mutant: remove the removal path's re-centre in OVERVIEW.
+- U4 test_grid_view.gd:1438 run_the_board_edge_does_not_move_test (:1469-1483) - item 6: every assertion is on the wall Camera2D, which no pan path writes. Mutant: delete the OVERVIEW early return in _bounce_board (play_area.gd:1504).
+- U5 test_grid_view.gd:2822 run_the_board_does_not_scroll_while_it_fits_test (:2845, :2862) - item 10: a scroll_vertical write "moves nothing" because SmoothScrollContainer rewrites it each physics frame, not because the range is zero. Mutant: grow the board floor 40 px past the page - the two write checks stay green.
+- U6 test_sidebar.gd:8664 test_the_menus_viewer_fades_with_the_sidebar_across_a_leave (:8679-8683) - items 5 + 16: one sample, alpha == slid, with no 0 < slid < 1 assertion. Mutant: hold the viewer's alpha at 0 until the slide completes, then 1.
+SUSPECTED
+- U7 test_grid_view.gd:2972 run_a_mode_change_eases_into_place_test (:3045): `... or not scale_changes` (item 20).
+- U8 test_grid_view.gd:2746 _wheel_the_board (:2761): 30 process frames as a settle (item 16).
+- U9 test_grid_view.gd:2705 run_an_edge_touch_is_not_an_intrusion_test: exercises only the suite's own _rect_intrudes (instrument self-test).
+- U10 test_grid_view.gd:1800 run_overview_arrows_select_a_grid_test (:1873): sets DEFAULT_BOARD_ZOOM, a state the shipped overview never enters (item 12).
+- U11 test_sidebar.gd:7447 _check_the_outcome_is_centred_down_its_space: slack absorbs the 2.5 px residual at 600x1000 (item 7).
+- U12 test_drag_place.gd:830 test_a_rebuild_under_the_outcome_overlay_rests_on_nothing (:843): a same-value write to container_slide_duration mid-row - the no-op broadcast (item 8).
+- U13 test_wall_input.gd:93 _build_wall: get_tree().paused = false for every row (item 9, pre-existing).
+- U14 test_pixels test_a_resolve_that_changes_nothing_still_moves_the_skip: asserts the internal _poly_source field (item 6).
 
 ### Item 3 /code-review finder (angles B removed-behaviour, C cross-file, A on unread files): B and C closed clean on every large deletion / changed signature
 Candidates (all low/medium confidence)
