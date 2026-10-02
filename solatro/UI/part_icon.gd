@@ -107,14 +107,7 @@ func fit(cell: Vector2) -> void:
 
 ## The part described in the sidebar: its own name and description, previewed in its place on a blank card.
 static func part_info(part_data: CardData) -> InfoEntry:
-	var previewed := part_data
-# A COPY, so the listed card keeps its own part: TypePaper's face is CardVisual.BLANK_CARD_FRAME,
-# the body a card with no printed type shows.
-	if not part_data.type:
-		previewed = part_data.duplicate_deep()
-		GameData.relink_card_backrefs(previewed)
-		previewed.with_type(TypePaper.new())
-	var entry := PlayArea.highlight_info(previewed, CardVisual.preview_window_px())
+	var entry := PlayArea.highlight_info(part_data, CardVisual.preview_window_px())
 	var part := part_of(part_data)
 	entry.title = part.call(&"get_str")
 	entry.body = part.call(&"get_description")

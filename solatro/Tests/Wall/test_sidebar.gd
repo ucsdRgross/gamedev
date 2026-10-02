@@ -5682,7 +5682,7 @@ func test_every_rules_viewer_card_draws_a_card_face() -> void:
 	var bodiless := 0
 	var typeless_frames : Array[Vector2] = []
 	for card : ControlCard in cards:
-		if not card.child.type.visible: bodiless += 1
+		if not _draws_a_body(card.child): bodiless += 1
 		if card.child.data.type == null: typeless_frames.append(_type_frame_origin(card.child))
 	check(not typeless_frames.is_empty(),
 			"sanity: the rules row lists the grid creator's typeless card", "%d listed" % cards.size())
@@ -10548,6 +10548,11 @@ func _type_frame_origin(visual: CardVisual) -> Vector2:
 	var uv : Vector4 = CardOutline.material_of(visual.type).get_shader_parameter(&"u_frame_uv")
 	return (Vector2(uv.x, uv.y) * CardModifierType.TYPE_TEXTURE.get_size()).round()
 
+## Whether `visual` draws a card body: its type polygon shown, framed at its type's face or the blank card's.
+func _draws_a_body(visual: CardVisual) -> bool:
+	var face : int = visual.data.type.get_frame() if visual.data.type else CardVisual.BLANK_CARD_FRAME
+	return visual.type.visible and _type_frame_origin(visual) == _sheet_frame_origin(face)
+
 ## Where one frame of the type sheet starts, from the same source `CardOutline.frame_polygon` uses.
 func _sheet_frame_origin(frame_index: int) -> Vector2:
 	return CardModifier.frame_rect(CardModifierType.TYPE_TEXTURE, CardModifierType.H_FRAMES,
@@ -11552,8 +11557,8 @@ func _check_the_part_described(icon: PartIcon, how: String) -> void:
 	if entry and entry.visual:
 		previews = entry.visual.find_children("*", "", true, false).filter(
 				func(node: Node) -> bool: return node is CardVisual)
-	var preview : CardData = (previews[0] as CardVisual).data if previews.size() == 1 else null
-	check(preview != null and preview.type != null and _carries(preview, part),
+	var preview : CardVisual = previews[0] as CardVisual if previews.size() == 1 else null
+	check(preview != null and _draws_a_body(preview) and _carries(preview.data, part),
 			"...previewed on one card with a body, the part in its own place (%s)" % how,
 			"%d previews" % previews.size())
 
