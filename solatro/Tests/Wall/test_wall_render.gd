@@ -944,6 +944,16 @@ func test_the_wall_editor_drives_every_knob_it_shows() -> void:
 			"the tool hands its hosted screens the WALL's one container, as `Main` does -- no "
 			+ "screen builds a private sidebar inside its own picture",
 			"%d containers, inside a picture: %s" % [containers.size(), inside_a_picture])
+	var panel : Node = containers[0].find_children("*", "DescriptionPanel", true, false)[0]
+	var button_row : Node = panel.get_node(^"%ButtonRow")
+	var mounted_before := button_row.get_child_count()
+	editor.preview_aspect = editor.preview_aspect
+	await get_tree().process_frame
+	check(mounted_before > 0, "sanity: the hosted map mounted its selection row in the wall's panel")
+	check(button_row.get_child_count() == mounted_before,
+			"a repack's fresh Map replaces the old one's selection row instead of stacking a "
+			+ "second beside it -- the row leaves with the Map that mounted it",
+			"rows before %d, after a repack %d" % [mounted_before, button_row.get_child_count()])
 
 	editor.queue_free()
 	await get_tree().process_frame

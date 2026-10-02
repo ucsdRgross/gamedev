@@ -102,10 +102,11 @@ func _add_selection_button(key: StringName, on_pressed: Callable) -> Button:
 	selection_buttons.add_child(button)
 	return button
 
-# The row is the PANEL's child once it is mounted, so a teardown that takes the container first
-# leaves nothing to free -- measured as orphaned nodes everywhere else this container outlives a screen.
+# The row is the PANEL's child, and the container outlives the screen wherever a fresh Map is built
+# into it (the wall editor builds one per repack), so the row leaves with the Map that mounted it.
+# A teardown that takes the container first has already freed it.
 func _exit_tree() -> void:
-	if is_instance_valid(selection_buttons) and selection_buttons.get_parent() == null:
+	if is_instance_valid(selection_buttons):
 		selection_buttons.queue_free()
 
 func _on_travel_pressed() -> void:
