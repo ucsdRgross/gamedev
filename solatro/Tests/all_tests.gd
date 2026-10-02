@@ -59,12 +59,17 @@ func _enter_tree() -> void:
 	TestLog.speed_base_delay = speed_base_delay
 	TestLog.line("test logs (overwritten each run): %s" % TestLog.paths())
 	if not _filter.is_empty():
+		var all_names : PackedStringArray = []
 		for child : Node in get_children().duplicate():
+			all_names.append(String(child.name))
 			if _matches_filter(child): continue
 			remove_child(child)
 			child.free()
 		TestLog.line("======== %s ========" % _filter_scope(get_child_count()))
 		_print_filter_warning()
+		if get_child_count() == 0:
+			TestLog.line("FILTER MATCHED NO SUITE [%s] - filters match a suite node name or @group: %s"
+					% [" ".join(_filter), ", ".join(all_names)], true)
 
 # A tier is a GROUP on the suite node, so the scene stays the registry it already is everywhere
 # else: a list of tier members in this script would drift the moment a suite is added. Groups are
@@ -115,6 +120,8 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless":
 		failed += await _check_drawing_survives_minimize()
 	failed += _scan_engine_errors()
+	if not _filter.is_empty() and suites.is_empty():
+		failed += 1
 #Placeholder warnings are reported but never affect the verdict or the exit code: they mark
 #surfaces still carrying hardcoded values, not breakage.
 	var warn_tag := "" if warned == 0 else (" [%d placeholder warnings]" % warned)
