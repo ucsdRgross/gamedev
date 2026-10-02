@@ -8643,6 +8643,14 @@ func _await_the_menus_slide(container: HudContainer, aim: float) -> void:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 
+## The sidebar part-way in or out, or the wait ran out: a slide that jumps must fail a check rather than hang the suite.
+func _await_the_menus_slide_under_way(container: HudContainer) -> void:
+	var waited := 0.0
+	while (container.slid_fraction() <= 0.0 or container.slid_fraction() >= 1.0) \
+			and waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+
 # The start menu's own Inspect viewer, reached the way a player reaches it: New Run opens the deck
 # picker, the first deck's Inspect button opens a viewer over the menu. Returns
 # `[viewport, main, inspect_button]`.
@@ -8784,11 +8792,14 @@ func test_the_menus_viewer_fades_with_the_sidebar_across_a_leave() -> void:
 				"in wall view the picker's viewer is neither drawn nor hears input")
 		main._focus_picture(&"start_menu")
 		while main._current_focus != &"start_menu": await get_tree().process_frame
-		var landing := Vector2(container.slid_fraction(), viewer.margin_container.modulate.a)
+		await _await_the_menus_slide_under_way(container)
+		var midway := Vector2(container.slid_fraction(), viewer.margin_container.modulate.a)
+		check(midway.x > 0.0 and midway.x < 1.0,
+				"sanity: the sample is taken while the sidebar is still sliding in", "slide %.3f" % midway.x)
+		check(is_equal_approx(midway.y, midway.x),
+				"coming back it fades in with the sidebar's slide", "slide %.3f, alpha %.3f mid-slide"
+				% [midway.x, midway.y])
 		await _await_the_menus_slide(container, 1.0)
-		check(is_equal_approx(landing.y, landing.x),
-				"coming back it fades in with the sidebar's slide", "slide %.2f, alpha %.2f at the landing"
-				% [landing.x, landing.y])
 		check(viewer.margin_container.is_visible_in_tree() and viewer.can_process()
 				and is_equal_approx(viewer.margin_container.modulate.a, 1.0)
 				and viewer.cards().controls.size() == listed and container.visible,
