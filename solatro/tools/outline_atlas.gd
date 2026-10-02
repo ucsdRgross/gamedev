@@ -336,10 +336,6 @@ func rebuild() -> void:
 		y += gap * 2.0
 	_extent = Vector2(widest, y)
 	_push()
-	for poly : Polygon2D in _card_polys:
-		print("DBG2 %s in_tree=%s gxform=%s vis_in_tree=%s poly0=%s" % [poly.name,
-			poly.is_inside_tree(), poly.get_global_transform() if poly.is_inside_tree() else "n/a",
-			poly.is_visible_in_tree(), poly.polygon[0] if poly.polygon.size() > 0 else "empty"])
 	queue_redraw()
 	print("OutlineAtlas: %d non-empty frames across %d sheets, plus one assembled card"
 			% [total, sheets.size()])
