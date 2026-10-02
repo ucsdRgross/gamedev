@@ -76,6 +76,7 @@ func _ready() -> void:
 	await run_leaving_and_re_entering_keeps_the_grid_test()
 	run_an_edge_touch_is_not_an_intrusion_test()
 	await run_the_board_does_not_scroll_while_it_fits_test()
+	await run_an_undo_keeps_the_players_scroll_test()
 	finish()
 
 #Three empty 5x5 grids standing in a real GameView. Mirrors test_grid_layout._stand_up -- same
@@ -2938,6 +2939,60 @@ func run_the_board_does_not_scroll_while_it_fits_test() -> void:
 			"%.3f -> %.3f, bar value %.2f of max %.2f page %.2f"
 			% [deep_rest, deep_moved, bar.value, bar.max_value, bar.page])
 	await _tear_down_main(main)
+
+#The board anchors to its bottom on entry only: an undo rebuilds the board, and a rebuild that
+#re-anchored would yank a deep stack's view away from wherever the player's wheel had left it.
+func run_an_undo_keeps_the_players_scroll_test() -> void:
+	behavior_section("AN UNDO KEEPS THE PLAYER'S SCROLL")
+	var main := await _stand_up_main_grids(1)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	await _settle_scroll(view)
+	var deep := 0
+	while deep < 20:
+		var card := TestGridFixtures.draw_any(view.game)
+		if not card: break
+		await view.game.place_card_in_grid(card, BoardCoord.new(0, 0, 0, deep))
+		deep += 1
+	await _settle_scroll_y(pa)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and _board_scroll_range(pa) > 1.0,
+			"precondition: a focused one-grid board with a stack deep enough to scroll",
+			"mode %d, %d deep, range %.3f" % [pa.view_mode, deep, _board_scroll_range(pa)])
+	var anchored := pa.scroll_container.scroll_vertical
+	await _wheel_the_board(pa)
+	var scrolled := await _settle_scroll_y(pa)
+	check(scrolled < anchored,
+			"precondition: the wheel scrolled the board up off its bottom anchor",
+			"scroll_vertical %d -> %d" % [anchored, scrolled])
+	var history := view.game.save_history.size()
+	var move := TestGridFixtures.draw_any(view.game)
+	await view.game.place_card_in_grid(move, BoardCoord.new(0, 4, 4, 0))
+	var after_move := await _settle_scroll_y(pa)
+	check(view.game.save_history.size() == history + 1,
+			"precondition: the move committed an undo step",
+			"history %d -> %d" % [history, view.game.save_history.size()])
+	view.game.undo()
+	var after_undo := await _settle_scroll_y(pa)
+	check(after_undo == after_move,
+			"an undo leaves the board scrolled where the player left it",
+			"scroll_vertical %d before the undo, %d after, bottom anchor %d"
+			% [after_move, after_undo, anchored])
+	await _tear_down_main(main)
+
+#Wait until the board's vertical scroll and its range both hold still, and answer the scroll. The
+#bottom anchor writes only once the range has stopped changing, so both are watched.
+func _settle_scroll_y(pa: PlayArea) -> int:
+	var bar := pa.scroll_container.get_v_scroll_bar()
+	var last := Vector2(INF, INF)
+	var still := 0
+	var waited := 0.0
+	while waited < 3.0 and still < BOARD_STILL_FRAMES:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		var now := Vector2(pa.scroll_container.scroll_vertical, bar.max_value)
+		still = still + 1 if now.is_equal_approx(last) else 0
+		last = now
+	return pa.scroll_container.scroll_vertical
 
 # ==============================================================================
 # A MODE CHANGE EASES INTO PLACE, AND LANDS EXACTLY.

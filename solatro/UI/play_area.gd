@@ -582,10 +582,6 @@ func setup_gui() -> void:
 #The split gutter has nothing to separate now the left pane is hidden -- zero it so
 #`UpperZoneRight` starts flush with `UpperZone`'s own left edge (see the `containers` note).
 	(%UpperZone as Control).add_theme_constant_override("separation", 0)
-#The board grows UPWARD out of the Entrance, so the Entrance is the part the player acts on and it
-#is the bottom of the picture. Anchor the scroll there ON ENTRY -- deferred, because the containers
-#have not been sized yet at this point and the maximum is still 0.
-
 #⚠ THE SCROLLER MUST NOT CHASE KEYBOARD FOCUS. A card control grabs focus on `mouse_entered`, and a
 #`ScrollContainer` with `follow_focus` scrolls whatever just took focus into view, so moving the
 #mouse across the board scrolled it (measured: the gap wandered between 44.2 and 25.3 px).
@@ -598,7 +594,6 @@ func setup_gui() -> void:
 	if is_instance_valid(scroll_container): scroll_container.clip_contents = false
 	_last_scroll_max = -1.0
 	_scroll_growth_carry = 0.0
-	_anchor_scroll_to_bottom.call_deferred()
 	update_score_controls()
 	_apply_entrance_strip_height()
 #The floor is measured against THIS control's height, so re-measure it whenever the window changes
@@ -1028,6 +1023,9 @@ func update_gui() -> void:
 
 #One grid is the DEFAULT and not an edge case -- a deck of 52 or fewer unlocks exactly one.
 func open_show_view() -> void:
+#The board grows UPWARD out of the Entrance, so the Entrance is the bottom of the picture: the show
+#opens scrolled there. Deferred, because the containers are not sized yet and the maximum is 0.
+	_anchor_scroll_to_bottom.call_deferred()
 	if grid_container.get_child_count() == 1:
 #A panel exists, so the game that built it does too; the commitment is the GAME's to make.
 		var game := CardEnvironment.get_current_game()
