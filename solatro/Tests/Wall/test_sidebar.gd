@@ -64,6 +64,7 @@ func _ready() -> void:
 	await test_the_sidebar_is_fully_out_before_the_camera_leaves()
 	await test_a_leave_mid_slide_ends_with_the_sidebar_fully_out()
 	await test_the_slide_shifts_the_board_without_re_scaling_it()
+	await test_a_slide_re_lays_out_no_description()
 	await test_freeing_main_mid_slide_strands_no_waiter()
 	await test_before_the_slide_each_screen_has_the_whole_picture()
 	await test_wall_view_keeps_the_board_centred_in_its_picture()
@@ -1808,6 +1809,55 @@ func test_a_leave_mid_slide_ends_with_the_sidebar_fully_out() -> void:
 			"two leave requests mid-slide still end with the sidebar fully out, never stranded",
 			"%.3f" % _container.slid_fraction())
 	await _end_main_fixture()
+
+## A slide only moves the sidebar, never the rect its contents lay out to: a board card's description and a viewer's stuck card's each come through a slide out and back in neither re-wrapped nor re-published.
+func test_a_slide_re_lays_out_no_description() -> void:
+	await _start_game_fixture()
+	_container.show_hud()
+	await get_tree().process_frame
+	var controls := await _hoverable_card_controls()
+	_hover(controls[0].get_global_rect().get_center())
+	await get_tree().process_frame
+	await _check_a_slide_re_lays_out_nothing("a hovered board card", null)
+	_container.show_hud()
+	await get_tree().process_frame
+	check(await _click_button(_container.deck_ui.get_node(^"Button") as Button, _booted_viewport),
+			"sanity: a real click on the game's Deck opened its viewer")
+	await get_tree().process_frame
+	var viewer := DeckViewer._open
+	var listed := _listed_viewer_cards()
+	check(not listed.is_empty(), "sanity: the game's deck viewer lists cards")
+	if not listed.is_empty():
+		await _click(listed[0].get_global_rect().get_center(), _booted_viewport)
+		check(_container.is_locked(), "sanity: a click stuck a game deck card")
+		await _check_a_slide_re_lays_out_nothing("a viewer's stuck card", viewer)
+	await _end_main_fixture()
+
+# The description's content minimum is written by every re-wrap, so a mark left on it before the
+# slide survives only a slide that re-wrapped nothing; `viewer`'s own publications are counted.
+func _check_a_slide_re_lays_out_nothing(what: String, viewer: DeckViewer) -> void:
+	check(_container.showing_description(), "sanity: the sidebar describes %s" % what)
+	var title := _panel.current_entry.title if _panel.current_entry else ""
+	var content := _panel.get_node(^"%Content") as Control
+	var mark := content.custom_minimum_size.y + 1.0
+	content.custom_minimum_size.y = mark
+	var publications : Array[int] = [0]
+	if viewer: viewer.info_requested.connect(func(_entry: InfoEntry) -> void: publications[0] += 1)
+	for aim : float in [0.0, 1.0] as Array[float]:
+		await _container.slide_to(aim)
+		check(is_equal_approx(_container.slid_fraction(), aim),
+				"sanity: the sidebar slid to %.0f with %s up" % [aim, what])
+	if viewer:
+		check(publications[0] == 0,
+				"a slide out and back in re-publishes nothing from the viewer under %s" % what,
+				"%d publications" % publications[0])
+	check(is_equal_approx(content.custom_minimum_size.y, mark),
+			"a slide out and back in re-wraps no description: %s was laid out once, for a rect the slide never changes" % what,
+			"content minimum %.1f, marked %.1f" % [content.custom_minimum_size.y, mark])
+	check(_container.showing_description() and _panel.current_entry != null
+			and _panel.current_entry.title == title,
+			"...and the sidebar still describes %s once it is back in" % what,
+			_panel.current_entry.title if _panel.current_entry else "none")
 
 # R1 asks for a SHIFT, not a re-scale. Fitting the board against the live reserve re-zoomed it by
 # up to 1.333x as the window lost the sidebar's quarter: sampled per frame, in both views, the zoom

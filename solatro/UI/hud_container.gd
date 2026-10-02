@@ -164,9 +164,6 @@ func slide_to(target: float) -> void:
 		await slide_settled
 	visible = _slide_aim > 0.0
 
-# THE ONE WRITER OF WHERE THE CONTAINER SITS: the slide, a screen change and a resize all come
-# through here, so the drawn position and the rect the screens yield to cannot disagree.
-
 # ⚠ ALREADY THERE MEANS WRITE NOTHING. This announces the rect, a hosted viewer re-publishes its
 # highlight on that announcement, and the publication comes straight back into `show_description()`
 # -- a loop that overflows the stack the moment the menu's picker opens one.
@@ -174,7 +171,7 @@ func _write_slide(value: float) -> void:
 	var next := clampf(value, 0.0, 1.0)
 	if is_equal_approx(_slide, next): return
 	_slide = next
-	_apply_container_rect()
+	_place_at_the_slide()
 
 # The slide's own step, and the scroll stick's, on the one `_process` this control owns. Both are
 # per-frame integrations of a held value, and `set_process` stays on while either is live.
@@ -258,7 +255,7 @@ func host_viewer(viewer: Node, relay: Signal, screen: StringName) -> void:
 	if viewer is DeckViewer: (viewer as DeckViewer).layer = (get_parent() as WallOverlay).layer + 1
 	_hosted_viewers.append(hosted)
 	_fade_overlay_viewers()
-	var fit := func() -> void: _fit_viewer(viewer)
+	var fit := func() -> void: _fit_viewer(hosted)
 	connect_for_screen(viewer, container_rect_changed, fit)
 	fit.call()
 	_refresh_exit_button()
@@ -274,6 +271,8 @@ class _HostedViewer extends RefCounted:
 	var suspended_lock : InfoEntry = null
 	## What the sidebar was reading when this viewer opened, where a highlight that goes puts it back.
 	var covered : InfoEntry = null
+	## The resting rect this viewer was last fitted beside: a slide moves only its catcher, so only a move of this republishes.
+	var fitted_beside : Rect2
 
 ## Every viewer this container hosts, oldest first; the X, the keys and a lost highlight answer to the newest one on the screen shown.
 var _hosted_viewers : Array[_HostedViewer] = []
@@ -412,21 +411,29 @@ func _offers_the_x(shown: InfoEntry) -> bool:
 # A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD, re-fitted after its screen's own inset. Only the
 # newest viewer shown republishes, and only while a description is UP: one under it would re-stick
 # the card that viewer set aside, and a dismissal is the player's act where a re-fit is not one.
-func _fit_viewer(viewer: Node) -> void:
+func _fit_viewer(hosted: _HostedViewer) -> void:
+	var viewer := hosted.viewer
+	var resting := resting_rect_beside(null)
 	if viewer is DeckViewer: (viewer as DeckViewer).fit_catcher(rect_beside(null))
-	viewer.call(&"fit_beside", resting_rect_beside(null))
+	viewer.call(&"fit_beside", resting)
 	if viewer is DeckViewer:
 		(viewer as DeckViewer).close_tab.custom_minimum_size = Vector2.ONE * _touch_target_px()
-	var shown := _shown_hosted_viewer()
-	if showing_description() and shown and shown.viewer == viewer:
+	var moved := resting != hosted.fitted_beside
+	hosted.fitted_beside = resting
+	if moved and showing_description() and _shown_hosted_viewer() == hosted:
 		viewer.call(&"republish_highlight")
 
-## Sets this control's own rect to `container_rect()` offset by the slide, and tells listeners it moved.
+## Sizes this control to `container_rect()` and lays its contents out to it -- a slide never changes either.
 func _apply_container_rect() -> void:
+	size = container_rect().size
+	_fit_content()
+	_place_at_the_slide()
+
+# THE ONE WRITER OF WHERE THE CONTAINER SITS: the slide, a screen change and a resize all come
+# through here, so the drawn position and the rect the screens yield to cannot disagree.
+func _place_at_the_slide() -> void:
 	var rect := container_rect()
 	position = rect.position + _slide_offset(rect)
-	size = rect.size
-	_fit_content()
 	_fade_overlay_viewers()
 	container_rect_changed.emit()
 
