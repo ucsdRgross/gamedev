@@ -385,6 +385,12 @@ func test_a_deck_viewers_rows_stand_the_gap_inside_its_window() -> void:
 		var row := first.merge(_in_window(cards[columns - 1]))
 		var bar := viewer._scroll.get_v_scroll_bar()
 		var where := "%d cards" % count
+		var overflows := count == 52
+		var stacked := ceili(float(count) / columns) * first.size.y
+		check((stacked > window.size.y) == overflows,
+				"sanity: the fixture's cards %s the window (%s)" % ["overflow" if overflows else "fit", where],
+				"%.2f stacked vs %.2f window px" % [stacked, window.size.y])
+		check(bar.visible == overflows, "the scrollbar shows exactly when the cards overflow (%s)" % where)
 		check(absf(first.position.y - window.position.y - gap) <= GAP_TOLERANCE_PX,
 				"the first row stands the frame and the card gap below the window's top (%s)" % where,
 				"%.2f vs %.2f window px" % [first.position.y - window.position.y, gap])
@@ -398,7 +404,7 @@ func test_a_deck_viewers_rows_stand_the_gap_inside_its_window() -> void:
 				"sanity: the list came to rest with its last card in the window (%s)" % where)
 		var last := _in_window(cards[cards.size() - 1])
 		var below := window.end.y - last.end.y
-		if bar.visible:
+		if overflows:
 			check(absf(below - gap) <= GAP_TOLERANCE_PX,
 					"the last row, scrolled to by the keys, stands the gap above the window's bottom (%s)" % where,
 					"%.2f vs %.2f window px" % [below, gap])
@@ -559,6 +565,14 @@ func _two_card_viewer(published: Array[String]) -> DeckViewer:
 		if entry.visual: entry.visual.queue_free())
 	return viewer
 
+## Fits a test viewer as its host does on open, over its whole window, so its cards lie where a pointer can reach them.
+func _fit_to_its_window(viewer: DeckViewer) -> void:
+	var window := viewer.get_viewport().get_visible_rect()
+	viewer.fit_catcher(window)
+	viewer.fit_beside(window)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
 func _drop_viewer(viewer: DeckViewer) -> void:
 	if is_instance_valid(viewer): viewer.queue_free()
 	if is_instance_valid(_test_opener): _test_opener.queue_free()
@@ -576,14 +590,17 @@ func _action_event(action: StringName) -> InputEventAction:
 func test_a_hover_describes_a_viewer_card_and_a_click_sticks_it() -> void:
 	var published : Array[String] = []
 	var viewer := _two_card_viewer(published)
-	await get_tree().process_frame
+	await _fit_to_its_window(viewer)
+	_bring_the_focus_window_under_the_pointer()
 	var cards := viewer._cards.controls
-	cards[0].mouse_entered.emit()
+	await _move_pointer_onto(cards[0])
 	check(not published.is_empty(), "a hover publishes the card it landed on", str(published))
 	check(viewer._cards.sticky == null, "...and sticks nothing")
-	_click(cards[0])
-	check(viewer._cards.sticky == (cards[0] as ControlCard).child.data, "a click sticks the sidebar to that card")
-	await _drop_viewer(viewer)
+	await _click_through_the_viewport(cards[0])
+	check(is_instance_valid(viewer) and viewer._cards.sticky == (cards[0] as ControlCard).child.data,
+			"a click sticks the sidebar to that card")
+	await _take_the_pointer_and_the_focus_window_away()
+	await _drop_viewer(viewer if is_instance_valid(viewer) else null)
 
 ## A later hover BORROWS the description while it lasts; letting go gives it back to the stuck card, so a long one can be read in the sidebar.
 func test_a_later_hover_borrows_the_description_and_gives_it_back() -> void:
@@ -639,11 +656,13 @@ func test_a_sticky_description_puts_the_packs_buttons_beyond_reach() -> void:
 func test_a_click_on_a_listed_card_never_closes_the_viewer() -> void:
 	var published : Array[String] = []
 	var viewer := _two_card_viewer(published)
-	await get_tree().process_frame
-	_click(viewer._cards.controls[0])
-	await get_tree().process_frame
-	check(not viewer.is_queued_for_deletion(), "the viewer is still open after a click on a card")
-	await _drop_viewer(viewer)
+	await _fit_to_its_window(viewer)
+	_bring_the_focus_window_under_the_pointer()
+	await _click_through_the_viewport(viewer._cards.controls[0])
+	check(is_instance_valid(viewer) and not viewer.is_queued_for_deletion(),
+			"the viewer is still open after a click on a card")
+	await _take_the_pointer_and_the_focus_window_away()
+	await _drop_viewer(viewer if is_instance_valid(viewer) else null)
 
 ## ONE cancel unsticks and closes together -- there is no two-press ladder out of a viewer.
 func test_cancel_unsticks_before_it_closes() -> void:
@@ -664,6 +683,9 @@ func test_an_arrow_off_the_lists_edge_never_reaches_the_screen_beneath() -> void
 	for action : StringName in CardsViewer.NAVIGATION:
 		check(viewer._cards.modal_verdict(_action_event(action)) == CardsViewer.Modal.KEEP,
 				"%s is kept by the open viewer" % action)
+		_focus_window.push_input(_action_event(action))
+		check(_focus_window.is_input_handled(),
+				"%s pushed through the viewport is consumed there, so nothing beneath answers it" % action)
 	await _drop_viewer(viewer)
 
 ## The X lives in another viewport, so the edge arrow ASKS for it -- and only while a stuck card has put one there.
@@ -923,6 +945,47 @@ func _click(control: Control) -> void:
 	press.button_index = MOUSE_BUTTON_LEFT
 	press.pressed = true
 	control.gui_input.emit(press)
+
+# A POINTER REACHES THE FOCUS WINDOW ONLY THROUGH THE ROOT, which embeds it and hit-tests only points
+# inside its own rect, so a row that points at a card brings the window over the root while it does.
+## Puts the focus window over the root, where a pointer the root receives can land in it.
+func _bring_the_focus_window_under_the_pointer() -> void:
+	_focus_window.position = Vector2i.ZERO
+
+## Moves the pointer off the root, so no control stays hovered, and the focus window back off the root's rect.
+func _take_the_pointer_and_the_focus_window_away() -> void:
+	_push_pointer_to(-Vector2(_focus_window.size))
+	await get_tree().process_frame
+	_focus_window.position = -_focus_window.size
+
+## Where the root's pointer must be to land on the centre of `control`, drawn in the focus window.
+func _pointer_at(control: Control) -> Vector2:
+	return get_tree().root.get_final_transform() * (Vector2(_focus_window.position)
+			+ _focus_window.get_final_transform() * control.get_global_transform_with_canvas() * (control.size / 2.0))
+
+func _push_pointer_to(at: Vector2) -> void:
+	var motion := InputEventMouseMotion.new()
+	motion.position = at
+	motion.global_position = at
+	get_tree().root.push_input(motion)
+
+## A real pointer move onto the centre of `control`, pushed into the root window as the platform does.
+func _move_pointer_onto(control: Control) -> void:
+	_push_pointer_to(_pointer_at(control))
+	await get_tree().process_frame
+
+## A real left click on `control`: the pointer moved onto it, then a press and a release a frame apart, pushed into the root, so whatever lies under the pointer is what the engine hands it to.
+func _click_through_the_viewport(control: Control) -> void:
+	var at := _pointer_at(control)
+	await _move_pointer_onto(control)
+	for pressed : bool in [true, false]:
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = pressed
+		event.position = at
+		event.global_position = at
+		get_tree().root.push_input(event)
+		await get_tree().process_frame
 
 ## Clicking a listed card picks it, in its own ink; one at a time; and the moving focus takes the rim back for as long as it is there.
 func test_pack_click_selects() -> void:
