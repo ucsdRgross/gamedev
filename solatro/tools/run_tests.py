@@ -41,6 +41,7 @@ import argparse
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -50,11 +51,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.dirname(HERE)
 ALL_TESTS_GD = os.path.join(PROJECT, "Tests", "all_tests.gd")
 ALL_TESTS_SCENE = "res://Tests/all_tests.tscn"
+WINDOWS = os.name == "nt"
 # Win32 ShowWindow constant; Python's subprocess exports SW_HIDE only.
 SW_SHOWMINNOACTIVE = 7
 # The engine's own log, and the ONLY thing _scan_engine_errors reads — so it is also the definition
 # of what that gate can see. Same root as snapshot_diff.py's.
-LOG_DIR = os.path.join(os.path.expandvars(r"%APPDATA%\Godot\app_userdata\Solatro"), "logs")
+USER_DATA = os.path.join(os.environ["APPDATA"], "Godot") if WINDOWS else \
+    os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "godot")
+LOG_DIR = os.path.join(USER_DATA, "app_userdata", "Solatro", "logs")
 GODOT_LOG = os.path.join(LOG_DIR, "godot.log")
 # The suite's own transcript. `TestLog.line` flushes EVERY line, so its size is a live
 # heartbeat: while checks are being recorded it grows, and a silent suite stops it dead.
@@ -241,19 +245,24 @@ def main():
     user_args = list(args.passthrough) + list(args.filter)
     if user_args:
         command += ["--"] + user_args
+# A display-less Linux container has no sound device either, and ALSA's failed open is an ERROR.
+    if not WINDOWS and not os.environ.get("DISPLAY"):
+        command = ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24", command[0],
+                   "--audio-driver", "Dummy"] + command[1:]
 
 # The suite opens minimized so loading never covers the desktop; all_tests.gd raises it once
 # loaded. Only the suite: any other scene would stay minimized, and a lone minimized window
 # stops drawing.
     startup = None
-    if args.scene == ALL_TESTS_SCENE:
+    if WINDOWS and args.scene == ALL_TESTS_SCENE:
         startup = subprocess.STARTUPINFO()
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startup.wShowWindow = SW_SHOWMINNOACTIVE
 
     with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as out, \
          tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as err:
-        process = subprocess.Popen(command, stdout=out, stderr=err, startupinfo=startup)
+        process = subprocess.Popen(command, stdout=out, stderr=err, startupinfo=startup,
+                                   start_new_session=not WINDOWS)
 # ⚠ ALWAYS kill on timeout — a parse error leaves a blank window open forever and no
 # in-scene watchdog can save it, because the script never loads.
         outcome = wait_or_stall(process, args.timeout, args.stall_timeout, TEST_LOG)
@@ -264,9 +273,12 @@ def main():
 # Read the log BEFORE the kill, and copy it aside before anything can truncate it.
             stalled_name, stalled_last = stalled_suite(TEST_LOG)
             preserved = preserve_logs("stalled")
-        if outcome != "ok":
+# On Linux the PID may be xvfb-run's, not Godot's, so the whole session is killed.
+        if outcome != "ok" and WINDOWS:
             process.kill()
-            process.wait()
+        elif outcome != "ok":
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
         err.seek(0)
         stderr_text = err.read()
         out.seek(0)

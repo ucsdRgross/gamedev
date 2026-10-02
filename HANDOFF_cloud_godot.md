@@ -41,6 +41,7 @@ A cloud session that starts on a branch without it can run
 1. Settle whether the 11 are environmental: run the same suite on a Windows box, diff failure
    lists; or retry in the cloud with a window size matching the project's base resolution.
 2. Investigate the exit 134 at teardown.
-3. `HEADLESS_TESTING.md` cites `Tools/run_tests.py`, which does not exist in the repo.
+3. Docs cite `solatro/Tools/run_tests.py`; the tracked file is `solatro/tools/run_tests.py`
+   (Windows ignores the case, Linux does not).
 4. Optionally make `cloud_setup.sh` a SessionStart hook (`session-start-hook` skill). Not done.
 5. Newest Godot release unconfirmed (API calls blocked by the proxy); 4.7.2 is what the project pins.

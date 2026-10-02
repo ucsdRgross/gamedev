@@ -50,6 +50,8 @@ which wraps `xvfb-run`; the Linux binary is already the console build). Resume f
   work. Perf numbers (`fx_cost`, GPU timer) mean nothing here, and pixel-exact checks can differ
   from the daily drivers.
 - A full `Tests/all_tests.tscn` run takes ~7 min and aborts (exit 134) at teardown.
+- The gate runs here as `python3 .claude/tools/gate.py ...`; user:// is
+  `$XDG_DATA_HOME/godot/app_userdata/Solatro` (lowercase `godot`).
 - The worldgen extension has a committed Linux debug `.so`; rebuild recipe in
   `worldgen/worldgen_native/BUILD.md`.
 

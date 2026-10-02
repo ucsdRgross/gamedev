@@ -8,9 +8,9 @@ the handoff's "## Open bugs" (listed - count it, or NEW).
     py .claude/tools/gate.py --out <scratchpad> [--handoff solatro/HANDOFF_x.md] [-- --filter Sidebar]
     py .claude/tools/gate.py --out <scratchpad> --parse <scratchpad>/gate_<stamp>   # re-read a run
 
-Every run gets a fresh private APPDATA under --out, so user:// is never the player's. It
-refuses to start while any Godot process runs (one Godot at a time; overlapping runs
-fabricate failures). GODOT_BIN comes from the environment, else from the machine-profiles
+Every run gets a fresh private APPDATA (XDG_DATA_HOME on Linux) under --out, so user:// is
+never the player's. It refuses to start while any Godot process runs (one Godot at a time;
+overlapping runs fabricate failures). GODOT_BIN comes from the environment, else from the machine-profiles
 table for whichever repo root this checkout is.
 
 Exit 0 = GREEN: the suite banner passed, the errors log is empty, no SCRIPT ERROR, no RID /
@@ -32,9 +32,9 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-WRAPPER = ROOT / "solatro" / "Tools" / "run_tests.py"
+WRAPPER = ROOT / "solatro" / "tools" / "run_tests.py"
 PROFILES = ROOT / ".claude" / "memory" / "machine-profiles.md"
-LOGS_UNDER_APPDATA = Path("Godot") / "app_userdata" / "Solatro" / "logs"
+LOGS_UNDER_APPDATA = Path("Godot" if os.name == "nt" else "godot") / "app_userdata" / "Solatro" / "logs"
 
 BANNER = re.compile(r"^=+ ((?:ALL|FILTERED) .*SUITES.*?) =+$")
 SUITE_END = re.compile(r"^=+ (?!ALL \d|FILTERED )([A-Z][A-Z0-9 ]*?): (?:ALL (\d+) CHECKS PASSED|(\d+) passed, (\d+) FAILED)")
@@ -65,6 +65,9 @@ def godot_bin() -> str:
 
 
 def godot_running() -> list[str]:
+    if os.name != "nt":
+        out = subprocess.run(["pgrep", "-a", "^Godot"], capture_output=True, text=True).stdout
+        return out.splitlines()
     out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Godot*", "/FO", "CSV", "/NH"],
                          capture_output=True, text=True).stdout
     return [line for line in out.splitlines() if "Godot" in line]
@@ -78,7 +81,7 @@ def run(run_dir: Path, passthrough: list[str]) -> int:
     appdata.mkdir(parents=True)
     args = passthrough if any(a.startswith("--timeout") for a in passthrough) \
         else ["--timeout", "1300", "--stall-timeout", "900"] + passthrough
-    env = dict(os.environ, APPDATA=str(appdata), GODOT_BIN=godot_bin())
+    env = dict(os.environ, APPDATA=str(appdata), XDG_DATA_HOME=str(appdata), GODOT_BIN=godot_bin())
     with open(run_dir / "wrapper.log", "w", encoding="utf-8", errors="replace") as log:
         return subprocess.run([sys.executable, str(WRAPPER)] + args, cwd=ROOT, env=env,
                               stdout=log, stderr=subprocess.STDOUT).returncode
