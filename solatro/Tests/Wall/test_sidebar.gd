@@ -151,6 +151,7 @@ func _ready() -> void:
 	await test_accepting_the_exit_x_hands_the_focus_back_to_the_board()
 	behavior_section("A SCREEN'S STATE BELONGS TO ITS OWN CONTENT")
 	await test_a_finished_show_leaves_no_cascade_flag_for_the_next_one()
+	await test_a_listed_card_clicked_on_the_outcome_screen_leaves_no_empty_lock()
 	await test_a_new_run_does_not_inherit_the_last_shows_lock()
 	await test_a_new_run_does_not_inherit_the_last_shows_hand()
 	await test_a_new_run_does_not_inherit_the_maps_last_description()
@@ -4884,6 +4885,50 @@ func _restart_the_show() -> void:
 	CardEnvironment.CURRENT = view.game
 	_play_area = view.play_area
 	_game_viewport = _main._pictures[&"game"].viewport
+
+# The gate reads godot.log after the whole run, so an error raised inside one row's window is
+# heard here as the engine raises it, with what it said for the failure detail.
+class _Errors extends Logger:
+	var said : Array[String] = []
+
+	func _log_error(function: String, _file: String, _line: int, code: String, rationale: String,
+			_editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if error_type != ERROR_TYPE_WARNING: said.append("%s: %s %s" % [function, code, rationale])
+
+## The outcome screen keeps the show busy, so the sidebar takes no publication there: a click on a listed card sticks it in its viewer and leaves no lock without an entry.
+func test_a_listed_card_clicked_on_the_outcome_screen_leaves_no_empty_lock() -> void:
+	await _start_game_fixture()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	await _end_the_show_by_its_button(view)
+	check(view.game.processing and _hud_is_up(),
+			"sanity: the outcome screen is up, the show busy and the sidebar on its HUD")
+	check(await _click_button(_container.discard_ui.get_node(^"Button") as Button, _booted_viewport),
+			"sanity: a real click on Discard, which holds the swept stocks, pressed it on the outcome screen")
+	await get_tree().process_frame
+	var viewer := DeckViewer._open
+	check(is_instance_valid(viewer) and not viewer.cards().controls.is_empty(),
+			"sanity: Discard opened a viewer that lists cards")
+	if is_instance_valid(viewer) and not viewer.cards().controls.is_empty():
+		await _await_the_list_at_rest(viewer._scroll as SmoothScrollContainer)
+		var listed := viewer.cards().controls[0]
+		var at := listed.get_global_rect().get_center()
+		var errors := _Errors.new()
+		OS.add_logger(errors)
+		_hover_in(_booted_viewport, at)
+		await get_tree().process_frame
+		await _click(at, _booted_viewport)
+		var stuck := viewer.cards().sticky
+		_hover_in(_booted_viewport, viewer.margin_container.get_global_rect().end - Vector2.ONE)
+		await get_tree().process_frame
+		OS.remove_logger(errors)
+		check(stuck != null and stuck == viewer.cards()._data_of[listed] and listed.has_focus(),
+				"sanity: the real click landed on the listed card and stuck it in its viewer")
+		check(errors.said.is_empty(), "the click and the pointer leaving raise no error",
+				"\n".join(errors.said))
+		check(not _container.is_locked() or _container._locked_entry_by_screen[&"game"] != null,
+				"...and leave no lock without an entry, which every later return to the lock would read")
+		await _close_the_open_viewer()
+	await _end_main_fixture()
 
 ## A show hands back with its cascade flag still up, so the NEXT show must not inherit it: its first hover opens a description.
 func test_a_finished_show_leaves_no_cascade_flag_for_the_next_one() -> void:

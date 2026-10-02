@@ -313,10 +313,11 @@ func board_highlight_gone() -> void:
 	if _active_screen == GAME_SCREEN: highlight_gone()
 
 # STICKY IS THE LOCK, on every surface: a clicked viewer card pins the sidebar exactly as a clicked
-# board card does, and letting it go leaves the highlight free again.
+# board card does, and letting it go leaves the highlight free again. Mid-cascade, the outcome
+# screen included, the click's own publication was dropped and no lock may be taken.
 func _follow_the_viewers_sticky(stuck: bool) -> void:
-	if stuck: lock_to(_entry_by_screen[_active_screen])
-	else: clear_lock()
+	if not stuck: clear_lock()
+	elif not _screen_is_processing(): lock_to(_entry_by_screen[_active_screen])
 
 # A VIEWER CLOSING TAKES ITS CARD OUT OF ITS OWN SCREEN'S SIDEBAR and gives back the lock it set
 # aside -- on a screen not shown, as what coming back to it shows. A card freed under the pointer
