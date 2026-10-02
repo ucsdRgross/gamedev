@@ -762,12 +762,14 @@ func another_rank(rank: PipRank) -> PipRank:
 	if not PipComparator.printed_same(rank, two): return two
 	return PipRankNumeral.new().with_value(7)
 
-# Wait until the control this fixture CLICKS stops moving: the board eases into its focused zoom,
-# and a click landing mid-ease lands where the control was rather than where it is.
+# Wait until the control this fixture CLICKS stops moving, or a click lands where it was. ⚠ ONE
+# PHYSICS TICK PER SAMPLE: the board moves only on its ticks, so a frame with none reads as still
+# mid-move -- measured, a click aimed 209 px off the card.
 func settle_on(card: CardData) -> void:
 	var last := Vector2(INF, INF)
 	var waited := 0.0
 	while waited < WATCHDOG_SECS:
+		await get_tree().physics_frame
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 		var now : Vector2 = centre_of(card)
