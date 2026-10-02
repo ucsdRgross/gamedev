@@ -137,7 +137,8 @@ every `/plan-run` close (item 10, over the whole run), and when a plan finishes.
    Count the REVIEWERS the same way: each latent finding later reproduced (caught) or refuted (false
    alarm), so the value of chasing "traced, not measured" findings becomes a number; and re-measure
    any routing figure in `implementer-routing` whose sample is still a handful of steps.
-   Record the tally in the handoff's Open bugs as a TOOLING line so the next audit can add to it.
+   Record the tally as one TOOLING line in the project's `todo.md` rule-audit tally (solatro: under
+   "Testing / infrastructure") so the next audit can add to it; a handoff is deleted at its close.
    **If this session edited the workflow** (skills, agent definitions, memory, `CLAUDE.md`, hooks),
    one Fable pass over that whole diff, batched here rather than per edit: contradictions with the
    rest of the workflow, duplicates, a rule that inverts another. A wrong rule costs every later

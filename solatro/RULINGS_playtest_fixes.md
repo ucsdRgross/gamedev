@@ -1,6 +1,6 @@
 # RULINGS - playtest fixes
 
-The owner's rulings for the work stream in `HANDOFF_playtest_fixes.md`, verbatim where quoted. They
+The owner's rulings for the playtest-fixes work stream (the combined branch's first playtest), verbatim where quoted. They
 outrank the design docs they name. A new ruling is appended here in the same commit that records it,
 and every design node, answer, TEST_PLAN row and NAMES entry it supersedes is marked there.
 
