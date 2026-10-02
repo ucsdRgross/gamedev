@@ -50,6 +50,11 @@ under the queue rule's exception (say so, with what it delays).
 Measured: a dozen listed rows, TP-92 alone ~1 gate in 3, all counted and none ever fixed, until
 "red, but only listed rows" read as green - and a real regression landing on a listed row would pass.
 
+⚠ **A background agent is alive only while its output file grows.** An owner's interrupt stops the
+background subagents with the turn, and no notification follows. After any interrupt, and before
+saying "still running", check the mtime of the report file the brief told it to append to.
+Measured: a reviewer died with an interrupt and was reported "still running" for 12 hours.
+
 **Verify the recon premise before dispatch** — the site and cause a brief names are a hypothesis
 until a bounded command confirms them ([[brief-premise-is-a-hypothesis]]).
 
