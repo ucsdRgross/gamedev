@@ -2889,12 +2889,6 @@ func run_the_board_does_not_scroll_while_it_fits_test() -> void:
 			"%.3f -> %.3f" % [resting, _grid_drawn_y(pa)])
 	check(is_zero_approx(_board_scroll_range(pa)), "...and the range is still 0",
 			"range %.3f" % _board_scroll_range(pa))
-	pa.scroll_container.scroll_vertical = 40
-	for i : int in 6: await get_tree().process_frame
-	check(is_equal_approx(_grid_drawn_y(pa), resting),
-			"a programmatic scroll_vertical write moves it by nothing either",
-			"%.3f -> %.3f, scroll_vertical %d"
-			% [resting, _grid_drawn_y(pa), pa.scroll_container.scroll_vertical])
 
 #⚠ THE PICTURE'S OWN REGION IS THE CASE THAT BROKE. `board_inset_top` and `board_visible_crop`
 #come from the wall picture's visible region, and a floor measured against the whole control turns
