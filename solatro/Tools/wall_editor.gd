@@ -172,12 +172,9 @@ const EDITOR_INERT_KNOBS : Array[String] = ["wall_selection_repeat_delay", "wall
 	get: return _gesture_log
 
 @export_group("Honesty")
-# ⚠ **THE LIST IS CHECKED, NOT DECLARED.** It used to return `""` for any run that had a `Wall`,
-# which made it a claim about the code rather than a reading of it -- and it stayed empty while
-# the board knobs it had never covered were being ignored by the hosted `GameView`. Now the two
-
-# things that can actually be wrong are asked: whether there is a `Wall` for the knobs that need
-# one, and whether the screens the tool hosts really resolve to THIS panel's `preview_settings`.
+# ⚠ **THE LIST IS CHECKED, NOT DECLARED.** The two things that can actually be wrong are asked:
+# whether there is a `Wall` for the knobs that need one, and whether the screens the tool hosts
+# really resolve to THIS panel's `preview_settings`.
 
 ## ⚠ READ-ONLY. The knobs this preview cannot exercise right now, or "" when it drives them all.
 @export var knobs_this_preview_does_not_drive : String = "":

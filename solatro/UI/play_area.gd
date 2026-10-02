@@ -1057,7 +1057,8 @@ func snap_the_view_into_place() -> void:
 const OPENING_ZOOM_FRACTION := 0.6
 
 #THE ONE OWNER OF "FRESH": a PlayArea is one show, so it owes the opening ease from birth and the
-#first time its picture goes live spends it. A resumed show lands at rest (owner ruling).
+#first time its picture goes live spends it. A fresh GameView plays the ease; a frozen show already
+#on the wall does not (owner ruling).
 var _opening_ease_owed := true
 
 ## True from a fresh show going live until its board has grown to rest or a view change took over.
@@ -1126,8 +1127,8 @@ func open_zoomed_out() -> void:
 #FOCUSED: the grid being acted on, and the ONLY grid the "no cut-off grid" rule speaks about -- a
 #neighbour sliced by the window edge is not a defect. OVERVIEW: the MIDDLE grid.
 
-#⚠ A RESTING BOARD IS A POSITIONED BOARD. Nothing used to place the board horizontally, so it sat
-#at scroll zero -- hard left -- while the view claimed to be centred on a grid.
+#⚠ A RESTING BOARD IS A POSITIONED BOARD: left alone it sits at scroll zero -- hard left --
+#while the view claims to be centred on a grid.
 func resting_grid() -> int:
 	var last := grid_container.get_child_count() - 1
 	if last < 0: return NO_GRID
@@ -1200,8 +1201,7 @@ func _grid_nearest_the_window_centre() -> int:
 const DEFAULT_BOARD_ZOOM := 1.0
 
 #THE ALL-GRIDS VIEW FITS THE GRIDS THE RUN ACTUALLY HAS. The picture's own size never follows the
-#grid count (owner ruling), so the FIT does: two grids in a span built for three used to sit small
-#in the middle of it, which is the "shrunk down version" the owner saw.
+#grid count (owner ruling), so the FIT does.
 
 #⚠ THE SAME FIXED-POINT SHAPE `focused_board_zoom` SOLVES, for the same reason: every term on the
 #bottom is authored at scale 1 and grows with the zoom, so the answer is the ratio of the window to
@@ -2473,7 +2473,7 @@ func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 	for r : int in range(coord.y + 1, _grid_rows(coord.grid)):
 		bottom -= (_grid_row_height(coord.grid, r) + float(separation)) * z
 #⚠ THE STACK STARTS ON THE ROW'S BOTTOM LINE, NOT ONE SEPARATION ABOVE IT. A covered cell frame is
-#HIDDEN rather than flattened, so it takes no separation under the stack any more — the height-0
+#HIDDEN rather than flattened, so it takes no separation under the stack — the height-0
 #card's bottom edge IS the row's bottom line, exactly where the frame's was.
 	var y := bottom - depth_pitch * float(coord.h) - full * 0.5
 	return Vector2(x, y)
@@ -3141,8 +3141,8 @@ var _drawn_grid_gap : float = 0.0
 var _end_margin_before_the_ease : float = 0.0
 
 #The ONE writer of the SEPARATION between two grids AND of the bare board beyond the outermost two
-#-- one quantity, and the only thing the two views lay out differently: the overview draws a small
-#fixed gap, the focused view the buffer that carries the neighbours out of frame.
+#-- one quantity, and the only thing the two views lay out differently: the overview draws the
+#two score gutters alone, the focused view the buffer that carries the neighbours out of frame.
 
 #⚠ THE END MARGIN IS WHAT LETS AN EDGE GRID REACH THE MIDDLE OF THE WINDOW. The scroller clamps
 #every aim to its content's range, so content ending at the last cell block leaves the first and

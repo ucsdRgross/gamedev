@@ -40,7 +40,7 @@ var hud_container : HudContainer = null
 ## Set by `Main` alongside `hud_container`, the same hand-over `Map` and `Menu` get: the picture this show goes live in, and the space its discards fly across.
 var wall_picture : WallPicture = null
 
-## The HUD controls, reached off `hud_container` in `_bind_hud_container()`, under the same names the scene used to own directly.
+## The HUD controls, reached off `hud_container` in `_bind_hud_container()`, under the names the rest of this view reads.
 var submit_button : Button = null
 var undo_button : Button = null
 ## Opens and closes the marks layer, for the mouse, the keyboard and the controller alike.

@@ -1472,7 +1472,7 @@ func test_the_sidebar_is_hidden_on_the_menu_until_the_picker_shows_something() -
 
 # R1's first half, and it is about the PICTURE, not the sidebar: whatever the sidebar is doing, the
 # focused picture reaches every window edge, so no bar of bare wall ever shows beside it.
-## Harness-scale only: the fixture draws at content scale 1, where the player's window does not.
+## Harness-scale only.
 func test_every_focused_picture_covers_the_window_edge_to_edge() -> void:
 	await _start_map_fixture()
 	var window : Vector2 = _container.get_viewport().get_visible_rect().size
@@ -2244,8 +2244,7 @@ func _zoom_the_map_under_a_viewer(main: Main, notches: int) -> void:
 		main.wall._unhandled_input(event)
 	await _await_map_framing_settled(main)
 
-# A NOTCH IS A PRESS AND ITS RELEASE, as the platform sends it: a press alone keeps the viewport's
-# mouse focus on the control under it, and the next click lands there instead of under the pointer.
+# A NOTCH IS A PRESS AND ITS RELEASE, as the platform sends it.
 func _push_wheel_notch(viewport: Viewport, button: MouseButton, at: Vector2) -> void:
 	for pressed : bool in [true, false] as Array[bool]:
 		var event := InputEventMouseButton.new()
@@ -6953,7 +6952,7 @@ func _check_the_chooser_holds_its_parts_beside_the_sidebar(chooser: ChoiceViewer
 			"...and lies inside the space beside the sidebar at %s" % where,
 			"%s vs %s" % [window, _ui_space(_main)])
 
-## Half a pixel either side: a container places its children on whole pixels.
+## Half a pixel either side.
 const CENTRED_TOLERANCE_PX := 1.0
 
 ## How far off the space's centre the menu's content may rest, in UI pixels.

@@ -1586,9 +1586,9 @@ func run_one_scroll_container_on_the_board_test() -> void:
 # the scroll content's own origin shifts as the region around it resizes. It drives the REAL input
 # path, so deleting the pan wiring out of _consume_as_view_action fails it.
 
-# ⚠ ASSERTED FOCUSED: the overview draws the grids a small fixed gap apart, so four of the five fit
-# the board's window at once and panning stops shifting which ones are in frame. Focused, the board
-# is still far wider than its window.
+# ⚠ ASSERTED FOCUSED: the overview draws the grids with only their score gutters between, so four
+# of the five fit the board's window at once and panning stops shifting which ones are in frame.
+# Focused, the board is still far wider than its window.
 
 ## The grids wholly on screen right now, by index, ascending. "In frame" is _cut_off_px at zero.
 func _grids_in_frame(pa: PlayArea) -> Array[int]:
@@ -3621,8 +3621,7 @@ func _check_the_set_centred(pa: PlayArea, what: String) -> void:
 			% [off, pa.drawn_zoom, leftovers.x, leftovers.y] + "authored px")
 
 #THE PICTURE'S SIZE NEVER FOLLOWS THE GRID COUNT (owner ruling), so the overview's SCALE does: the
-#grids the run actually has are fitted to the board's window. Two grids in a span built for three
-#used to sit small in the middle of it, which is the "shrunk down version" the owner saw.
+#grids the run actually has are fitted to the board's window.
 func run_the_overview_fits_the_set_it_has_test() -> void:
 	behavior_section("THE OVERVIEW FITS THE SET IT HAS")
 	var design := PlayArea.game_picture_design_size(SettingsManager.settings)

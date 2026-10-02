@@ -44,7 +44,7 @@ signal slide_settled
 
 const SCENE := preload("res://UI/hud_container.tscn")
 
-## One home for the "a standalone fixture with no `Main` gets a private instance" fallback every screen used to repeat.
+## One home for the "a standalone fixture with no `Main` gets a private instance" fallback every screen shares.
 static func ensure(existing: HudContainer, parent: Node) -> HudContainer:
 	if existing:
 		return existing
@@ -409,8 +409,8 @@ func _offers_the_x(shown: InfoEntry) -> bool:
 	return shown == lock if lock else not shown.transient
 
 # A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD, re-fitted after its screen's own inset. Only the
-# newest viewer shown republishes, and only while a description is UP: one under it would re-stick
-# the card that viewer set aside, and a dismissal is the player's act where a re-fit is not one.
+# newest viewer shown republishes, and only while a description is UP and its resting rect moved: a
+# viewer under it would re-stick its set-aside card, and a dismissal is not a re-fit's to undo.
 func _fit_viewer(hosted: _HostedViewer) -> void:
 	var viewer := hosted.viewer
 	var resting := resting_rect_beside(null)

@@ -368,7 +368,6 @@ func test_the_deck_viewers_list_is_whole_columns_centred() -> void:
 ## The watchdog on a smooth scroll that follows the focus coming to rest; the wait ends on arrival.
 const SCROLL_SETTLE_TIMEOUT_SEC := 5.0
 
-# Measured in the ROOT window, at content scale 1 like the rows above; other window sizes are shots.
 ## A deck viewer's first row stands the frame and the card gap, two board gaps, below its window's top, and its last row, scrolled to by the keys, the same above the bottom; a short list sits at the top; each side is at least that; harness-scale only.
 func test_a_deck_viewers_rows_stand_the_gap_inside_its_window() -> void:
 	var visible := get_tree().root.get_visible_rect()
