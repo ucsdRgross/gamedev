@@ -8,8 +8,8 @@
 #   * it costs nothing when no commit is happening.
 #
 # WHAT BLOCKS, AND WHY ONLY THIS:
-#   Duplicated blocks BLOCK. They are precise, rare, and the standing backlog is small - CLAUDE.md
-#   "Code hygiene" carries its size - so a block means something new.
+#   Duplicated blocks BLOCK. They are precise, rare, and the standing backlog is small - a bare
+#   `py .claude/tools/dup_check.py` lists it - so a block means something new.
 #   Add-only shape WARNS ONLY. The baseline says 34% of this repo's code-touching commits are
 #   add-only at the default threshold - blocking on that would fire on a third of all commits and
 #   the gate would be switched off within a week. It rides along as context instead.

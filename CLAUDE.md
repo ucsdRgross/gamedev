@@ -48,9 +48,8 @@ any docs change. The judgement half is the `/docs` skill.
 
 A **`Stop` hook runs `--changed --warn-only` at every task boundary** — only the files you touched,
 only the findings that are always bugs, and it never blocks. ⚠ **A silent hook is not a clean
-repo:** it says nothing about the standing style backlog (hundreds of dated and over-long comments,
-~900 design-id citations from earlier work streams, `solatro/todo.md`). Run the full check by hand
-for that.
+repo:** it says nothing about the standing style backlog (`solatro/todo.md`). Run the full check by
+hand for that.
 
 ## Code hygiene
 
@@ -71,19 +70,14 @@ duplicate pair** (a pair already on HEAD does not block), with `[dup-ok]` in the
 (`-m` or `-F`) as the deliberate-duplication escape. It fires only
 on commits an agent makes, never on the owner's GitHub Desktop flow.
 
-⚠ **Duplication blocks; add-only shape only warns.** That split is measured, not taste: add-only
-commits are a third of this repo's history at the default threshold, so gating on them would fire
-constantly and the gate would be switched off. Re-derive before changing either threshold.
-
-The standing backlog is small enough to read: run `dup_check.py` bare and expect ~54 solatro pairs,
-most of them test-to-test setup. About ten touch production code.
+⚠ **Duplication blocks; add-only shape only warns.** The gate's header carries the measured reason;
+re-derive before changing either threshold. The standing backlog: run `dup_check.py` bare.
 
 ## Hard rules (they override defaults)
 
 1. **Never commit to `main`.** On `main` the owner commits through GitHub Desktop — just edit files,
    and ask first. **On any other branch, committing is fine and needs no permission**: one verified
-   step per commit, evidence in the message. ⚠ `/plan-run` goes further on a worktree branch and
-   makes commits MANDATORY for the overseer, because they are that run's only rollback points.
+   step per commit, evidence in the message.
 2. **AT MOST TWO SUBAGENTS AT A TIME, AND ONLY ONE OF THEM RUNS GODOT.** A hook enforces the
    count (`.claude/hooks/one-subagent-at-a-time.ps1`, released on `SubagentStop` and on
    `PostToolUse` for a foreground `Agent` call); the overseer enforces the Godot half. The suite
@@ -92,8 +86,8 @@ most of them test-to-test setup. About ten touch production code.
    either. The second slot is for an agent that runs no Godot (a reviewer, an auditor, docs work).
    A lock older than 90 minutes is ignored, so a killed session cannot wedge the repo shut.
 3. **Never kill a process by image name or wildcard.** A hook blocks it
-   (`.claude/hooks/block-process-kill.ps1`) because a blanket filter twice closed the owner's editor
-   with unsaved work. An explicit verified `-Id <pid>` passes.
+   (`.claude/hooks/block-process-kill.ps1`): the owner's editor matches the same filter. An
+   explicit verified `-Id <pid>` passes.
 4. **PowerShell mangles UTF-8** — never `Get-Content | Set-Content` a source file; use the Edit
    tool, or a python heredoc writing `encoding='utf-8'`. A hook blocks it
    (`.claude/hooks/block-source-rewrite.ps1`): `Set-Content`/`Out-File`/`Add-Content` aimed at a
@@ -111,9 +105,7 @@ most of them test-to-test setup. About ten touch production code.
 7. **No speculative defense.** No guard clause, `try`/`except`, null check or fallback branch
    unless you can NAME the caller that produces that case, or you observed the failure. A
    precondition gets `assert` — it compiles out in release, and a crash at the real cause beats a
-   fallback that hides it. ⚠ This is the repo's most likely source of bloat, not a hypothetical:
-   assistants differ ~7x in how much defensive handling they add unprompted, and the ones used here
-   sit at the high end.
+   fallback that hides it. ⚠ This is the repo's most likely source of bloat.
 8. **No unrequested generality.** No parameter, flag, `@export` or extension point without a caller
    TODAY. A new function needs two call sites or a test that needs the seam; otherwise inline it.
    The `bloat-reviewer` subagent checks exactly rules 7 and 8 against one diff.
@@ -128,28 +120,31 @@ most of them test-to-test setup. About ten touch production code.
   private `APPDATA`, so `user://` is isolated — `.claude/hooks/godot-needs-private-appdata.ps1`
   blocks a launch without one. Back up before any touch you cannot avoid. The editor: hard rule 3.
 - **Track every PID you start.** Before reporting done, no Godot console process you started is
-  left (kill your own, by `-Id`); `.claude/hooks/leftover-godot-warn.ps1` lists survivors at every
-  stop. A suite with no banner inside its timeout is a hang — look for a parse error first.
+  left (kill your own, by `-Id`). A suite with no banner inside its timeout is a hang — look for a parse error first.
 - **Solatro's full gate is one call:** `py .claude/tools/gate.py --out <scratchpad> --handoff
   <project>/HANDOFF_*.md` — private APPDATA, refused while any Godot runs, a short verdict (its
   docstring says what it checks).
-- **A `.gd` edit is parse-checked** by `.claude/hooks/gd-parse-check.ps1` in ~3-4 s, warn-only,
-  skipped while another Godot console process runs.
+- **A claim about state is measured or it says "probably".** Before every claim, not only when in
+  doubt: did you touch the thing itself — the file, the run, this command's output? A log line, an
+  earlier note or another agent's report is inferred. A check passed only if it ran as its own
+  command and you read its exit code — never through a pipe, which reports the last command's.
+  Send long output to a file and search the file.
 - **Plans and design records.** Fold new work and rulings into the EXISTING plan steps and tests
   unless told otherwise. Record the owner's ACTUAL answer verbatim, never your recommendation
   ([[charts-from-resolved-answers]]). Answer a question from `PLAN.md`, the handoff and the design
   docs before asking the owner. A handoff is stateless and portable: no absolute paths, the exact
   next step and its verification commands. Never delete a plan that has not landed (a landed one is
   folded and deleted, as above). A magic value is not a design answer — derive it.
+- **Any fix.** State the diagnosis in one sentence and confirm the cause with evidence (a repro, a
+  log, a measured value) before editing. Skip it only when the cause is the line you are reading.
 - **Visual bugs.** Reproduce and measure first; list at least two hypotheses, each with the
   measurement that confirms or refutes it; fix only the confirmed one. Verify on a real render of
   real art (hard rule 5, `/fx-verify`). In-game behaviour is never "untestable" — build a harness.
   Engine capability: the engine docs before a repo grep (hard rule 6).
 - **Execution.** Never stop early citing context — compaction exists. One blocked scenario: finish
-  the rest and report the blocker. Commit only the current step's files, staged by path. Subagent
-  presets: model aliases and explicit effort in frontmatter ([[implementer-routing]]).
-- **Context at 500k tokens triggers the session close** (owner's pick: fewer restarts, some
-  extra cost). `.claude/hooks/context-handoff-nudge.py` (main-thread Stop, once per session, ~0.3 s) tells the session to run `/handoff` and end with the next opening prompt.
+  the rest and report the blocker. Commit only the current step's files, staged by path. Never
+  batch an edit with the run that tests it. Subagent presets: model aliases and explicit effort in
+  frontmatter ([[implementer-routing]]).
 - **Reflect at every gate, unprompted.** Every session end, plan finish and `/plan-run` close runs
   `/handoff`'s "Reflect and record": what cost time, whether it will recur, the rule written where
   it is read next time, and the last message says what was recorded. Do not wait to be asked.
@@ -167,47 +162,24 @@ Everything else is a smaller game-jam or study project.
 
 ## Workflows (skills — invoke, don't reimplement)
 
-- **`/flowchart-design`** — feature design: braindump → flowcharts + question DAG → confirm → plan
-  and handoff prompt. It also carries the two rules that reach beyond it: design docs carry no code
+- **`/flowchart-design`** — before any feature large enough that a vague plan would leak decisions
+  into implementation. Also the home of two rules that reach beyond it: design docs carry no code
   while implementation plans carry everything, and the **gap protocol** for decisions a design does
   not cover.
-- **`/plan-run`** — execute a finished design with an overseer session plus implementer subagents:
-  the worktree setup, the reversed commit policy, the verification hierarchy, and the eight ways a
-  test passes while proving nothing. Run it AFTER `/flowchart-design` has produced the documents.
-- **`/handoff`** — session continuity. `<project>/HANDOFF_*.md` is the live state of any
-  multi-session work stream; start there when resuming.
-- **`/fx-verify`** — the verification gate for any visual, shader or prop-art change.
+- **`/plan-run`** — AFTER `/flowchart-design` has produced the documents.
+- **`/handoff`** — when resuming or checkpointing. `<project>/HANDOFF_*.md` is the live state of
+  any multi-session work stream; start there.
+- **`/fx-verify`** — before claiming any visual, shader or prop-art change works.
 - **The owner's visual review** — before/after pairs the owner approves, rejects or comments on,
   served by Design Loop (`#visual` tab); `solatro/visual-review/README.md`. `/fx-verify` and
   `/plan-run` say when to shoot it and how a reject becomes the next step.
-- **`/merge-branches`** — combine finished branches into one change for `main`: the branches' own
-  overlap notes, a base-showing merge, `py .claude/tools/merge_split.py` to split comment sweeps
-  from real edits, then the semantic breakage git cannot see. Run it for a single branch too.
-- **`/docs`** — audit and consolidate the docs and memory. Run it when a work stream lands, when
-  the docs feel scattered, and **before writing any new memory file**. Its mechanical half is
-  `py .claude/tools/doc_check.py`, which proves every reference still resolves.
-- **`pair-reviewer`** subagent — Fable reads design work (a round, a plan, a content batch) before
-  the owner sees it, and proposes better designs as well as fixes; `/flowchart-design` § Pair
-  review says when.
-- **`plan-auditor`** subagent — audits a plan or doc against the live code before you execute it.
-- **`bloat-reviewer`** subagent (Fable) — reads ONE diff: hard rules 7 and 8 and functions with one
-  call site, then the overseer's 2-4 targeted questions, the step's test rows and shots when asked.
-  Dispatched by hand per `/plan-run` § "Spending the reviewer"; no hook runs it. Cross-file
-  duplication is `dup_check.py`'s job and the branch is `/simplify`'s.
+- **`/merge-branches`** — before anything goes to `main`, a single branch included.
+- **`/docs`** — when a work stream lands, when the docs feel scattered, and **before writing any
+  new memory file**.
+- **Subagents** — `pair-reviewer` before design work reaches the owner (`/flowchart-design` § Pair
+  review); `plan-auditor` before executing a plan; `bloat-reviewer` on ONE diff, dispatched by hand
+  per `/plan-run` § "Spending the reviewer".
 
-Deliberately NOT installed, each for a measured reason:
-
-- **A PostToolUse hook running the test suite after every Edit.** The full Solatro suite is minutes long
-  and must run WINDOWED, so per-edit runs would fight the owner's editor. ⚠ The headless logic tier
-  (`solatro/Tools/run_tests.py --logic`, no window) removes that objection and is STILL not
-  installed — one run at a time, and a background run colliding with a manual one fabricates
-  failures in unrelated suites. Installing it is the owner's call. Run either at a task boundary.
-- **A pre-commit AI review.** A per-commit reviewer cannot see the duplicate it should catch — the
-  other copy is in a commit that is not in front of it — so it returns nits. The gate at commit time
-  is deterministic (`commit-gate.ps1`); the model-driven passes belong at the work-stream boundary
-  where the whole diff exists.
-- **A weaker model as reviewer, ever.** See `/plan-run`'s "The reviewer's model floor".
-- **A parallel implementer swarm in worktrees.** The owner kept hard rule 2: every worktree shares
-  `user://settings.tres`, `godot.log` and the window.
-- **A scripted headless `claude -p` loop, one plan step per call.** It bypasses the overseer, the
-  reviews and the owner's questions.
+**Do not install** a per-edit test-suite hook, a pre-commit AI review, a weaker model as reviewer,
+a parallel implementer swarm in worktrees, or a headless `claude -p` plan loop. Reasons:
+`.claude/NOT_INSTALLED.md`.
