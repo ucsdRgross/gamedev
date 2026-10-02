@@ -1,10 +1,10 @@
 """Run the Solatro suite and gate the EXIT-TIME engine errors the suite cannot see itself.
 
-    py solatro/Tools/run_tests.py                       # GODOT_BIN from the environment
-    py solatro/Tools/run_tests.py --godot <path to the _console exe>
-    py solatro/Tools/run_tests.py --scene res://Tools/spotlight_tool.tscn -- --verify
-    py solatro/Tools/run_tests.py --filter WallPause --keep-output   # one suite, output kept
-    py solatro/Tools/run_tests.py --logic               # the headless logic tier, the inner loop
+    py solatro/tools/run_tests.py                       # GODOT_BIN from the environment
+    py solatro/tools/run_tests.py --godot <path to the _console exe>
+    py solatro/tools/run_tests.py --scene res://Tools/spotlight_tool.tscn -- --verify
+    py solatro/tools/run_tests.py --filter WallPause --keep-output   # one suite, output kept
+    py solatro/tools/run_tests.py --logic               # the headless logic tier, the inner loop
 
 Exit code = the suite's own failure count PLUS the exit-time errors found here (capped at 125, the
 same cap `all_tests.gd` uses). 0 means both gates are clean.

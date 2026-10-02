@@ -51,7 +51,7 @@ restate them elsewhere:
 2. **Warnings are errors** — type every array element and every for-loop variable.
 3. **User-facing strings** go through `TRANSLATION.find` + `Locale/localization.csv`. **Tuning knobs**
    go in `Scripts/player_settings.gd` via `SettingsManager.settings`.
-4. **The full suite runs WINDOWED**, `GODOT_BIN=<console exe> py solatro/Tools/run_tests.py`. Judge
+4. **The full suite runs WINDOWED**, `GODOT_BIN=<console exe> py solatro/tools/run_tests.py`. Judge
    by the SUITE count and the failure set, never the check total. Green after every landed step.
 5. **`##` purpose comments on every new method.** Delete commented-out code.
 6. **Verify visuals by eye.** No green test is evidence about pixels.

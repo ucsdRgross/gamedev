@@ -151,7 +151,7 @@ dangling citations are gone.
 - Godot here is **4.7.2**; `.claude/memory/machine-profiles.md` records the binary per box.
 - Suite, from the repo root, WINDOWED:
   ```bash
-  GODOT_BIN="C:\Users\khanr\Desktop\Godot_v4.7.2-stable_win64_console.exe" py solatro/Tools/run_tests.py --timeout 1800
+  GODOT_BIN="C:\Users\khanr\Desktop\Godot_v4.7.2-stable_win64_console.exe" py solatro/tools/run_tests.py --timeout 1800
   ```
   **EXPECT: ALL 45 SUITES, ONE failure** — `TP-85`'s documented mid-growth flake, which may or may
   not fire. Every other suite reports `ALL … CHECKS PASSED`.

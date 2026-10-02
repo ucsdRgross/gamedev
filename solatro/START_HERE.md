@@ -171,7 +171,7 @@ Binary paths and hardware differ per computer — see `../.claude/memory/machine
 **console** variant of the Godot exe is the one whose stdout can be redirected to a file, and it
 must sit in the SAME folder as the main exe, which it launches by name.
 
-- **Full suite:** `GODOT_BIN=<console exe> py solatro/Tools/run_tests.py` — the preferred entry
+- **Full suite:** `GODOT_BIN=<console exe> py solatro/tools/run_tests.py` — the preferred entry
   point. It runs the suite windowed with a kill-on-timeout AND gates the exit-time engine errors the
   suite cannot see itself (`all_tests.gd`'s own scan runs before `quit()`, and the engine closes
   `godot.log` during the same cleanup that emits them, so neither the suite nor a naive re-read of
@@ -186,7 +186,7 @@ must sit in the SAME folder as the main exe, which it launches by name.
   editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (48) and the
   failure set**; a drop in the suite count means a suite failed to LOAD while the banner still reads
   PASSED.
-- **Inner loop between gates:** `py solatro/Tools/run_tests.py --logic` — the 34
+- **Inner loop between gates:** `py solatro/tools/run_tests.py --logic` — the 34
   renderer-independent suites, headless, ~65 s. Like any `--filter` subset it is a debugging aid and
   prints no clean verdict; the full run above stays the gate. HEADLESS_TESTING.md §0.
 - ⚠ **Always bound the launch with a hard timeout that KILLS, and grep the log for `Parse Error`

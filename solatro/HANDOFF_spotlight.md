@@ -377,7 +377,7 @@ half's `prop` backref held the PropVisual, the texture and `fx_attachment.gd` al
 PREDELETE now (`prop_visual.gd`; the general rule is ARCHITECTURE_REVIEW §6). Leaked ObjectDB at
 exit went 14 -> 4, and the 4 that remain are LEAK CANARY's deliberate strays.
 
-The blind spot that hid it is closed too: **`Tools/run_tests.py`** gates the exit-time stream from
+The blind spot that hid it is closed too: **`tools/run_tests.py`** gates the exit-time stream from
 outside the process. ⚠ Note re-reading `godot.log` after exit does NOT work — the engine closes that
 file during the same cleanup that emits these errors. See ARCHITECTURE_REVIEW §7.
 
@@ -485,7 +485,7 @@ flake (LEAK CANARY, UI VIEWERS) — **say how many runs a claim took.** ⚠ No `
 | 4 | Tool `spotlight_separation_mode` + covers-nothing | `Tools/spotlight_tool.gd` | ✅ done — opening routes through `PlayArea.row_open_span()`, deepest row skipped |
 | 5 | Attribute the **LEAK CANARY** growth (session path only: DeckPicker / DeckViewer / show) | `Tests/Engine/test_leak_canary.gd` | ⚠ OPEN — but `print_orphan_nodes()` is RULED OUT (the growth is not a Node; see Open bugs). A per-class census now reports node/resource/other on failure |
 | 6 | Decide **PIXELS**: fix the corner model or keep the pinned band | `Cards/card_visual.gd::corner_points`, `Tests/Visual/test_pixels.gd` | ✅ MOOT — the owner turned the idle rig animation off, and nothing else writes a Bone2D position, so the shipped card never deforms. The check is REST-POSE ONLY and asserts EXACT agreement (0 cells, 0.00); no band, no bound to protect. Both model approximations return if the idle is re-enabled — the deformed branches are left in the test for that |
-| 7 | **Exit-time engine errors are invisible to the gate** — `_scan_engine_errors` reads `godot.log` DURING the run | `Tests/all_tests.gd` | ✅ done — `Tools/run_tests.py` is the outer wrapper. ⚠ It could NOT be done by re-reading `godot.log` (the engine closes it during the same cleanup); it diffs the process streams against `godot.log`. Found and fixed the hoop half-node leak immediately |
+| 7 | **Exit-time engine errors are invisible to the gate** — `_scan_engine_errors` reads `godot.log` DURING the run | `Tests/all_tests.gd` | ✅ done — `tools/run_tests.py` is the outer wrapper. ⚠ It could NOT be done by re-reading `godot.log` (the engine closes it during the same cleanup); it diffs the process streams against `godot.log`. Found and fixed the hoop half-node leak immediately |
 | 8 | **Dirty-check the light push** | `UI/light_layer.gd::_push_lights` | ✅ done — identical uploads skipped at the layer, covering both push paths |
 
 ### ⚠ DO NOT — each of these looks like a cleanup and re-breaks something measured

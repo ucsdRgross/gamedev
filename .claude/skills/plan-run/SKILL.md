@@ -135,7 +135,7 @@ Each layer caught things the one above it missed.
 4. **Red-then-green proof** — caught a real defect *every single time*.
 5. **An adversarial reviewer tracing what a player actually does** — highest yield of the whole run.
 
-**Between gates, run the inner loop, not the gate:** on solatro `py solatro/Tools/run_tests.py
+**Between gates, run the inner loop, not the gate:** on solatro `py solatro/tools/run_tests.py
 --logic` (headless, several times faster; `--filter <NodeName>` narrows to one suite). It is a
 debugging aid with no verdict; a step is done only on a FULL windowed run ([[running-godot-scenes]]).
 

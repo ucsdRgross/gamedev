@@ -58,7 +58,7 @@ across identical code it went 17, then 1, then 1 — so **diff the per-suite ban
   have to stop by PID launches with the non-console exe, and you end THAT PID.
 - **Never pass `--quit-after <ms>`** to force-quit a scene: it keeps the process alive for the full
   duration regardless of when tests finish, which is what makes runs look hung.
-- **Run ONE suite through the real runner, never its own scene:** `py solatro/Tools/run_tests.py
+- **Run ONE suite through the real runner, never its own scene:** `py solatro/tools/run_tests.py
   --filter <NodeName>` (case-insensitive substrings of the node names in `all_tests.tscn`; several
   patterns are allowed). A lone suite scene never self-quits — `quit()` lives in `all_tests.gd` —
   and it also skips the engine-error gate and truncates the full run's log. The filter keeps all

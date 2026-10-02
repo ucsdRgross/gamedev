@@ -387,7 +387,7 @@ reader inside the game screen must pick ONE form or it fires twice. See §1m′ 
 - ⚠ **§8: `Game._restore_pre_act_board` deliberately does NOT unlink the doomed state**, and
   `_act_cancellable` brackets exactly the `on_run_scorer` / `on_next` window. If scoring moves out
   of those two windows, the act-cancel model has no bracket. §18 asks.
-- The suite is 31 suites and runs **WINDOWED** (`Tools/run_tests.py`); a test that cannot run under
+- The suite is 31 suites and runs **WINDOWED** (`tools/run_tests.py`); a test that cannot run under
   the current renderer FAILS with a reason, never skips (owner ruling).
 
 ### 1o. THE CARD IS BEING FLIPPED — what that actually touches

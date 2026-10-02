@@ -151,7 +151,7 @@ the hand; `compare_uncacheable` deleted).
 
 ## Verified
 
-Run `py solatro/Tools/run_tests.py`, `GODOT_BIN` from `.claude/memory/machine-profiles.md`,
+Run `py solatro/tools/run_tests.py`, `GODOT_BIN` from `.claude/memory/machine-profiles.md`,
 **WINDOWED**, **one run at a time**. Judge by the **suite count** and the empty failure set —
 the check total varies because the fuzz suites randomise. ⚠ The count was 31 when this stream
 landed and is 45 now; re-derive it with

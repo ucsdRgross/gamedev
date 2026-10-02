@@ -157,7 +157,7 @@ four options as written.
 - Godot here is **4.7.2**; `.claude/memory/machine-profiles.md` records the binary per box.
   ⚠ A cache built by a different build CRASHES the suite with `0xC0000005` and no banner — fix with
   `<godot> --headless --path solatro --import`.
-- Suite: `GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 600` from the repo
+- Suite: `GODOT_BIN=<4.7.2 console exe> py solatro/tools/run_tests.py --timeout 600` from the repo
   root. WINDOWED.
   ⚠ **THE OWNER'S GODOT EDITOR STAYS OPEN — IT HOSTS THE `godot-ai` MCP.** Owner ruling: it "should
   not cause any issues". **Do NOT close it and do NOT ask to.** This SUPERSEDES the older
@@ -1447,7 +1447,7 @@ READ IN THIS ORDER
   4. DESIGN.md 36 (flowchart H) when you need it. It is the authority on behaviour.
 
 FIRST, BEFORE ANY CODE -- run the suite:
-    GODOT_BIN="C:\Users\khanr\Desktop\Godot_v4.7.2-stable_win64_console.exe" py solatro/Tools/run_tests.py --timeout 600
+    GODOT_BIN="C:\Users\khanr\Desktop\Godot_v4.7.2-stable_win64_console.exe" py solatro/tools/run_tests.py --timeout 600
   EXPECT: ALL 45 SUITES, 9 FAILED -- 1 GRID LAYOUT (the standing 116.0 px) and 8 GRID
   VIEW, every one of them attributed below. TP-85's mid-growth flake may or may not fire,
   and so may one UI VIEWERS check -- see the non-determinism section.

@@ -426,7 +426,7 @@ The doubles each gate named already exist by here. These are the cases no single
   START_HERE.md's "judge by the SUITE count (30)" line move with it, or the next agent reads a
   dropped suite as green.
 
-⚠ **GATE 6:** `py solatro/Tools/run_tests.py` with `GODOT_BIN` set to this machine's console exe
+⚠ **GATE 6:** `py solatro/tools/run_tests.py` with `GODOT_BIN` set to this machine's console exe
 (the ONLY home for that path is `.claude/memory/machine-profiles.md`) — **31 suites** once S20
 lands, 30 before it, failure set empty. Judge by the suite count, not the check total: a drop means
 a suite failed to LOAD while the banner still reads PASSED.

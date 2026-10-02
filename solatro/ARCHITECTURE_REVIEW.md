@@ -1816,7 +1816,7 @@ re-enable it); `enable_board_focus()` on dismissal.
 
 ## 7. TESTING
 
-Run: `GODOT_BIN=<console exe> py solatro/Tools/run_tests.py` (wrapper, preferred — see below)
+Run: `GODOT_BIN=<console exe> py solatro/tools/run_tests.py` (wrapper, preferred — see below)
 or `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
 (the PIXELS suite renders real effects and asserts on the image, and a dummy renderer cannot
 compile a shader — headless it FAILS with an explanation rather than skipping, per the owner's
@@ -1850,7 +1850,7 @@ run on unexpected engine errors, read from `user://logs/godot.log` — but it ru
 BEFORE `get_tree().quit()`, so **everything the engine prints while tearing down is invisible to it
 by construction**, and no in-engine check can ever fix that (by then every GDScript object is gone).
 ⚠ Re-reading `godot.log` after exit does not work either: the engine CLOSES that file during the
-same cleanup that emits those errors. `Tools/run_tests.py` is the outer gate — it scans the captured
+same cleanup that emits those errors. `tools/run_tests.py` is the outer gate — it scans the captured
 stdout+stderr (teardown errors are split across both) for error lines **absent from `godot.log`**,
 which is definitionally what the in-run gate could not see, and parses the allowlist out of
 `all_tests.gd` rather than restating it.

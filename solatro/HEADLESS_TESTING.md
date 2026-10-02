@@ -13,10 +13,10 @@ timeout 500 "$GODOT_CONSOLE" --path solatro res://Tests/all_tests.tscn > /tmp/ru
 It quits itself (`close_when_done`) and exits with the failure count, so it is fully scriptable —
 it just needs a GPU.
 
-### ⚠ Prefer the wrapper: `Tools/run_tests.py`
+### ⚠ Prefer the wrapper: `tools/run_tests.py`
 
 ```bash
-GODOT_BIN=<path to the _console exe> py solatro/Tools/run_tests.py     # or --godot <path>
+GODOT_BIN=<path to the _console exe> py solatro/tools/run_tests.py     # or --godot <path>
 ```
 
 It runs exactly the command above (windowed, kill-on-timeout) and then gates **the engine errors the
@@ -36,8 +36,8 @@ PARSED OUT of `all_tests.gd` rather than restated, so the two gates cannot drift
 ### The two-tier loop — headless logic tier inside, full windowed run at the gate
 
 ```bash
-py solatro/Tools/run_tests.py --logic                              # inner loop: the renderer-independent suites, ~65 s
-py solatro/Tools/run_tests.py --timeout 900 --stall-timeout 900    # the gate: all 51, windowed, ~600 s on Box A
+py solatro/tools/run_tests.py --logic                              # inner loop: the renderer-independent suites, ~65 s
+py solatro/tools/run_tests.py --timeout 900 --stall-timeout 900    # the gate: all 51, windowed, ~600 s on Box A
 ```
 
 ⚠ **The gate is longer than the wrapper's default 600 s `--timeout`** (SIDEBAR alone runs
