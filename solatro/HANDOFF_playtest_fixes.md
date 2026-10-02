@@ -613,9 +613,13 @@ Overseer Opus 5.5; every reviewer Fable, read-only. Ground truth and every revie
 **Also done:** 3 /code-review - the Fable finder (C1-C4) and its ONE verifier over the 15 candidates (verdicts below; they outrank the finders' labels). 4 test-surface - DONE in two passes (T1-T11, U1-U14); unread: test_sidebar's P64 / P64b-2a..2c hunks (d7936ddf, 4ae86508, 594589ca, 0c2b3979).
 **Not started:** 5 /simplify (four angles serially, as a Fable subagent; the Open bugs lines marked FOR /simplify are its input); 7 the fixes; the whole-file comment sweeps; 8 /docs; 9 consolidate-memory; 10 Reflect and record; 11 delete the temporary plan documents.
 
+**The close runs in a Linux cloud container.** Owner (verbatim): "a: Port, gate here". 227197a merged claude/godot-cloud-test (Godot 4.7.2 via `bash .claude/tools/cloud_setup.sh && source /opt/godot/env.sh`); b93de15 made gate.py and solatro/tools/run_tests.py OS-aware (XDG_DATA_HOME, `pgrep ^Godot`, xvfb-run, `--audio-driver Dummy` with no display). No repo hook fires there (all PowerShell): the subagent cap and commit gate are held by hand.
+
+Ground-truth gate on 2fc1961 (Linux): GREEN, exit 0, `ALL 51 SUITES: 10017 CHECKS PASSED [19 placeholder warnings]`, 1150 ObjectDB, 24 resources, grab-focus test_plan_visuals.gd:1514 x1, test_wall_focus.gd:827 x3 - identical to the Windows gate; no Godot left.
+
 **Resume here:**
-1. `git status` (expect a clean tree), then one full gate as ground truth - the last one ran on 69b975bb, before solatro/project.godot's reordered input block was committed, and a new machine has no baseline of its own.
-2. /simplify (item 5), read-only, no Godot.
+1. Done (above).
+2. /simplify (item 5), read-only, no Godot - running.
 3. Item 7: every finding is a claim - an implementer reproduces it RED first, one fix at a time, a full gate between, "touch only the comments this fix changes". Order, by the verifier's verdicts: A1, A6, B4, B3 (its red test is the measurement), C4, then F2/F3/F1 (measure the cause first), then the test repairs T1-T7 and U1-U6 (each proven with its mutant; test-only repairs in different suites may share one gate). Refuted, no step: A2, B2, A3, A4, A5, B1, B5, C1, C2, C3. The fix commits get their own adversarial pass.
 4. Owner questions gathered so far (lettered options when asked): A6 (the twentieth round's words are "c: reset after each Travel" - does a mid-walk wheel notch that leaves the map zoomed at arrival break it; the verifier reads yes); B4 (a FOCUSED drag pan lands without focusing the grid - should the landing focus it, as Left/Right does; that would also fix the resize); the verifier's note under A4 (a right-click over a stuck viewer card unsticks nothing - does R5/B15's cancel-from-anywhere cover a viewer card); B5 only if the owner meant disk resumes too; plus the four already under Next up.
 5. For /docs (from the audit): prune the Open bugs lines the audit lists as stale (AUDIT.md's last section); P91's row misnames the glow styles; P52 and P41 (2) are superseded by P64 and the ledger should say so; the Open bugs mention of HudContainer.resize_preview is stale (no such function).
