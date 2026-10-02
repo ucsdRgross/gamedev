@@ -561,8 +561,6 @@ func enter_game() -> void:
 		new_view.game_ended.connect(game_ended)
 		new_view.run_lost.connect(_on_run_lost)
 		new_view.info_requested.connect(_on_screen_info_hovered)
-		new_view.bind_wall_camera(wall.get_node(^"%Camera2D") as Camera2D,
-				func() -> float: return _rects[&"game"].centre.x)
 		game_wp.attach_screen(new_view)
 	await _focus_picture(&"game")
 

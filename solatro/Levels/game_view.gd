@@ -52,10 +52,6 @@ var goal_label : Label = null
 var total_label : Label = null
 var combo_label : Label = null
 
-## `Main`'s ONE wall camera and a rect-centre-x getter, set once by `bind_wall_camera()`.
-var _wall_camera : Camera2D = null
-var _wall_rect_centre_x : Callable = Callable()
-
 # `game` is handed this view BEFORE it enters the tree, so its own `_ready()` runs fully bound, and
 # its default state bypasses `state_bound`, so it is bound by hand. The board's reveal listens to the
 # lights' own section signal, so the two can never disagree which section is up.
@@ -315,11 +311,6 @@ func pile_center(pile: Control) -> Vector2:
 	if not wall_picture: return centre
 	var picture_window := wall_picture.local_rect_beside(window, Rect2(), false)
 	return picture_window.position + centre / window * picture_window.size
-
-## Wires `Main`'s ONE wall camera and a rect-centre-x getter. Called once, right after `Main` instantiates this view.
-func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:
-	_wall_camera = camera
-	_wall_rect_centre_x = rect_centre_x
 
 func _relay_info_requested(entry: InfoEntry) -> void:
 	entry.relay_to(info_requested)
