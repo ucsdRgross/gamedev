@@ -50,11 +50,6 @@ under the queue rule's exception (say so, with what it delays).
 Measured: a dozen listed rows, TP-92 alone ~1 gate in 3, all counted and none ever fixed, until
 "red, but only listed rows" read as green - and a real regression landing on a listed row would pass.
 
-⚠ **A background agent is alive only while its output file grows.** An owner's interrupt stops the
-background subagents with the turn, and no notification follows. After any interrupt, and before
-saying "still running", check the mtime of the report file the brief told it to append to.
-Measured: a reviewer died with an interrupt and was reported "still running" for 12 hours.
-
 **Verify the recon premise before dispatch** — the site and cause a brief names are a hypothesis
 until a bounded command confirms them ([[brief-premise-is-a-hypothesis]]).
 
@@ -285,9 +280,11 @@ IN THE LOGS AND `.claude/.subagent.lock` HELD.** The suite script keeps `all_<la
 the agent, beside its scratch evidence file. Verify from those and the diff first; resume with
 `SendMessage` to the same agent id (never a fresh dispatch — its context holds the code) only when
 something is missing, and reset only if that fails — never when its last act was a completed full
-run. Clear the lock by hand when nothing runs. Wait for a background agent by polling the lock file
-(`until [ $(grep -c . .claude/.subagent.lock) -lt N ]; do sleep 20; done` in a background shell),
-not by re-reading its transcript.
+run. Clear the lock by hand when nothing runs. A background agent is alive only while the report file
+its brief told it to append to grows: an owner's interrupt stops background subagents with the
+turn and sends no notification, and the lock is released only where the hooks run (Windows). Check
+that file's mtime before saying "still running" - measured: a reviewer that died with an interrupt
+was reported running for 12 hours.
 
 ⚠ **A STOPPED OR FINISHED SUBAGENT CAN LEAVE PROCESSES RUNNING.** After `TaskStop`, or a notice that an
 agent stopped with background work, list Godot / python / bash / node by start time and end the

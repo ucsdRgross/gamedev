@@ -88,8 +88,8 @@ A green suite is the weakest evidence there is. Every test below passed review w
 
 15. **A FILTERED run read as a full one.** `--filter` and `--logic` void the suite count, the only
     load-failure detector, so only the full unfiltered windowed run is a verdict —
-    [[running-godot-scenes]]. A filter that names no suite runs 0 checks — read the
-    banner's suite count before its colour.
+    [[running-godot-scenes]]. A filter that names no suite is a RED run
+    (`FILTER MATCHED NO SUITE`); filters match the suite's node name (`UiViewers`).
 
 16. **A settle that waits N process frames.** Two can land inside one physics tick, so the value
     has not moved yet (1 failure in 4 runs); and N frames is a frame-rate-dependent TIME — 30

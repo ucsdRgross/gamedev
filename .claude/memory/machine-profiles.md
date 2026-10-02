@@ -50,9 +50,13 @@ which wraps `xvfb-run`; the Linux binary is already the console build). Importin
 - Logic, importing, snapshot scenes and `worldgen/tests/native_ab_test.tscn` work.
   `godot --path solatro res://Tests/Visual/fx_snapshot.tscn` writes its PNGs under user://
   `fx_snapshots/` — look at them. Perf numbers (`fx_cost`, GPU timer) mean nothing here.
-- The gate runs here: `gate.py` and `solatro/tools/run_tests.py` are OS-aware, user:// is
-  `$XDG_DATA_HOME/godot/app_userdata/Solatro` (lowercase `godot`). A full run takes ~18 min and
-  exits normally; a GREEN run's wrapper exits 1, the standing `resources still in use` line.
+- The gate runs here: `python3 .claude/tools/gate.py --out <scratch> --handoff <file> -- --timeout
+  2400 --stall-timeout 900` (`py` does not exist). user:// is
+  `$XDG_DATA_HOME/godot/app_userdata/Solatro` (lowercase `godot`). A full run takes ~18 min.
+- ⚠ **No hook fires here**: every `.claude/settings.json` hook runs `powershell` or `py`, and
+  neither exists. Hold the subagent cap, the commit gate's duplicate check, the private user://
+  and the one-Godot rule by hand, and run `python3 .claude/tools/doc_check.py --changed` (and
+  `dup_check.py`) yourself before a commit.
 - The worldgen extension has a committed Linux debug `.so`; rebuild recipe in
   `worldgen/worldgen_native/BUILD.md`.
 
