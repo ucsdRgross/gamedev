@@ -38,16 +38,16 @@ static func _describe_node(node: WorldGraphNode, run: RunState,
 	var title : String
 	var booster : BoosterTemplate = null
 	if role == MapNodeRoles.ROLE_BOOSTER:
-		title = "Talent pack"
-		lines.append("Take all %d cards into your deck." % 5)
+		title = TRANSLATION.find(&"MAP_TALENT_PACK")
 		booster = node.meta.get(MapNodeRoles.BOOSTER_KEY)
+		lines.append(TRANSLATION.find(&"MAP_TALENT_PACK_TAKE_ALL") % booster.get_frame())
 	elif role == MapNodeRoles.ROLE_ANCHOR and node != lap_target:
-		title = "Rest stop"
-		lines.append("The tour %s here. Nothing to perform." % ("turns around" if run.lap > 0 else "starts"))
+		title = TRANSLATION.find(&"MAP_REST_STOP")
+		lines.append(TRANSLATION.find(&"MAP_REST_STOP_TURNS" if run.lap > 0 else &"MAP_REST_STOP_STARTS"))
 	else:
-		title = "Final show" if node == lap_target else "Show"
-		lines.append("Fame required: %d" % (node.meta.get(MapNodeRoles.GOAL_KEY, 0) as int))
-		lines.append("3 acts to reach it — or the tour ends.")
+		title = TRANSLATION.find(&"MAP_FINAL_SHOW" if node == lap_target else &"MAP_SHOW")
+		lines.append(TRANSLATION.find(&"MAP_FAME_REQUIRED") % (node.meta.get(MapNodeRoles.GOAL_KEY, 0) as int))
+		lines.append(TRANSLATION.find(&"MAP_SHOW_ACTS"))
 	return {"title": title, "body": "\n".join(lines), "booster": booster}
 
 ## A map node's `InfoEntry`. Lives here rather than on `WorldGraphNode`, which is vendored and so not edited. ⚠ TEXT ONLY: a pack's possible contents are listed in a viewer of their own, the sidebar being too narrow to read a grid of them in.

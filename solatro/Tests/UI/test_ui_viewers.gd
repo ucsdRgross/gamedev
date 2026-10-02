@@ -29,6 +29,7 @@ func _ready() -> void:
 	await test_partial_card_rendering()
 	await test_booster_rerolls()
 	await test_booster_pool_comes_from_settings()
+	test_a_packs_map_info_counts_its_own_cards()
 	await test_pack_click_selects()
 	await test_take_ignores_the_selection()
 	behavior_section("THE VIEWER IS MODAL: HOVER DESCRIBES, A CLICK STICKS")
@@ -873,6 +874,15 @@ func test_booster_rerolls() -> void:
 	await get_tree().process_frame
 
 ## The pool is owner-tunable, not a hardcoded 5: on_map_picked must read settings.booster_reroll_pool. Driven at a NON-default value and at 0 (rerolls switched off entirely — every button dead from the moment the pack opens).
+func test_a_packs_map_info_counts_its_own_cards() -> void:
+	var node := WorldGraphNode.new()
+	node.meta[MapNodeRoles.ROLE_KEY] = MapNodeRoles.ROLE_BOOSTER
+	node.meta[MapNodeRoles.BOOSTER_KEY] = StubBooster.new()
+	var body := MapHoverPanel.get_info(node, null, null).body
+	node.free()
+	check("3 cards" in body and not "5" in body,
+			"a pack's map info counts the template's get_frame() cards", body)
+
 func test_booster_pool_comes_from_settings() -> void:
 	backup_real_settings()
 # scoped to "booster_": the live settings are shared with the suites running alongside us

@@ -217,11 +217,11 @@ func _show_lap_summary() -> void:
 	var box := VBoxContainer.new()
 	panel.add_child(box)
 	var label := Label.new()
-	label.text = "Tour complete!\nFame: %d\nThe tour now runs back the other way — shows get bigger." % run.fame
+	label.text = TRANSLATION.find(&"MAP_TOUR_COMPLETE") % run.fame
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(label)
 	var button := Button.new()
-	button.text = "Continue tour"
+	button.text = TRANSLATION.find(&"MAP_CONTINUE_TOUR")
 	box.add_child(button)
 	ui_layer.add_child(panel)
 	button.pressed.connect(func() -> void:
@@ -319,9 +319,9 @@ func _booster_of(node: WorldGraphNode) -> BoosterTemplate:
 
 func _update_hud() -> void:
 	if run == null: return
-	hud_container.fame_label.text = "Fame: %d" % run.fame
-	hud_container.lap_label.text = "Lap: %d %s" % [run.lap + 1, "◀" if run.is_reversed() else "▶"]
-	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
+	hud_container.fame_label.text = TRANSLATION.find(&"MAP_HUD_FAME") % run.fame
+	hud_container.lap_label.text = TRANSLATION.find(&"MAP_HUD_LAP") % [run.lap + 1, "◀" if run.is_reversed() else "▶"]
+	hud_container.luck_label.text = TRANSLATION.find(&"MAP_HUD_LUCK") % int(RunManager.luck() * 100.0)
 
 # The run deck is reachable from the basic view AND from beside a pick, so the viewer is handed
 # whichever of the two buttons actually opened it to put a pad player's focus back on.
