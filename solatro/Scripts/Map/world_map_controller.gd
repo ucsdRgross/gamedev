@@ -152,7 +152,7 @@ func _on_graph_populated() -> void:
 	_follow_token = true
 	refresh_visuals()
 	_accepting_input = true
-	_auto_select_if_single()
+	auto_select_if_single()
 	map_ready.emit()
 
 ## Advance the run to the next lap: edge state is derived wholly from reachability, so every edge becoming usable again needs no reset; history coloring stays.
@@ -160,7 +160,7 @@ func on_lap_completed() -> void:
 	run.lap += 1
 	MapNodeRoles.assign(map.overlay(), run.world_seed, run)
 	refresh_visuals()
-	_auto_select_if_single()
+	auto_select_if_single()
 
 # =============================================================================
 # GRAPH DIRECTION / REACHABILITY
@@ -423,7 +423,7 @@ func select_node(node: WorldGraphNode) -> void:
 var auto_picking := false
 
 ## A single reachable node needs no click -- picked the moment it is the only option; two or more leaves the pick alone.
-func _auto_select_if_single() -> void:
+func auto_select_if_single() -> void:
 	var nexts := next_nodes_of(_current)
 	if nexts.size() != 1: return
 	auto_picking = true

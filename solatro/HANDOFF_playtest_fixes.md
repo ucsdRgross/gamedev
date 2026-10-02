@@ -669,7 +669,7 @@ CONFIRMED (claims; each has a mutant)
 - T4 test_ui_viewers.gd:943 test_take_ignores_the_selection - item 3/12: both branches unstick() before Take, so nothing is picked at the press. Mutant: confirm emits [_cards.sticky] when sticky != null.
 - T5 test_ui_viewers.gd:410-416 test_a_deck_viewers_rows_stand_the_gap_inside_its_window - item 20: branches on bar.visible not fixture count. Mutant: _scroll.vertical_scroll_mode = SHOW_NEVER.
 - T6 test_sidebar.gd:4853-4860 test_accepting_the_exit_x_hands_the_focus_back_to_the_board - item 20: if/else on product state.
-- T7 test_map_traversal.gd:173,183 - item 12: row calls controller._auto_select_if_single() itself. Mutant: delete the call at Levels/map.gd:154 (SIDEBAR may cover arrival through Main - unread).
+- T7 test_map_traversal.gd:173,183 - item 12: row calls controller.auto_select_if_single() itself. Mutant: delete the call at Levels/map.gd:154 (SIDEBAR may cover arrival through Main - unread).
 SUSPECTED
 - T8 test_sidebar.gd:7195-7199 _check_the_row_heads_the_description vacuous when X hidden.
 - T9 test_wall_focus.gd ~999 + 2 sibling rows write get_tree().paused = false (item 9).

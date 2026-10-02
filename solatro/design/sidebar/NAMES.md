@@ -107,7 +107,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `CardsViewer` | `var close_tab : Control` | (added during execution) The viewer's close tab, or null: its focus counts as inside the list, so an arrow from it walks the viewer's own grid instead of being handed back to the first card |
 | `WorldMapController` | `func select_node(node: WorldGraphNode) -> void` | A pointer, finger or pad PICKS a reachable node; travelling is the map screen's Travel button |
 | `WorldMapController` | `func clear_selection() -> void` | Back to the basic view: nothing picked, nothing marked |
-| `WorldMapController` | `func _auto_select_if_single() -> void`, `var auto_picking` | One onward node needs no click, so it is picked on population, on a lap flip, and when a won show or a Take hands the map back; `auto_picking` is true only while that pick's `node_selected` runs, and `Map` reads it to leave a pack's contents unopened |
+| `WorldMapController` | `func auto_select_if_single() -> void`, `var auto_picking` | One onward node needs no click, so it is picked on population, on a lap flip, and when a won show or a Take hands the map back; `auto_picking` is true only while that pick's `node_selected` runs, and `Map` reads it to leave a pack's contents unopened |
 | `WorldMapController` | `func selected() -> WorldGraphNode` | The standing pick, or null at rest |
 | `WorldMapController` | `signal node_selected(node: WorldGraphNode)`, `signal selection_cleared` | The pick changed, or went |
 | `WorldMapController` | `signal travel_focus_requested` | Accept on the map, a map node being no Control: the screen hands the pad to its Travel button |

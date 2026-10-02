@@ -332,6 +332,7 @@ func _ready() -> void:
 	await test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x()
 	await test_a_single_reachable_node_selects_itself_and_a_dismissal_drops_it_like_any_other_clear()
 	await test_a_pack_taken_at_a_node_with_one_way_on_hands_the_map_back_with_it_picked()
+	await test_a_take_picks_the_one_way_on_whichever_order_the_choosers_close_is_heard_in()
 	await test_up_inside_a_hosted_viewer_walks_the_viewer_not_the_x()
 	await test_selecting_a_node_by_key_describes_it()
 	behavior_section("THE MAP SIDEBAR: A BASIC VIEW, THEN A PICK WITH ITS OWN BUTTONS")
@@ -11022,6 +11023,14 @@ func test_a_single_reachable_node_selects_itself_and_a_dismissal_drops_it_like_a
 # Take hands the map back with a lone onward node picked, but only once the chooser is gone: a pick
 # made while it still owns the map would put Travel beside a pack the player has not finished.
 func test_a_pack_taken_at_a_node_with_one_way_on_hands_the_map_back_with_it_picked() -> void:
+	await _take_the_pack_at_a_node_with_one_way_on(false)
+
+# THE CONTAINER'S CLOSE HEARD LAST: whatever a Take hangs on the chooser's close runs before the
+# container puts back what the chooser covered, so a pick waiting on the close would be wiped.
+func test_a_take_picks_the_one_way_on_whichever_order_the_choosers_close_is_heard_in() -> void:
+	await _take_the_pack_at_a_node_with_one_way_on(true)
+
+func _take_the_pack_at_a_node_with_one_way_on(close_heard_last: bool) -> void:
 	await _start_map_fixture()
 	var controller := _map.controller
 	var pack := _a_map_node_with_one_way_on(MapNodeRoles.ROLE_BOOSTER)
@@ -11041,8 +11050,15 @@ func test_a_pack_taken_at_a_node_with_one_way_on_hands_the_map_back_with_it_pick
 	check(controller.selected() == null and not _map.travel_button.is_visible_in_tree(),
 			"while the chooser owns the map nothing is picked and no Travel shows",
 			"%s travel=%s" % [controller.selected(), _map.travel_button.is_visible_in_tree()])
+	var moved : Array[int] = [0]
+	if close_heard_last:
+		chooser.confirmed.connect(func(_taken: Array[CardData]) -> void:
+			moved[0] = _hear_the_containers_close_last(chooser))
 	check(await _click_button(chooser.confirm_button, _booted_viewport),
 			"a real click on Take pressed it")
+	if close_heard_last:
+		check(moved[0] == 1, "sanity: the container's close handler was moved behind Take's listeners",
+				str(moved[0]))
 	await get_tree().process_frame
 	await get_tree().process_frame
 	check(not _map.chooser_is_up() and not is_instance_valid(chooser), "sanity: Take closed the chooser")
@@ -11055,6 +11071,17 @@ func test_a_pack_taken_at_a_node_with_one_way_on_hands_the_map_back_with_it_pick
 			"...with that node's description on the sidebar, not the HUD the chooser closed to",
 			_panel.current_entry.title if _panel.current_entry else "none")
 	await _end_main_fixture()
+
+## Reconnects the container's handlers on the chooser's close at the end of its listeners, answering how many moved.
+func _hear_the_containers_close_last(chooser: ChoiceViewer) -> int:
+	var moved := 0
+	for connection : Dictionary in chooser.highlight_cleared.get_connections():
+		var heard : Callable = connection["callable"]
+		if heard.get_object() != _container: continue
+		chooser.highlight_cleared.disconnect(heard)
+		chooser.highlight_cleared.connect(heard)
+		moved += 1
+	return moved
 
 # A HOSTED VIEWER HAS A FOCUS CHAIN OF ITS OWN -- the pack's cards, their Rerolls, Take all -- so an
 # up pressed inside it walks that chain, never the panel: the X taking the press would clear the

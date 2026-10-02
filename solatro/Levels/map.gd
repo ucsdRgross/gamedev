@@ -171,7 +171,6 @@ func _open_booster(node: WorldGraphNode) -> void:
 	viewer.confirmed.connect(_on_booster_confirmed)
 	hud_container.host_viewer(viewer, info_hovered, HudContainer.MAP_SCREEN)
 	_show_only_the_deck_button(true)
-	viewer.confirmed.connect(_show_only_the_deck_button.bind(false).unbind(1))
 
 ## The pack chooser this screen opened, dropped the moment Take accepts it or a new run throws it away, a frame before it is freed.
 var _chooser : ChoiceViewer = null
@@ -189,16 +188,14 @@ func _show_only_the_deck_button(deck_only: bool) -> void:
 	possible_cards_button.visible = false
 	selection_deck_button.visible = true
 
-# ⚠ THE LONE WAY ON IS PICKED ONCE THE CHOOSER HAS CLOSED, not here: Take's own aftermath, the
-# borrowed Deck row going and the close putting back what the chooser covered, would wipe it.
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
-	_chooser.highlight_cleared.connect(controller._auto_select_if_single)
 	_chooser = null
 	for card : CardData in cards:
 		Main.save_info.card_datas.append(card)
 	RunManager.mark_deck_dirty()
-	RunManager.save_run()
+	_hand_the_map_back()
 	_update_hud()
+	_show_only_the_deck_button(false)
 
 ## Called by Main when a won game hands back to the map; boss-ness is derived from the persisted pending_node_id, not a transient flag, so it survives quit/resume.
 func returned_from_game() -> void:
@@ -208,9 +205,15 @@ func returned_from_game() -> void:
 	if was_boss:
 		_show_lap_summary()
 	else:
-		RunManager.save_run()
-		controller._auto_select_if_single()
+		_hand_the_map_back()
 	_update_hud()
+
+# ⚠ THE LONE WAY ON IS PICKED DEFERRED, never here: what handed the map back is still closing, and
+# a Take's chooser putting back what it covered would wipe a pick made now, whichever of the
+# chooser's listeners ran first.
+func _hand_the_map_back() -> void:
+	RunManager.save_run()
+	controller.auto_select_if_single.call_deferred()
 
 # Lap complete: summary popup, then reverse direction and rescale goals on continue.
 func _show_lap_summary() -> void:
