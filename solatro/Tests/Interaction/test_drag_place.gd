@@ -1805,7 +1805,7 @@ func test_a_cancel_ends_a_latched_drag_pan() -> void:
 #THE STEP-OUT SUPERSEDES THE LANDING ON THE SAME PRESS, and that is the order: the landing rides the
 #press first, then the ladder spends it, and the overview it steps out to rests where it rests.
 func test_a_cancel_that_steps_out_lands_first_and_is_superseded() -> void:
-	await _start_fixture_grids(3)
+	await _start_fixture_grids(5)
 	_pa.focus_grid(0)
 	await _settle_layout()
 	var from := _bare_board_point()
@@ -1818,8 +1818,12 @@ func test_a_cancel_that_steps_out_lands_first_and_is_superseded() -> void:
 	check(_content_dragging() and _pa.selected_cards.is_empty(),
 			"precondition: a live pan with nothing held and no description to dismiss",
 			"content_dragging %s, held %d" % [_content_dragging(), _pa.selected_cards.size()])
+	var landing := _nearest_drawn_grid()
 	await _right_click(from + Vector2(travel, 0.0), false)
 	await _frames(2)
+	check(landing != _pa.resting_grid(),
+			"precondition: the grid the press lands on is not the overview's resting grid",
+			"landing %d, resting %d" % [landing, _pa.resting_grid()])
 	check(not _content_dragging() and _pa.view_mode == PlayArea.ViewMode.OVERVIEW,
 			"with no higher rung to spend the same press ends the pan AND steps out to the "
 			+ "every-grid view -- the one-thing-per-press ladder is unchanged",

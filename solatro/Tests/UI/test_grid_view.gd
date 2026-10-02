@@ -1435,8 +1435,9 @@ func _differing_px(a: Image, b: Image, area: Rect2i) -> int:
 # A NON-MOVE IS A MOTION CLAIM, NOT A POSE. Sampled over frames: a still taken at either end cannot
 # tell a camera that never left rest from one that swung out and came back.
 
-# A show opens on the all-grids view, so that is where the edge is by default, and the camera that
-# would have to move is the wall's -- which is why this needs the real Main/Wall/%Camera2D.
+# A show opens on the all-grids view, so that is where the edge is by default. What a bounce would
+# move is the board under the scroller, so the sample is the last grid's DRAWN x, never the wall's
+# camera, which no pan path writes.
 func run_the_board_edge_does_not_move_test() -> void:
 	behavior_section("THE BOARD EDGE DOES NOT MOVE")
 	var main := await _stand_up_main_grids(3)
@@ -1450,7 +1451,8 @@ func run_the_board_edge_does_not_move_test() -> void:
 	await _settle_camera(camera)
 	check(pa.pan_grid == 2,
 			"precondition: the view is on the LAST grid, with nowhere further right to go")
-	var rest := camera.position.x
+	var last_cells := pa._cells_root(pa.grid_container.get_child(2) as Control)
+	var rest := _screen_rect(last_cells).position.x
 
 	pa._unhandled_input(_action(&"grid_pan_right"))
 # ⚠ SIGNED, NOT ABSOLUTE. An absf() here is satisfied by a swing in EITHER direction, so each
@@ -1466,10 +1468,11 @@ func run_the_board_edge_does_not_move_test() -> void:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 		CardEnvironment.CURRENT = view.game
-		farthest = maxf(farthest, camera.position.x - rest)
-		deepest_inward = minf(deepest_inward, camera.position.x - rest)
+		var drawn_x := _screen_rect(last_cells).position.x
+		farthest = maxf(farthest, rest - drawn_x)
+		deepest_inward = minf(deepest_inward, rest - drawn_x)
 	check(farthest <= 0.5,
-			"pressing right at the last grid never carries the camera past the picture's edge "
+			"pressing right at the last grid never carries the board past the picture's edge "
 			+ "(TP-102)",
 			"%f px past rest" % farthest)
 	check(deepest_inward >= -0.5,
@@ -1482,9 +1485,9 @@ func run_the_board_edge_does_not_move_test() -> void:
 			"...without stepping onto a grid that is not there",
 			"pan_grid %d" % pa.pan_grid)
 	await _settle_camera(camera)
-	check(absf(camera.position.x - rest) <= 1.0,
-			"...and the camera is still on its resting pose once everything settles",
-			"rest %f -> %f" % [rest, camera.position.x])
+	check(absf(_screen_rect(last_cells).position.x - rest) <= 1.0,
+			"...and the board is still on its resting pose once everything settles",
+			"rest %f -> %f" % [rest, _screen_rect(last_cells).position.x])
 	check(_camera_cut_off_px(main, pa, camera, 2) <= 1.0,
 			"the last grid is wholly on screen once everything settles",
 			"%f px off screen" % _camera_cut_off_px(main, pa, camera, 2))
@@ -2219,24 +2222,27 @@ func run_the_overview_view_and_cursor_agree_after_a_removal_test() -> void:
 	var pa := view.play_area
 	await _settle_layout(view)
 	pa.open_zoomed_out()
-	pa.selected_grid = 2
-	pa.pan_to_grid(2)
+	pa.selected_grid = 3
+	pa.pan_to_grid(3)
 	await _settle_scroll(view)
-	var left : GridData = view.game.state.grids[1]
-	var right : GridData = view.game.state.grids[3]
-	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW and pa.pan_grid == 2
-			and pa.selected_grid == 2,
-			"precondition: the overview is on grid 2 of five, cursor and view together (TP-111)",
+	var left : GridData = view.game.state.grids[2]
+	var right : GridData = view.game.state.grids[4]
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW and pa.pan_grid == 3
+			and pa.selected_grid == 3,
+			"precondition: the overview is on grid 3 of five, cursor and view together (TP-111)",
 			"mode %d pan %d cursor %d" % [pa.view_mode, pa.pan_grid, pa.selected_grid])
 
-	Board.remove_grid(view.game.state, 2)
+	Board.remove_grid(view.game.state, 3)
 	pa.flush_rebuild()
 	await _settle_layout(view)
 	await _settle_scroll(view)
 
-	check(view.game.state.grids[1] == left and view.game.state.grids[2] == right,
-			"instrument check: both neighbours survived, equally near — the tie the left-preference"
-			+ " breaks (TP-111)")
+	check(view.game.state.grids[2] == left and view.game.state.grids[3] == right,
+			"instrument check: both neighbours survived (TP-111)")
+	check(not is_equal_approx(_centre_offset(pa, 2), _centre_offset(pa, 3)),
+			"precondition: off the middle, the two survivors sit at different distances from the "
+			+ "centre, so which one is nearer is a claim that can fail (TP-111)",
+			"%.1f px vs %.1f" % [_centre_offset(pa, 2), _centre_offset(pa, 3)])
 	check(pa.pan_grid == pa.selected_grid,
 			"the view and the arrow cursor still name the SAME grid (TP-111)",
 			"pan %d cursor %d" % [pa.pan_grid, pa.selected_grid])
@@ -2244,13 +2250,9 @@ func run_the_overview_view_and_cursor_agree_after_a_removal_test() -> void:
 			"...the nearest survivor, the LEFT one, not the right one that slid into its index"
 			+ " (TP-111)",
 			"pan_grid %d" % pa.pan_grid)
-#⚠ THE TOUCHING CASE IS DECIDED EXPLICITLY. With the all-grids view fitting its whole set, two
-#equally-near survivors sit the SAME distance from the centre, and `<=` on two floats that are
-#equal by construction turns on the last bit.
-	check(_centre_offset(pa, pa.pan_grid) < _centre_offset(pa, pa.pan_grid + 1)
-			or is_equal_approx(_centre_offset(pa, pa.pan_grid), _centre_offset(pa, pa.pan_grid + 1)),
-			"...and the board re-centred on THAT grid, no further from the centre than its right-hand "
-			+ "neighbour (TP-111)",
+	check(_centre_offset(pa, pa.pan_grid) < _centre_offset(pa, pa.pan_grid + 1),
+			"...and the view is on THAT grid, nearer the centre than its right-hand neighbour "
+			+ "(TP-111)",
 			"%.1f px vs %.1f" % [_centre_offset(pa, pa.pan_grid),
 					_centre_offset(pa, pa.pan_grid + 1)])
 
