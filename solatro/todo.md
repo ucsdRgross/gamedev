@@ -26,6 +26,11 @@ task to do next."
    `gamedev` ends with `main` alone, and Showitaire starts with one branch. Deleting a branch is
    confirmed with the owner per branch that carries commits `main` lacks.
 3. **Review what is left of this file with the owner** and pick the next task.
+4. **Build the forty-seventh round's rulings** (`RULINGS_playtest_fixes.md`), each red-then-green:
+   a right-click anywhere unsticks a stuck chooser card; the show's map hover drops "3 acts to reach
+   it"; the map auto-picks a lone onward node whenever it becomes the active screen (today only after
+   a show or a Take); hoops are laid out by `Cards/Props/Formations/hoop.tres` (`prop_layer.gd` skips
+   kind 0); a wheel over the sidebar never reaches the picture.
 
 ## Planned by the owner — notes to design in a later session
 
@@ -276,17 +281,6 @@ round). Counts are failing runs of runs.
 - OWNER QUESTION: by keys, a transient (unsticky) game description survives overlay Back and is
   re-shown on Forward over a card nothing is on, with no X. `HudContainer._entry_by_screen` says a
   return re-shows; the second playtest (2) says an unsticky description closes when unhovered.
-- OWNER QUESTION: the game never applies a formation to hoops (`prop_layer.gd` ~518, `if kind == 0:
-  continue`), so `Cards/Props/Formations/hoop.tres` positions nothing — the round-3 "hoops should
-  be aligned horizontally" changed only it. Keep the hoop editor view, or wire the formation?
-- OWNER QUESTION: a wheel over the SIDEBAR zooms the map a step per notch while a viewer is up (the
-  sidebar is outside the viewer's catcher; with none up, unmeasured). Should it ever reach the picture?
-- OWNER QUESTION (P13, never answered): a map HOVER names the dot but no longer describes the node
-  in the sidebar; clicking the chosen chooser card keeps it chosen; a click on bare map leaves the
-  pick alone; the possible-cards viewer is translucent and sparse.
-- OWNER QUESTION (P44, never answered): a grid ADDED mid-show to a one-grid board waits for the
-  ordinary lift (a, built) or clears the commitment (b); a one-grid commitment is never lifted
-  (a, built) or lifts as before (b).
 - OWNER QUESTION: the picture-wall design DAG warns QR6's default (a) reaches nothing — Q76 is gated
   `[QR6=b|c]`, Q77 `[QR6=b]`. Widen the gates or change the default.
 - A look for review round 4: at 600x1000, sidebar out, the portrait board's centre y is 383 against
