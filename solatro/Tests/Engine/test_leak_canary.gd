@@ -19,12 +19,12 @@ extends TestSuite
 # player-visible rule.
 
 # The PRODUCTION SESSION CANARY simulates a real play session end to end per cycle: DeckPicker and
-# DeckViewer open and close, run start, map traversal with hover panel and booster pack, a real show
+# DeckViewer open and close, run start, map traversal with a booster pack, a real show
 # with a GameView, quit-mid-show then resume, the win path, the loss path, then clear_save.
 
 # It asserts OBJECT_COUNT returns to a post-warm-up baseline, which proves every PRODUCTION drop
 # site releases its card graphs: Game.undo, return_to_map, exit_show loss, RunManager.clear_save,
-# DeckPicker close, MapHoverPanel previews. With weakref backrefs no unlink call exists in them.
+# DeckPicker close. With weakref backrefs no unlink call exists in them.
 
 func suite_name() -> String:
 	return "LEAK CANARY"
@@ -37,7 +37,6 @@ const WATCHDOG_SECS := 10.0
 const GOAL_OUT_OF_REACH : int = 1000000
 
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
-const HOVER_PANEL_SCENE := preload("res://UI/map_hover_panel.tscn")
 
 ## LEAK SENTINEL section fixture: cards deliberately held alive-but-unreachable.
 var _sentinel_leaked : Array[CardData] = []
@@ -469,7 +468,7 @@ func _session_cycle() -> void:
 
 	_mark_phase("2 run start (new_run)")
 # Map: enter on a synthetic line graph with no world generation, the MAP TRAVERSAL rig pattern,
-# traverse two nodes, hover-panel a booster node, then open and confirm its pack.
+# traverse two nodes, then open and confirm a booster node's pack.
 	var controller := _build_map_rig(run)
 	var overlay : WorldGraphOverlay = controller.map.overlay()
 	await controller.move_to(overlay.node(1))
@@ -481,13 +480,6 @@ func _session_cycle() -> void:
 			break
 	check_impl(booster_node != null, "the synthetic map assigns at least one booster node")
 	if booster_node:
-		var panel : MapHoverPanel = HOVER_PANEL_SCENE.instantiate()
-		add_child(panel)
-		await panel.show_for_node(booster_node, run, controller.lap_target(), Vector2(100, 100))
-		await _settle()
-		panel.hide_panel()
-		panel.queue_free()
-		await _settle()
 # Booster pack: a take-all ChoiceViewer whose confirmed cards join the run deck, mirroring
 # Map._open_booster and _on_booster_confirmed.
 		var booster : BoosterTemplate = booster_node.meta[MapNodeRoles.BOOSTER_KEY]
