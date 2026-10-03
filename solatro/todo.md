@@ -20,9 +20,10 @@ task to do next."
    **Measured on full history** (a cloud clone is shallow - `git fetch --unshallow` first, or every
    merge base lands on the graft): `combine-sidebar-boardplan` holds every origin branch -
    `main`, `board-plan`, `sidebar`, `card-index` and both `claude/*` (the last merged in its tip,
-   tree unchanged). What is left: the owner merges `combine-sidebar-boardplan` into `main`; the
-   five other origin branches are approved for deletion (owner: "b: Delete now") but a cloud
-   session can push only its own branch, so delete them from GitHub or a local clone; and
+   tree unchanged). `main` now holds it (fast-forwarded at the owner's word).
+   What is left: the five other origin branches are approved for deletion (owner: "b: Delete
+   now"), but a cloud session's proxy refuses branch deletion, so delete them from GitHub or a
+   local clone; and
    `test-speed`, `effect-levels`, `p73-wip`, `gamedev-baseline` are not on origin - measure them on
    the machine that has them.
 2. **The Showitaire repo split** - the first item under "Planned by the owner" below, with every
