@@ -7,6 +7,8 @@ effort: low
 maxTurns: 150
 color: green
 permissionMode: auto
+experimental:
+  cacheTtl: 1h
 ---
 <!-- Kept identical to the other two implementer presets except the frontmatter - edit all three. -->
 
